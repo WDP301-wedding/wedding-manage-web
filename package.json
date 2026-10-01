@@ -13,6 +13,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "api:generate": "node scripts/generate-api.mjs",
+    "api:check": "node scripts/generate-api.mjs --check",
     "lint": "eslint . --max-warnings 0",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
