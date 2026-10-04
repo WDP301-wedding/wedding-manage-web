@@ -13,6 +13,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "audit:ci": "npm run test:audit-policy && node scripts/audit-ci.mjs",
     "api:generate": "node scripts/generate-api.mjs",
     "api:check": "node scripts/generate-api.mjs --check",
     "lint": "eslint . --max-warnings 0",
@@ -20,6 +21,7 @@
     "format:check": "prettier --check .",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
+    "test:audit-policy": "node --test scripts/audit-ci.test.mjs",
     "test:unit": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest"

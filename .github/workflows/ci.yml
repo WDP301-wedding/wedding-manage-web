@@ -111,4 +111,4 @@ jobs:
         run: npm run build
 
       - name: Audit locked dependencies
-        run: npm audit --audit-level=high
+        run: npm run audit:ci
