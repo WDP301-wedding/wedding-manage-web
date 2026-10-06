@@ -5,6 +5,7 @@ export type CatalogHall = components['schemas']['CatalogHallView'];
 export type CatalogDish = components['schemas']['CatalogDishAggregate'];
 export type CatalogMenu = components['schemas']['CatalogMenuAggregate'];
 export type CatalogTimeline = components['schemas']['CatalogTimelineAggregate'];
+export type CatalogLayout = components['schemas']['CatalogLayoutAggregate'];
 
 export type ManagerRestaurant = Readonly<{
   id: string;
@@ -164,7 +165,67 @@ export interface TimelineCatalogGateway {
   ): Promise<void>;
 }
 
-export type CatalogGateway = VenueCatalogGateway & FoodCatalogGateway & TimelineCatalogGateway;
+export type LayoutTableWrite = Readonly<{
+  tableId: string;
+  label: string;
+  shape: 'ROUND' | 'RECTANGLE';
+  seatCapacity: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  rotationDegrees: number;
+  displayOrder: number;
+}>;
+export type LayoutWrite = Readonly<{
+  name: string;
+  description: string;
+  minGuests: number;
+  maxGuests: number;
+  tables: readonly LayoutTableWrite[];
+}>;
+export type LayoutCatalogSnapshot = Readonly<{
+  halls: readonly CatalogHall[];
+  layouts: readonly CatalogLayout[];
+}>;
+
+export interface LayoutCatalogGateway {
+  loadLayouts(accessToken: string): Promise<LayoutCatalogSnapshot>;
+  createLayout(
+    accessToken: string,
+    input: LayoutWrite &
+      Readonly<{ templateId: string; versionId: string; hallId: string; displayOrder: number }>,
+  ): Promise<void>;
+  updateLayoutDraft(
+    accessToken: string,
+    input: LayoutWrite & Readonly<{ versionId: string; expectedRevision: number }>,
+  ): Promise<void>;
+  publishLayout(
+    accessToken: string,
+    input: Readonly<{ versionId: string; expectedRevision: number }>,
+  ): Promise<void>;
+  cloneLayout(
+    accessToken: string,
+    input: Readonly<{ templateId: string; sourceVersionId: string; versionId: string }>,
+  ): Promise<void>;
+  changeLayoutLifecycle(
+    accessToken: string,
+    input: Readonly<{ id: string; expectedRevision: number; transition: 'RESTORE' | 'RETIRE' }>,
+  ): Promise<void>;
+  registerLayoutTable(
+    accessToken: string,
+    input: Readonly<{ templateId: string; tableId: string }>,
+  ): Promise<void>;
+  retireLayoutTable(
+    accessToken: string,
+    input: Readonly<{ templateId: string; tableId: string }>,
+  ): Promise<void>;
+}
+
+export type CatalogGateway = VenueCatalogGateway &
+  FoodCatalogGateway &
+  TimelineCatalogGateway &
+  LayoutCatalogGateway;
 
 function authorization(accessToken: string) {
   return { Authorization: `Bearer ${accessToken}` };
@@ -469,6 +530,121 @@ export function createVenueCatalogGateway(client?: ApiClient): CatalogGateway {
       } else {
         await api().POST('/management/catalog/timeline-templates/{id}/restoration', options);
       }
+    },
+
+    async loadLayouts(accessToken) {
+      const headers = authorization(accessToken);
+      const [layouts, halls] = await Promise.all([
+        api().GET('/management/catalog/layout-templates', {
+          headers,
+          params: { query: { limit: 100 } },
+        }),
+        api().GET('/management/catalog/halls', {
+          headers,
+          params: { query: { limit: 100 } },
+        }),
+      ]);
+      return {
+        halls: Array.from(required(halls.data, 'Layout hall read').data.items, (hall) => ({
+          ...hall,
+        })),
+        layouts: Array.from(
+          required(layouts.data, 'Layout read').data.items,
+          (layout): CatalogLayout => ({
+            ...layout,
+            tables: Array.from(layout.tables, (table) => ({ ...table })),
+            versions: Array.from(layout.versions, (version) => ({
+              ...version,
+              tables: Array.from(version.tables, (table) => ({ ...table })),
+            })),
+          }),
+        ),
+      };
+    },
+
+    async createLayout(accessToken, input) {
+      const idempotencyKey = crypto.randomUUID();
+      await api().POST('/management/catalog/layout-templates', {
+        headers: authorization(accessToken),
+        params: { header: { 'Idempotency-Key': idempotencyKey } },
+        body: { ...input, tables: [...input.tables] },
+      });
+    },
+
+    async updateLayoutDraft(accessToken, { versionId, ...body }) {
+      await api().PATCH('/management/catalog/layout-template-versions/{versionId}', {
+        headers: authorization(accessToken),
+        params: { path: { versionId } },
+        body: { ...body, tables: [...body.tables] },
+      });
+    },
+
+    async publishLayout(accessToken, { versionId, ...body }) {
+      const idempotencyKey = crypto.randomUUID();
+      await api().POST('/management/catalog/layout-template-versions/{versionId}/publication', {
+        headers: authorization(accessToken),
+        params: {
+          header: { 'Idempotency-Key': idempotencyKey },
+          path: { versionId },
+        },
+        body,
+      });
+    },
+
+    async cloneLayout(accessToken, { templateId, ...body }) {
+      const idempotencyKey = crypto.randomUUID();
+      await api().POST('/management/catalog/layout-templates/{templateId}/versions', {
+        headers: authorization(accessToken),
+        params: {
+          header: { 'Idempotency-Key': idempotencyKey },
+          path: { templateId },
+        },
+        body,
+      });
+    },
+
+    async changeLayoutLifecycle(accessToken, input) {
+      const idempotencyKey = crypto.randomUUID();
+      const options = {
+        headers: authorization(accessToken),
+        params: {
+          header: { 'Idempotency-Key': idempotencyKey },
+          path: { id: input.id },
+        },
+        body: { expectedRevision: input.expectedRevision },
+      } as const;
+      if (input.transition === 'RETIRE') {
+        await api().POST('/management/catalog/layout-templates/{id}/retirement', options);
+      } else {
+        await api().POST('/management/catalog/layout-templates/{id}/restoration', options);
+      }
+    },
+
+    async registerLayoutTable(accessToken, input) {
+      const idempotencyKey = crypto.randomUUID();
+      await api().POST('/management/catalog/layout-templates/{templateId}/tables', {
+        headers: authorization(accessToken),
+        params: {
+          header: { 'Idempotency-Key': idempotencyKey },
+          path: { templateId: input.templateId },
+        },
+        body: { tableId: input.tableId },
+      });
+    },
+
+    async retireLayoutTable(accessToken, input) {
+      const idempotencyKey = crypto.randomUUID();
+      await api().POST(
+        '/management/catalog/layout-templates/{templateId}/tables/{tableId}/retirement',
+        {
+          headers: authorization(accessToken),
+          params: {
+            header: { 'Idempotency-Key': idempotencyKey },
+            path: { templateId: input.templateId, tableId: input.tableId },
+          },
+          body: {},
+        },
+      );
     },
   };
 }

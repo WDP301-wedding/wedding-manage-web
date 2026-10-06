@@ -15,6 +15,7 @@ import {
   type VenueCatalogSnapshot,
 } from './catalog-api';
 import { DishMenuPanel } from './dish-menu-panel';
+import { LayoutPanel } from './layout-panel';
 import { TimelinePanel } from './timeline-panel';
 
 type Authorize = <T>(operation: (accessToken: string) => Promise<T>) => Promise<T>;
@@ -355,6 +356,7 @@ function ManagerVenueWorkspace({
         {supportsTimeline(gateway) ? (
           <TimelinePanel gateway={gateway} authorize={authorize} />
         ) : null}
+        {supportsLayout(gateway) ? <LayoutPanel gateway={gateway} authorize={authorize} /> : null}
       </main>
     </div>
   );
@@ -368,6 +370,10 @@ function supportsTimeline(
   gateway: VenueCatalogGateway | CatalogGateway,
 ): gateway is CatalogGateway {
   return 'loadTimelines' in gateway;
+}
+
+function supportsLayout(gateway: VenueCatalogGateway | CatalogGateway): gateway is CatalogGateway {
+  return 'loadLayouts' in gateway;
 }
 
 function RestaurantForm({
