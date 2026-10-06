@@ -4,6 +4,7 @@ import type { components } from '../../lib/api/generated/schema';
 export type CatalogHall = components['schemas']['CatalogHallView'];
 export type CatalogDish = components['schemas']['CatalogDishAggregate'];
 export type CatalogMenu = components['schemas']['CatalogMenuAggregate'];
+export type CatalogTimeline = components['schemas']['CatalogTimelineAggregate'];
 
 export type ManagerRestaurant = Readonly<{
   id: string;
@@ -123,7 +124,47 @@ export interface FoodCatalogGateway {
   ): Promise<void>;
 }
 
-export type CatalogGateway = VenueCatalogGateway & FoodCatalogGateway;
+export type TimelineItemWrite = Readonly<{
+  id: string;
+  title: string;
+  description: string | null;
+  offsetMinutes: number;
+  durationMinutes: number | null;
+  displayOrder: number;
+}>;
+export type TimelineWrite = Readonly<{
+  name: string;
+  description: string;
+  items: readonly TimelineItemWrite[];
+}>;
+export type TimelineCatalogSnapshot = Readonly<{ timelines: readonly CatalogTimeline[] }>;
+
+export interface TimelineCatalogGateway {
+  loadTimelines(accessToken: string): Promise<TimelineCatalogSnapshot>;
+  createTimeline(
+    accessToken: string,
+    input: TimelineWrite &
+      Readonly<{ templateId: string; versionId: string; displayOrder: number }>,
+  ): Promise<void>;
+  updateTimelineDraft(
+    accessToken: string,
+    input: TimelineWrite & Readonly<{ versionId: string; expectedRevision: number }>,
+  ): Promise<void>;
+  publishTimeline(
+    accessToken: string,
+    input: Readonly<{ versionId: string; expectedRevision: number }>,
+  ): Promise<void>;
+  cloneTimeline(
+    accessToken: string,
+    input: Readonly<{ templateId: string; sourceVersionId: string; versionId: string }>,
+  ): Promise<void>;
+  changeTimelineLifecycle(
+    accessToken: string,
+    input: Readonly<{ id: string; expectedRevision: number; transition: 'RESTORE' | 'RETIRE' }>,
+  ): Promise<void>;
+}
+
+export type CatalogGateway = VenueCatalogGateway & FoodCatalogGateway & TimelineCatalogGateway;
 
 function authorization(accessToken: string) {
   return { Authorization: `Bearer ${accessToken}` };
@@ -350,6 +391,83 @@ export function createVenueCatalogGateway(client?: ApiClient): CatalogGateway {
         await api().POST('/management/catalog/menu-packages/{id}/retirement', options);
       } else {
         await api().POST('/management/catalog/menu-packages/{id}/restoration', options);
+      }
+    },
+
+    async loadTimelines(accessToken) {
+      const result = await api().GET('/management/catalog/timeline-templates', {
+        headers: authorization(accessToken),
+        params: { query: { limit: 100 } },
+      });
+      return {
+        timelines: Array.from(
+          required(result.data, 'Timeline read').data.items,
+          (timeline): CatalogTimeline => ({
+            ...timeline,
+            versions: Array.from(timeline.versions, (version) => ({
+              ...version,
+              items: Array.from(version.items, (item) => ({ ...item })),
+            })),
+          }),
+        ),
+      };
+    },
+
+    async createTimeline(accessToken, input) {
+      const idempotencyKey = crypto.randomUUID();
+      await api().POST('/management/catalog/timeline-templates', {
+        headers: authorization(accessToken),
+        params: { header: { 'Idempotency-Key': idempotencyKey } },
+        body: { ...input, items: [...input.items] },
+      });
+    },
+
+    async updateTimelineDraft(accessToken, { versionId, ...body }) {
+      await api().PATCH('/management/catalog/timeline-template-versions/{versionId}', {
+        headers: authorization(accessToken),
+        params: { path: { versionId } },
+        body: { ...body, items: [...body.items] },
+      });
+    },
+
+    async publishTimeline(accessToken, { versionId, ...body }) {
+      const idempotencyKey = crypto.randomUUID();
+      await api().POST('/management/catalog/timeline-template-versions/{versionId}/publication', {
+        headers: authorization(accessToken),
+        params: {
+          header: { 'Idempotency-Key': idempotencyKey },
+          path: { versionId },
+        },
+        body,
+      });
+    },
+
+    async cloneTimeline(accessToken, { templateId, ...body }) {
+      const idempotencyKey = crypto.randomUUID();
+      await api().POST('/management/catalog/timeline-templates/{templateId}/versions', {
+        headers: authorization(accessToken),
+        params: {
+          header: { 'Idempotency-Key': idempotencyKey },
+          path: { templateId },
+        },
+        body,
+      });
+    },
+
+    async changeTimelineLifecycle(accessToken, input) {
+      const idempotencyKey = crypto.randomUUID();
+      const options = {
+        headers: authorization(accessToken),
+        params: {
+          header: { 'Idempotency-Key': idempotencyKey },
+          path: { id: input.id },
+        },
+        body: { expectedRevision: input.expectedRevision },
+      } as const;
+      if (input.transition === 'RETIRE') {
+        await api().POST('/management/catalog/timeline-templates/{id}/retirement', options);
+      } else {
+        await api().POST('/management/catalog/timeline-templates/{id}/restoration', options);
       }
     },
   };

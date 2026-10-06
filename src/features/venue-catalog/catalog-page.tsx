@@ -15,6 +15,7 @@ import {
   type VenueCatalogSnapshot,
 } from './catalog-api';
 import { DishMenuPanel } from './dish-menu-panel';
+import { TimelinePanel } from './timeline-panel';
 
 type Authorize = <T>(operation: (accessToken: string) => Promise<T>) => Promise<T>;
 
@@ -160,7 +161,7 @@ function ManagerVenueWorkspace({
             Nhà hàng &amp; sảnh
           </a>
           <a href="#food">Món &amp; thực đơn</a>
-          <span aria-disabled="true">Kịch bản tiệc</span>
+          <a href="#timeline">Kịch bản tiệc</a>
           <span aria-disabled="true">Bố cục bàn</span>
         </nav>
         <Link className="catalog-back-link" href="/">
@@ -351,6 +352,9 @@ function ManagerVenueWorkspace({
           ) : null}
         </section>
         {supportsFood(gateway) ? <DishMenuPanel gateway={gateway} authorize={authorize} /> : null}
+        {supportsTimeline(gateway) ? (
+          <TimelinePanel gateway={gateway} authorize={authorize} />
+        ) : null}
       </main>
     </div>
   );
@@ -358,6 +362,12 @@ function ManagerVenueWorkspace({
 
 function supportsFood(gateway: VenueCatalogGateway | CatalogGateway): gateway is CatalogGateway {
   return 'loadFood' in gateway;
+}
+
+function supportsTimeline(
+  gateway: VenueCatalogGateway | CatalogGateway,
+): gateway is CatalogGateway {
+  return 'loadTimelines' in gateway;
 }
 
 function RestaurantForm({
