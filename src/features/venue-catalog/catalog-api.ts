@@ -766,21 +766,48 @@ export function createVenueCatalogGateway(client?: ApiClient): CatalogGateway {
           }
         }
       };
-      const normalizeVersions = <T extends { readonly id: string; readonly versions: ArrayLike<{
-        readonly id: string;
-        readonly name: string;
-        readonly revision: number;
-        readonly state: 'DRAFT' | 'PUBLISHED' | 'SUPERSEDED';
-        readonly versionNumber: number | null;
-      }> }>(items: ArrayLike<T>) =>
+      const normalizeVersions = <
+        T extends {
+          readonly id: string;
+          readonly versions: ArrayLike<{
+            readonly id: string;
+            readonly name: string;
+            readonly revision: number;
+            readonly state: 'DRAFT' | 'PUBLISHED' | 'SUPERSEDED';
+            readonly versionNumber: number | null;
+          }>;
+        },
+      >(
+        items: ArrayLike<T>,
+      ) =>
         Array.from(items, (aggregate) => ({
           id: aggregate.id,
           versions: Array.from(aggregate.versions, (version) => ({ ...version })),
         }));
-      appendVersions(normalizeVersions(required(dishes.data, 'Media dish read').data.items), 'dish-versions', 'DISH_VERSION', 'Món');
-      appendVersions(normalizeVersions(required(menus.data, 'Media menu read').data.items), 'menu-package-versions', 'MENU_PACKAGE_VERSION', 'Thực đơn');
-      appendVersions(normalizeVersions(required(timelines.data, 'Media timeline read').data.items), 'timeline-template-versions', 'TIMELINE_TEMPLATE_VERSION', 'Kịch bản');
-      appendVersions(normalizeVersions(required(layouts.data, 'Media layout read').data.items), 'layout-template-versions', 'LAYOUT_TEMPLATE_VERSION', 'Bố trí');
+      appendVersions(
+        normalizeVersions(required(dishes.data, 'Media dish read').data.items),
+        'dish-versions',
+        'DISH_VERSION',
+        'Món',
+      );
+      appendVersions(
+        normalizeVersions(required(menus.data, 'Media menu read').data.items),
+        'menu-package-versions',
+        'MENU_PACKAGE_VERSION',
+        'Thực đơn',
+      );
+      appendVersions(
+        normalizeVersions(required(timelines.data, 'Media timeline read').data.items),
+        'timeline-template-versions',
+        'TIMELINE_TEMPLATE_VERSION',
+        'Kịch bản',
+      );
+      appendVersions(
+        normalizeVersions(required(layouts.data, 'Media layout read').data.items),
+        'layout-template-versions',
+        'LAYOUT_TEMPLATE_VERSION',
+        'Bố trí',
+      );
       return resources;
     },
 

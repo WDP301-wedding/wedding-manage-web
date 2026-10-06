@@ -3,6 +3,7 @@
 import { type FormEvent, type ReactNode, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 
+import apiContractLock from '../../../api-contract.lock.json';
 import { ApiClientError } from '../../lib/api/client';
 import { createIdentityApi, ManagementIdentitySession } from '../identity-access/session';
 import {
@@ -23,6 +24,7 @@ type Authorize = <T>(operation: (accessToken: string) => Promise<T>) => Promise<
 
 const catalogSession = new ManagementIdentitySession(createIdentityApi());
 const catalogGateway = createVenueCatalogGateway();
+const catalogContractDigest = apiContractLock.source.sha256.slice(0, 8);
 
 export function VenueCatalogPage() {
   const [state, setState] = useState<'loading' | 'manager' | 'staff' | 'anonymous'>('loading');
@@ -179,7 +181,7 @@ function ManagerVenueWorkspace({
           </div>
           <div className="catalog-contract-mark">
             <span>Contract lock</span>
-            <strong>e92c0b21</strong>
+            <strong>{catalogContractDigest}</strong>
           </div>
         </header>
 

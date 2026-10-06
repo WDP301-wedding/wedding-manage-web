@@ -80,8 +80,8 @@ export function LayoutPanel({
         <p className="section-kicker">Sức chứa &amp; hình học</p>
         <h2 id="layout-heading">Mẫu bố trí bàn</h2>
         <p>
-          Tọa độ chuẩn hóa giúp cùng một sơ đồ hiển thị nhất quán. Giá dịch vụ không được tính
-          theo khách tại đây.
+          Tọa độ chuẩn hóa giúp cùng một sơ đồ hiển thị nhất quán. Giá dịch vụ không được tính theo
+          khách tại đây.
         </p>
       </div>
       <PanelMessages error={error} message={message} />
@@ -100,7 +100,9 @@ export function LayoutPanel({
         }
       />
       {layouts.length === 0 ? (
-        <p className="catalog-empty">Chưa có mẫu bố trí. Tạo mẫu đầu tiên cho một sảnh hoạt động.</p>
+        <p className="catalog-empty">
+          Chưa có mẫu bố trí. Tạo mẫu đầu tiên cho một sảnh hoạt động.
+        </p>
       ) : (
         <div className="catalog-aggregate-list">
           {layouts.map((layout) => (
@@ -169,7 +171,11 @@ function CreateLayoutForm({
       <LayoutTextField label="Mô tả" name="description" />
       <LayoutNumberField label="Khách tối thiểu" name="minGuests" min={1} defaultValue={1} />
       <LayoutNumberField label="Khách tối đa" name="maxGuests" min={1} defaultValue={10} />
-      <button className="catalog-primary-button" type="submit" disabled={pending || halls.length === 0}>
+      <button
+        className="catalog-primary-button"
+        type="submit"
+        disabled={pending || halls.length === 0}
+      >
         Tạo với một bàn mẫu
       </button>
     </form>
@@ -203,7 +209,9 @@ function LayoutAggregate({
     <article className="catalog-aggregate">
       <header className="catalog-aggregate-header">
         <div>
-          <span className={`status ${layout.lifecycle === 'ACTIVE' ? 'status-ready' : 'status-retired'}`}>
+          <span
+            className={`status ${layout.lifecycle === 'ACTIVE' ? 'status-ready' : 'status-retired'}`}
+          >
             {layout.lifecycle === 'ACTIVE' ? 'Đang hoạt động' : 'Đã ngừng'}
           </span>
           <h3>{label}</h3>
@@ -330,7 +338,11 @@ function LayoutDraftEditor({
   };
 
   return (
-    <form className="catalog-draft-form layout-draft" aria-label={`Bản nháp ${version.name}`} onSubmit={submit}>
+    <form
+      className="catalog-draft-form layout-draft"
+      aria-label={`Bản nháp ${version.name}`}
+      onSubmit={submit}
+    >
       <div className="layout-draft-heading">
         <div>
           <span className="catalog-version-state">Bản nháp · revision {version.revision}</span>
@@ -338,15 +350,33 @@ function LayoutDraftEditor({
         </div>
         <div className="layout-metrics" aria-label="Ràng buộc bố trí">
           <span>Canvas 10.000 × 10.000</span>
-          <span>{totalSeats.toLocaleString('vi-VN')} / {hallMaximum.toLocaleString('vi-VN')} ghế</span>
-          <span>Khoảng khách {version.minGuests}–{version.maxGuests}</span>
+          <span>
+            {totalSeats.toLocaleString('vi-VN')} / {hallMaximum.toLocaleString('vi-VN')} ghế
+          </span>
+          <span>
+            Khoảng khách {version.minGuests}–{version.maxGuests}
+          </span>
         </div>
       </div>
       <div className="layout-meta-grid">
         <LayoutTextField label="Tên bố trí bản nháp" name="name" defaultValue={version.name} />
-        <LayoutTextField label="Mô tả bản nháp" name="description" defaultValue={version.description} />
-        <LayoutNumberField label="Khách tối thiểu" name="minGuests" min={1} defaultValue={version.minGuests} />
-        <LayoutNumberField label="Khách tối đa" name="maxGuests" min={1} defaultValue={version.maxGuests} />
+        <LayoutTextField
+          label="Mô tả bản nháp"
+          name="description"
+          defaultValue={version.description}
+        />
+        <LayoutNumberField
+          label="Khách tối thiểu"
+          name="minGuests"
+          min={1}
+          defaultValue={version.minGuests}
+        />
+        <LayoutNumberField
+          label="Khách tối đa"
+          name="maxGuests"
+          min={1}
+          defaultValue={version.maxGuests}
+        />
       </div>
       <LayoutCanvas tables={tables} />
       <div className="layout-table-list">
@@ -355,7 +385,9 @@ function LayoutDraftEditor({
             key={table.tableId}
             table={table}
             onChange={(next) =>
-              setTables((current) => current.map((item, itemIndex) => itemIndex === index ? next : item))
+              setTables((current) =>
+                current.map((item, itemIndex) => (itemIndex === index ? next : item)),
+              )
             }
             onRemove={() => {
               if (tables.length === 1) {
@@ -369,7 +401,12 @@ function LayoutDraftEditor({
         ))}
       </div>
       <div className="catalog-form-actions">
-        <button className="catalog-secondary-button" type="button" disabled={pending} onClick={addTable}>
+        <button
+          className="catalog-secondary-button"
+          type="button"
+          disabled={pending}
+          onClick={addTable}
+        >
           Thêm bàn với UUID mới
         </button>
         <button className="catalog-secondary-button" type="submit" disabled={pending}>
@@ -412,22 +449,71 @@ function TableEditor({
       <code title="Danh tính bàn ổn định">{table.tableId}</code>
       <label>
         <span>Nhãn bàn</span>
-        <input value={table.label} onChange={(event) => onChange({ ...table, label: event.currentTarget.value })} />
+        <input
+          value={table.label}
+          onChange={(event) => onChange({ ...table, label: event.currentTarget.value })}
+        />
       </label>
       <label>
         <span>Hình dạng</span>
-        <select value={table.shape} onChange={(event) => onChange({ ...table, shape: event.currentTarget.value as LayoutTableWrite['shape'] })}>
+        <select
+          value={table.shape}
+          onChange={(event) =>
+            onChange({ ...table, shape: event.currentTarget.value as LayoutTableWrite['shape'] })
+          }
+        >
           <option value="ROUND">Tròn</option>
           <option value="RECTANGLE">Chữ nhật</option>
         </select>
       </label>
-      <TableNumber label={`Số ghế ${table.label}`} value={table.seatCapacity} min={1} max={100} onChange={(value) => number('seatCapacity', value)} />
-      <TableNumber label={`Tọa độ X ${table.label}`} value={table.x} min={0} max={CANVAS_SIZE} onChange={(value) => number('x', value)} />
-      <TableNumber label={`Tọa độ Y ${table.label}`} value={table.y} min={0} max={CANVAS_SIZE} onChange={(value) => number('y', value)} />
-      <TableNumber label={`Chiều rộng ${table.label}`} value={table.width} min={1} max={CANVAS_SIZE} onChange={(value) => number('width', value)} />
-      <TableNumber label={`Chiều cao ${table.label}`} value={table.height} min={1} max={CANVAS_SIZE} onChange={(value) => number('height', value)} />
-      <TableNumber label={`Góc xoay ${table.label}`} value={table.rotationDegrees} min={0} max={359} onChange={(value) => number('rotationDegrees', value)} />
-      <button type="button" className="catalog-danger-button" onClick={onRemove} aria-label={`Bỏ và ngừng vĩnh viễn ${table.label}`}>
+      <TableNumber
+        label={`Số ghế ${table.label}`}
+        value={table.seatCapacity}
+        min={1}
+        max={100}
+        onChange={(value) => number('seatCapacity', value)}
+      />
+      <TableNumber
+        label={`Tọa độ X ${table.label}`}
+        value={table.x}
+        min={0}
+        max={CANVAS_SIZE}
+        onChange={(value) => number('x', value)}
+      />
+      <TableNumber
+        label={`Tọa độ Y ${table.label}`}
+        value={table.y}
+        min={0}
+        max={CANVAS_SIZE}
+        onChange={(value) => number('y', value)}
+      />
+      <TableNumber
+        label={`Chiều rộng ${table.label}`}
+        value={table.width}
+        min={1}
+        max={CANVAS_SIZE}
+        onChange={(value) => number('width', value)}
+      />
+      <TableNumber
+        label={`Chiều cao ${table.label}`}
+        value={table.height}
+        min={1}
+        max={CANVAS_SIZE}
+        onChange={(value) => number('height', value)}
+      />
+      <TableNumber
+        label={`Góc xoay ${table.label}`}
+        value={table.rotationDegrees}
+        min={0}
+        max={359}
+        onChange={(value) => number('rotationDegrees', value)}
+      />
+      <button
+        type="button"
+        className="catalog-danger-button"
+        onClick={onRemove}
+        aria-label={`Bỏ và ngừng vĩnh viễn ${table.label}`}
+      >
         Bỏ &amp; ngừng UUID
       </button>
     </fieldset>
@@ -476,10 +562,13 @@ function LayoutVersionSummary({
     <div className="catalog-version-row layout-version-summary">
       <div>
         <span className="catalog-version-state">
-          {version.state === 'PUBLISHED' ? 'Đã công bố' : 'Đã thay thế'} · v{version.versionNumber ?? '—'}
+          {version.state === 'PUBLISHED' ? 'Đã công bố' : 'Đã thay thế'} · v
+          {version.versionNumber ?? '—'}
         </span>
         <strong>{version.name}</strong>
-        <small>{version.totalSeatCapacity} ghế · {version.tables.length} bàn · chỉ đọc</small>
+        <small>
+          {version.totalSeatCapacity} ghế · {version.tables.length} bàn · chỉ đọc
+        </small>
       </div>
       {canClone ? (
         <button
@@ -504,7 +593,11 @@ function LayoutVersionSummary({
   );
 }
 
-function LayoutTextField({ label, name, defaultValue = '' }: Readonly<{ label: string; name: string; defaultValue?: string }>) {
+function LayoutTextField({
+  label,
+  name,
+  defaultValue = '',
+}: Readonly<{ label: string; name: string; defaultValue?: string }>) {
   const id = `layout-${name}-${label.replaceAll(/\s+/gu, '-').toLocaleLowerCase('vi-VN')}`;
   return (
     <label className="catalog-field" htmlFor={id}>
@@ -514,7 +607,12 @@ function LayoutTextField({ label, name, defaultValue = '' }: Readonly<{ label: s
   );
 }
 
-function LayoutNumberField({ label, name, min, defaultValue }: Readonly<{ label: string; name: string; min: number; defaultValue: number }>) {
+function LayoutNumberField({
+  label,
+  name,
+  min,
+  defaultValue,
+}: Readonly<{ label: string; name: string; min: number; defaultValue: number }>) {
   return (
     <label className="catalog-field">
       <span>{label}</span>
@@ -523,20 +621,51 @@ function LayoutNumberField({ label, name, min, defaultValue }: Readonly<{ label:
   );
 }
 
-function TableNumber({ label, max, min, onChange, value }: Readonly<{ label: string; max: number; min: number; onChange: (value: string) => void; value: number }>) {
+function TableNumber({
+  label,
+  max,
+  min,
+  onChange,
+  value,
+}: Readonly<{
+  label: string;
+  max: number;
+  min: number;
+  onChange: (value: string) => void;
+  value: number;
+}>) {
   return (
     <label>
       <span>{label}</span>
-      <input aria-label={label} type="number" min={min} max={max} step={1} value={value} onChange={(event) => onChange(event.currentTarget.value)} />
+      <input
+        aria-label={label}
+        type="number"
+        min={min}
+        max={max}
+        step={1}
+        value={value}
+        onChange={(event) => onChange(event.currentTarget.value)}
+      />
     </label>
   );
 }
 
-function PanelMessages({ error, message }: Readonly<{ error: string | null; message: string | null }>) {
+function PanelMessages({
+  error,
+  message,
+}: Readonly<{ error: string | null; message: string | null }>) {
   return (
     <div className="catalog-panel-messages" aria-live="polite">
-      {message === null ? null : <p className="catalog-success" role="status">{message}</p>}
-      {error === null ? null : <p className="catalog-error" role="alert">{error}</p>}
+      {message === null ? null : (
+        <p className="catalog-success" role="status">
+          {message}
+        </p>
+      )}
+      {error === null ? null : (
+        <p className="catalog-error" role="alert">
+          {error}
+        </p>
+      )}
     </div>
   );
 }
@@ -547,7 +676,17 @@ function validateLayout(
   range: Readonly<{ minGuests: number; maxGuests: number }>,
 ): string | null {
   if (tables.length === 0) return 'Mỗi bố trí cần ít nhất một bàn.';
-  if (tables.some(({ x, y, width, height }) => x < 0 || y < 0 || width < 1 || height < 1 || x + width > CANVAS_SIZE || y + height > CANVAS_SIZE)) {
+  if (
+    tables.some(
+      ({ x, y, width, height }) =>
+        x < 0 ||
+        y < 0 ||
+        width < 1 ||
+        height < 1 ||
+        x + width > CANVAS_SIZE ||
+        y + height > CANVAS_SIZE,
+    )
+  ) {
     return 'Một bàn vượt biên canvas 10.000 × 10.000. Hãy chỉnh tọa độ hoặc kích thước.';
   }
   const seats = tables.reduce((total, table) => total + table.seatCapacity, 0);
@@ -585,7 +724,10 @@ function integer(data: FormData, name: string): number {
 function layoutErrorMessage(error: unknown): string {
   if (error instanceof ApiClientError) {
     if (error.status === 409) return 'Bố trí đã thay đổi. Hãy tải lại lịch sử trước khi thử lại.';
-    if (error.status === 422) return error.details?.map(({ message }) => message).join(' ') || 'Dữ liệu bố trí chưa hợp lệ.';
+    if (error.status === 422)
+      return (
+        error.details?.map(({ message }) => message).join(' ') || 'Dữ liệu bố trí chưa hợp lệ.'
+      );
     if (error.status === 403 || error.status === 404) return 'Máy chủ từ chối thao tác bố trí này.';
   }
   return 'Không thể hoàn tất thao tác bố trí.';

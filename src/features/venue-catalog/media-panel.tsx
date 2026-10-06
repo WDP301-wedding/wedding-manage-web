@@ -4,11 +4,7 @@ import Image from 'next/image';
 import { type FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { ApiClientError } from '../../lib/api/client';
-import type {
-  CatalogGateway,
-  CatalogMedia,
-  CatalogMediaResource,
-} from './catalog-api';
+import type { CatalogGateway, CatalogMedia, CatalogMediaResource } from './catalog-api';
 
 type Authorize = <T>(operation: (accessToken: string) => Promise<T>) => Promise<T>;
 
@@ -17,7 +13,7 @@ export function MediaPanel({
   gateway,
 }: Readonly<{ authorize: Authorize; gateway: CatalogGateway }>) {
   const [resources, setResources] = useState<readonly CatalogMediaResource[]>([]);
-  const [selectedId, setSelectedId] = useState('');
+  const [selectedKey, setSelectedKey] = useState('');
   const [assets, setAssets] = useState<readonly CatalogMedia[]>([]);
   const [loading, setLoading] = useState(true);
   const [pending, setPending] = useState(false);
@@ -25,8 +21,8 @@ export function MediaPanel({
   const [error, setError] = useState<string | null>(null);
 
   const selected = useMemo(
-    () => resources.find(({ id }) => id === selectedId) ?? resources[0],
-    [resources, selectedId],
+    () => resources.find((resource) => mediaResourceKey(resource) === selectedKey) ?? resources[0],
+    [resources, selectedKey],
   );
 
   const loadAssets = useCallback(
@@ -40,18 +36,20 @@ export function MediaPanel({
   );
 
   const load = useCallback(
-    async (preferredId?: string) => {
+    async (preferredKey?: string) => {
       setLoading(true);
       setError(null);
       try {
         const nextResources = await authorize((token) => gateway.loadMediaResources(token));
         setResources(nextResources);
-        const next = nextResources.find(({ id }) => id === preferredId) ?? nextResources[0];
+        const next =
+          nextResources.find((resource) => mediaResourceKey(resource) === preferredKey) ??
+          nextResources[0];
         if (next === undefined) {
-          setSelectedId('');
+          setSelectedKey('');
           setAssets([]);
         } else {
-          setSelectedId(next.id);
+          setSelectedKey(mediaResourceKey(next));
           await loadAssets(next);
         }
       } catch (caught) {
@@ -69,8 +67,14 @@ export function MediaPanel({
 
   useEffect(() => {
     if (selected === undefined || assets.length === 0) return;
-    const minimumTtl = Math.min(...assets.map(({ signedUrlExpiresInSeconds }) => signedUrlExpiresInSeconds));
-    const timeout = setTimeout(() => void loadAssets(selected), Math.max(1, minimumTtl - 30) * 1000);
+    const minimumTtl = Math.min(
+      ...assets.map(({ signedUrlExpiresInSeconds }) => signedUrlExpiresInSeconds),
+    );
+    const timeout = setTimeout(
+      () =>
+        void loadAssets(selected).catch((caught: unknown) => setError(mediaErrorMessage(caught))),
+      Math.max(1, minimumTtl - 30) * 1000,
+    );
     return () => clearTimeout(timeout);
   }, [assets, loadAssets, selected]);
 
@@ -82,7 +86,7 @@ export function MediaPanel({
     try {
       await authorize(operation);
       setMessage(success);
-      await load(selected.id);
+      await load(mediaResourceKey(selected));
       return true;
     } catch (caught) {
       setError(mediaErrorMessage(caught));
@@ -92,10 +96,10 @@ export function MediaPanel({
     }
   };
 
-  const chooseResource = (resourceId: string) => {
-    const resource = resources.find(({ id }) => id === resourceId);
+  const chooseResource = (resourceKey: string) => {
+    const resource = resources.find((candidate) => mediaResourceKey(candidate) === resourceKey);
     if (resource === undefined) return;
-    setSelectedId(resource.id);
+    setSelectedKey(mediaResourceKey(resource));
     setLoading(true);
     setError(null);
     void loadAssets(resource)
@@ -134,13 +138,13 @@ export function MediaPanel({
         <label className="catalog-field">
           <span>Tài nguyên danh mục</span>
           <select
-            value={selected?.id ?? ''}
+            value={selected === undefined ? '' : mediaResourceKey(selected)}
             onChange={(event) => chooseResource(event.currentTarget.value)}
             disabled={loading || resources.length === 0}
           >
             {resources.length === 0 ? <option value="">Chưa có tài nguyên</option> : null}
             {resources.map((resource) => (
-              <option key={`${resource.path}:${resource.id}`} value={resource.id}>
+              <option key={mediaResourceKey(resource)} value={mediaResourceKey(resource)}>
                 {resource.label}
               </option>
             ))}
@@ -150,7 +154,13 @@ export function MediaPanel({
           className="catalog-secondary-button"
           type="button"
           disabled={selected === undefined || loading}
-          onClick={() => selected === undefined ? undefined : void loadAssets(selected).catch((caught: unknown) => setError(mediaErrorMessage(caught)))}
+          onClick={() =>
+            selected === undefined
+              ? undefined
+              : void loadAssets(selected).catch((caught: unknown) =>
+                  setError(mediaErrorMessage(caught)),
+                )
+          }
         >
           Làm mới URL ký số
         </button>
@@ -176,7 +186,9 @@ export function MediaPanel({
                 </div>
                 <div className="media-card-copy">
                   <strong>{asset.alternativeText}</strong>
-                  <span>{formatBytes(asset.sizeBytes)} · {asset.contentType}</span>
+                  <span>
+                    {formatBytes(asset.sizeBytes)} · {asset.contentType}
+                  </span>
                   <small>URL ký số · {formatTtl(asset.signedUrlExpiresInSeconds)}</small>
                 </div>
                 <div className="media-order-actions">
@@ -201,19 +213,23 @@ export function MediaPanel({
             ))}
           </ol>
           {!selected.mutableOrder && assets.length > 1 ? (
-            <p className="catalog-help">Phiên bản lịch sử là chỉ đọc; thứ tự ảnh được giữ nguyên.</p>
+            <p className="catalog-help">
+              Phiên bản lịch sử là chỉ đọc; thứ tự ảnh được giữ nguyên.
+            </p>
           ) : null}
           <MediaUploadForm
             assets={assets}
             pending={pending}
             onSubmit={(input) =>
-              run(input.oldAssetId === undefined ? 'Đã tải ảnh lên.' : 'Đã thay thế ảnh.', (token) =>
-                gateway.uploadMedia(token, {
-                  ...input,
-                  assetId: crypto.randomUUID(),
-                  resourceType: selected.type,
-                  resourceId: selected.id,
-                }),
+              run(
+                input.oldAssetId === undefined ? 'Đã tải ảnh lên.' : 'Đã thay thế ảnh.',
+                (token) =>
+                  gateway.uploadMedia(token, {
+                    ...input,
+                    assetId: crypto.randomUUID(),
+                    resourceType: selected.type,
+                    resourceId: selected.id,
+                  }),
               )
             }
           />
@@ -229,7 +245,9 @@ function MediaUploadForm({
   pending,
 }: Readonly<{
   assets: readonly CatalogMedia[];
-  onSubmit: (input: Readonly<{ file: File; alternativeText: string; oldAssetId?: string }>) => Promise<boolean>;
+  onSubmit: (
+    input: Readonly<{ file: File; alternativeText: string; oldAssetId?: string }>,
+  ) => Promise<boolean>;
   pending: boolean;
 }>) {
   const [localError, setLocalError] = useState<string | null>(null);
@@ -266,12 +284,20 @@ function MediaUploadForm({
     });
   };
   return (
-    <form className="catalog-editor media-upload-form" aria-label="Tải ảnh danh mục" onSubmit={submit}>
+    <form
+      className="catalog-editor media-upload-form"
+      aria-label="Tải ảnh danh mục"
+      onSubmit={submit}
+    >
       <div className="catalog-editor-heading">
         <span className="section-kicker">JPEG · PNG · WebP, tối đa 10 MB</span>
         <h3>Tải lên hoặc thay thế ảnh</h3>
       </div>
-      {localError === null ? null : <p className="catalog-error" role="alert">{localError}</p>}
+      {localError === null ? null : (
+        <p className="catalog-error" role="alert">
+          {localError}
+        </p>
+      )}
       <label className="catalog-field">
         <span>Ảnh JPEG, PNG hoặc WebP</span>
         <input
@@ -304,11 +330,22 @@ function MediaUploadForm({
   );
 }
 
-function PanelMessages({ error, message }: Readonly<{ error: string | null; message: string | null }>) {
+function PanelMessages({
+  error,
+  message,
+}: Readonly<{ error: string | null; message: string | null }>) {
   return (
     <div className="catalog-panel-messages" aria-live="polite">
-      {message === null ? null : <p className="catalog-success" role="status">{message}</p>}
-      {error === null ? null : <p className="catalog-error" role="alert">{error}</p>}
+      {message === null ? null : (
+        <p className="catalog-success" role="status">
+          {message}
+        </p>
+      )}
+      {error === null ? null : (
+        <p className="catalog-error" role="alert">
+          {error}
+        </p>
+      )}
     </div>
   );
 }
@@ -316,6 +353,10 @@ function PanelMessages({ error, message }: Readonly<{ error: string | null; mess
 function value(data: FormData, name: string): string {
   const item = data.get(name);
   return typeof item === 'string' ? item.trim() : '';
+}
+
+function mediaResourceKey(resource: Pick<CatalogMediaResource, 'path' | 'id'>): string {
+  return `${resource.path}:${resource.id}`;
 }
 
 function formatBytes(bytes: number): string {
@@ -334,8 +375,12 @@ function mediaErrorMessage(error: unknown): string {
       return 'Nhà cung cấp lưu trữ đang gián đoạn. Ảnh chưa được thay đổi; hãy thử lại.';
     }
     if (error.status === 409) return 'Thư viện đã thay đổi ở phiên khác. Hãy tải lại rồi thử lại.';
-    if (error.status === 422) return error.details?.map(({ message }) => message).join(' ') || 'Ảnh hoặc mô tả chưa hợp lệ.';
-    if (error.status === 403 || error.status === 404) return 'Máy chủ từ chối tài nguyên media này.';
+    if (error.status === 422)
+      return (
+        error.details?.map(({ message }) => message).join(' ') || 'Ảnh hoặc mô tả chưa hợp lệ.'
+      );
+    if (error.status === 403 || error.status === 404)
+      return 'Máy chủ từ chối tài nguyên media này.';
   }
   return 'Không thể tải thư viện ảnh. Hãy thử lại.';
 }

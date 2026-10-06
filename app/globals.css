@@ -1818,6 +1818,8 @@ td span:not(.status) {
 
   .catalog-sidebar {
     position: static;
+    width: 100%;
+    min-width: 0;
     height: auto;
     padding: 18px;
     flex-direction: row;
@@ -1827,6 +1829,8 @@ td span:not(.status) {
 
   .catalog-sidebar nav {
     display: flex;
+    min-width: 0;
+    flex: 1;
     overflow-x: auto;
     margin: 0;
   }
@@ -1841,6 +1845,7 @@ td span:not(.status) {
   }
 
   .catalog-main {
+    width: 100%;
     padding: 28px 18px 46px;
   }
 
@@ -2002,7 +2007,8 @@ td span:not(.status) {
   border: 1px solid #d8ddd8;
   border-radius: 0.75rem;
   background-color: #fafbf8;
-  background-image: linear-gradient(#e9ece8 1px, transparent 1px),
+  background-image:
+    linear-gradient(#e9ece8 1px, transparent 1px),
     linear-gradient(90deg, #e9ece8 1px, transparent 1px);
   background-size: 10% 10%;
 }

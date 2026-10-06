@@ -70,6 +70,35 @@ describe('VC-22 shared catalog media', () => {
     await waitFor(() => expect(loadMedia).toHaveBeenCalledTimes(2));
   });
 
+  it('keeps resources distinct when different resource types share the same UUID', async () => {
+    const restaurant = {
+      ...resource,
+      path: 'restaurant' as const,
+      type: 'RESTAURANT' as const,
+      label: 'Nhà hàng · Wedding Estate',
+    };
+    const loadMedia = vi.fn(() => Promise.resolve(assets));
+    render(
+      <MediaPanel
+        gateway={gateway({
+          loadMediaResources: vi.fn(() => Promise.resolve([resource, restaurant])),
+          loadMedia,
+        })}
+        authorize={authorize}
+      />,
+    );
+
+    const picker = await screen.findByLabelText('Tài nguyên danh mục');
+    fireEvent.change(picker, { target: { value: `restaurant:${resourceId}` } });
+
+    await waitFor(() =>
+      expect(loadMedia).toHaveBeenLastCalledWith('manager-token', {
+        path: 'restaurant',
+        id: resourceId,
+      }),
+    );
+  });
+
   it('uploads or replaces an allowlisted image with required alternative text', async () => {
     const uploadMedia = vi.fn(() => Promise.resolve());
     render(<MediaPanel gateway={gateway({ uploadMedia })} authorize={authorize} />);
@@ -97,6 +126,23 @@ describe('VC-22 shared catalog media', () => {
         }),
       ),
     );
+  });
+
+  it('rejects a non-image upload before calling the generated operation', async () => {
+    const uploadMedia = vi.fn(() => Promise.resolve());
+    render(<MediaPanel gateway={gateway({ uploadMedia })} authorize={authorize} />);
+
+    const form = await screen.findByRole('form', { name: 'Tải ảnh danh mục' });
+    fireEvent.change(within(form).getByLabelText('Ảnh JPEG, PNG hoặc WebP'), {
+      target: { files: [new File(['plain text'], 'notes.txt', { type: 'text/plain' })] },
+    });
+    fireEvent.change(within(form).getByLabelText('Văn bản thay thế'), {
+      target: { value: 'Tệp không hợp lệ' },
+    });
+    fireEvent.submit(form);
+
+    expect(await within(form).findByRole('alert')).toHaveTextContent('Chỉ chấp nhận ảnh');
+    expect(uploadMedia).not.toHaveBeenCalled();
   });
 
   it('reorders by labeled keyboard controls and presents provider errors as recoverable', async () => {

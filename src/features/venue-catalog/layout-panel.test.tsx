@@ -102,7 +102,7 @@ function gateway(overrides: Record<string, unknown> = {}): CatalogGateway {
 
 describe('VC-21 layout template editor', () => {
   it('shows capacity and canvas constraints and preserves a table UUID during numeric edits', async () => {
-    const updateLayoutDraft = vi.fn(() => Promise.resolve());
+    const updateLayoutDraft = vi.fn<CatalogGateway['updateLayoutDraft']>(() => Promise.resolve());
     render(<LayoutPanel gateway={gateway({ updateLayoutDraft })} authorize={authorize} />);
 
     expect(await screen.findByText('Canvas 10.000 × 10.000')).toBeVisible();
@@ -115,15 +115,11 @@ describe('VC-21 layout template editor', () => {
     });
     fireEvent.click(within(editor).getByRole('button', { name: 'Lưu bố trí nháp' }));
 
-    await waitFor(() =>
-      expect(updateLayoutDraft).toHaveBeenCalledWith(
-        'manager-token',
-        expect.objectContaining({
-          versionId,
-          expectedRevision: 4,
-          tables: expect.arrayContaining([expect.objectContaining({ tableId, x: 700 })]),
-        }),
-      ),
+    await waitFor(() => expect(updateLayoutDraft).toHaveBeenCalled());
+    const updateInput = updateLayoutDraft.mock.calls[0]?.[1];
+    expect(updateInput).toMatchObject({ versionId, expectedRevision: 4 });
+    expect(updateInput?.tables).toEqual(
+      expect.arrayContaining([expect.objectContaining({ tableId, x: 700 })]),
     );
   });
 
