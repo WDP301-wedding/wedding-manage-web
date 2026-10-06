@@ -16,6 +16,7 @@ import {
 } from './catalog-api';
 import { DishMenuPanel } from './dish-menu-panel';
 import { LayoutPanel } from './layout-panel';
+import { MediaPanel } from './media-panel';
 import { TimelinePanel } from './timeline-panel';
 
 type Authorize = <T>(operation: (accessToken: string) => Promise<T>) => Promise<T>;
@@ -357,6 +358,7 @@ function ManagerVenueWorkspace({
           <TimelinePanel gateway={gateway} authorize={authorize} />
         ) : null}
         {supportsLayout(gateway) ? <LayoutPanel gateway={gateway} authorize={authorize} /> : null}
+        {supportsMedia(gateway) ? <MediaPanel gateway={gateway} authorize={authorize} /> : null}
       </main>
     </div>
   );
@@ -374,6 +376,10 @@ function supportsTimeline(
 
 function supportsLayout(gateway: VenueCatalogGateway | CatalogGateway): gateway is CatalogGateway {
   return 'loadLayouts' in gateway;
+}
+
+function supportsMedia(gateway: VenueCatalogGateway | CatalogGateway): gateway is CatalogGateway {
+  return 'loadMediaResources' in gateway;
 }
 
 function RestaurantForm({
