@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ApiClientError } from '../../lib/api/client';
 import { createIdentityApi, ManagementIdentitySession } from '../identity-access/session';
 import {
+  type CatalogGateway,
   createVenueCatalogGateway,
   type CatalogHall,
   type ManagerRestaurant,
@@ -13,6 +14,7 @@ import {
   type VenueCatalogGateway,
   type VenueCatalogSnapshot,
 } from './catalog-api';
+import { DishMenuPanel } from './dish-menu-panel';
 
 type Authorize = <T>(operation: (accessToken: string) => Promise<T>) => Promise<T>;
 
@@ -77,7 +79,7 @@ export function VenueCatalogWorkspace({
 function ManagerVenueWorkspace({
   authorize,
   gateway,
-}: Readonly<{ authorize: Authorize; gateway: VenueCatalogGateway }>) {
+}: Readonly<{ authorize: Authorize; gateway: VenueCatalogGateway | CatalogGateway }>) {
   const [snapshot, setSnapshot] = useState<VenueCatalogSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [pending, setPending] = useState(false);
@@ -157,7 +159,7 @@ function ManagerVenueWorkspace({
           <a aria-current="page" href="#venue">
             Nhà hàng &amp; sảnh
           </a>
-          <span aria-disabled="true">Món &amp; thực đơn</span>
+          <a href="#food">Món &amp; thực đơn</a>
           <span aria-disabled="true">Kịch bản tiệc</span>
           <span aria-disabled="true">Bố cục bàn</span>
         </nav>
@@ -348,9 +350,14 @@ function ManagerVenueWorkspace({
             />
           ) : null}
         </section>
+        {supportsFood(gateway) ? <DishMenuPanel gateway={gateway} authorize={authorize} /> : null}
       </main>
     </div>
   );
+}
+
+function supportsFood(gateway: VenueCatalogGateway | CatalogGateway): gateway is CatalogGateway {
+  return 'loadFood' in gateway;
 }
 
 function RestaurantForm({
