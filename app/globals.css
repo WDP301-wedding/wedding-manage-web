@@ -20,6 +20,7 @@
   --font-body: 'Be Vietnam Pro', 'Segoe UI', Arial, sans-serif;
   --font-script: 'Be Vietnam Pro', 'Segoe UI', Arial, sans-serif;
   --font-wordmark: Lora, Georgia, 'Times New Roman', serif;
+  --font-code: ui-monospace, SFMono-Regular, Consolas, monospace;
   color-scheme: light;
 }
 
@@ -50,13 +51,15 @@
 .booking-workspace h2,
 .proposal-layout h3 {
   margin: 0;
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: var(--font-display);
   font-weight: 500;
+  line-height: 1.3;
 }
 
 .booking-header h1 {
-  font-size: clamp(2rem, 4vw, 3.8rem);
-  letter-spacing: -0.04em;
+  font-size: clamp(2rem, 4vw, 3.5rem);
+  letter-spacing: normal;
+  text-wrap: balance;
 }
 
 .booking-header p:not(.section-kicker) {
@@ -75,8 +78,8 @@
   color: #334537;
   font-size: 0.75rem;
   font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  letter-spacing: normal;
+  text-transform: none;
 }
 
 .booking-header nav a[aria-current='page'] {
@@ -122,7 +125,7 @@
   top: 1.25rem;
   right: 1.25rem;
   color: #c5a880;
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: var(--font-display);
   font-size: 1.5rem;
 }
 
@@ -141,8 +144,8 @@
   color: #334537;
   font-size: 0.75rem;
   font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  letter-spacing: normal;
+  text-transform: none;
 }
 
 .booking-card input,
@@ -182,8 +185,8 @@
   border-radius: 2px;
   font-size: 0.75rem;
   font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  letter-spacing: normal;
+  text-transform: none;
   cursor: pointer;
 }
 
@@ -268,7 +271,7 @@
   color: #8c6d52;
   font-size: 0.72rem;
   font-weight: 800;
-  letter-spacing: 0.08em;
+  letter-spacing: normal;
 }
 
 .proposal-summary h3,
@@ -483,7 +486,7 @@ button {
   font-family: var(--font-display);
   font-size: 12px;
   font-weight: 400;
-  letter-spacing: 0.18em;
+  letter-spacing: normal;
 }
 
 .admin-brand small {
@@ -492,7 +495,7 @@ button {
   color: var(--gold-soft);
   font-family: var(--font-script);
   font-size: 10px;
-  letter-spacing: 0;
+  letter-spacing: normal;
 }
 
 .admin-brand-mark {
@@ -505,7 +508,7 @@ button {
   border-radius: 50%;
   font-family: var(--font-display);
   font-size: 19px;
-  letter-spacing: 0;
+  letter-spacing: normal;
 }
 
 .admin-navigation {
@@ -524,7 +527,7 @@ button {
   border-left: 2px solid transparent;
   font-size: 12px;
   font-weight: 600;
-  letter-spacing: 0.04em;
+  letter-spacing: normal;
   text-decoration: none;
   transition:
     color 150ms ease,
@@ -662,8 +665,8 @@ button {
   color: var(--navy);
   font-size: 9px;
   font-weight: 700;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
+  letter-spacing: normal;
+  text-transform: none;
 }
 
 .dashboard-header h1 {
@@ -672,8 +675,8 @@ button {
   font-family: var(--font-display);
   font-size: clamp(38px, 4vw, 56px);
   font-weight: 400;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
+  letter-spacing: normal;
+  text-transform: none;
 }
 
 .create-event-action {
@@ -686,9 +689,9 @@ button {
   background: var(--navy);
   font-family: var(--font-display);
   font-size: 11px;
-  letter-spacing: 0.06em;
+  letter-spacing: normal;
   text-decoration: none;
-  text-transform: uppercase;
+  text-transform: none;
 }
 
 .create-event-action:hover,
@@ -723,8 +726,8 @@ button {
   color: var(--gold-soft);
   font-size: 9px;
   font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  letter-spacing: normal;
+  text-transform: none;
 }
 
 .estate-showcase-copy strong {
@@ -732,8 +735,8 @@ button {
   font-family: var(--font-display);
   font-size: 28px;
   font-weight: 400;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  letter-spacing: normal;
+  text-transform: none;
 }
 
 .estate-showcase-copy p {
@@ -774,8 +777,8 @@ button {
   color: var(--navy);
   font-size: 9px;
   font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  letter-spacing: normal;
+  text-transform: none;
 }
 
 .metrics-strip strong {
@@ -838,8 +841,8 @@ button {
   font-family: var(--font-display);
   font-size: 21px;
   font-weight: 400;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  letter-spacing: normal;
+  text-transform: none;
 }
 
 .section-heading > a {
@@ -867,9 +870,9 @@ th {
   font-family: var(--font-display);
   font-size: 9px;
   font-weight: 400;
-  letter-spacing: 0.08em;
+  letter-spacing: normal;
   text-align: left;
-  text-transform: uppercase;
+  text-transform: none;
 }
 
 td {
@@ -1077,7 +1080,7 @@ td span:not(.status) {
   font-family: var(--font-display);
   font-size: clamp(42px, 5vw, 70px);
   font-weight: 400;
-  line-height: 1.04;
+  line-height: 1.3;
   letter-spacing: normal;
   text-transform: none;
 }
@@ -1156,8 +1159,8 @@ td span:not(.status) {
   cursor: pointer;
   font-family: var(--font-display);
   font-size: 12px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  letter-spacing: normal;
+  text-transform: none;
 }
 
 .primary-button:hover,
@@ -1509,8 +1512,8 @@ td span:not(.status) {
   font-family: var(--font-display);
   font-size: clamp(34px, 4vw, 52px);
   font-weight: 400;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
+  letter-spacing: normal;
+  text-transform: none;
 }
 
 .catalog-contract-mark {
@@ -1526,12 +1529,12 @@ td span:not(.status) {
 .catalog-contract-mark span {
   font-size: 9px;
   font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  letter-spacing: normal;
+  text-transform: none;
 }
 
 .catalog-contract-mark strong {
-  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-family: var(--font-code);
   font-size: 13px;
 }
 
@@ -1581,8 +1584,8 @@ td span:not(.status) {
   font-family: var(--font-display);
   font-size: 22px;
   font-weight: 400;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
+  letter-spacing: normal;
+  text-transform: none;
 }
 
 .catalog-form-grid {
@@ -1658,9 +1661,9 @@ td span:not(.status) {
   cursor: pointer;
   font-family: var(--font-display);
   font-size: 11px;
-  letter-spacing: 0.06em;
+  letter-spacing: normal;
   text-decoration: none;
-  text-transform: uppercase;
+  text-transform: none;
 }
 
 .catalog-primary-button,
@@ -1862,8 +1865,8 @@ td span:not(.status) {
   color: var(--brown);
   font-family: var(--font-display);
   font-weight: 400;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
+  letter-spacing: normal;
+  text-transform: none;
 }
 
 .catalog-editor-heading h3 {
@@ -2013,8 +2016,8 @@ td span:not(.status) {
   color: var(--navy);
   font-size: 9px;
   font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+  letter-spacing: normal;
+  text-transform: none;
 }
 
 .catalog-draft-form {
@@ -2063,8 +2066,8 @@ td span:not(.status) {
   font-family: var(--font-display);
   font-size: 20px;
   font-weight: 400;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
+  letter-spacing: normal;
+  text-transform: none;
 }
 
 .timeline-items {
@@ -2370,7 +2373,7 @@ td span:not(.status) {
 .layout-draft-heading h4 {
   margin: 0.35rem 0 0;
   color: var(--layout-ink);
-  font-family: var(--font-display), Georgia, serif;
+  font-family: var(--font-display);
 }
 
 .layout-metrics {
