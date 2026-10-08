@@ -1,8 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { type FormEvent, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { type FormEvent, useEffect, useLayoutEffect, useState } from 'react';
 
+import { PasswordResetOtpForm } from './password-reset-otp-form';
 import { ApiClientError } from '../../lib/api/client';
 import {
   consumeResetFragment,
@@ -19,7 +20,7 @@ const browserResetToken =
       );
 const browserSession = new ManagementIdentitySession(createIdentityApi());
 
-type AuthView = 'login' | 'reset-complete' | 'reset-request' | 'restoring';
+type AuthView = 'login' | 'reset-request' | 'restoring';
 
 type ManagementIdentityExperienceProps = Readonly<{
   session: ManagementIdentitySession;
@@ -46,16 +47,14 @@ export function ManagementIdentityExperience({
   const [snapshot, setSnapshot] = useState<ManagementSessionSnapshot>(() => session.snapshot());
   const [view, setView] = useState<AuthView>('restoring');
   const [pending, setPending] = useState(false);
-  const [resetConsumed, setResetConsumed] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const resetSubmitted = useRef(false);
 
   useEffect(() => {
     let active = true;
     if (initialResetToken !== null) {
       queueMicrotask(() => {
-        if (active) setView('reset-complete');
+        if (active) setView('reset-request');
       });
       return () => {
         active = false;
@@ -129,33 +128,6 @@ export function ManagementIdentityExperience({
     });
   };
 
-  const handleResetRequest = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    void run(async () => {
-      await session.requestPasswordReset(readField(form, 'email'));
-      setMessage('Nếu tài khoản đủ điều kiện, hướng dẫn đặt lại mật khẩu đã được gửi.');
-    });
-  };
-
-  const handleResetCompletion = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (resetSubmitted.current || initialResetToken === null) return;
-    const form = new FormData(event.currentTarget);
-    const password = readField(form, 'password');
-    if (password !== readField(form, 'passwordConfirmation')) {
-      setError('Hai mật khẩu chưa trùng khớp.');
-      return;
-    }
-    resetSubmitted.current = true;
-    setResetConsumed(true);
-    void run(async () => {
-      await session.completePasswordReset(initialResetToken, password);
-      setView('login');
-      setMessage('Mật khẩu đã được cập nhật. Hãy đăng nhập lại.');
-    });
-  };
-
   return (
     <main className="operations-auth-page">
       <section className="operations-auth-brand" aria-label="Wedding Estate Operations">
@@ -190,38 +162,14 @@ export function ManagementIdentityExperience({
           </AuthForm>
         ) : null}
         {view === 'reset-request' ? (
-          <AuthForm
-            title="Khôi phục mật khẩu"
-            submitLabel="Gửi hướng dẫn"
-            pending={pending}
-            onSubmit={handleResetRequest}
-          >
-            <Field label="Email công việc" name="email" type="email" autoComplete="email" />
-          </AuthForm>
+          <PasswordResetOtpForm
+            onCompleted={() => {
+              setView('login');
+              setMessage('Mật khẩu đã được cập nhật. Hãy đăng nhập lại.');
+            }}
+          />
         ) : null}
-        {view === 'reset-complete' ? (
-          <AuthForm
-            title="Đặt mật khẩu mới"
-            submitLabel="Cập nhật mật khẩu"
-            pending={pending || resetConsumed}
-            onSubmit={handleResetCompletion}
-          >
-            <Field
-              label="Mật khẩu mới"
-              name="password"
-              type="password"
-              minLength={12}
-              autoComplete="new-password"
-            />
-            <Field
-              label="Xác nhận mật khẩu"
-              name="passwordConfirmation"
-              type="password"
-              minLength={12}
-              autoComplete="new-password"
-            />
-          </AuthForm>
-        ) : null}
+
         {error === null ? null : (
           <p className="auth-message auth-error" role="alert">
             {error}
