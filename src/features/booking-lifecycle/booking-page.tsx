@@ -7,6 +7,8 @@ import { ApiClientError } from '../../lib/api/client';
 import { TimelineEditor } from './timeline-editor';
 import { createVenueCatalogGateway } from '../venue-catalog/catalog-api';
 import { createIdentityApi, ManagementIdentitySession } from '../identity-access/session';
+import type { ManagementSessionSnapshot } from '../identity-access/session';
+import { OperationsShell } from '../identity-access/operations-shell';
 import {
   createManagementBookingGateway,
   type ManagementBookingGateway,
@@ -22,11 +24,15 @@ const catalogGateway = createVenueCatalogGateway();
 
 export function ManagementBookingPage() {
   const [access, setAccess] = useState<'loading' | 'anonymous' | 'denied' | 'manager'>('loading');
+  const [snapshot, setSnapshot] = useState<ManagementSessionSnapshot | null>(null);
+  const [loggingOut, setLoggingOut] = useState(false);
+  const [logoutError, setLogoutError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
     void session.restore().then((snapshot) => {
       if (!active) return;
+      setSnapshot(snapshot);
       setAccess(
         snapshot.status === 'anonymous'
           ? 'anonymous'
@@ -40,27 +46,53 @@ export function ManagementBookingPage() {
     };
   }, []);
 
-  if (access === 'loading') return <PageState title="Đang xác minh quyền quản lý…" />;
-  if (access !== 'manager') {
-    return (
+  const logout = () => {
+    setLoggingOut(true);
+    setLogoutError(null);
+    void session
+      .logout()
+      .catch(() =>
+        setLogoutError('Không thể kết nối máy chủ để đăng xuất. Hãy tải lại trang rồi thử lại.'),
+      )
+      .finally(() => {
+        setSnapshot(session.snapshot());
+        setAccess('anonymous');
+        setLoggingOut(false);
+      });
+  };
+  let content;
+  if (access === 'loading') content = <PageState title="Đang xác minh quyền quản lý…" />;
+  else if (access !== 'manager') {
+    content = (
       <PageState title={access === 'anonymous' ? 'Cần đăng nhập' : 'Không có quyền truy cập'}>
         <p role="alert">
           {access === 'anonymous'
             ? 'Đăng nhập bằng tài khoản Quản lý để xử lý hồ sơ đặt tiệc.'
             : 'Tài khoản hiện tại không có quyền quản lý đặt tiệc.'}
         </p>
+        {logoutError ? <p role="alert">{logoutError}</p> : null}
         <Link className="booking-primary-link" href="/">
           Về trang đăng nhập
         </Link>
       </PageState>
     );
-  }
-
+  } else
+    content = (
+      <ManagementBookingWorkspace
+        authorize={(operation) => session.authorize(operation)}
+        gateway={gateway}
+      />
+    );
   return (
-    <ManagementBookingWorkspace
-      authorize={(operation) => session.authorize(operation)}
-      gateway={gateway}
-    />
+    <OperationsShell
+      activePage="bookings"
+      contentId="booking-main"
+      snapshot={snapshot}
+      onLogout={logout}
+      pending={loggingOut}
+    >
+      {content}
+    </OperationsShell>
   );
 }
 
@@ -127,13 +159,6 @@ export function ManagementBookingWorkspace({
           <h1>Điều phối đặt tiệc</h1>
           <p>Tạo hồ sơ tư vấn, giữ lịch và kiểm soát vòng đời bằng revision từ máy chủ.</p>
         </div>
-        <nav aria-label="Điều hướng quản lý">
-          <Link href="/consultation-requests">Yêu cầu tư vấn</Link>
-          <Link href="/catalog">Danh mục</Link>
-          <Link aria-current="page" href="/bookings">
-            Đặt tiệc
-          </Link>
-        </nav>
       </header>
 
       <div className="booking-live" aria-live="polite">
@@ -702,7 +727,7 @@ function ProposalPanel({
 
 function PageState({ children, title }: Readonly<{ children?: React.ReactNode; title: string }>) {
   return (
-    <main className="booking-state">
+    <main className="booking-state" id="booking-main">
       <p className="section-kicker">Wedding Estate</p>
       <h1>{title}</h1>
       {children}

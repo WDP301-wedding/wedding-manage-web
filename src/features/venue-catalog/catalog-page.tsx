@@ -5,7 +5,12 @@ import Link from 'next/link';
 
 import apiContractLock from '../../../api-contract.lock.json';
 import { ApiClientError } from '../../lib/api/client';
-import { createIdentityApi, ManagementIdentitySession } from '../identity-access/session';
+import {
+  createIdentityApi,
+  ManagementIdentitySession,
+  type ManagementSessionSnapshot,
+} from '../identity-access/session';
+import { OperationsShell } from '../identity-access/operations-shell';
 import {
   type CatalogGateway,
   createVenueCatalogGateway,
@@ -22,17 +27,70 @@ import { TimelinePanel } from './timeline-panel';
 
 type Authorize = <T>(operation: (accessToken: string) => Promise<T>) => Promise<T>;
 
+const catalogTabs = [
+  { id: 'venue', label: 'Nhà hàng & sảnh' },
+  { id: 'food', label: 'Món & thực đơn' },
+  { id: 'timeline', label: 'Kịch bản tiệc' },
+  { id: 'layout', label: 'Bố cục bàn' },
+] as const;
+type CatalogTab = (typeof catalogTabs)[number]['id'];
+
+function CatalogTabs({
+  active,
+  onChange,
+}: {
+  active: CatalogTab;
+  onChange: (tab: CatalogTab) => void;
+}) {
+  return (
+    <div className="catalog-tabs" role="tablist" aria-label="Danh mục vận hành">
+      {catalogTabs.map((tab, index) => (
+        <button
+          key={tab.id}
+          id={`catalog-tab-${tab.id}`}
+          type="button"
+          role="tab"
+          aria-selected={active === tab.id}
+          aria-controls={`catalog-panel-${tab.id}`}
+          tabIndex={active === tab.id ? 0 : -1}
+          onClick={() => onChange(tab.id)}
+          onKeyDown={(event) => {
+            let next: number;
+            if (event.key === 'ArrowRight') next = (index + 1) % catalogTabs.length;
+            else if (event.key === 'ArrowLeft')
+              next = (index + catalogTabs.length - 1) % catalogTabs.length;
+            else if (event.key === 'Home') next = 0;
+            else if (event.key === 'End') next = catalogTabs.length - 1;
+            else return;
+            event.preventDefault();
+            const selected = catalogTabs[next];
+            if (selected === undefined) return;
+            onChange(selected.id);
+            document.getElementById(`catalog-tab-${selected.id}`)?.focus();
+          }}
+        >
+          {tab.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 const catalogSession = new ManagementIdentitySession(createIdentityApi());
 const catalogGateway = createVenueCatalogGateway();
 const catalogContractDigest = apiContractLock.source.sha256.slice(0, 8);
 
 export function VenueCatalogPage() {
+  const [identity, setIdentity] = useState<ManagementSessionSnapshot | null>(null);
+  const [loggingOut, setLoggingOut] = useState(false);
+  const [logoutError, setLogoutError] = useState<string | null>(null);
   const [state, setState] = useState<'loading' | 'manager' | 'staff' | 'anonymous'>('loading');
 
   useEffect(() => {
     let active = true;
     void catalogSession.restore().then((snapshot) => {
       if (!active) return;
+      setIdentity(snapshot);
       if (snapshot.status === 'anonymous') setState('anonymous');
       else setState(snapshot.presentation === 'manager' ? 'manager' : 'staff');
     });
@@ -41,24 +99,48 @@ export function VenueCatalogPage() {
     };
   }, []);
 
-  if (state === 'loading') return <CatalogStatus label="Đang xác minh quyền truy cập…" />;
-  if (state === 'anonymous') {
-    return (
+  const logout = () => {
+    setLoggingOut(true);
+    setLogoutError(null);
+    void catalogSession
+      .logout()
+      .catch(() =>
+        setLogoutError('Không thể kết nối máy chủ để đăng xuất. Hãy tải lại trang rồi thử lại.'),
+      )
+      .finally(() => {
+        setIdentity(catalogSession.snapshot());
+        setState('anonymous');
+        setLoggingOut(false);
+      });
+  };
+  const content =
+    state === 'loading' ? (
+      <CatalogStatus label="Đang xác minh quyền truy cập…" />
+    ) : state === 'anonymous' ? (
       <CatalogAccessPanel title="Cần đăng nhập">
         <p>Hãy đăng nhập bằng tài khoản Quản lý để mở danh mục địa điểm.</p>
+        {logoutError ? <p role="alert">{logoutError}</p> : null}
         <Link className="catalog-primary-link" href="/">
           Về trang đăng nhập
         </Link>
       </CatalogAccessPanel>
+    ) : (
+      <VenueCatalogWorkspace
+        role={state === 'manager' ? 'MANAGER' : 'STAFF'}
+        gateway={catalogGateway}
+        authorize={(operation) => catalogSession.authorize(operation)}
+      />
     );
-  }
-
   return (
-    <VenueCatalogWorkspace
-      role={state === 'manager' ? 'MANAGER' : 'STAFF'}
-      gateway={catalogGateway}
-      authorize={(operation) => catalogSession.authorize(operation)}
-    />
+    <OperationsShell
+      activePage="catalog"
+      contentId="catalog-content"
+      snapshot={identity}
+      onLogout={logout}
+      pending={loggingOut}
+    >
+      {content}
+    </OperationsShell>
   );
 }
 
@@ -85,6 +167,7 @@ function ManagerVenueWorkspace({
   authorize,
   gateway,
 }: Readonly<{ authorize: Authorize; gateway: VenueCatalogGateway | CatalogGateway }>) {
+  const [activeTab, setActiveTab] = useState<CatalogTab>('venue');
   const [snapshot, setSnapshot] = useState<VenueCatalogSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [pending, setPending] = useState(false);
@@ -147,57 +230,39 @@ function ManagerVenueWorkspace({
   );
 
   return (
-    <div className="catalog-shell">
-      <a className="skip-link" href="#catalog-content">
-        Đi đến nội dung danh mục
-      </a>
-      <aside className="catalog-sidebar" aria-label="Điều hướng danh mục">
-        <Link className="admin-brand" href="/">
-          <span className="admin-brand-mark" aria-hidden="true">
-            W
-          </span>
-          <span>
-            WEDDING<small>OPERATIONS</small>
-          </span>
-        </Link>
-        <nav>
-          <a aria-current="page" href="#venue">
-            Nhà hàng &amp; sảnh
-          </a>
-          <a href="#food">Món &amp; thực đơn</a>
-          <a href="#timeline">Kịch bản tiệc</a>
-          <span aria-disabled="true">Bố cục bàn</span>
-        </nav>
-        <Link className="catalog-back-link" href="/">
-          ← Tổng quan vận hành
-        </Link>
-      </aside>
-      <main id="catalog-content" className="catalog-main">
-        <header className="catalog-header">
-          <div>
-            <span className="preview-label">Wedding Estate · Catalog</span>
-            <p className="section-kicker">Danh mục vận hành</p>
-            <h1>Danh mục địa điểm</h1>
-          </div>
-          <div className="catalog-contract-mark">
-            <span>Contract lock</span>
-            <strong>{catalogContractDigest}</strong>
-          </div>
-        </header>
-
-        <div className="catalog-announcements" aria-live="polite">
-          {message === null ? null : (
-            <p className="catalog-success" role="status">
-              {message}
-            </p>
-          )}
-          {error === null ? null : (
-            <p className="catalog-error" role="alert">
-              {error}
-            </p>
-          )}
+    <main id="catalog-content" className="catalog-main">
+      <header className="catalog-header">
+        <div>
+          <span className="preview-label">Wedding Estate · Catalog</span>
+          <p className="section-kicker">Danh mục vận hành</p>
+          <h1>Danh mục địa điểm</h1>
         </div>
+        <div className="catalog-contract-mark">
+          <span>Contract lock</span>
+          <strong>{catalogContractDigest}</strong>
+        </div>
+      </header>
 
+      <div className="catalog-announcements" aria-live="polite">
+        {message === null ? null : (
+          <p className="catalog-success" role="status">
+            {message}
+          </p>
+        )}
+        {error === null ? null : (
+          <p className="catalog-error" role="alert">
+            {error}
+          </p>
+        )}
+      </div>
+
+      <CatalogTabs active={activeTab} onChange={setActiveTab} />
+      <div
+        role="tabpanel"
+        id="catalog-panel-venue"
+        aria-labelledby="catalog-tab-venue"
+        hidden={activeTab !== 'venue'}
+      >
         <section className="catalog-section" id="venue" aria-labelledby="restaurant-title">
           <SectionHeading
             eyebrow={`Revision ${snapshot.restaurant.revision}`}
@@ -355,14 +420,45 @@ function ManagerVenueWorkspace({
             />
           ) : null}
         </section>
-        {supportsFood(gateway) ? <DishMenuPanel gateway={gateway} authorize={authorize} /> : null}
+        {supportsMedia(gateway) ? <MediaPanel gateway={gateway} authorize={authorize} /> : null}
+      </div>
+      <div
+        role="tabpanel"
+        id="catalog-panel-food"
+        aria-labelledby="catalog-tab-food"
+        hidden={activeTab !== 'food'}
+      >
+        {supportsFood(gateway) ? (
+          <DishMenuPanel gateway={gateway} authorize={authorize} />
+        ) : (
+          <p>Danh mục món và thực đơn chưa khả dụng.</p>
+        )}
+      </div>
+      <div
+        role="tabpanel"
+        id="catalog-panel-timeline"
+        aria-labelledby="catalog-tab-timeline"
+        hidden={activeTab !== 'timeline'}
+      >
         {supportsTimeline(gateway) ? (
           <TimelinePanel gateway={gateway} authorize={authorize} />
-        ) : null}
-        {supportsLayout(gateway) ? <LayoutPanel gateway={gateway} authorize={authorize} /> : null}
-        {supportsMedia(gateway) ? <MediaPanel gateway={gateway} authorize={authorize} /> : null}
-      </main>
-    </div>
+        ) : (
+          <p>Danh mục kịch bản tiệc chưa khả dụng.</p>
+        )}
+      </div>
+      <div
+        role="tabpanel"
+        id="catalog-panel-layout"
+        aria-labelledby="catalog-tab-layout"
+        hidden={activeTab !== 'layout'}
+      >
+        {supportsLayout(gateway) ? (
+          <LayoutPanel gateway={gateway} authorize={authorize} />
+        ) : (
+          <p>Danh mục bố cục bàn chưa khả dụng.</p>
+        )}
+      </div>
+    </main>
   );
 }
 
@@ -615,7 +711,7 @@ function Status({ lifecycle }: Readonly<{ lifecycle: 'ACTIVE' | 'RETIRED' }>) {
 
 function CatalogStatus({ label }: Readonly<{ label: string }>) {
   return (
-    <main className="catalog-loading" role="status" aria-busy="true">
+    <main id="catalog-content" className="catalog-loading" role="status" aria-busy="true">
       <span className="catalog-loading-mark" aria-hidden="true">
         W
       </span>
@@ -626,7 +722,7 @@ function CatalogStatus({ label }: Readonly<{ label: string }>) {
 
 function CatalogAccessPanel({ children, title }: Readonly<{ children: ReactNode; title: string }>) {
   return (
-    <main className="permission-page">
+    <main id="catalog-content" className="permission-page">
       <section className="permission-panel">
         <span className="preview-label">Wedding Estate · Catalog</span>
         <h1>{title}</h1>

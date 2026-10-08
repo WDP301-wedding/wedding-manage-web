@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ApiClientError } from '../../lib/api/client';
 import { ManagementIdentitySession } from '../identity-access/session';
@@ -362,6 +362,8 @@ describe('Management booking lifecycle workspace', () => {
       );
       render(<ManagementBookingPage />);
       expect(screen.getByText('Đang xác minh quyền quản lý…')).toBeVisible();
+      const sidebar = screen.getByRole('navigation', { name: 'Điều hướng vận hành' });
+      expect(sidebar).toBeVisible();
       expect(
         await screen.findByText(
           presentation === 'anonymous'
@@ -371,6 +373,22 @@ describe('Management booking lifecycle workspace', () => {
               : 'Điều phối đặt tiệc',
         ),
       ).toBeVisible();
+      if (presentation === 'manager') {
+        expect(within(sidebar).getByRole('link', { name: 'Đặt tiệc' })).toHaveAttribute(
+          'aria-current',
+          'page',
+        );
+        expect(within(sidebar).getByRole('link', { name: 'Yêu cầu tư vấn' })).toHaveAttribute(
+          'href',
+          '/consultation-requests',
+        );
+        expect(within(sidebar).getByRole('link', { name: 'Tổng quan' })).toHaveAttribute(
+          'href',
+          '/',
+        );
+      } else {
+        expect(within(sidebar).queryByRole('link', { name: 'Đặt tiệc' })).not.toBeInTheDocument();
+      }
     },
   );
   it('creates a consultation and keeps the returned revision for invitation', async () => {
