@@ -384,6 +384,32 @@
   box-sizing: border-box;
 }
 
+.timeline-editor fieldset {
+  min-width: 0;
+  display: grid;
+  gap: 1rem;
+  padding: 0;
+  border: 0;
+}
+
+.timeline-editor legend {
+  margin-bottom: 1rem;
+  font-weight: 700;
+}
+
+.timeline-editor-item {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem 0;
+  border-bottom: 1px solid #d9d0c1;
+}
+
+.timeline-editor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
 html {
   min-width: 320px;
   background: var(--canvas);

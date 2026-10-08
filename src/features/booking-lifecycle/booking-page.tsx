@@ -4,11 +4,13 @@ import Link from 'next/link';
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
 
 import { ApiClientError } from '../../lib/api/client';
+import { TimelineEditor } from './timeline-editor';
 import { createIdentityApi, ManagementIdentitySession } from '../identity-access/session';
 import {
   createManagementBookingGateway,
   type ManagementBookingGateway,
   type ProposalView,
+  type BookingSelections,
 } from './booking-api';
 
 type Authorize = <T>(operation: (accessToken: string) => Promise<T>) => Promise<T>;
@@ -78,6 +80,9 @@ export function ManagementBookingWorkspace({
     try {
       return await operation();
     } catch (caught) {
+      if (caught instanceof ApiClientError && [401, 403, 404].includes(caught.status ?? 0)) {
+        setProposal(null);
+      }
       setError(errorMessage(caught));
       return null;
     } finally {
@@ -147,13 +152,15 @@ export function ManagementBookingWorkspace({
           }}
         />
         <BookingCreatePanel
+          key={consultation?.id ?? 'new'}
           disabled={pending !== null}
           consultation={consultation}
           gateway={gateway}
           authorize={authorize}
           run={run}
-          onCreated={(result) => {
+          onCreated={(result, consultationId) => {
             setBookingId(result.bookingId);
+            setConsultation({ id: consultationId, revision: result.consultationRevision });
             setMessage('Đã tạo hồ sơ đặt tiệc. Hãy tải đề xuất để tiếp tục.');
           }}
           setMessage={setMessage}
@@ -179,7 +186,7 @@ export function ManagementBookingWorkspace({
                 required
                 value={bookingId}
                 onChange={(event) => setBookingId(event.target.value)}
-                placeholder="UUID từ máy chủ"
+                placeholder="Mã hồ sơ đặt tiệc"
               />
             </label>
             <button disabled={pending !== null || bookingId.trim() === ''} type="submit">
@@ -194,7 +201,7 @@ export function ManagementBookingWorkspace({
           </div>
         ) : (
           <ProposalPanel
-            disabled={pending !== null}
+            disabled={pending !== null || error !== null}
             proposal={proposal}
             run={run}
             authorize={authorize}
@@ -233,10 +240,21 @@ function ConsultationPanel({
       <span className="booking-step">01</span>
       <h2>Hồ sơ tư vấn</h2>
       <form onSubmit={submit}>
-        <label>Tên cặp đôi<input name="displayName" required minLength={1} maxLength={120} /></label>
-        <label>Email liên hệ<input name="email" type="email" required /></label>
-        <label>Ghi chú<textarea name="note" maxLength={2000} rows={3} /></label>
-        <button disabled={disabled} type="submit">Tạo hồ sơ tư vấn</button>
+        <label>
+          Tên cặp đôi
+          <input name="displayName" required minLength={1} maxLength={120} />
+        </label>
+        <label>
+          Email liên hệ
+          <input name="email" type="email" required />
+        </label>
+        <label>
+          Ghi chú
+          <textarea name="note" maxLength={2000} rows={3} />
+        </label>
+        <button disabled={disabled} type="submit">
+          Tạo hồ sơ tư vấn
+        </button>
       </form>
       {consultation === null ? null : (
         <div className="booking-result">
@@ -264,10 +282,18 @@ function BookingCreatePanel({
   consultation: { id: string; revision: number } | null;
   disabled: boolean;
   gateway: ManagementBookingGateway;
-  onCreated: (result: { bookingId: string; revision: number }) => void;
+  onCreated: (
+    result: {
+      bookingId: string;
+      revision: number;
+      consultationRevision: number;
+    },
+    consultationId: string,
+  ) => void;
   run: <T>(label: string, operation: () => Promise<T>) => Promise<T | null>;
   setMessage: (message: string) => void;
 }>) {
+  const [selections, setSelections] = useState<BookingSelections | null>(null);
   const input = (form: HTMLFormElement) => {
     const data = new FormData(form);
     return {
@@ -285,30 +311,120 @@ function BookingCreatePanel({
     <article className="booking-card">
       <span className="booking-step">02</span>
       <h2>Kiểm tra &amp; tạo booking</h2>
+      <button
+        className="booking-secondary"
+        disabled={disabled}
+        type="button"
+        onClick={() => {
+          void run('catalog', () => authorize((token) => gateway.loadSelections(token))).then(
+            (result) => {
+              if (result !== null) setSelections(result);
+            },
+          );
+        }}
+      >
+        Tải danh mục đặt tiệc
+      </button>
+      {selections === null ? (
+        <p>Tải danh mục để chọn sảnh, khung giờ và thực đơn đang phục vụ.</p>
+      ) : selections.halls.length === 0 ||
+        selections.menus.length === 0 ||
+        selections.shifts.length === 0 ? (
+        <p role="status">
+          Danh mục chưa đủ thông tin đặt tiệc. Cập nhật trong mục Danh mục rồi tải lại.
+        </p>
+      ) : null}
       <form
         onSubmit={(event) => {
           event.preventDefault();
-          void run('booking', () =>
-            authorize((token) => gateway.createBooking(token, input(event.currentTarget))),
-          ).then((result) => result && onCreated(result));
+          const value = input(event.currentTarget);
+          void run('booking', () => authorize((token) => gateway.createBooking(token, value))).then(
+            (result) => result && onCreated(result, value.consultationId),
+          );
         }}
       >
-        <label>Mã consultation<input name="consultationId" required defaultValue={consultation?.id ?? ''} /></label>
-        <label>Revision consultation<input name="expectedRevision" type="number" min={0} required defaultValue={consultation?.revision ?? 0} /></label>
-        <label>Mã sảnh<input name="hallId" required /></label>
+        <label>
+          Mã hồ sơ tư vấn
+          <input name="consultationId" required defaultValue={consultation?.id ?? ''} />
+        </label>
+        <label>
+          Phiên bản hồ sơ tư vấn
+          <input
+            name="expectedRevision"
+            type="number"
+            min={1}
+            required
+            defaultValue={consultation?.revision ?? 1}
+          />
+        </label>
+        <label>
+          Sảnh tiệc
+          <select name="hallId" required defaultValue="" disabled={selections === null}>
+            <option value="" disabled>
+              Chọn sảnh
+            </option>
+            {selections?.halls.map((hall) => (
+              <option key={hall.id} value={hall.id}>
+                {hall.name} · tối đa {hall.maxGuests} khách
+              </option>
+            ))}
+          </select>
+        </label>
         <div className="booking-fields-inline">
-          <label>Ngày tổ chức<input name="eventDate" type="date" required /></label>
-          <label>Ca<select name="shiftCode" defaultValue="DINNER"><option value="LUNCH">Trưa</option><option value="DINNER">Tối</option></select></label>
+          <label>
+            Ngày tổ chức
+            <input name="eventDate" type="date" required />
+          </label>
+          <label>
+            Ca
+            <select name="shiftCode" defaultValue="DINNER" required disabled={selections === null}>
+              {selections?.shifts.map((shift) => (
+                <option key={shift.code} value={shift.code}>
+                  {shift.code === 'LUNCH' ? 'Trưa' : 'Tối'} · {shift.startTime}–{shift.endTime}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
-        <label>Phiên bản thực đơn<input name="menuPackageVersionId" required /></label>
+        <label>
+          Thực đơn đặt tiệc
+          <select
+            name="menuPackageVersionId"
+            required
+            defaultValue=""
+            disabled={selections === null}
+          >
+            <option value="" disabled>
+              Chọn thực đơn
+            </option>
+            {selections?.menus.map((menu) => (
+              <option key={menu.versionId} value={menu.versionId}>
+                {menu.name} · bản {menu.versionNumber} · {money(menu.priceVndPerTable)}/bàn
+              </option>
+            ))}
+          </select>
+        </label>
         <div className="booking-fields-inline">
-          <label>Số bàn<input name="tableCount" type="number" min={1} max={500} defaultValue={20} required /></label>
-          <label>Số khách dự kiến<input name="planningHeadcount" type="number" min={0} max={10000} defaultValue={200} required /></label>
+          <label>
+            Số bàn
+            <input name="tableCount" type="number" min={1} max={500} defaultValue={20} required />
+          </label>
+          <label>
+            Số khách dự kiến
+            <input
+              name="planningHeadcount"
+              type="number"
+              min={0}
+              max={10000}
+              defaultValue={200}
+              required
+            />
+          </label>
         </div>
         <div className="booking-actions">
           <button
             className="booking-secondary"
-            disabled={disabled}
+            disabled={disabled || selections === null}
             type="button"
             onClick={(event) => {
               const form = event.currentTarget.form;
@@ -317,18 +433,43 @@ function BookingCreatePanel({
               void run('availability', () =>
                 authorize((token) => gateway.checkAvailability(token, value)),
               ).then((result) => {
-                if (result !== null) setMessage(result.available ? 'Khung giờ đang trống.' : `Khung giờ đang được giữ${result.expiresAt === null ? '.' : ` đến ${formatDateTime(result.expiresAt)}.`}`);
+                if (result !== null)
+                  setMessage(
+                    result.available
+                      ? 'Khung giờ đang trống.'
+                      : `Khung giờ đang được giữ${result.expiresAt === null ? '.' : ` đến ${formatDateTime(result.expiresAt)}.`}`,
+                  );
               });
             }}
-          >Kiểm tra lịch</button>
-          <button disabled={disabled} type="submit">Tạo booking</button>
+          >
+            Kiểm tra lịch
+          </button>
+          <button
+            disabled={
+              disabled ||
+              selections === null ||
+              selections.halls.length === 0 ||
+              selections.menus.length === 0 ||
+              selections.shifts.length === 0
+            }
+            type="submit"
+          >
+            Tạo booking
+          </button>
         </div>
       </form>
     </article>
   );
 }
 
-function ProposalPanel({ authorize, disabled, gateway, proposal, refresh, run }: Readonly<{
+function ProposalPanel({
+  authorize,
+  disabled,
+  gateway,
+  proposal,
+  refresh,
+  run,
+}: Readonly<{
   authorize: Authorize;
   disabled: boolean;
   gateway: ManagementBookingGateway;
@@ -336,72 +477,227 @@ function ProposalPanel({ authorize, disabled, gateway, proposal, refresh, run }:
   refresh: (message: string) => Promise<void>;
   run: <T>(label: string, operation: () => Promise<T>) => Promise<T | null>;
 }>) {
-  const command = async (label: string, success: string, operation: (token: string) => Promise<void>) => {
+  const command = async (
+    label: string,
+    success: string,
+    operation: (token: string) => Promise<void>,
+  ) => {
     if ((await run(label, () => authorize(operation))) !== null) await refresh(success);
   };
   return (
     <div className="proposal-layout">
       <article className="proposal-summary">
-        <div className="proposal-status"><span>{proposal.phase.replaceAll('_', ' ')}</span><small>REV {proposal.revision}</small></div>
+        <div className="proposal-status">
+          <span>{proposal.phase.replaceAll('_', ' ')}</span>
+          <small>REV {proposal.revision}</small>
+        </div>
         <h3>{proposal.proposal.hall.name}</h3>
-        <p>{proposal.eventDate} · {proposal.proposal.shift.startTime}–{proposal.proposal.shift.endTime}</p>
+        <p>
+          {proposal.eventDate} · {proposal.proposal.shift.startTime}–
+          {proposal.proposal.shift.endTime}
+        </p>
         <dl>
-          <div><dt>Thực đơn</dt><dd>{proposal.proposal.menu.name}</dd></div>
-          <div><dt>Số bàn</dt><dd>{proposal.proposal.tableCount}</dd></div>
-          <div><dt>Tạm tính</dt><dd>{money(proposal.proposal.baseChargeVnd)}</dd></div>
-          <div><dt>Tiền cọc</dt><dd>{money(proposal.proposal.depositAmountVnd)}</dd></div>
+          <div>
+            <dt>Thực đơn</dt>
+            <dd>{proposal.proposal.menu.name}</dd>
+          </div>
+          <div>
+            <dt>Số bàn</dt>
+            <dd>{proposal.proposal.tableCount}</dd>
+          </div>
+          <div>
+            <dt>Tạm tính</dt>
+            <dd>{money(proposal.proposal.baseChargeVnd)}</dd>
+          </div>
+          <div>
+            <dt>Tiền cọc</dt>
+            <dd>{money(proposal.proposal.depositAmountVnd)}</dd>
+          </div>
         </dl>
-        <button disabled={disabled} type="button" onClick={() => void command('hold', 'Đã giữ khung giờ trong 15 phút.', (token) => gateway.acquireHold(token, proposal.bookingId, proposal.revision))}>Giữ lịch 15 phút</button>
+        <button
+          disabled={disabled || ['CONFIRMED', 'CANCELLED', 'COMPLETED'].includes(proposal.phase)}
+          type="button"
+          onClick={() =>
+            void command('hold', 'Đã giữ khung giờ trong 15 phút.', (token) =>
+              gateway.acquireHold(token, proposal.bookingId, proposal.revision),
+            )
+          }
+        >
+          Giữ lịch 15 phút
+        </button>
       </article>
       <article className="proposal-timeline">
         <h3>Kịch bản tiệc</h3>
-        {proposal.timeline === null ? <p>Chưa có mốc chương trình.</p> : (
-          <ol>{proposal.timeline.items.map((item) => <li key={item.itemId}><time>{item.startTime}</time><span><strong>{item.title}</strong>{item.description ? <small>{item.description}</small> : null}</span></li>)}</ol>
+        {proposal.timeline === null ? (
+          <p>Chưa có mốc chương trình.</p>
+        ) : (
+          <ol>
+            {proposal.timeline.items.map((item) => (
+              <li key={item.itemId}>
+                <time>{item.startTime}</time>
+                <span>
+                  <strong>{item.title}</strong>
+                  {item.description ? <small>{item.description}</small> : null}
+                </span>
+              </li>
+            ))}
+          </ol>
         )}
-        <form onSubmit={(event) => {
-          event.preventDefault();
-          const data = new FormData(event.currentTarget);
-          void command('timeline', 'Đã lưu revision kịch bản mới.', (token) => gateway.saveTimeline(token, {
-            bookingId: proposal.bookingId,
-            expectedRevision: proposal.revision,
-            predecessorRevisionId: proposal.timeline?.revisionId ?? null,
-            startTime: field(data, 'startTime'),
-            title: field(data, 'title'),
-          }));
-        }}>
-          <div className="booking-fields-inline"><label>Giờ bắt đầu<input name="startTime" type="time" required /></label><label>Nội dung<input name="title" required maxLength={120} /></label></div>
-          <button disabled={disabled || !proposal.capabilities.canEditTimeline} type="submit">Lưu revision kịch bản</button>
-        </form>
-        {proposal.timeline === null ? null : <button className="booking-secondary" disabled={disabled || !proposal.capabilities.canApproveTimeline} type="button" onClick={() => void command('approval', 'Đã ghi nhận phê duyệt của Quản lý.', (token) => gateway.approveTimeline(token, { bookingId: proposal.bookingId, revisionId: proposal.timeline!.revisionId, expectedRevision: proposal.revision }))}>Phê duyệt revision hiện tại</button>}
+        <TimelineEditor
+          key={proposal.bookingId + ':' + (proposal.timeline?.revisionId ?? 'empty')}
+          disabled={disabled || !proposal.capabilities.canEditTimeline}
+          initialItems={proposal.timeline?.items ?? []}
+          needsReason={proposal.phase === 'CONFIRMED'}
+          onSave={(items, reason) =>
+            command('timeline', 'Đã lưu revision kịch bản mới.', (token) =>
+              proposal.phase === 'CONFIRMED'
+                ? gateway.requestChange(token, {
+                    bookingId: proposal.bookingId,
+                    expectedRevision: proposal.revision,
+                    items,
+                    reason,
+                  })
+                : gateway.saveTimeline(token, {
+                    bookingId: proposal.bookingId,
+                    expectedRevision: proposal.revision,
+                    predecessorRevisionId: proposal.timeline?.revisionId ?? null,
+                    items,
+                  }),
+            )
+          }
+        />
+        {proposal.timeline === null ? null : (
+          <button
+            className="booking-secondary"
+            disabled={disabled || !proposal.capabilities.canApproveTimeline}
+            type="button"
+            onClick={() =>
+              void command('approval', 'Đã ghi nhận phê duyệt của Quản lý.', (token) =>
+                gateway.approveTimeline(token, {
+                  bookingId: proposal.bookingId,
+                  revisionId: proposal.timeline!.revisionId,
+                  expectedRevision: proposal.revision,
+                }),
+              )
+            }
+          >
+            Phê duyệt revision hiện tại
+          </button>
+        )}
       </article>
       <article className="proposal-danger">
         <h3>Kết thúc vòng đời</h3>
-        <form onSubmit={(event) => {
-          event.preventDefault();
-          const reason = field(new FormData(event.currentTarget), 'reason');
-          void command('cancel', 'Booking đã được hủy.', (token) => gateway.cancel(token, { bookingId: proposal.bookingId, expectedRevision: proposal.revision, reason }));
-        }}>
-          <label>Lý do hủy<textarea name="reason" required minLength={1} maxLength={500} rows={3} /></label>
-          <button disabled={disabled || ['CANCELLED', 'COMPLETED'].includes(proposal.phase)} type="submit">Hủy booking</button>
+        {(proposal.cancellationRequests ?? []).map((request) => (
+          <form
+            key={request.requestId}
+            onSubmit={(event) => {
+              event.preventDefault();
+              const form = event.currentTarget;
+              const submitter = event.nativeEvent.submitter;
+              const decision =
+                submitter instanceof HTMLButtonElement && submitter.value === 'APPROVE'
+                  ? 'APPROVE'
+                  : 'REJECT';
+              const reason = field(new FormData(form), 'decisionReason');
+              void command(
+                'cancellation-decision',
+                decision === 'APPROVE' ? 'Đã chấp nhận yêu cầu hủy.' : 'Đã từ chối yêu cầu hủy.',
+                (token) =>
+                  gateway.decideCancellation(token, {
+                    bookingId: proposal.bookingId,
+                    requestId: request.requestId,
+                    expectedRevision: proposal.revision,
+                    decision,
+                    reason,
+                  }),
+              );
+            }}
+          >
+            <h4>Yêu cầu hủy từ cặp đôi</h4>
+            <p>{request.reason}</p>
+            <label>
+              Lý do quyết định
+              <textarea name="decisionReason" required minLength={1} maxLength={500} rows={2} />
+            </label>
+            <div className="booking-actions">
+              <button type="submit" value="APPROVE" disabled={disabled}>
+                Chấp nhận yêu cầu hủy
+              </button>
+              <button type="submit" value="REJECT" disabled={disabled}>
+                Từ chối yêu cầu hủy
+              </button>
+            </div>
+          </form>
+        ))}
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            const reason = field(new FormData(event.currentTarget), 'reason');
+            void command('cancel', 'Booking đã được hủy.', (token) =>
+              gateway.cancel(token, {
+                bookingId: proposal.bookingId,
+                expectedRevision: proposal.revision,
+                reason,
+              }),
+            );
+          }}
+        >
+          <label>
+            Lý do hủy
+            <textarea name="reason" required minLength={1} maxLength={500} rows={3} />
+          </label>
+          <button
+            disabled={disabled || ['CANCELLED', 'COMPLETED'].includes(proposal.phase)}
+            type="submit"
+          >
+            Hủy booking
+          </button>
         </form>
-        <button className="booking-secondary" disabled={disabled || proposal.phase !== 'CONFIRMED'} type="button" onClick={() => void command('complete', 'Booking đã hoàn thành.', (token) => gateway.complete(token, { bookingId: proposal.bookingId, expectedRevision: proposal.revision }))}>Đánh dấu hoàn thành</button>
+        <button
+          className="booking-secondary"
+          disabled={disabled || proposal.phase !== 'CONFIRMED'}
+          type="button"
+          onClick={() =>
+            void command('complete', 'Booking đã hoàn thành.', (token) =>
+              gateway.complete(token, {
+                bookingId: proposal.bookingId,
+                expectedRevision: proposal.revision,
+              }),
+            )
+          }
+        >
+          Đánh dấu hoàn thành
+        </button>
       </article>
     </div>
   );
 }
 
 function PageState({ children, title }: Readonly<{ children?: React.ReactNode; title: string }>) {
-  return <main className="booking-state"><p className="section-kicker">Wedding Estate</p><h1>{title}</h1>{children}</main>;
+  return (
+    <main className="booking-state">
+      <p className="section-kicker">Wedding Estate</p>
+      <h1>{title}</h1>
+      {children}
+    </main>
+  );
 }
 
-function money(value: number): string { return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value); }
-function formatDateTime(value: string): string { return new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value)); }
+function money(value: number): string {
+  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
+}
+function formatDateTime(value: string): string {
+  return new Intl.DateTimeFormat('vi-VN', { dateStyle: 'short', timeStyle: 'short' }).format(
+    new Date(value),
+  );
+}
 function field(data: FormData, name: string): string {
   const value = data.get(name);
   return typeof value === 'string' ? value : '';
 }
 function errorMessage(error: unknown): string {
-  if (!(error instanceof ApiClientError)) return 'Không thể hoàn tất yêu cầu. Dữ liệu đang nhập vẫn được giữ lại.';
+  if (!(error instanceof ApiClientError))
+    return 'Không thể hoàn tất yêu cầu. Dữ liệu đang nhập vẫn được giữ lại.';
   const messages: Record<string, string> = {
     STALE_BOOKING_REVISION: 'Hồ sơ đã thay đổi ở nơi khác. Hãy tải lại trước khi tiếp tục.',
     SLOT_NOT_AVAILABLE: 'Khung giờ vừa được giữ bởi hồ sơ khác. Hãy chọn lịch khác.',
