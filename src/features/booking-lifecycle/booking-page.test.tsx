@@ -78,7 +78,11 @@ function fakeGateway(): ManagementBookingGateway {
 }
 
 const authorize = <T,>(operation: (token: string) => Promise<T>) => operation('manager-token');
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
+});
 async function open(gateway: ManagementBookingGateway, value: ProposalView = proposal) {
   vi.mocked(gateway.loadProposal).mockResolvedValue(value);
   render(<ManagementBookingWorkspace authorize={authorize} gateway={gateway} />);
@@ -97,6 +101,31 @@ function failure(code: string, status?: number) {
 }
 
 describe('Management booking lifecycle workspace', () => {
+  it('clears the displayed proposal when template loading loses authenticated access', async () => {
+    vi.stubEnv('NEXT_PUBLIC_API_BASE_URL', 'http://localhost:3001/api/v1');
+    const gateway = fakeGateway();
+    await open(gateway);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            error: {
+              code: 'AUTHENTICATION_REQUIRED',
+              message: 'Sign in again.',
+              requestId: '00000000-0000-4000-8000-000000000201',
+            },
+          }),
+          { status: 401, headers: { 'Content-Type': 'application/json' } },
+        ),
+      ),
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Tải mẫu kịch bản' }));
+    await screen.findByRole('alert');
+    await waitFor(() => expect(screen.queryByText('Sảnh Ánh Dương')).not.toBeInTheDocument());
+    expect(screen.getByText('Chưa chọn hồ sơ')).toBeVisible();
+  });
+
   it.each([
     { available: true, expiresAt: null, message: 'Khung giờ đang trống.' },
     { available: false, expiresAt: null, message: 'Khung giờ đang được giữ.' },

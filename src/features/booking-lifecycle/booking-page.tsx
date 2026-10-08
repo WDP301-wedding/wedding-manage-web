@@ -550,7 +550,13 @@ function ProposalPanel({
           disabled={disabled || !proposal.capabilities.canEditTimeline}
           initialItems={proposal.timeline?.items ?? []}
           templateSource={{
-            load: () => authorize((token) => catalogGateway.loadTimelines(token)),
+            load: async () => {
+              const result = await run('templates', () =>
+                authorize((token) => catalogGateway.loadTimelines(token)),
+              );
+              if (result === null) throw new Error('Timeline template loading failed.');
+              return result;
+            },
             shift: proposal.proposal.shift,
           }}
           needsReason={proposal.phase === 'CONFIRMED'}
