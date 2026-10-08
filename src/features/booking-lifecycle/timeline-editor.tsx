@@ -3,6 +3,7 @@
 import { useState } from 'react';
 
 import type { TimelineItemInput } from './booking-api';
+import { TimelineTemplatePicker, type TimelineTemplateSource } from './timeline-template-picker';
 
 type Draft = Readonly<{
   key: string;
@@ -16,6 +17,7 @@ export function TimelineEditor({
   disabled,
   initialItems,
   needsReason = false,
+  templateSource,
   onSave,
 }: Readonly<{
   disabled: boolean;
@@ -26,6 +28,7 @@ export function TimelineEditor({
     description: string | null;
   }>[];
   needsReason?: boolean;
+  templateSource?: TimelineTemplateSource;
   onSave: (items: readonly TimelineItemInput[], reason: string) => Promise<void>;
 }>) {
   const [drafts, setDrafts] = useState<readonly Draft[]>(() =>
@@ -67,6 +70,22 @@ export function TimelineEditor({
     >
       <fieldset disabled={disabled}>
         <legend>Chỉnh sửa các mốc chương trình</legend>
+        {templateSource !== undefined && drafts.length === 0 ? (
+          <TimelineTemplatePicker
+            disabled={disabled}
+            source={templateSource}
+            onCopy={(items) =>
+              setDrafts(
+                items.map((item) => ({
+                  key: crypto.randomUUID(),
+                  startTime: item.startTime,
+                  title: item.title,
+                  description: item.description ?? '',
+                })),
+              )
+            }
+          />
+        ) : null}
         {drafts.length === 0 ? <p>Chưa có mốc. Thêm nội dung hoặc lưu bản nháp trống.</p> : null}
         {drafts.map((item, index) => (
           <div className="timeline-editor-item" key={item.key}>

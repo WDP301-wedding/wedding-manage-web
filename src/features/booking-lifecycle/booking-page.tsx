@@ -5,6 +5,7 @@ import { type FormEvent, useCallback, useEffect, useState } from 'react';
 
 import { ApiClientError } from '../../lib/api/client';
 import { TimelineEditor } from './timeline-editor';
+import { createVenueCatalogGateway } from '../venue-catalog/catalog-api';
 import { createIdentityApi, ManagementIdentitySession } from '../identity-access/session';
 import {
   createManagementBookingGateway,
@@ -17,6 +18,7 @@ type Authorize = <T>(operation: (accessToken: string) => Promise<T>) => Promise<
 
 const session = new ManagementIdentitySession(createIdentityApi());
 const gateway = createManagementBookingGateway();
+const catalogGateway = createVenueCatalogGateway();
 
 export function ManagementBookingPage() {
   const [access, setAccess] = useState<'loading' | 'anonymous' | 'denied' | 'manager'>('loading');
@@ -547,6 +549,10 @@ function ProposalPanel({
           key={proposal.bookingId + ':' + (proposal.timeline?.revisionId ?? 'empty')}
           disabled={disabled || !proposal.capabilities.canEditTimeline}
           initialItems={proposal.timeline?.items ?? []}
+          templateSource={{
+            load: () => authorize((token) => catalogGateway.loadTimelines(token)),
+            shift: proposal.proposal.shift,
+          }}
           needsReason={proposal.phase === 'CONFIRMED'}
           onSave={(items, reason) =>
             command('timeline', 'Đã lưu revision kịch bản mới.', (token) =>
