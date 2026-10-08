@@ -59,6 +59,10 @@ export class ManagementIdentitySession {
     return this.state;
   }
 
+  discardRevokedSession(): void {
+    this.clear();
+  }
+
   async login(email: string, password: string): Promise<ManagementSessionSnapshot> {
     return this.finishSignIn(await this.api.createSession(email, password));
   }

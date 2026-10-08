@@ -35,6 +35,7 @@ type ApiClientErrorOptions = Readonly<{
   message: string;
   requestId: string;
   status?: number;
+  retryAfterSeconds?: number;
   details?: readonly ApiErrorDetails[];
   cause?: unknown;
 }>;
@@ -44,6 +45,7 @@ export class ApiClientError extends Error {
   readonly code: string;
   readonly requestId: string;
   readonly status: number | undefined;
+  readonly retryAfterSeconds: number | undefined;
   readonly details: readonly ApiErrorDetails[] | undefined;
 
   constructor(options: ApiClientErrorOptions) {
@@ -53,6 +55,7 @@ export class ApiClientError extends Error {
     this.code = options.code;
     this.requestId = options.requestId;
     this.status = options.status;
+    this.retryAfterSeconds = options.retryAfterSeconds;
     this.details = options.details;
   }
 }
@@ -111,6 +114,7 @@ async function validateResponse(response: Response, sentRequestId: string): Prom
     throw malformedResponse(response, responseRequestId, parsed.error);
   }
 
+  const waitSeconds = retryAfterSeconds(response.headers.get('retry-after'));
   throw new ApiClientError({
     kind: 'api',
     code: parsed.data.error.code,
@@ -118,7 +122,18 @@ async function validateResponse(response: Response, sentRequestId: string): Prom
     requestId: parsed.data.error.requestId,
     status: response.status,
     ...(parsed.data.error.details === undefined ? {} : { details: parsed.data.error.details }),
+    ...(waitSeconds === undefined ? {} : { retryAfterSeconds: waitSeconds }),
   });
+}
+
+function retryAfterSeconds(value: string | null): number | undefined {
+  if (value === null || value.trim() === '') return undefined;
+  if (/^\d+$/u.test(value.trim())) {
+    const seconds = Number(value);
+    return Number.isSafeInteger(seconds) ? seconds : undefined;
+  }
+  const date = Date.parse(value);
+  return Number.isFinite(date) ? Math.max(0, Math.ceil((date - Date.now()) / 1000)) : undefined;
 }
 
 function createFetchWithPolicy(
