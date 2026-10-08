@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { type FormEvent, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import { ApiClientError } from '../../lib/api/client';
@@ -284,6 +285,11 @@ function OperationsDashboard({
             Thực đơn
           </a>
           {manager ? (
+            <Link className="nav-item" href="/bookings">
+              Đặt tiệc
+            </Link>
+          ) : null}
+          {manager ? (
             <a className="nav-item" href="#staff">
               Nhân sự
             </a>
@@ -319,9 +325,9 @@ function OperationsDashboard({
             <h1>Tổng quan hôm nay</h1>
           </div>
           {manager ? (
-            <a className="create-event-action" href="#upcoming-events">
+            <Link className="create-event-action" href="/bookings">
               <span aria-hidden="true">+</span> Tạo sự kiện
-            </a>
+            </Link>
           ) : null}
         </header>
         {snapshot.denial === null ? null : (
