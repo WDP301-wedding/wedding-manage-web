@@ -2625,3 +2625,38 @@ td span:not(.status) {
     transition-duration: 0.01ms !important;
   }
 }
+.intake-list {
+  display: grid;
+  gap: 24px;
+  margin-block: 28px;
+}
+.intake-item {
+  border-top: 1px solid var(--gold, #c5a880);
+  padding: 24px;
+  background: var(--ivory, #faf8f5);
+}
+.intake-item dl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+.intake-item dt {
+  color: #62645f;
+  font-size: 0.8rem;
+}
+.intake-item dd {
+  margin: 6px 0 0;
+}
+.intake-message {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.intake-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 20px;
+}
+.intake-item a {
+  overflow-wrap: anywhere;
+}

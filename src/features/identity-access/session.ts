@@ -42,7 +42,8 @@ export function consumeResetFragment(
   replaceHistory: (safePath: string) => void,
 ): string | null {
   const url = new URL(href);
-  const token = new URLSearchParams(url.hash.slice(1)).get('resetToken');
+  const raw = url.hash.slice(1);
+  const token = new URLSearchParams(raw).get('resetToken') ?? (resetPattern.test(raw) ? raw : null);
   replaceHistory(`${url.pathname}${url.search}`);
   return token !== null && resetPattern.test(token) ? token : null;
 }

@@ -75,6 +75,20 @@ export function ManagementBookingWorkspace({
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('consultationId');
+    const revision = Number(params.get('consultationRevision'));
+    if (
+      id !== null &&
+      /^[a-f0-9-]{36}$/iu.test(id) &&
+      Number.isSafeInteger(revision) &&
+      revision > 0
+    ) {
+      queueMicrotask(() => setConsultation({ id, revision }));
+    }
+  }, []);
+
   const run = async <T,>(label: string, operation: () => Promise<T>): Promise<T | null> => {
     setPending(label);
     setMessage(null);
@@ -114,6 +128,7 @@ export function ManagementBookingWorkspace({
           <p>Tạo hồ sơ tư vấn, giữ lịch và kiểm soát vòng đời bằng revision từ máy chủ.</p>
         </div>
         <nav aria-label="Điều hướng quản lý">
+          <Link href="/consultation-requests">Yêu cầu tư vấn</Link>
           <Link href="/catalog">Danh mục</Link>
           <Link aria-current="page" href="/bookings">
             Đặt tiệc
