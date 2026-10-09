@@ -1,5 +1,5 @@
-import { createHash } from 'node:crypto';
-import { describe, expect, it } from 'vitest';
+import { createHash, webcrypto } from 'node:crypto';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ApiClientError } from '../../lib/api/client';
 import { createBillingIntents, type IntentStorage } from './billing-intents';
 
@@ -24,8 +24,53 @@ const unknown = new ApiClientError({
   message: 'offline',
   requestId: 'request',
 });
+afterEach(() => {
+  vi.unstubAllGlobals();
+  sessionStorage.clear();
+});
 
 describe('durable billing intent identity', () => {
+  it('recovers original server revision after committed money changes the loaded head', async () => {
+    const storage = memory();
+    const first = createBillingIntents('actor', storage, hash);
+    await expect(
+      first.run('refund:booking', { amountVnd: 10, expectedBillingRevision: 7 }, () =>
+        Promise.reject(unknown),
+      ),
+    ).rejects.toBe(unknown);
+    const reloaded = createBillingIntents('actor', storage, hash);
+    expect(await reloaded.pending('refund:booking')).toEqual({ expectedBillingRevision: 7 });
+    let recovered: object = {};
+    await reloaded.run(
+      'refund:booking',
+      { amountVnd: 10, expectedBillingRevision: 8 },
+      (_key, body) => {
+        recovered = body;
+        return Promise.resolve();
+      },
+    );
+    expect(recovered).toEqual({ amountVnd: 10, expectedBillingRevision: 7 });
+    expect(await reloaded.pending('refund:booking')).toBeNull();
+  });
+  it('uses real SHA-256 and browser storage without persisting identity, token or receipt text', async () => {
+    vi.stubGlobal('crypto', webcrypto);
+    const intents = createBillingIntents('private-account');
+    const body = {
+      reason: 'private receipt note',
+      evidenceReference: 'receipt-sensitive',
+      amountVnd: 10,
+    };
+    await expect(intents.run('manual:booking', body, () => Promise.reject(unknown))).rejects.toBe(
+      unknown,
+    );
+    const slot = sessionStorage.key(0)!;
+    expect(slot).toMatch(/^wedding\.billing\.[a-f0-9]{64}$/);
+    const record = sessionStorage.getItem(slot)!;
+    expect(record).not.toContain('private');
+    expect(record).not.toContain('receipt');
+    await intents.run('manual:booking', body, () => Promise.resolve());
+    expect(sessionStorage.length).toBe(0);
+  });
   it('keeps the key through network failure, reload and token rotation; success releases it', async () => {
     const storage = memory();
     const keys: string[] = [];

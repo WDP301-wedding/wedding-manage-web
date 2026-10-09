@@ -91,6 +91,7 @@ export function ManagementBillingWorkspace({
   const [pending, setPending] = useState(false);
   const busy = useRef(false);
   const [uncertain, setUncertain] = useState<'manual' | 'refund' | null>(null);
+  const [refundRevision, setRefundRevision] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const clearDenied = (caught: unknown) => {
@@ -125,6 +126,16 @@ export function ManagementBillingWorkspace({
       (more && view !== null && value.billingRevision !== view.billingRevision)
     )
       throw new Error('Billing history fence mismatch');
+    if (!more) {
+      const manual = await intents.pending(`manual:${id}`);
+      const refund = await intents.pending(`refund:${id}`);
+      setRefundRevision(refund?.expectedBillingRevision ?? null);
+      setUncertain(manual !== null ? 'manual' : refund !== null ? 'refund' : null);
+      if (manual !== null || refund !== null)
+        setError(
+          'Yêu cầu trước chưa rõ kết quả. Nhập lại đúng nội dung chứng từ để đối soát cùng yêu cầu.',
+        );
+    }
     setView(
       more && view !== null ? { ...value, history: [...view.history, ...value.history] } : value,
     );
@@ -139,14 +150,18 @@ export function ManagementBillingWorkspace({
     setError(null);
     setMessage(null);
     try {
-      const result = await intents.run<MutationResult>(`${kind}:${view.bookingId}`, body, (key) =>
-        authorize<MutationResult>((token) =>
-          kind === 'manual'
-            ? gateway.recordManual(token, body as ManualPaymentBody, key)
-            : gateway.refund(token, body as RefundBody, key),
-        ),
+      const result = await intents.run<MutationResult>(
+        `${kind}:${view.bookingId}`,
+        body,
+        (key, stableBody) =>
+          authorize<MutationResult>((token) =>
+            kind === 'manual'
+              ? gateway.recordManual(token, stableBody as ManualPaymentBody, key)
+              : gateway.refund(token, stableBody as RefundBody, key),
+          ),
       );
       setUncertain(null);
+      setRefundRevision(null);
       setMessage(
         'paymentId' in result
           ? `Đã ghi nhận khoản thu. Mã thanh toán: ${result.paymentId}`
@@ -278,7 +293,9 @@ export function ManagementBillingWorkspace({
               />
               <RefundForm
                 key={`refund:${view.bookingId}`}
-                booking={view}
+                booking={
+                  refundRevision === null ? view : { ...view, billingRevision: refundRevision }
+                }
                 disabled={pending || uncertain === 'manual'}
                 onConfirm={(body) => mutate('refund', body)}
               />
