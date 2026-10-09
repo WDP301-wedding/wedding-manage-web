@@ -66,6 +66,9 @@ export function OperationsShell({
               >
                 Đặt tiệc
               </Link>
+              <Link className="nav-item" href="/billing">
+                Quản lý thanh toán
+              </Link>
               <Link
                 className={navClass('consultations')}
                 href="/consultation-requests"

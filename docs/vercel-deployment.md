@@ -50,8 +50,14 @@ workflow to bypass failed checks. Inspect the deployment job's URL and verify th
 public routes below after each release.
 
 After deployment, verify `/`, `/bookings`, `/consultation-requests`, `/account`,
-and `/api/v1/catalog/halls`. An unauthenticated refresh request must return 401,
+`/billing`, and `/api/v1/catalog/halls`. An unauthenticated refresh request must return 401,
 not a CORS denial. Inspect production at desktop and mobile widths.
+
+Verify that the Manager navigation reaches `/billing` and Staff accounts cannot
+access its monetary controls. Refund approvals require a credit adjustment or
+finalized cancellation basis, supporting evidence, and explicit confirmation.
+Use mocked responses for retry and approval checks; a deployment smoke check
+must not record real payments, refunds, or approvals.
 
 For later releases, record the previous successful deployment URL before
 publishing. Use `vercel rollback <previous-deployment-url>` or promote the

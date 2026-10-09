@@ -486,6 +486,10 @@ describe('Management booking lifecycle workspace', () => {
         ),
       ).toBeVisible();
       if (presentation === 'manager') {
+        expect(within(sidebar).getByRole('link', { name: 'Quản lý thanh toán' })).toHaveAttribute(
+          'href',
+          '/billing',
+        );
         expect(within(sidebar).getByRole('link', { name: 'Đặt tiệc' })).toHaveAttribute(
           'aria-current',
           'page',
@@ -499,6 +503,9 @@ describe('Management booking lifecycle workspace', () => {
           '/',
         );
       } else {
+        expect(
+          within(sidebar).queryByRole('link', { name: 'Quản lý thanh toán' }),
+        ).not.toBeInTheDocument();
         expect(within(sidebar).queryByRole('link', { name: 'Đặt tiệc' })).not.toBeInTheDocument();
       }
     },
