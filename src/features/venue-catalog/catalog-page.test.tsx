@@ -75,6 +75,25 @@ const authorize = <T,>(operation: (accessToken: string) => Promise<T>) =>
   operation('manager-token');
 
 describe('VC-18 venue catalog workspace', () => {
+  it('switches four catalog tabs with keyboard support and preserves unsaved venue fields', async () => {
+    render(<VenueCatalogWorkspace role="MANAGER" gateway={gateway()} authorize={authorize} />);
+    await screen.findByRole('heading', { name: 'Danh mục địa điểm' });
+    expect(screen.getAllByRole('tab')).toHaveLength(4);
+    fireEvent.change(screen.getByLabelText('Tên hiển thị'), {
+      target: { value: 'Chỉnh sửa chưa lưu' },
+    });
+    fireEvent.click(screen.getByRole('tab', { name: 'Bố cục bàn' }));
+    expect(screen.getByRole('tabpanel')).toHaveAttribute('id', 'catalog-panel-layout');
+    expect(screen.queryByRole('textbox', { name: 'Tên hiển thị' })).not.toBeInTheDocument();
+    fireEvent.keyDown(screen.getByRole('tab', { name: 'Bố cục bàn' }), { key: 'Home' });
+    expect(screen.getByRole('tab', { name: 'Nhà hàng & sảnh' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    expect(screen.getByLabelText('Tên hiển thị')).toHaveValue('Chỉnh sửa chưa lưu');
+    fireEvent.keyDown(screen.getByRole('tab', { name: 'Nhà hàng & sảnh' }), { key: 'ArrowRight' });
+    expect(screen.getByRole('tabpanel')).toHaveAttribute('id', 'catalog-panel-food');
+  });
   it('loads Manager venue state and submits the server revision without inventing authority', async () => {
     const updateRestaurant = vi.fn(() => Promise.resolve());
     const api = gateway({ updateRestaurant });

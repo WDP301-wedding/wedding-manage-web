@@ -17,6 +17,27 @@ afterEach(() => {
 });
 
 describe('createApiClient', () => {
+  it.each([
+    ['3600', 3600],
+    ['invalid', undefined],
+  ])('preserves a valid Retry-After header (%s) for the OTP cooldown', async (header, seconds) => {
+    const client = createApiClient({
+      baseUrl: 'https://api.example.com',
+      requestId: () => requestId,
+      fetch: () =>
+        Promise.resolve(
+          Response.json(
+            { error: { code: 'RATE_LIMITED', message: 'Wait', requestId } },
+            { status: 429, headers: { 'retry-after': header } },
+          ),
+        ),
+    });
+    await expect(
+      client.POST('/auth/password-change-otp-requests', {
+        body: { currentPassword: 'test-password-123' },
+      }),
+    ).rejects.toMatchObject({ status: 429, retryAfterSeconds: seconds });
+  });
   it('returns typed successful data and sends a request ID to the configured base URL', async () => {
     const fetch = vi.fn((request: Request) => {
       expect(request.url).toBe('https://api.example.com/health/live');

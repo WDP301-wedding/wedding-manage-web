@@ -1,8 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { type FormEvent, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { type FormEvent, useEffect, useLayoutEffect, useState } from 'react';
 
+import { PasswordResetOtpForm } from './password-reset-otp-form';
+import { OperationsShell } from './operations-shell';
 import { ApiClientError } from '../../lib/api/client';
 import {
   consumeResetFragment,
@@ -19,7 +21,7 @@ const browserResetToken =
       );
 const browserSession = new ManagementIdentitySession(createIdentityApi());
 
-type AuthView = 'login' | 'reset-complete' | 'reset-request' | 'restoring';
+type AuthView = 'login' | 'reset-request' | 'restoring';
 
 type ManagementIdentityExperienceProps = Readonly<{
   session: ManagementIdentitySession;
@@ -46,16 +48,14 @@ export function ManagementIdentityExperience({
   const [snapshot, setSnapshot] = useState<ManagementSessionSnapshot>(() => session.snapshot());
   const [view, setView] = useState<AuthView>('restoring');
   const [pending, setPending] = useState(false);
-  const [resetConsumed, setResetConsumed] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const resetSubmitted = useRef(false);
 
   useEffect(() => {
     let active = true;
     if (initialResetToken !== null) {
       queueMicrotask(() => {
-        if (active) setView('reset-complete');
+        if (active) setView('reset-request');
       });
       return () => {
         active = false;
@@ -129,33 +129,6 @@ export function ManagementIdentityExperience({
     });
   };
 
-  const handleResetRequest = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    void run(async () => {
-      await session.requestPasswordReset(readField(form, 'email'));
-      setMessage('Nếu tài khoản đủ điều kiện, hướng dẫn đặt lại mật khẩu đã được gửi.');
-    });
-  };
-
-  const handleResetCompletion = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (resetSubmitted.current || initialResetToken === null) return;
-    const form = new FormData(event.currentTarget);
-    const password = readField(form, 'password');
-    if (password !== readField(form, 'passwordConfirmation')) {
-      setError('Hai mật khẩu chưa trùng khớp.');
-      return;
-    }
-    resetSubmitted.current = true;
-    setResetConsumed(true);
-    void run(async () => {
-      await session.completePasswordReset(initialResetToken, password);
-      setView('login');
-      setMessage('Mật khẩu đã được cập nhật. Hãy đăng nhập lại.');
-    });
-  };
-
   return (
     <main className="operations-auth-page">
       <section className="operations-auth-brand" aria-label="Wedding Estate Operations">
@@ -190,38 +163,14 @@ export function ManagementIdentityExperience({
           </AuthForm>
         ) : null}
         {view === 'reset-request' ? (
-          <AuthForm
-            title="Khôi phục mật khẩu"
-            submitLabel="Gửi hướng dẫn"
-            pending={pending}
-            onSubmit={handleResetRequest}
-          >
-            <Field label="Email công việc" name="email" type="email" autoComplete="email" />
-          </AuthForm>
+          <PasswordResetOtpForm
+            onCompleted={() => {
+              setView('login');
+              setMessage('Mật khẩu đã được cập nhật. Hãy đăng nhập lại.');
+            }}
+          />
         ) : null}
-        {view === 'reset-complete' ? (
-          <AuthForm
-            title="Đặt mật khẩu mới"
-            submitLabel="Cập nhật mật khẩu"
-            pending={pending || resetConsumed}
-            onSubmit={handleResetCompletion}
-          >
-            <Field
-              label="Mật khẩu mới"
-              name="password"
-              type="password"
-              minLength={12}
-              autoComplete="new-password"
-            />
-            <Field
-              label="Xác nhận mật khẩu"
-              name="passwordConfirmation"
-              type="password"
-              minLength={12}
-              autoComplete="new-password"
-            />
-          </AuthForm>
-        ) : null}
+
         {error === null ? null : (
           <p className="auth-message auth-error" role="alert">
             {error}
@@ -258,70 +207,13 @@ function OperationsDashboard({
 }>) {
   const manager = snapshot.presentation === 'manager';
   return (
-    <div className="admin-shell">
-      <a className="skip-link" href="#dashboard-content">
-        Đi đến nội dung chính
-      </a>
-      <aside className="admin-sidebar">
-        <div className="admin-brand">
-          <span className="admin-brand-mark" aria-hidden="true">
-            W
-          </span>
-          <span>
-            WEDDING<small>OPERATIONS</small>
-          </span>
-        </div>
-        <nav className="admin-navigation" aria-label="Điều hướng vận hành">
-          <a className="nav-item nav-item-active" href="#overview" aria-current="page">
-            Tổng quan
-          </a>
-          <a className="nav-item" href="#upcoming-events">
-            Lịch tiệc <span className="nav-count">08</span>
-          </a>
-          <a className="nav-item" href="#customers">
-            Khách hàng
-          </a>
-          <a className="nav-item" href="#menu">
-            Thực đơn
-          </a>
-          {manager ? (
-            <Link className="nav-item" href="/billing">
-              Quản lý thanh toán
-            </Link>
-          ) : null}
-          {manager ? (
-            <Link className="nav-item" href="/bookings">
-              Đặt tiệc
-            </Link>
-          ) : null}
-          {manager ? (
-            <a className="nav-item" href="#staff">
-              Nhân sự
-            </a>
-          ) : null}
-        </nav>
-        <div className="sidebar-footer">
-          <div className="support-block">
-            <span className="support-dot" aria-hidden="true" />
-            <div>
-              <strong>Điều hành ổn định</strong>
-              <span>Tất cả dịch vụ đang hoạt động</span>
-            </div>
-          </div>
-          <div className="profile-block">
-            <span className="profile-avatar" aria-hidden="true">
-              {manager ? 'QL' : 'NV'}
-            </span>
-            <span>
-              <strong>{snapshot.actor.displayEmail}</strong>
-              <small>{manager ? 'Quản lý nhà hàng' : 'Nhân viên vận hành'}</small>
-            </span>
-            <button type="button" onClick={onLogout} disabled={pending}>
-              Đăng xuất
-            </button>
-          </div>
-        </div>
-      </aside>
+    <OperationsShell
+      activePage="overview"
+      contentId="dashboard-content"
+      snapshot={snapshot}
+      onLogout={onLogout}
+      pending={pending}
+    >
       <main id="dashboard-content" className="admin-main">
         <header className="dashboard-header" id="overview">
           <div>
@@ -412,7 +304,7 @@ function OperationsDashboard({
           </div>
         </section>
       </main>
-    </div>
+    </OperationsShell>
   );
 }
 
