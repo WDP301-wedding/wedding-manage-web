@@ -64,7 +64,11 @@ function ConfirmPayment({
           ? 'Chỉ ghi nhận khoản hoàn đã thực hiện theo quyết định được duyệt. Thao tác này không chuyển tiền tự động.'
           : 'Chỉ xác nhận khi nhà hàng đã thực nhận và kiểm tra chứng từ.'}
       </p>
-      {retry && <p role="status">Chưa rõ kết quả. Giữ nguyên nội dung để đối soát cùng yêu cầu.</p>}
+      {retry && (
+        <p role="status">
+          Chưa rõ kết quả. Giữ nguyên nội dung và thử lại yêu cầu này để kiểm tra kết quả.
+        </p>
+      )}
       <div className="billing-actions">
         <button type="button" disabled={disabled} onClick={onConfirm}>
           {retry ? 'Thử lại yêu cầu này' : refund ? 'Xác nhận hoàn tiền' : 'Xác nhận ghi nhận'}
@@ -130,10 +134,7 @@ export function ManualPaymentForm({
   return (
     <section className="billing-panel">
       <h2>Ghi nhận tiền đã nhận</h2>
-      <p>
-        Tiền mặt hoặc chuyển khoản đã đối soát. Hệ thống kiểm tra điều kiện cọc và số dư còn phải
-        thu.
-      </p>
+      <p>Ghi nhận tiền mặt hoặc chuyển khoản mà nhà hàng đã nhận và kiểm tra chứng từ.</p>
       <form ref={form} onSubmit={review}>
         <fieldset disabled={disabled || draft !== null}>
           <label>
@@ -280,8 +281,7 @@ export function RefundForm({
       {draft !== null && (
         <>
           <p>
-            Khoản gốc: <code>{draft.sourcePaymentId}</code> · Phiên bản số dư{' '}
-            {draft.expectedBillingRevision}
+            Khoản gốc: <code>{draft.sourcePaymentId}</code>
           </p>
           <ConfirmPayment
             amount={draft.amountVnd}

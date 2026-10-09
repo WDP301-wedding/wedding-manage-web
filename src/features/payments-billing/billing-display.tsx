@@ -33,17 +33,17 @@ export function billingMessage(error: unknown): string {
   return (
     messages[error.code] ??
     (unresolved(error)
-      ? 'Chưa rõ kết quả. Giữ nguyên nội dung để thử lại và đối soát.'
+      ? 'Chưa rõ kết quả. Giữ nguyên nội dung để thử lại và kiểm tra kết quả.'
       : 'Yêu cầu bị từ chối. Kiểm tra dữ liệu, số dư và quyết định được duyệt trước khi tiếp tục.')
   );
 }
 const totalLabels: Record<keyof BillingView['totals'], string> = {
-  acceptedChargesVnd: 'Giá trị đã chấp nhận',
-  paidVnd: 'Đã thanh toán',
-  refundedVnd: 'Đã hoàn',
-  netPaidVnd: 'Thanh toán ròng',
+  acceptedChargesVnd: 'Tổng tiền phải thu',
+  paidVnd: 'Đã thu',
+  refundedVnd: 'Đã hoàn tiền',
+  netPaidVnd: 'Thực thu sau hoàn tiền',
   outstandingVnd: 'Còn phải thu',
-  creditVnd: 'Dư có cần đối soát',
+  creditVnd: 'Tiền thu thừa',
 };
 const kinds = {
   CHARGE: 'Khoản phải thu',
@@ -60,7 +60,7 @@ const sources = {
 };
 export function BillingSummary({ view }: Readonly<{ view: BillingView }>) {
   return (
-    <section aria-label="Tổng tiền từ máy chủ" className="billing-summary">
+    <section aria-label="Tổng hợp tiền đặt tiệc" className="billing-summary">
       <dl>
         {Object.entries(view.totals).map(([key, value]) => (
           <div key={key}>
@@ -69,26 +69,25 @@ export function BillingSummary({ view }: Readonly<{ view: BillingView }>) {
           </div>
         ))}
       </dl>
-      <p>Số dư tại phiên bản {view.billingRevision}. Dư có không tự động tạo hoàn tiền.</p>
     </section>
   );
 }
 export function BillingHistory({ view }: Readonly<{ view: BillingView }>) {
   return (
     <section className="billing-panel">
-      <h2>Lịch sử bất biến</h2>
+      <h2>Lịch sử giao dịch</h2>
       {view.history.length === 0 ? (
-        <p>Chưa có bút toán</p>
+        <p>Chưa có giao dịch</p>
       ) : (
         <div className="billing-table-scroll">
           <table>
-            <caption>Các bút toán đến phiên bản {view.billingRevision}</caption>
+            <caption>Chi tiết giao dịch</caption>
             <thead>
               <tr>
                 <th>Thời điểm</th>
                 <th>Loại / nguồn</th>
                 <th>Số tiền</th>
-                <th>Mã bút toán</th>
+                <th>Mã tham chiếu</th>
               </tr>
             </thead>
             <tbody>
@@ -117,7 +116,7 @@ export function AttemptStatus({ attempt }: Readonly<{ attempt: AttemptView }>) {
     CREATED: 'Đã tạo · chờ thanh toán',
     PENDING: 'Đang chờ xác minh',
     FAILED: 'Thanh toán không thành công',
-    UNKNOWN: 'Chưa rõ kết quả · đang đối soát',
+    UNKNOWN: 'Chưa rõ kết quả · đang kiểm tra',
     SUCCEEDED: 'Đã xác minh nhận tiền',
   };
   return (
@@ -128,7 +127,7 @@ export function AttemptStatus({ attempt }: Readonly<{ attempt: AttemptView }>) {
         {money(attempt.amountVnd)}
       </p>
       <p>
-        Mã lần thanh toán: <code>{attempt.paymentAttemptId}</code>
+        Mã giao dịch thanh toán: <code>{attempt.paymentAttemptId}</code>
       </p>
       {attempt.status === 'SUCCEEDED' && (
         <p>

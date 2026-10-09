@@ -286,7 +286,7 @@ function OperationsDashboard({
           </a>
           {manager ? (
             <Link className="nav-item" href="/billing">
-              Thanh toán và đối soát
+              Quản lý thanh toán
             </Link>
           ) : null}
           {manager ? (

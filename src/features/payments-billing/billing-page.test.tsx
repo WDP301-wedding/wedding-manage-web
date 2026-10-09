@@ -43,7 +43,7 @@ function gateway(): ManagementBillingGateway {
 }
 async function load() {
   fireEvent.change(screen.getByLabelText('Mã hồ sơ đặt tiệc'), { target: { value: 'booking' } });
-  fireEvent.click(screen.getByRole('button', { name: 'Xem billing' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Xem thanh toán' }));
   await screen.findByText('Còn phải thu');
 }
 describe('management billing workspace', () => {
@@ -132,9 +132,9 @@ describe('management billing workspace', () => {
       await screen.findByRole('heading', {
         name:
           role === 'manager'
-            ? 'Thanh toán và đối soát'
+            ? 'Quản lý thanh toán'
             : role === 'staff'
-              ? 'Không có quyền truy cập billing'
+              ? 'Không có quyền xem thanh toán'
               : 'Cần đăng nhập',
       });
     },
@@ -150,8 +150,8 @@ describe('management billing workspace', () => {
     );
     render(<ManagementBillingWorkspace accountId="actor" authorize={authorize} gateway={api} />);
     fireEvent.change(screen.getByLabelText('Mã hồ sơ đặt tiệc'), { target: { value: 'booking' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Xem billing' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Xem billing' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Xem thanh toán' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Xem thanh toán' }));
     expect(api.load).toHaveBeenCalledOnce();
     finish(view);
     await screen.findByText('Còn phải thu');
@@ -277,9 +277,9 @@ describe('management billing workspace', () => {
         nextCursor: null,
       });
     render(<ManagementBillingWorkspace accountId="actor" authorize={authorize} gateway={api} />);
-    expect(screen.queryByText('Chưa có bút toán')).not.toBeInTheDocument();
+    expect(screen.queryByText('Chưa có giao dịch')).not.toBeInTheDocument();
     await load();
-    expect(screen.getByText('Chưa có bút toán')).toBeInTheDocument();
+    expect(screen.getByText('Chưa có giao dịch')).toBeInTheDocument();
     expect(screen.getByText(/7\.100\.000/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Tải thêm lịch sử' }));
     await waitFor(() =>
@@ -295,7 +295,7 @@ describe('management billing workspace', () => {
     render(<ManagementBillingWorkspace accountId="actor" authorize={authorize} gateway={api} />);
     await load();
     vi.mocked(api.load).mockRejectedValueOnce(new Error('offline'));
-    fireEvent.click(screen.getByRole('button', { name: 'Làm mới số dư' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Cập nhật thông tin' }));
     await screen.findByRole('alert');
     expect(screen.getByText('Còn phải thu')).toBeInTheDocument();
     vi.mocked(api.load).mockRejectedValueOnce(
@@ -307,7 +307,7 @@ describe('management billing workspace', () => {
         requestId: 'request',
       }),
     );
-    fireEvent.click(screen.getByRole('button', { name: 'Làm mới số dư' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Cập nhật thông tin' }));
     await waitFor(() => expect(screen.queryByText('Còn phải thu')).not.toBeInTheDocument());
     expect(screen.getByRole('alert')).toHaveTextContent('quyền');
   });
@@ -315,8 +315,10 @@ describe('management billing workspace', () => {
     const api = gateway();
     render(<ManagementBillingWorkspace accountId="actor" authorize={authorize} gateway={api} />);
     await load();
-    fireEvent.change(screen.getByLabelText('Mã lần thanh toán'), { target: { value: 'attempt' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Kiểm tra thanh toán' }));
+    fireEvent.change(screen.getByLabelText('Mã giao dịch thanh toán'), {
+      target: { value: 'attempt' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Tra cứu giao dịch' }));
     expect(await screen.findByText(/Chưa rõ kết quả/)).toBeInTheDocument();
     expect(api.loadAttempt).toHaveBeenCalledWith('token', 'booking', 'attempt');
     expect(screen.queryByRole('button', { name: /Tạo lại thanh toán/ })).not.toBeInTheDocument();

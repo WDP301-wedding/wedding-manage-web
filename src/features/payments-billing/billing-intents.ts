@@ -72,7 +72,7 @@ export function createBillingIntents(
         const record = previous ?? { key: crypto.randomUUID(), hash: fingerprint, metadata };
         if (record.hash !== fingerprint)
           throw new Error(
-            'Yêu cầu trước chưa rõ kết quả. Hãy giữ nguyên nội dung và thử lại để đối soát.',
+            'Yêu cầu trước chưa rõ kết quả. Hãy giữ nguyên nội dung và thử lại để kiểm tra kết quả.',
           );
         await storage.write(slot, JSON.stringify(record));
         try {

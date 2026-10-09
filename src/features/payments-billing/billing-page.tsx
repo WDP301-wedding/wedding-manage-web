@@ -57,7 +57,7 @@ export function ManagementBillingPage({
     return (
       <main className="billing-shell">
         <h1>
-          {snapshot.status === 'anonymous' ? 'Cần đăng nhập' : 'Không có quyền truy cập billing'}
+          {snapshot.status === 'anonymous' ? 'Cần đăng nhập' : 'Không có quyền xem thanh toán'}
         </h1>
         <p role="alert">Khu vực này dành cho tài khoản Quản lý.</p>
         <Link href="/">Về trang đăng nhập</Link>
@@ -133,7 +133,7 @@ export function ManagementBillingWorkspace({
       setUncertain(manual !== null ? 'manual' : refund !== null ? 'refund' : null);
       if (manual !== null || refund !== null)
         setError(
-          'Yêu cầu trước chưa rõ kết quả. Nhập lại đúng nội dung chứng từ để đối soát cùng yêu cầu.',
+          'Yêu cầu trước chưa rõ kết quả. Nhập lại đúng nội dung chứng từ và thử lại yêu cầu đó.',
         );
     }
     setView(
@@ -186,19 +186,19 @@ export function ManagementBillingWorkspace({
   return (
     <main className="billing-shell">
       <a className="skip-link" href="#billing-content">
-        Đi đến số dư
+        Đi đến tổng hợp thanh toán
       </a>
       <header className="billing-header">
         <div>
           <p>Wedding Estate · Operations</p>
-          <h1>Thanh toán và đối soát</h1>
-          <p>Kiểm tra số dư, chứng từ và lịch sử của từng hồ sơ.</p>
+          <h1>Quản lý thanh toán</h1>
+          <p>Theo dõi tiền đặt tiệc, ghi nhận khoản thu và hoàn tiền.</p>
         </div>
         <nav aria-label="Điều hướng quản lý">
           <Link href="/bookings">Đặt tiệc</Link>
           <Link href="/catalog">Danh mục</Link>
           <Link href="/billing" aria-current="page">
-            Billing
+            Thanh toán
           </Link>
         </nav>
       </header>
@@ -221,7 +221,7 @@ export function ManagementBillingWorkspace({
             disabled={pending || uncertain !== null}
           />
         </label>
-        <button disabled={pending || uncertain !== null}>Xem billing</button>
+        <button disabled={pending || uncertain !== null}>Xem thanh toán</button>
       </form>
       <div className="billing-live" aria-live="polite">
         {pending && <p role="status">Đang xử lý yêu cầu…</p>}
@@ -232,7 +232,7 @@ export function ManagementBillingWorkspace({
         {view !== null && (
           <>
             <div className="billing-section-heading">
-              <h2>Số dư hồ sơ</h2>
+              <h2>Tổng hợp tiền đặt tiệc</h2>
               <button
                 className="billing-secondary"
                 disabled={pending}
@@ -240,7 +240,7 @@ export function ManagementBillingWorkspace({
                   void run(() => load(view.bookingId));
                 }}
               >
-                Làm mới số dư
+                Cập nhật thông tin
               </button>
             </div>
             <BillingSummary view={view} />
@@ -257,7 +257,8 @@ export function ManagementBillingWorkspace({
               </button>
             )}
             <section className="billing-panel">
-              <h2>Kiểm tra một lần thanh toán</h2>
+              <h2>Tra cứu trạng thái giao dịch</h2>
+              <p>Nhập mã giao dịch thanh toán để xem kết quả và tình trạng cập nhật hồ sơ.</p>
               <form
                 className="billing-lookup"
                 onSubmit={(event) => {
@@ -272,7 +273,7 @@ export function ManagementBillingWorkspace({
                 }}
               >
                 <label>
-                  Mã lần thanh toán
+                  Mã giao dịch thanh toán
                   <input
                     value={attemptId}
                     onChange={(event) => setAttemptId(event.target.value)}
@@ -280,7 +281,7 @@ export function ManagementBillingWorkspace({
                     disabled={pending}
                   />
                 </label>
-                <button disabled={pending}>Kiểm tra thanh toán</button>
+                <button disabled={pending}>Tra cứu giao dịch</button>
               </form>
               {attempt !== null && <AttemptStatus attempt={attempt} />}
             </section>
