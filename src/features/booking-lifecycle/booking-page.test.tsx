@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiClientError } from '../../lib/api/client';
 import { ManagementIdentitySession } from '../identity-access/session';
 
@@ -78,7 +78,12 @@ function fakeGateway(): ManagementBookingGateway {
 }
 
 const authorize = <T,>(operation: (token: string) => Promise<T>) => operation('manager-token');
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date('2026-10-09T00:00:00Z'));
+});
 afterEach(() => {
+  vi.useRealTimers();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
   vi.unstubAllEnvs();
@@ -101,6 +106,109 @@ function failure(code: string, status?: number) {
 }
 
 describe('Management booking lifecycle workspace', () => {
+  it('keeps controls usable before catalog loading and explains the next step', () => {
+    const gateway = fakeGateway();
+    render(<ManagementBookingWorkspace authorize={authorize} gateway={gateway} />);
+    for (const label of ['Sảnh tiệc', 'Ca', 'Thực đơn đặt tiệc', 'Ngày tổ chức'])
+      expect(screen.getByLabelText(label)).toBeEnabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Tạo booking' }));
+    expect(screen.getByRole('alert')).toHaveTextContent('Hãy tải danh mục đặt tiệc');
+    expect(screen.getByRole('button', { name: 'Kiểm tra lịch' })).toBeEnabled();
+    expect(gateway.createBooking).not.toHaveBeenCalled();
+  });
+
+  it('rejects past dates and tomorrow, then allows checking a slot without a consultation or menu', async () => {
+    const gateway = fakeGateway();
+    render(<ManagementBookingWorkspace authorize={authorize} gateway={gateway} />);
+    expect(screen.getByLabelText('Ngày tổ chức')).toHaveAttribute('min', '2026-10-11');
+    fireEvent.click(screen.getByRole('button', { name: 'Tải danh mục đặt tiệc' }));
+    await screen.findByRole('option', { name: 'Sảnh Ánh Dương · tối đa 320 khách' });
+    fireEvent.change(screen.getByLabelText('Sảnh tiệc'), {
+      target: { value: proposal.proposal.hall.id },
+    });
+    for (const value of ['2020-01-01', '2026-10-09', '2026-10-10']) {
+      fireEvent.change(screen.getByLabelText('Ngày tổ chức'), { target: { value } });
+      fireEvent.click(screen.getByRole('button', { name: 'Kiểm tra lịch' }));
+      expect(screen.getByRole('alert')).toHaveTextContent('phải từ ngày mốt');
+      fireEvent.click(screen.getByRole('button', { name: 'Tạo booking' }));
+      expect(screen.getByRole('alert')).toHaveTextContent('phải từ ngày mốt');
+    }
+    expect(gateway.checkAvailability).not.toHaveBeenCalled();
+    expect(gateway.createBooking).not.toHaveBeenCalled();
+    fireEvent.change(screen.getByLabelText('Ngày tổ chức'), { target: { value: '2026-10-11' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Kiểm tra lịch' }));
+    await screen.findByText('Khung giờ đang trống.');
+    expect(gateway.checkAvailability).toHaveBeenCalledTimes(1);
+    fireEvent.change(screen.getByLabelText('Mã hồ sơ tư vấn'), {
+      target: { value: proposal.consultationId },
+    });
+    fireEvent.change(screen.getByLabelText('Thực đơn đặt tiệc'), {
+      target: { value: proposal.proposal.menu.versionId },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Tạo booking' }));
+    await waitFor(() =>
+      expect(gateway.createBooking).toHaveBeenCalledWith(
+        'manager-token',
+        expect.objectContaining({ eventDate: '2026-10-11' }),
+      ),
+    );
+  });
+
+  it('updates the date minimum when an overnight page regains focus', () => {
+    render(<ManagementBookingWorkspace authorize={authorize} gateway={fakeGateway()} />);
+    expect(screen.getByLabelText('Ngày tổ chức')).toHaveAttribute('min', '2026-10-11');
+    vi.setSystemTime(new Date('2026-10-09T17:00:00Z'));
+    fireEvent.focus(window);
+    expect(screen.getByLabelText('Ngày tổ chức')).toHaveAttribute('min', '2026-10-12');
+  });
+
+  it('keeps catalog selections and booking drafts when a consultation is created', async () => {
+    const gateway = fakeGateway();
+    render(<ManagementBookingWorkspace authorize={authorize} gateway={gateway} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Tải danh mục đặt tiệc' }));
+    await screen.findByRole('option', { name: 'Sảnh Ánh Dương · tối đa 320 khách' });
+    fireEvent.change(screen.getByLabelText('Sảnh tiệc'), {
+      target: { value: proposal.proposal.hall.id },
+    });
+    fireEvent.change(screen.getByLabelText('Ngày tổ chức'), { target: { value: '2026-10-11' } });
+    fireEvent.change(screen.getByLabelText('Số bàn'), { target: { value: '12' } });
+    fireEvent.change(screen.getByLabelText('Tên cặp đôi'), { target: { value: 'Minh & An' } });
+    fireEvent.change(screen.getByLabelText('Email liên hệ'), {
+      target: { value: 'couple@example.com' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Tạo hồ sơ tư vấn' }));
+    await screen.findByText('Đã tạo hồ sơ tư vấn.');
+    expect(screen.getByLabelText('Mã hồ sơ tư vấn')).toHaveValue(proposal.consultationId);
+    expect(screen.getByLabelText('Sảnh tiệc')).toHaveValue(proposal.proposal.hall.id);
+    expect(screen.getByLabelText('Ngày tổ chức')).toHaveValue('2026-10-11');
+    expect(screen.getByLabelText('Số bàn')).toHaveValue(12);
+  });
+
+  it('keeps timeline inputs and actions usable after a failed save', async () => {
+    const gateway = fakeGateway();
+    vi.mocked(gateway.saveTimeline).mockRejectedValueOnce(
+      failure('TIMELINE_ITEM_TIME_INVALID', 422),
+    );
+    await open(gateway);
+    fireEvent.click(screen.getByRole('button', { name: 'Thêm mốc chương trình' }));
+    fireEvent.change(screen.getByLabelText('Giờ bắt đầu mốc 1'), { target: { value: '09:00' } });
+    fireEvent.change(screen.getByLabelText('Nội dung mốc 1'), { target: { value: 'Đón khách' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Lưu kịch bản mới' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('từ 17:00 đến trước 22:00');
+    expect(screen.getByLabelText('Nội dung mốc 1')).toBeEnabled();
+    expect(screen.getByLabelText('Nội dung mốc 1')).toHaveValue('Đón khách');
+    expect(screen.getByRole('button', { name: 'Thêm mốc chương trình' })).toBeEnabled();
+    fireEvent.change(screen.getByLabelText('Giờ bắt đầu mốc 1'), { target: { value: '18:00' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Lưu kịch bản mới' }));
+    await waitFor(() => expect(gateway.saveTimeline).toHaveBeenCalledTimes(2));
+    expect(gateway.saveTimeline).toHaveBeenLastCalledWith(
+      'manager-token',
+      expect.objectContaining({
+        items: [expect.objectContaining({ startTime: '18:00', title: 'Đón khách' })],
+      }),
+    );
+  });
+
   it('clears the displayed proposal when template loading loses authenticated access', async () => {
     vi.stubEnv('NEXT_PUBLIC_API_BASE_URL', 'http://localhost:3001/api/v1');
     const gateway = fakeGateway();
@@ -161,7 +269,7 @@ describe('Management booking lifecycle workspace', () => {
   });
 
   it.each(['halls', 'menus', 'shifts'] as const)(
-    'disables booking when the catalog has no %s',
+    'explains missing %s without disabling booking actions',
     async (missing) => {
       const gateway = fakeGateway();
       const selections = await gateway.loadSelections('manager-token');
@@ -173,7 +281,10 @@ describe('Management booking lifecycle workspace', () => {
           'Danh mục chưa đủ thông tin đặt tiệc. Cập nhật trong mục Danh mục rồi tải lại.',
         ),
       ).toBeVisible();
-      expect(screen.getByRole('button', { name: 'Tạo booking' })).toBeDisabled();
+      expect(screen.getByRole('button', { name: 'Tạo booking' })).toBeEnabled();
+      fireEvent.click(screen.getByRole('button', { name: 'Tạo booking' }));
+      expect(screen.getByRole('alert')).toHaveTextContent('Danh mục chưa đủ thông tin');
+      expect(gateway.createBooking).not.toHaveBeenCalled();
     },
   );
 
@@ -329,7 +440,7 @@ describe('Management booking lifecycle workspace', () => {
     [failure('UNKNOWN', 403), 'Yêu cầu chưa hoàn tất'],
     [failure('UNKNOWN'), 'Yêu cầu chưa hoàn tất'],
     [new Error('offline'), 'Không thể hoàn tất yêu cầu'],
-  ])('handles command failure and blocks repeated stale operations: %s', async (error, message) => {
+  ])('handles command failure and allows correction or retry: %s', async (error, message) => {
     const gateway = fakeGateway();
     await open(gateway);
     vi.mocked(gateway.acquireHold).mockRejectedValue(error);
@@ -338,7 +449,8 @@ describe('Management booking lifecycle workspace', () => {
     if (error instanceof ApiClientError && [401, 403, 404].includes(error.status ?? 0)) {
       expect(screen.queryByText('Sảnh Ánh Dương')).not.toBeInTheDocument();
     } else {
-      expect(screen.getByRole('button', { name: 'Giữ lịch 15 phút' })).toBeDisabled();
+      expect(screen.getByRole('button', { name: 'Giữ lịch 15 phút' })).toBeEnabled();
+      expect(screen.getByLabelText('Lý do hủy')).toBeEnabled();
     }
   });
 

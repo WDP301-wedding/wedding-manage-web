@@ -1,9 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { type FormEvent, useCallback, useEffect, useState } from 'react';
+import { type FormEvent, useEffect, useState } from 'react';
 
 import { ApiClientError } from '../../lib/api/client';
+import { minimumEventDate, useMinimumEventDate } from '../../lib/event-date';
 import { TimelineEditor } from './timeline-editor';
 import { createVenueCatalogGateway } from '../venue-catalog/catalog-api';
 import { createIdentityApi, ManagementIdentitySession } from '../identity-access/session';
@@ -131,20 +132,17 @@ export function ManagementBookingWorkspace({
       if (caught instanceof ApiClientError && [401, 403, 404].includes(caught.status ?? 0)) {
         setProposal(null);
       }
-      setError(errorMessage(caught));
+      setError(errorMessage(caught, proposal?.proposal.shift));
       return null;
     } finally {
       setPending(null);
     }
   };
 
-  const loadProposal = useCallback(
-    async (id: string) => {
-      const result = await run('load', () => authorize((token) => gateway.loadProposal(token, id)));
-      if (result !== null) setProposal(result);
-    },
-    [authorize, gateway],
-  );
+  const loadProposal = async (id: string) => {
+    const result = await run('load', () => authorize((token) => gateway.loadProposal(token, id)));
+    if (result !== null) setProposal(result);
+  };
 
   const refresh = async (success: string) => {
     setMessage(success);
@@ -194,7 +192,6 @@ export function ManagementBookingWorkspace({
           }}
         />
         <BookingCreatePanel
-          key={consultation?.id ?? 'new'}
           disabled={pending !== null}
           consultation={consultation}
           gateway={gateway}
@@ -206,6 +203,7 @@ export function ManagementBookingWorkspace({
             setMessage('Đã tạo hồ sơ đặt tiệc. Hãy tải đề xuất để tiếp tục.');
           }}
           setMessage={setMessage}
+          onValidationError={setError}
         />
       </section>
 
@@ -243,7 +241,7 @@ export function ManagementBookingWorkspace({
           </div>
         ) : (
           <ProposalPanel
-            disabled={pending !== null || error !== null}
+            disabled={pending !== null}
             proposal={proposal}
             run={run}
             authorize={authorize}
@@ -319,6 +317,7 @@ function BookingCreatePanel({
   onCreated,
   run,
   setMessage,
+  onValidationError,
 }: Readonly<{
   authorize: Authorize;
   consultation: { id: string; revision: number } | null;
@@ -334,8 +333,41 @@ function BookingCreatePanel({
   ) => void;
   run: <T>(label: string, operation: () => Promise<T>) => Promise<T | null>;
   setMessage: (message: string) => void;
+  onValidationError: (message: string) => void;
 }>) {
   const [selections, setSelections] = useState<BookingSelections | null>(null);
+  const minimumDate = useMinimumEventDate();
+  const validate = (form: HTMLFormElement, creating: boolean) => {
+    if (disabled) return false;
+    if (selections === null) {
+      onValidationError(
+        'Hãy tải danh mục đặt tiệc để chọn sảnh, ca và thực đơn trước khi tiếp tục.',
+      );
+      return false;
+    }
+    if (
+      selections.halls.length === 0 ||
+      selections.shifts.length === 0 ||
+      (creating && selections.menus.length === 0)
+    ) {
+      onValidationError(
+        'Danh mục chưa đủ thông tin đặt tiệc. Cập nhật trong mục Danh mục rồi tải lại.',
+      );
+      return false;
+    }
+    const date = field(new FormData(form), 'eventDate');
+    if (date !== '' && date < minimumEventDate()) {
+      onValidationError(
+        'Ngày tổ chức phải từ ngày mốt trở đi (theo giờ Việt Nam). Hãy chọn lại ngày.',
+      );
+      return false;
+    }
+    if (creating) return form.reportValidity();
+    return ['hallId', 'eventDate', 'shiftCode'].every((name) => {
+      const control = form.elements.namedItem(name) as HTMLInputElement | HTMLSelectElement;
+      return control.reportValidity();
+    });
+  };
   const input = (form: HTMLFormElement) => {
     const data = new FormData(form);
     return {
@@ -377,8 +409,10 @@ function BookingCreatePanel({
         </p>
       ) : null}
       <form
+        noValidate
         onSubmit={(event) => {
           event.preventDefault();
+          if (!validate(event.currentTarget, true)) return;
           const value = input(event.currentTarget);
           void run('booking', () => authorize((token) => gateway.createBooking(token, value))).then(
             (result) => result && onCreated(result, value.consultationId),
@@ -387,11 +421,17 @@ function BookingCreatePanel({
       >
         <label>
           Mã hồ sơ tư vấn
-          <input name="consultationId" required defaultValue={consultation?.id ?? ''} />
+          <input
+            key={consultation?.id ?? 'new'}
+            name="consultationId"
+            required
+            defaultValue={consultation?.id ?? ''}
+          />
         </label>
         <label>
           Phiên bản hồ sơ tư vấn
           <input
+            key={`${consultation?.id}:${consultation?.revision}`}
             name="expectedRevision"
             type="number"
             min={1}
@@ -401,7 +441,7 @@ function BookingCreatePanel({
         </label>
         <label>
           Sảnh tiệc
-          <select name="hallId" required defaultValue="" disabled={selections === null}>
+          <select name="hallId" required defaultValue="">
             <option value="" disabled>
               Chọn sảnh
             </option>
@@ -414,12 +454,29 @@ function BookingCreatePanel({
         </label>
         <div className="booking-fields-inline">
           <label>
-            Ngày tổ chức
-            <input name="eventDate" type="date" required />
+            <span id="booking-date-label">Ngày tổ chức</span>
+            <input
+              name="eventDate"
+              type="date"
+              min={minimumDate}
+              aria-labelledby="booking-date-label"
+              aria-describedby="booking-date-help"
+              required
+            />
+            <small id="booking-date-help">Chọn ngày mốt hoặc muộn hơn (theo giờ Việt Nam).</small>
           </label>
           <label>
             Ca
-            <select name="shiftCode" defaultValue="DINNER" required disabled={selections === null}>
+            <select name="shiftCode" defaultValue="DINNER" required>
+              <option value="" disabled>
+                Chọn ca
+              </option>
+              {selections === null ? (
+                <>
+                  <option value="LUNCH">Trưa</option>
+                  <option value="DINNER">Tối</option>
+                </>
+              ) : null}
               {selections?.shifts.map((shift) => (
                 <option key={shift.code} value={shift.code}>
                   {shift.code === 'LUNCH' ? 'Trưa' : 'Tối'} · {shift.startTime}–{shift.endTime}
@@ -430,12 +487,7 @@ function BookingCreatePanel({
         </div>
         <label>
           Thực đơn đặt tiệc
-          <select
-            name="menuPackageVersionId"
-            required
-            defaultValue=""
-            disabled={selections === null}
-          >
+          <select name="menuPackageVersionId" required defaultValue="">
             <option value="" disabled>
               Chọn thực đơn
             </option>
@@ -466,11 +518,11 @@ function BookingCreatePanel({
         <div className="booking-actions">
           <button
             className="booking-secondary"
-            disabled={disabled || selections === null}
+            disabled={disabled}
             type="button"
             onClick={(event) => {
               const form = event.currentTarget.form;
-              if (form === null || !form.reportValidity()) return;
+              if (form === null || !validate(form, false)) return;
               const value = input(form);
               void run('availability', () =>
                 authorize((token) => gateway.checkAvailability(token, value)),
@@ -486,16 +538,7 @@ function BookingCreatePanel({
           >
             Kiểm tra lịch
           </button>
-          <button
-            disabled={
-              disabled ||
-              selections === null ||
-              selections.halls.length === 0 ||
-              selections.menus.length === 0 ||
-              selections.shifts.length === 0
-            }
-            type="submit"
-          >
+          <button disabled={disabled} type="submit">
             Tạo booking
           </button>
         </div>
@@ -585,6 +628,10 @@ function ProposalPanel({
             ))}
           </ol>
         )}
+        <p>
+          Giờ bắt đầu mỗi mốc phải từ {proposal.proposal.shift.startTime} đến trước{' '}
+          {proposal.proposal.shift.endTime} theo ca tiệc đã chọn.
+        </p>
         <TimelineEditor
           key={proposal.bookingId + ':' + (proposal.timeline?.revisionId ?? 'empty')}
           disabled={disabled || !proposal.capabilities.canEditTimeline}
@@ -747,14 +794,31 @@ function field(data: FormData, name: string): string {
   const value = data.get(name);
   return typeof value === 'string' ? value : '';
 }
-function errorMessage(error: unknown): string {
+function errorMessage(error: unknown, shift?: ProposalView['proposal']['shift']): string {
   if (!(error instanceof ApiClientError))
     return 'Không thể hoàn tất yêu cầu. Dữ liệu đang nhập vẫn được giữ lại.';
+  if (
+    error.code === 'VALIDATION_ERROR' &&
+    error.details?.some((detail) => detail.path === 'eventDate')
+  )
+    return 'Ngày tổ chức phải là ngày hợp lệ, từ ngày mốt trở đi (theo giờ Việt Nam). Hãy chọn lại ngày.';
+  if (error.code === 'TIMELINE_ITEM_TIME_INVALID')
+    return shift
+      ? `Giờ bắt đầu mốc chương trình phải từ ${shift.startTime} đến trước ${shift.endTime}. Hãy sửa giờ rồi lưu lại. Nội dung đã nhập vẫn được giữ lại.`
+      : 'Giờ bắt đầu mốc chương trình phải nằm trong ca tiệc đã chọn. Hãy sửa giờ rồi lưu lại.';
   const messages: Record<string, string> = {
     STALE_BOOKING_REVISION: 'Hồ sơ đã thay đổi ở nơi khác. Hãy tải lại trước khi tiếp tục.',
     SLOT_NOT_AVAILABLE: 'Khung giờ vừa được giữ bởi hồ sơ khác. Hãy chọn lịch khác.',
     DEPOSIT_INTENT_ACTIVE: 'Đang có giao dịch tiền cọc chưa kết thúc nên chưa thể thay đổi hồ sơ.',
     BOOKING_NOT_FOUND: 'Không tìm thấy hồ sơ hoặc tài khoản không có quyền xem.',
+    TIMELINE_APPROVAL_REQUIRES_ITEM:
+      'Hãy thêm và lưu ít nhất một mốc chương trình trước khi phê duyệt.',
+    TIMELINE_ITEM_COUNT_INVALID:
+      'Kịch bản chỉ được có tối đa 100 mốc. Hãy xóa bớt mốc rồi lưu lại.',
+    TIMELINE_ITEM_TEXT_INVALID:
+      'Nội dung mỗi mốc cần từ 1–120 ký tự; ghi chú tối đa 2.000 ký tự. Hãy sửa nội dung rồi lưu lại.',
+    TIMELINE_REVISION_SUPERSEDED:
+      'Kịch bản đã có phiên bản mới. Hãy tải lại hồ sơ trước khi tiếp tục.',
   };
   return messages[error.code] ?? 'Yêu cầu chưa hoàn tất. Hãy kiểm tra dữ liệu và thử lại.';
 }
