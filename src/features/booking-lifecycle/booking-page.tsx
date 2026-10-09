@@ -115,6 +115,7 @@ export function ManagementBookingWorkspace({
         </div>
         <nav aria-label="Điều hướng quản lý">
           <Link href="/catalog">Danh mục</Link>
+          <Link href="/billing">Thanh toán</Link>
           <Link aria-current="page" href="/bookings">
             Đặt tiệc
           </Link>
