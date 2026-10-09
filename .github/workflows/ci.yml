@@ -5,6 +5,7 @@ on:
     branches: [main]
   push:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -112,3 +113,31 @@ jobs:
 
       - name: Audit locked dependencies
         run: npm run audit:ci
+
+  deploy:
+    name: Deploy production to Vercel
+    needs: quality
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      VERCEL_ORG_ID: team_MM73EDATkR2ak6X6qlv3SSnV
+      VERCEL_PROJECT_ID: prj_i5q30jat8OfYnra7SxeyXjRxTIyV
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+    steps:
+      - name: Check out reviewed commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: '.node-version'
+      - name: Install pinned Vercel CLI
+        run: npm install --global vercel@63.1.0
+      - name: Pull production configuration
+        run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+      - name: Build production artifact
+        run: vercel build --prod --token="$VERCEL_TOKEN"
+      - name: Deploy production artifact
+        run: vercel deploy --prebuilt --prod --yes --token="$VERCEL_TOKEN"
