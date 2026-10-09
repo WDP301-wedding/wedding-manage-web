@@ -1,6 +1,30 @@
 import { z } from 'zod';
 import { ApiClientError } from '../../lib/api/client';
 
+export class BillingIntentMismatchError extends Error {
+  constructor() {
+    super(
+      'Nội dung nhập lại khác yêu cầu trước. Hãy chỉnh lại đúng chứng từ, giữ nguyên nội dung ban đầu rồi thử lại.',
+    );
+    this.name = 'BillingIntentMismatchError';
+  }
+}
+
+// Sort every object level so nested approval bases participate in request identity.
+function canonicalBody(body: object): string {
+  return JSON.stringify(body, (_key, value: unknown) => {
+    if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+      const record = value as Record<string, unknown>;
+      return Object.fromEntries(
+        Object.keys(record)
+          .sort()
+          .map((key) => [key, record[key]]),
+      );
+    }
+    return value;
+  });
+}
+
 export interface IntentStorage {
   read(this: void, key: string): Promise<string | null>;
   write(this: void, key: string, value: string): Promise<void>;
@@ -68,12 +92,9 @@ export function createBillingIntents(
               : { timelineRevisionId: payload.timelineRevisionId }),
           });
         const stableBody = { ...body, ...metadata };
-        const fingerprint = await hash(JSON.stringify(stableBody, Object.keys(stableBody).sort()));
+        const fingerprint = await hash(canonicalBody(stableBody));
         const record = previous ?? { key: crypto.randomUUID(), hash: fingerprint, metadata };
-        if (record.hash !== fingerprint)
-          throw new Error(
-            'Yêu cầu trước chưa rõ kết quả. Hãy giữ nguyên nội dung và thử lại để kiểm tra kết quả.',
-          );
+        if (record.hash !== fingerprint) throw new BillingIntentMismatchError();
         await storage.write(slot, JSON.stringify(record));
         try {
           const result = await operation(record.key, stableBody);
@@ -86,6 +107,7 @@ export function createBillingIntents(
             error.status !== undefined &&
             error.status >= 400 &&
             error.status < 500 &&
+            ![401, 403, 404, 429].includes(error.status) &&
             error.code !== 'REQUEST_IN_PROGRESS'
           )
             await storage.remove(slot);

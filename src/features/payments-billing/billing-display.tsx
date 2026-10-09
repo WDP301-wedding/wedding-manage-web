@@ -1,12 +1,15 @@
 import { ApiClientError } from '../../lib/api/client';
 import type { AttemptView, BillingView } from './billing-api';
+import { BillingIntentMismatchError } from './billing-intents';
 
 export const money = (value: number) =>
   new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
 export function unresolved(error: unknown): boolean {
+  if (error instanceof BillingIntentMismatchError) return false;
   return (
     !(error instanceof ApiClientError) ||
     error.kind !== 'api' ||
+    error.status === 429 ||
     (error.status ?? 500) >= 500 ||
     error.code === 'REQUEST_IN_PROGRESS'
   );
@@ -15,10 +18,12 @@ export function denied(error: unknown): boolean {
   return error instanceof ApiClientError && [401, 403, 404].includes(error.status ?? 0);
 }
 export function billingMessage(error: unknown): string {
+  if (error instanceof BillingIntentMismatchError) return error.message;
   if (denied(error))
     return 'Phiên đăng nhập hoặc quyền xem hồ sơ không còn hợp lệ. Hãy đăng nhập và kiểm tra quyền truy cập.';
   if (!(error instanceof ApiClientError))
     return 'Chưa hoàn tất yêu cầu. Kiểm tra kết nối và giữ nguyên nội dung để thử lại; nếu lịch sử đã thay đổi, hãy tải lại.';
+  if (error.status === 429) return 'Có quá nhiều yêu cầu. Hãy đợi rồi thử lại cùng nội dung.';
   const messages: Record<string, string> = {
     STALE_BILLING_REVISION: 'Số dư đã thay đổi. Hãy làm mới và kiểm tra lại trước khi xác nhận.',
     BILLING_REFUND_LIMIT_EXCEEDED: 'Khoản hoàn vượt hạn mức đã duyệt hoặc số tiền còn được hoàn.',

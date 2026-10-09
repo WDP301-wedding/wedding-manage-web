@@ -14,6 +14,24 @@ function harness(data: unknown = { bookingId: 'booking', billingRevision: 4, his
   return { gateway: createManagementBillingGateway(client), requests };
 }
 describe('generated management billing adapter', () => {
+  it('submits explicit refund approval with nested basis and stable idempotency key', async () => {
+    const { gateway, requests } = harness({ refundApprovalId: 'approval' });
+    const body = {
+      bookingId: 'booking',
+      expectedBillingRevision: 4,
+      approvedRefundableVnd: 100000,
+      basis: { kind: 'CREDIT' as const, sourceEntryId: 'credit' },
+      reason: 'Theo quyết định',
+      evidenceReference: 'approval-1',
+    };
+    expect(await gateway.approveRefund('token', body, 'approval-key')).toEqual({
+      refundApprovalId: 'approval',
+    });
+    expect(requests[0]!.url).toContain('/management/billing/refund-approvals');
+    expect(await requests[0]!.json()).toEqual(body);
+    expect(requests[0]!.headers.get('Idempotency-Key')).toBe('approval-key');
+    expect(requests[0]!.headers.get('Authorization')).toBe('Bearer token');
+  });
   it('reads fixed-revision pages and attempt status with current bearer and no-store', async () => {
     const { gateway, requests } = harness();
     await gateway.load('token', 'booking');
@@ -78,6 +96,20 @@ describe('generated management billing adapter', () => {
           sourcePaymentId: 'payment',
           amountVnd: 10,
           expectedBillingRevision: 1,
+          reason: 'Reason',
+          evidenceReference: 'receipt',
+        },
+        'key',
+      ),
+    ).rejects.toThrow('dữ liệu');
+    await expect(
+      gateway.approveRefund(
+        'token',
+        {
+          bookingId: 'booking',
+          expectedBillingRevision: 1,
+          approvedRefundableVnd: 10,
+          basis: { kind: 'CANCELLATION' },
           reason: 'Reason',
           evidenceReference: 'receipt',
         },

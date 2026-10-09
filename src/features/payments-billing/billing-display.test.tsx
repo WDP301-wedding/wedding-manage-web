@@ -73,6 +73,7 @@ describe('billing privacy and state messages', () => {
     expect(unresolved(error('SERVER', 503))).toBe(true);
     expect(unresolved(error('SERVER'))).toBe(true);
     expect(unresolved(error('VALIDATION', 422))).toBe(false);
+    expect(unresolved(error('RATE_LIMITED', 429))).toBe(true);
     expect(billingMessage(error('VALIDATION', 422))).toContain('từ chối');
     expect(billingMessage(error('SERVER', 500))).toContain('Chưa rõ');
     expect(billingMessage(new Error())).toContain('lịch sử');

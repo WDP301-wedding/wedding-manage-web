@@ -5,8 +5,15 @@ export type BillingView = components['schemas']['BookingBillingResponse']['data'
 export type AttemptView = components['schemas']['BillingAttemptResponse']['data'];
 export type ManualPaymentBody = components['schemas']['BillingManualPaymentBody'];
 export type RefundBody = components['schemas']['BillingRefundBody'];
+export type RefundApprovalBody = components['schemas']['BillingRefundApprovalBody'];
 export type BillingPageQuery = operations['getBookingBilling']['parameters']['query'];
 export interface ManagementBillingGateway {
+  approveRefund(
+    this: void,
+    token: string,
+    body: RefundApprovalBody,
+    key: string,
+  ): Promise<components['schemas']['BillingRefundApprovalResponse']['data']>;
   load(
     this: void,
     token: string,
@@ -42,6 +49,15 @@ export function createManagementBillingGateway(client?: ApiClient): ManagementBi
   const api = () => (resolved ??= createApiClient());
   const headers = (token: string) => ({ Authorization: `Bearer ${token}` });
   return {
+    async approveRefund(token, body, key) {
+      const { data } = await api().POST('/management/billing/refund-approvals', {
+        body,
+        params: { header: { 'Idempotency-Key': key } },
+        headers: headers(token),
+        cache: 'no-store',
+      });
+      return required(data);
+    },
     async load(token, bookingId, query = {}) {
       const { data } = await api().GET('/bookings/{bookingId}/billing', {
         params: { path: { bookingId }, query: { limit: 25, ...query } },

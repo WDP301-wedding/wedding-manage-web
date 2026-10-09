@@ -30,6 +30,66 @@ afterEach(() => {
 });
 
 describe('durable billing intent identity', () => {
+  it.each([401, 403, 404, 429])(
+    'keeps an uncertain monetary key after an intervening %i response',
+    async (status) => {
+      const storage = memory();
+      const first = createBillingIntents('actor', storage, hash);
+      const keys: string[] = [];
+      const body = { amountVnd: 10 };
+      await expect(
+        first.run('manual:booking', body, (key) => {
+          keys.push(key);
+          return Promise.reject(unknown);
+        }),
+      ).rejects.toBe(unknown);
+      await expect(
+        first.run('manual:booking', body, (key) => {
+          keys.push(key);
+          return Promise.reject(
+            new ApiClientError({
+              kind: 'api',
+              code: status === 429 ? 'RATE_LIMITED' : 'BILLING_ACCESS_DENIED',
+              status,
+              message: 'refused',
+              requestId: 'request',
+            }),
+          );
+        }),
+      ).rejects.toThrow('refused');
+      const reauthenticated = createBillingIntents('actor', storage, hash);
+      expect(await reauthenticated.pending('manual:booking')).not.toBeNull();
+      await reauthenticated.run('manual:booking', body, (key) => {
+        keys.push(key);
+        return Promise.resolve('payment');
+      });
+      expect(keys).toEqual([keys[0], keys[0], keys[0]]);
+      expect(await reauthenticated.pending('manual:booking')).toBeNull();
+    },
+  );
+  it('includes nested approval basis in the durable fingerprint', async () => {
+    const intents = createBillingIntents('actor', memory(), hash);
+    const body = { expectedBillingRevision: 7, basis: { kind: 'CREDIT', sourceEntryId: 'one' } };
+    await expect(intents.run('approval:booking', body, () => Promise.reject(unknown))).rejects.toBe(
+      unknown,
+    );
+    const submit = vi.fn().mockResolvedValue('approval');
+    await expect(
+      intents.run(
+        'approval:booking',
+        { ...body, basis: { kind: 'CREDIT', sourceEntryId: 'two' } },
+        submit,
+      ),
+    ).rejects.toThrow('giữ nguyên');
+    expect(submit).not.toHaveBeenCalled();
+    await expect(
+      intents.run(
+        'approval:booking',
+        { basis: { sourceEntryId: 'one', kind: 'CREDIT' }, expectedBillingRevision: 8 },
+        submit,
+      ),
+    ).resolves.toBe('approval');
+  });
   it('recovers original server revision after committed money changes the loaded head', async () => {
     const storage = memory();
     const first = createBillingIntents('actor', storage, hash);

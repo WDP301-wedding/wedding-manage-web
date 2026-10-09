@@ -14,8 +14,9 @@ import {
   type ManagementBillingGateway,
   type ManualPaymentBody,
   type RefundBody,
+  type RefundApprovalBody,
 } from './billing-api';
-import { createBillingIntents } from './billing-intents';
+import { BillingIntentMismatchError, createBillingIntents } from './billing-intents';
 import {
   AttemptStatus,
   BillingHistory,
@@ -25,11 +26,13 @@ import {
   unresolved,
 } from './billing-display';
 import { ManualPaymentForm, RefundForm, type CommandOutcome } from './payment-forms';
+import { RefundApprovalForm } from './refund-approval-form';
 
 type Authorize = <T>(operation: (token: string) => Promise<T>) => Promise<T>;
 type MutationResult =
   | Awaited<ReturnType<ManagementBillingGateway['recordManual']>>
-  | Awaited<ReturnType<ManagementBillingGateway['refund']>>;
+  | Awaited<ReturnType<ManagementBillingGateway['refund']>>
+  | Awaited<ReturnType<ManagementBillingGateway['approveRefund']>>;
 const identity = new ManagementIdentitySession(createIdentityApi());
 const billing = createManagementBillingGateway();
 export function ManagementBillingPage({
@@ -90,8 +93,9 @@ export function ManagementBillingWorkspace({
   const [attempt, setAttempt] = useState<AttemptView | null>(null);
   const [pending, setPending] = useState(false);
   const busy = useRef(false);
-  const [uncertain, setUncertain] = useState<'manual' | 'refund' | null>(null);
+  const [uncertain, setUncertain] = useState<'manual' | 'refund' | 'approval' | null>(null);
   const [refundRevision, setRefundRevision] = useState<number | null>(null);
+  const [approvalRevision, setApprovalRevision] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const clearDenied = (caught: unknown) => {
@@ -129,9 +133,19 @@ export function ManagementBillingWorkspace({
     if (!more) {
       const manual = await intents.pending(`manual:${id}`);
       const refund = await intents.pending(`refund:${id}`);
+      const approval = await intents.pending(`approval:${id}`);
       setRefundRevision(refund?.expectedBillingRevision ?? null);
-      setUncertain(manual !== null ? 'manual' : refund !== null ? 'refund' : null);
-      if (manual !== null || refund !== null)
+      setApprovalRevision(approval?.expectedBillingRevision ?? null);
+      setUncertain(
+        manual !== null
+          ? 'manual'
+          : refund !== null
+            ? 'refund'
+            : approval !== null
+              ? 'approval'
+              : null,
+      );
+      if (manual !== null || refund !== null || approval !== null)
         setError(
           'Yêu cầu trước chưa rõ kết quả. Nhập lại đúng nội dung chứng từ và thử lại yêu cầu đó.',
         );
@@ -141,8 +155,8 @@ export function ManagementBillingWorkspace({
     );
   };
   const mutate = async (
-    kind: 'manual' | 'refund',
-    body: ManualPaymentBody | RefundBody,
+    kind: 'manual' | 'refund' | 'approval',
+    body: ManualPaymentBody | RefundBody | RefundApprovalBody,
   ): Promise<CommandOutcome> => {
     if (busy.current || view === null) return 'retry';
     busy.current = true;
@@ -157,15 +171,20 @@ export function ManagementBillingWorkspace({
           authorize<MutationResult>((token) =>
             kind === 'manual'
               ? gateway.recordManual(token, stableBody as ManualPaymentBody, key)
-              : gateway.refund(token, stableBody as RefundBody, key),
+              : kind === 'refund'
+                ? gateway.refund(token, stableBody as RefundBody, key)
+                : gateway.approveRefund(token, stableBody as RefundApprovalBody, key),
           ),
       );
       setUncertain(null);
       setRefundRevision(null);
+      setApprovalRevision(null);
       setMessage(
         'paymentId' in result
           ? `Đã ghi nhận khoản thu. Mã thanh toán: ${result.paymentId}`
-          : `Đã ghi nhận khoản hoàn. Mã hoàn: ${result.refundId}`,
+          : 'refundId' in result
+            ? `Đã ghi nhận khoản hoàn. Mã hoàn: ${result.refundId}`
+            : `Đã phê duyệt hoàn tiền. Mã phê duyệt: ${result.refundApprovalId}`,
       );
       try {
         await load(view.bookingId);
@@ -175,6 +194,11 @@ export function ManagementBillingWorkspace({
       return 'succeeded';
     } catch (caught) {
       clearDenied(caught);
+      if (caught instanceof BillingIntentMismatchError) {
+        // Nothing was sent; unlock only this draft while retaining its durable intent.
+        setUncertain(kind);
+        return 'failed';
+      }
       const retry = unresolved(caught);
       setUncertain(retry ? kind : null);
       return retry ? 'retry' : 'failed';
@@ -190,7 +214,7 @@ export function ManagementBillingWorkspace({
       </a>
       <header className="billing-header">
         <div>
-          <p>Wedding Estate · Operations</p>
+          <p lang="en">Wedding Estate · Operations</p>
           <h1>Quản lý thanh toán</h1>
           <p>Theo dõi tiền đặt tiệc, ghi nhận khoản thu và hoàn tiền.</p>
         </div>
@@ -216,7 +240,17 @@ export function ManagementBillingWorkspace({
           Mã hồ sơ đặt tiệc
           <input
             value={bookingId}
-            onChange={(event) => setBookingId(event.target.value)}
+            onChange={(event) => {
+              if (pending || uncertain !== null) return;
+              setBookingId(event.target.value);
+              setView(null);
+              setAttempt(null);
+              setAttemptId('');
+              setRefundRevision(null);
+              setApprovalRevision(null);
+              setError(null);
+              setMessage(null);
+            }}
             required
             disabled={pending || uncertain !== null}
           />
@@ -289,7 +323,7 @@ export function ManagementBillingWorkspace({
               <ManualPaymentForm
                 key={`manual:${view.bookingId}`}
                 bookingId={view.bookingId}
-                disabled={pending || uncertain === 'refund'}
+                disabled={pending || (uncertain !== null && uncertain !== 'manual')}
                 onConfirm={(body) => mutate('manual', body)}
               />
               <RefundForm
@@ -297,8 +331,16 @@ export function ManagementBillingWorkspace({
                 booking={
                   refundRevision === null ? view : { ...view, billingRevision: refundRevision }
                 }
-                disabled={pending || uncertain === 'manual'}
+                disabled={pending || (uncertain !== null && uncertain !== 'refund')}
                 onConfirm={(body) => mutate('refund', body)}
+              />
+              <RefundApprovalForm
+                key={`approval:${view.bookingId}`}
+                booking={
+                  approvalRevision === null ? view : { ...view, billingRevision: approvalRevision }
+                }
+                disabled={pending || (uncertain !== null && uncertain !== 'approval')}
+                onConfirm={(body) => mutate('approval', body)}
               />
             </div>
           </>
