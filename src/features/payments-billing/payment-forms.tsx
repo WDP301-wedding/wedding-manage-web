@@ -131,7 +131,7 @@ export function ManualPaymentForm({
     <section className="billing-panel">
       <h2>Ghi nhận tiền đã nhận</h2>
       <p>
-        Tiền mặt hoặc chuyển khoản đã đối soát. Backend kiểm tra điều kiện cọc và số dư còn phải
+        Tiền mặt hoặc chuyển khoản đã đối soát. Hệ thống kiểm tra điều kiện cọc và số dư còn phải
         thu.
       </p>
       <form ref={form} onSubmit={review}>
@@ -236,7 +236,7 @@ export function RefundForm({
     <section className="billing-panel">
       <h2>Ghi nhận hoàn tiền</h2>
       <p>
-        Chọn khoản thanh toán gốc. Backend kiểm tra quyết định đã duyệt và hạn mức còn được hoàn.
+        Chọn khoản thanh toán gốc. Hệ thống kiểm tra quyết định đã duyệt và hạn mức còn được hoàn.
       </p>
       <form ref={form} onSubmit={review}>
         <fieldset

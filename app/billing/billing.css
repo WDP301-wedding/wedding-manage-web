@@ -49,6 +49,9 @@
   color: var(--navy);
   text-underline-offset: 4px;
 }
+.billing-shell .skip-link {
+  color: var(--paper);
+}
 .billing-shell button,
 .billing-shell .billing-primary-link {
   min-height: 44px;
