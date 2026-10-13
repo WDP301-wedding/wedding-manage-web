@@ -163,6 +163,12 @@ async function executeApiRequest<T>(
   return result.data;
 }
 
+function buildApiUrl(baseUrl: string, path: string): URL {
+  const normalizedBase = baseUrl.replace(/\/+$/, '');
+  const normalizedPath = path.replace(/^\/+/, '');
+  return new URL(`${normalizedBase}/${normalizedPath}`);
+}
+
 export function createManagementPrintOrdersGateway(
   options: CreatePrintOrdersGatewayOptions = {},
 ): ManagementPrintOrdersGateway {
@@ -183,8 +189,7 @@ export function createManagementPrintOrdersGateway(
 
   return {
     async list(token, query) {
-      const baseUrl = getBaseUrl();
-      const url = new URL('/management/print-orders', baseUrl);
+      const url = buildApiUrl(getBaseUrl(), '/management/print-orders');
       if (query?.bookingId) url.searchParams.set('bookingId', query.bookingId);
       if (query?.cursor) url.searchParams.set('cursor', query.cursor);
       if (query?.limit) url.searchParams.set('limit', String(query.limit));
@@ -201,8 +206,10 @@ export function createManagementPrintOrdersGateway(
     },
 
     async get(token, orderId) {
-      const baseUrl = getBaseUrl();
-      const url = new URL(`/management/print-orders/${encodeURIComponent(orderId)}`, baseUrl);
+      const url = buildApiUrl(
+        getBaseUrl(),
+        `/management/print-orders/${encodeURIComponent(orderId)}`,
+      );
       return executeApiRequest<PrintOrderView>(
         url.toString(),
         {
@@ -215,10 +222,9 @@ export function createManagementPrintOrdersGateway(
     },
 
     async quote(token, orderId, body, idempotencyKey) {
-      const baseUrl = getBaseUrl();
-      const url = new URL(
+      const url = buildApiUrl(
+        getBaseUrl(),
         `/management/print-orders/${encodeURIComponent(orderId)}/quotations`,
-        baseUrl,
       );
       return executeApiRequest<PrintOrderView>(
         url.toString(),
@@ -232,10 +238,9 @@ export function createManagementPrintOrdersGateway(
     },
 
     async startProduction(token, orderId, body, idempotencyKey) {
-      const baseUrl = getBaseUrl();
-      const url = new URL(
+      const url = buildApiUrl(
+        getBaseUrl(),
         `/management/print-orders/${encodeURIComponent(orderId)}/production`,
-        baseUrl,
       );
       return executeApiRequest<PrintOrderView>(
         url.toString(),
@@ -249,8 +254,10 @@ export function createManagementPrintOrdersGateway(
     },
 
     async markReady(token, orderId, body, idempotencyKey) {
-      const baseUrl = getBaseUrl();
-      const url = new URL(`/management/print-orders/${encodeURIComponent(orderId)}/ready`, baseUrl);
+      const url = buildApiUrl(
+        getBaseUrl(),
+        `/management/print-orders/${encodeURIComponent(orderId)}/ready`,
+      );
       return executeApiRequest<PrintOrderView>(
         url.toString(),
         {
@@ -263,10 +270,9 @@ export function createManagementPrintOrdersGateway(
     },
 
     async markHandedOver(token, orderId, body, idempotencyKey) {
-      const baseUrl = getBaseUrl();
-      const url = new URL(
+      const url = buildApiUrl(
+        getBaseUrl(),
         `/management/print-orders/${encodeURIComponent(orderId)}/handover`,
-        baseUrl,
       );
       return executeApiRequest<PrintOrderView>(
         url.toString(),
@@ -280,10 +286,9 @@ export function createManagementPrintOrdersGateway(
     },
 
     async cancel(token, orderId, body, idempotencyKey) {
-      const baseUrl = getBaseUrl();
-      const url = new URL(
+      const url = buildApiUrl(
+        getBaseUrl(),
         `/management/print-orders/${encodeURIComponent(orderId)}/cancellation`,
-        baseUrl,
       );
       return executeApiRequest<PrintOrderView>(
         url.toString(),
@@ -297,10 +302,9 @@ export function createManagementPrintOrdersGateway(
     },
 
     async proposeReplacement(token, orderId, body, idempotencyKey) {
-      const baseUrl = getBaseUrl();
-      const url = new URL(
+      const url = buildApiUrl(
+        getBaseUrl(),
         `/management/print-orders/${encodeURIComponent(orderId)}/replacement-proposals`,
-        baseUrl,
       );
       return executeApiRequest<PrintOrderView>(
         url.toString(),

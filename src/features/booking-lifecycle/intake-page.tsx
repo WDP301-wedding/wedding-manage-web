@@ -219,12 +219,20 @@ export function ConsultationRequestsPage() {
                     </div>
                   )}
                   {item.status === 'CONVERTED' && item.consultationId && (
-                    <Link
-                      className="booking-primary-link"
-                      href={`/bookings?consultationId=${item.consultationId}&consultationRevision=${item.consultationRevision}`}
-                    >
-                      Tiếp tục đặt tiệc
-                    </Link>
+                    <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                        <small style={{ color: '#64748b' }}>Mã hồ sơ tư vấn:</small>
+                        <code style={{ fontSize: '0.8rem', background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px' }}>
+                          {item.consultationId}
+                        </code>
+                      </div>
+                      <Link
+                        className="booking-primary-link"
+                        href={`/bookings?consultationId=${item.consultationId}&consultationRevision=${item.consultationRevision}`}
+                      >
+                        Tiếp tục đặt tiệc
+                      </Link>
+                    </div>
                   )}
                 </article>
               ))}

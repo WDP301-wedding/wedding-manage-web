@@ -56,7 +56,11 @@ const kinds = {
   REFUND: 'Hoàn tiền',
   CREDIT_ADJUSTMENT: 'Điều chỉnh giảm',
 };
-const sources = {
+const sources: Record<BillingView['history'][number]['sourceType'], string> = {
+  CONTRACT: 'Hợp đồng tiệc',
+  CONTRACT_APPENDIX: 'Phụ lục hợp đồng',
+  INCIDENTAL_FINALIZATION: 'Quyết toán phát sinh',
+  INVOICE_ADJUSTMENT: 'Điều chỉnh hóa đơn',
   BASE_BOOKING: 'Tiệc cưới',
   PRINT_ORDER: 'Đơn in',
   PAYMENT_ATTEMPT: 'Khoản thanh toán',

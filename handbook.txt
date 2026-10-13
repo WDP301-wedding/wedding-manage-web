@@ -1,0 +1,2371 @@
+﻿FPT606 · WDP301 · TÀI LIỆU BÀN GIAO
+Backend → Frontend Handbook
+Hệ thống Quản lý & Tổ chức Tiệc cưới – mọi thứ FE cần biết để tích hợp
+Phiên bản 1.1 · 13/10/2026 · Môi trường: wedding-be-production-e1dc
+Backend: wedding-be@d257be8 · WEDDING-CONTRACT-3@3.0.0 · 218 endpoint
+OpenAPI SHA-256: 6a8be82541ca2d8c…
+Dành cho: Nguyễn Tuấn Toàn (wedding-web) · Long Trì (wedding-manage-web) · Lã Gia Huy (wedding-app)
+Tổng hợp từ: OpenAPI, SPEC-*.md, docs/*-handoff.md, backend-scope-2026-10-10.md, frontend brief 13/10
+Mục lục
+Nếu mục lục trống: trong Word nhấp chuột phải vào mục lục → Update Field → Update entire table.
+TOC \h \o "1-2"
+0. Cách dùng tài liệu này
+Tài liệu gom toàn bộ những gì backend (BE) đã làm xong thành một nguồn duy nhất cho 3 thành viên frontend (FE). Viết sao cho người đọc lẫn công cụ AI (Claude, Cursor, v0, Stitch…) đều hiểu đúng nghiệp vụ, tránh tự bịa API hay tự thêm chức năng đã bị loại bỏ (ví dụ RSVP, QR check-in).
+Bạn là
+Đọc kỹ
+Đọc lướt
+Toàn – wedding-web (Public, Couple, Guest)
+Mục 2, 3, 4, 5, 6, 7, 8.1–8.9, 9.1, 10, 11
+Mục 8.10–8.13
+Long Trì – wedding-manage-web (Manager, Staff)
+Mục 2, 3, 4, 5, 6, 7, 8 (toàn bộ), 9.2, 10, 11
+—
+Lã Gia Huy – wedding-app (Couple Android)
+Mục 2, 3, 4, 5, 6, 8.1, 8.4–8.7, 8.11, 8.12, 9.3, 10, 11
+Mục 8.13
+Nguyên tắc vàng khi code FE (đưa nguyên văn cho AI)
+1. OpenAPI là luật. Method, path, DTO, field bắt buộc lấy từ openapi.json (digest ở mục 2). Không tự thêm endpoint, không suy quyền từ tên URL.
+2. Backend là nguồn sự thật cho tiền, quyền, trạng thái. FE không tự tính tổng tiền, không tự quyết “đã thanh toán”.
+3. Không có: RSVP, Household, QR check-in, khách tự đặt tiệc/giữ chỗ, tự đăng ký tài khoản, reset mật khẩu bằng link, hoàn tiền VNPay tự động, xuất XLSX.
+4. Mọi lệnh ghi cần Idempotency-Key và thường cần expectedRevision. Gặp 409 → đọc lại dữ liệu mới, không tự “ghi đè”.
+5. Thiếu dữ liệu ≠ 0. Check-in tắt hiển thị “Chưa ghi nhận”, không hiển thị 0.
+1. Tổng quan dự án và trạng thái backend
+1.1 Hệ thống làm gì
+FPT606 quản lý trọn vòng đời tiệc cưới cho một nhà hàng duy nhất (single-tenant): khách tìm hiểu → gửi yêu cầu tư vấn → Manager lập đề xuất và mời Couple vào workspace → hai bên thống nhất timeline và hợp đồng → Couple đặt cọc 30% qua VNPay → chuẩn bị thiệp, nhóm khách, sơ đồ bàn, đơn in → vận hành ngày cưới (check-in tùy chọn) → chi phí phát sinh, hóa đơn cuối, thanh toán số dư.
+1.2 Bốn repository và phân công FE
+Repository
+Công nghệ
+Người dùng
+Phụ trách
+wedding-be
+Node 24 · Express 5 · Prisma 7 · PostgreSQL · Zod 4
+API cho tất cả
+Bách, Nghĩa (BE – xong)
+wedding-web
+Next.js 16 · React 19 · openapi-fetch · Zod
+Public, Couple (Web), Guest xem thiệp
+Nguyễn Tuấn Toàn
+wedding-manage-web
+Next.js 16 · React 19 · openapi-fetch · Zod
+Manager, Staff (khu tác nghiệp)
+Long Trì
+wedding-app
+Expo 57 · React Native 0.86 (Android)
+Couple (+ Staff nếu chọn làm)
+Lã Gia Huy
+Ba repo FE đặt cạnh nhau (sibling) với wedding-be vì script sinh type mặc định đọc ../wedding-be/openapi/openapi.json.
+1.3 Trạng thái backend tại 13/10/2026
+Mã nguồn
+d257be8507dd83e9da73ac69605646a8fbcc7209 (merge PR #40, SPEC-11)
+Hợp đồng nghiệp vụ
+WEDDING-CONTRACT-3@3.0.0, provider BACKEND-RELEASE@3.0.0
+API
+OpenAPI 3.1 · 218 operation · SHA-256 6a8be82541ca2d8ce274f9817d10bcd300c91de2f5e734055cf9108b23db0915
+Database
+60 migration PostgreSQL (không đổi)
+Backlog BE
+71/71 task hoàn tất. Quyết định phát hành: NO_GO (còn gate runtime/provider/worker) – vẫn dùng được để tích hợp và demo.
+Môi trường (đã chốt)
+https://wedding-be-production-e1dc.up.railway.app – cả 3 FE dùng chung môi trường này. Railway đặt nhãn “production” nhưng đây là môi trường developer chứa dữ liệu thử. BE đã kiểm tra Swagger tại đây khớp đúng digest 6a8be825…. Môi trường staging wedding-be-spec11 có DB riêng – không dùng, tài khoản bên đó không đăng nhập được bên này.
+1.4 Trạng thái các dịch vụ ngoài (ảnh hưởng tới demo)
+Dịch vụ
+Trạng thái
+FE cần làm gì
+VNPay
+Chỉ sandbox. IPN về BE là nguồn sự thật.
+Không báo “đã thanh toán” dựa vào redirect; luôn đọc GET …/payments/{attemptId}.
+Email (Brevo)
+Worker đang tắt, ngân sách test đã dùng hết.
+Email OTP, lời mời workspace, gửi thiệp có thể không tới. Xin BE tài khoản/token test.
+Supabase Storage
+Đã cấu hình bucket private.
+Upload ảnh dùng multipart; ảnh gốc chỉ xem qua URL ký có hạn.
+Gemini (ảnh AI)
+Cấu hình nhưng có phí – không tự chạy thử.
+Làm UI trạng thái chờ / lỗi / provider chưa sẵn sàng.
+FCM (push Android)
+BE xong, gửi đang tắt. Nghiệm thu thuộc team app.
+App đăng ký installation; Web chỉ dùng inbox.
+Metrics/Tracing
+Tắt
+—
+2. Thiết lập kỹ thuật chung cho cả 3 FE
+2.1 Base URL và tài liệu API
+Base API
+https://wedding-be-production-e1dc.up.railway.app/api/v1 (môi trường đã chốt ngày 13/10/2026)
+Swagger UI
+https://wedding-be-production-e1dc.up.railway.app/docs/ – nút Authorize dán access token; “Try it out” gọi API thật
+OpenAPI JSON
+/api/v1/openapi.json hoặc file wedding-be/openapi/openapi.json
+Health
+/health/live, /health/ready – nằm ngoài /api/v1
+Biến môi trường FE
+NEXT_PUBLIC_API_BASE_URL (Web) · EXPO_PUBLIC_API_BASE_URL (App). Chỉ chứa URL, không bao giờ chứa secret.
+Cấu hình biến môi trường cho từng repo
+# wedding-app/.env  (Android gọi thẳng API, không có cookie nên không cần proxy)
+EXPO_PUBLIC_API_BASE_URL=https://wedding-be-production-e1dc.up.railway.app/api/v1
+# wedding-web/.env.local và wedding-manage-web/.env.local (cách nhanh, gọi thẳng API)
+NEXT_PUBLIC_API_BASE_URL=https://wedding-be-production-e1dc.up.railway.app/api/v1
+Vì sao Web nên đi qua proxy thay vì gọi thẳng Railway
+Cookie làm mới phiên __Host-wedding-refresh có SameSite=Lax: trình duyệt không gửi cookie này khi trang ở localhost:3000 hoặc *.vercel.app gọi fetch sang *.up.railway.app (khác site). Kết quả: đăng nhập được, nhưng sau 10 phút hoặc khi F5 là bị đăng xuất. Ngoài ra backend phải thêm origin của web vào CORS_ALLOWED_ORIGINS.
+Cách khuyên dùng: cho Next.js chuyển tiếp (rewrite) /api/v1/* sang backend. Trình duyệt chỉ thấy cùng một origin với trang web, nên cookie được gửi bình thường và không cần CORS. Khi đó đặt NEXT_PUBLIC_API_BASE_URL=http://localhost:3000/api/v1 (local) hoặc https://<domain-vercel>/api/v1 (deploy), còn địa chỉ backend thật để ở biến server BACKEND_ORIGIN (không có tiền tố NEXT_PUBLIC_).
+Lưu ý cho BE: qua proxy, mọi request đến từ IP của Vercel → cần xác nhận cấu hình AUTH_TRUST_PROXY_HOPS để giới hạn đăng nhập (10 lần/15 phút) không tính chung cho mọi người dùng.
+// next.config.ts – chuyển tiếp API sang backend (áp dụng cho wedding-web và wedding-manage-web)
+const backendOrigin = process.env.BACKEND_ORIGIN; // vd. https://wedding-be-production-e1dc.up.railway.app
+const nextConfig = {
+  async rewrites() {
+    return [{ source: '/api/v1/:path*', destination: `${backendOrigin}/api/v1/:path*` }];
+  },
+};
+export default nextConfig;
+2.2 Cập nhật API contract (BẮT BUỘC làm đầu tiên)
+Cả 3 repo FE đang khóa vào bản OpenAPI cũ, thiếu hợp đồng, phụ lục, khách, sơ đồ bàn, Staff, thông báo, báo cáo. Bước đầu tiên của mỗi người là nâng api-contract.lock.json lên bản mới rồi sinh lại type:
+// api-contract.lock.json
+{
+  "version": 1,
+  "source": {
+    "repository": "https://github.com/WDP301-wedding/wedding-be",
+    "commit": "d257be8507dd83e9da73ac69605646a8fbcc7209",
+    "path": "openapi/openapi.json",
+    "sha256": "6a8be82541ca2d8ce274f9817d10bcd300c91de2f5e734055cf9108b23db0915"
+  }
+}
+# từ thư mục repo FE (wedding-be nằm ở ../wedding-be và đã checkout đúng commit)
+npm ci
+npm run api:generate   # ghi lại src/lib/api/generated/schema.d.ts
+npm run api:check
+npm run typecheck      # lỗi type = chỗ code cũ lệch contract mới → sửa
+Repo
+Đang khóa (cũ)
+Cần nâng lên
+wedding-web
+07346a9… / sha 6f92021e…
+d257be8 / sha 6a8be825…
+wedding-manage-web
+45eae9e… / sha 969dc432…
+như trên
+wedding-app
+0a77391… / sha 1312733…
+như trên
+2.3 Định dạng response và lỗi
+Thành công: luôn bọc trong { "data": ... }. Danh sách phân trang có nextCursor (hoặc items + nextCursor).
+Lỗi: { "error": { "code": "…", "message": "…", "requestId": "…", "details"?: … } }. Xử lý theo error.code, không dựa vào message (chỉ minh họa). Hiển thị requestId để hỗ trợ tra log.
+UUID dạng chữ thường. Thời gian là chuỗi ISO UTC → hiển thị theo giờ Việt Nam Asia/Ho_Chi_Minh. Riêng eventDate (YYYY-MM-DD) là ngày địa phương, không convert múi giờ.
+Response private có Cache-Control: no-store → không cache ở client, không dùng SSG cho dữ liệu riêng tư.
+HTTP
+Ý nghĩa
+FE xử lý
+400
+IDEMPOTENCY_KEY_REQUIRED
+Lỗi lập trình: thêm header
+401
+Chưa đăng nhập / token hết hạn / bị thu hồi
+Gọi refresh 1 lần; vẫn 401 → về trang đăng nhập
+403
+Không đủ quyền / điều kiện (vd. CHECK_IN_DISABLED)
+Hiện lý do, ẩn/khóa nút
+404
+Không tồn tại hoặc bị che vì không thuộc quyền
+Hiện “Không tìm thấy”, không retry
+409
+Xung đột revision / trạng thái (*_STALE, *_ACTIVE…)
+Tải lại dữ liệu, cho người dùng thao tác lại với key mới
+422
+Payload sai (field lạ, số lẻ, vượt giới hạn)
+Hiện lỗi theo field
+429
+Vượt rate limit (login, OTP, guest link)
+Chờ theo Retry-After
+503
+Provider chưa sẵn sàng
+Trạng thái “Chức năng tạm thời chưa sẵn sàng”
+2.4 Xác thực (Authentication)
+Web (wedding-web, wedding-manage-web)
+POST /auth/web-sessions với {email, password} → nhận accessToken (sống 10 phút) và BE đặt cookie __Host-wedding-refresh (HttpOnly, Secure, SameSite=Lax).
+Giữ access token trong bộ nhớ (biến/React state), không lưu localStorage. Gửi header Authorization: Bearer <accessToken>.
+Hết hạn hoặc reload trang → POST /auth/web-session-refreshes với body {} và credentials: "include" để trình duyệt tự gửi cookie.
+Đăng xuất: DELETE /auth/sessions/current. Quản lý phiên: GET /auth/sessions, DELETE /auth/sessions/{sessionId}.
+GET /auth/me trả roles (MANAGER, STAFF, COUPLE) → định tuyến theo vai trò.
+Nhắc lại: cookie refresh khác site
+Cookie __Host- + SameSite=Lax chỉ được gửi khi FE và API cùng site. Nếu FE ở *.vercel.app còn API ở *.up.railway.app thì lệnh refresh sẽ không có cookie → người dùng bị đăng xuất mỗi 10 phút/khi reload.
+Cách xử lý: dùng proxy Next.js như mục 2.1. Nếu chạy backend local (localhost:3000 ↔ localhost:3001) thì cùng site nên vẫn chạy được.
+Android (wedding-app)
+POST /auth/android-sessions → accessToken + refreshToken. Lưu refresh token trong SecureStore, access token trong bộ nhớ.
+Làm mới: POST /auth/android-session-refreshes. Refresh token xoay vòng (rotate) – luôn lưu token mới nhận.
+Mật khẩu và lời mời
+Không có đăng ký công khai. Manager do operator tạo; Staff do Manager cấp; Couple được tạo khi nhận lời mời workspace.
+Nhận lời mời: link email chứa token → trang Web gọi POST /workspace-invitation-acceptances {invitationToken, password} → trả luôn phiên đăng nhập. Lời mời sống 72 giờ.
+Quên / thiết lập mật khẩu (kể cả Staff mới): POST /auth/password-otp-requests {email} → {challengeId, expiresInSeconds: 600, resendAfterSeconds: 60} → POST /auth/password-otp-completions {challengeId, code, newPassword} → đăng nhập lại.
+Đổi mật khẩu khi đã đăng nhập: /auth/password-change-otp-requests → /auth/password-changes.
+Mật khẩu 12–128 ký tự. Hai endpoint password-reset-* (link) đã ngừng – code cũ trong repo phải bỏ.
+2.5 Idempotency-Key, revision, cursor
+Idempotency-Key (1–128 ký tự ASCII in được, nên dùng crypto.randomUUID()): bắt buộc cho hầu hết POST/PATCH/DELETE. Tạo key một lần cho một ý định người dùng (một lần bấm nút). Retry do mất mạng thì gửi lại cùng key và cùng body. Đổi body mà giữ key → 422/409 IDEMPOTENCY_KEY_REUSED.
+expectedRevision: chống ghi đè đồng thời (optimistic concurrency). Mỗi tài nguyên có revision riêng – hợp đồng/phụ lục dùng revision của Booking, khách dùng revision của khách, nhóm dùng revision của nhóm… Sau mỗi lệnh ghi, lấy revision mới trong response cho lệnh tiếp theo.
+cursor: phân trang dạng con trỏ mờ; khi danh sách thay đổi, cursor cũ có thể báo *_CURSOR_STALE → tải lại từ đầu.
+// Gợi ý: wrapper tạo key một lần cho mỗi thao tác
+async function runCommand<T>(send: (key: string) => Promise<T>) {
+  const key = crypto.randomUUID();        // 1 ý định = 1 key
+  try { return await send(key); }
+  catch (e) {
+    if (isNetworkError(e)) return await send(key); // retry cùng key, cùng body
+    throw e;                                       // 409 → reload dữ liệu
+  }
+}
+2.6 Tiền, thời gian, dữ liệu thiếu
+Tiền là số nguyên VND (…Vnd). Hiển thị bằng Intl.NumberFormat("vi-VN") + “đ”. Không làm tròn, không tự cộng.
+Ca tiệc: LUNCH (Trưa), DINNER (Tối). Giờ ca nằm trong proposal/contract (shiftStartTime, shiftEndTime).
+null nghĩa là “chưa có / không đo” – không đổi thành 0. Ví dụ checkedInGuestCount: null → “Chưa ghi nhận”.
+2.7 Code hiện có trong repo nên tận dụng
+src/lib/api/client.ts – client openapi-fetch có type đầy đủ, lỗi ApiClientError.
+src/features/identity-access/session.ts, browser-session.ts – quản lý phiên Web (refresh, access token trong bộ nhớ).
+src/features/booking-lifecycle/command-retries.ts – helper retry giữ nguyên Idempotency-Key.
+Quy tắc chữ tiếng Việt trong AGENTS.md: font sans có dấu (--font-display, --font-body), không text-transform: uppercase, không letter-spacing trang trí; chạy npm test -- src/design-system/typography.test.ts.
+3. Vai trò và quyền
+Vai trò
+Là ai
+Được làm
+Kênh
+Public
+Khách vãng lai chưa có tài khoản
+Xem nhà hàng, sảnh, menu; gửi yêu cầu tư vấn
+wedding-web
+Couple RESTRICTED
+Cô dâu/chú rể đã nhận lời mời, chưa cọc
+Xem đề xuất, cùng sửa & duyệt timeline, nhập tên, lập & duyệt hợp đồng, đặt cọc, xin huỷ
+web (workspace hạn chế chỉ trên Web)
+Couple FULL
+Couple sau khi cọc được BE xác nhận
+Toàn bộ: nhóm khách, sơ đồ bàn, thiệp, đơn in, phụ lục, xem phát sinh/hoá đơn, trả số dư, bật check-in
+wedding-web + wedding-app
+Guest
+Người được mời, không có tài khoản
+Chỉ xem thiệp qua link công khai/cá nhân. Không RSVP, không check-in
+wedding-web
+Manager
+Quản lý nhà hàng (gộp admin)
+Catalog, tư vấn, booking, hợp đồng, in, tài chính, Staff, báo cáo
+wedding-manage-web
+Staff
+Nhân viên được phân công
+Tìm khách, check-in/hoàn tác theo tên khi tiệc bật check-in
+wedding-manage-web (khu Staff) / app tùy chọn
+Quyền đọc từ backend, không tự suy: GET /couple/bookings trả accessLevel (RESTRICTED/FULL) và phase; GET /bookings/{id}/proposal trả capabilities (canEditTimeline, canApproveTimeline, canWithdrawApproval, canRequestCancellation). UI ẩn/khóa nút theo các cờ này; nếu vẫn bị 403/404 thì hiển thị lý do.
+Hành động
+Manager
+Couple FULL
+Couple RESTRICTED
+Staff được giao
+Guest/Public
+Timeline: sửa/duyệt trước cọc
+✓
+—
+✓
+—
+—
+Hợp đồng: tạo/gửi/duyệt
+✓ (bên Manager)
+✓ (bên Couple)
+✓ (bên Couple)
+—
+—
+Đặt cọc VNPay
+—
+✓
+✓
+—
+—
+Phụ lục sau cọc
+✓
+✓
+—
+—
+—
+Nhóm khách, danh sách tên, số khách dự kiến
+✓
+✓
+—
+—
+—
+Sơ đồ bàn (chọn, gán nhãn, xác nhận)
+✓ (+ngoại lệ)
+✓
+—
+—
+—
+Thiệp: thiết kế, xuất bản
+đọc
+✓ (editor đầy đủ chỉ Web)
+—
+—
+xem
+Đơn in
+báo giá → bàn giao
+tạo, duyệt báo giá
+—
+—
+—
+Bật check-in theo tên
+✓
+✓
+—
+—
+—
+Check-in / hoàn tác
+✓ (cần lý do override)
+—
+—
+✓ (trong khung giờ)
+—
+Phát sinh, chốt hoá đơn, hoàn tiền
+✓
+chỉ đọc
+—
+—
+—
+Thanh toán số dư
+✓
+✓
+—
+—
+—
+Báo cáo, quản lý Staff
+✓
+—
+—
+—
+—
+4. Luồng nghiệp vụ chính (core flow)
+Mỗi bước ghi rõ ai làm – trên kênh nào – gọi API gì. Đây là xương sống để chia màn hình và test end-to-end.
+#
+Bước
+Ai / Kênh
+API chính
+1
+Xem nhà hàng, sảnh, gói menu
+Public · web
+GET /catalog/restaurant, /catalog/halls, /catalog/halls/{id}, /catalog/menu-packages, /catalog/dishes
+2
+Gửi yêu cầu tư vấn
+Public · web
+POST /consultation-requests (202 accepted)
+3
+Xử lý yêu cầu → tạo consultation
+Manager · manage
+GET /management/consultation-requests, POST …/{id}/conversion hoặc /closure; hoặc POST /management/consultations
+4
+Kiểm tra lịch, tạo đề xuất booking, giữ chỗ 15 phút
+Manager · manage
+GET /management/availability, POST /bookings, POST /bookings/{id}/slot-holds
+5
+Mời Couple vào workspace
+Manager · manage
+POST /management/consultations/{id}/workspace-invitations
+6
+Couple nhận lời mời, đặt mật khẩu
+Couple · web
+POST /workspace-invitation-acceptances
+7
+Cùng lập & duyệt timeline
+Couple RESTRICTED (web) + Manager
+GET /bookings/{id}/proposal, POST …/timeline-revisions, …/approvals, …/withdrawals
+8
+Nhập tên cô dâu / chú rể
+Couple / Manager
+GET/PATCH /consultations/{cid}/couple-profile
+9
+Lập hợp đồng: nhiều combo menu, dịch vụ, thiệp in
+Couple / Manager
+GET /catalog/services, /catalog/print-offerings, POST /bookings/{id}/contracts
+10
+Gửi duyệt, hai bên duyệt cùng revision, xem PDF
+Couple + Manager
+…/contracts/{rev}/submissions, /approvals, /pdf
+11
+Đặt cọc 30% qua VNPay
+Couple · web/app
+POST /bookings/{id}/payments/deposit → redirect checkoutUrl → quay về → GET …/payments/{attemptId}
+12
+BE xác nhận cọc → booking CONFIRMED, Couple lên FULL
+Hệ thống (IPN)
+GET /couple/bookings thấy accessLevel: FULL
+13
+Nhóm khách, số khách dự kiến, danh sách tên (tùy chọn)
+Couple FULL · web
+/guest-groups, /guest-plan, /guests, import
+14
+Sơ đồ bàn theo nhóm
+Couple FULL · web
+/seating-layout-options, /seating-plans…
+15
+Thiệp: ảnh, thiết kế, xuất bản, chia sẻ link/QR
+Couple FULL · web (app sửa chữ)
+/media, /invitation-derived-assets, /invitations…, /publication
+16
+Đơn in thiệp
+Couple + Manager
+/print-orders…, /management/print-orders/…
+17
+Thay đổi thoả thuận sau cọc → phụ lục
+Couple FULL + Manager
+/contract-appendices…
+18
+Phân công Staff, bật check-in (tùy chọn)
+Manager / Couple
+/management/events/{id}/assignments, PATCH /check-in-settings
+19
+Ngày cưới: check-in theo tên
+Staff · manage
+/staff/events/{id}/guests/search, /check-ins, /check-in-undos
+20
+Hoàn tất tiệc
+Manager / job tự động (giờ kết thúc + 12h)
+POST /management/bookings/{id}/completion
+21
+Nhập phát sinh sau giờ kết thúc, chốt hoá đơn cuối
+Manager · manage
+/management/bookings/{id}/incidental-expenses, /final-invoices, /invoice-adjustments
+22
+Thanh toán số dư / hoàn tiền
+Couple (VNPay) · Manager (thủ công)
+POST …/payments/balance, /management/billing/…
+23
+Báo cáo, thông báo
+Manager / Couple
+/management/analytics/*, /notifications/*
+Khác biệt lớn so với SRS cũ (v1.2)
+Khách không tự đặt tiệc/giữ chỗ/cọc ngay trên catalog. Bắt buộc qua tư vấn → Manager tạo booking.
+Couple không được cấp tài khoản sau cọc; tài khoản có từ lúc nhận lời mời (RESTRICTED) và được nâng FULL sau cọc.
+Không còn RSVP, mã QR check-in từng khách, Household, số người đi kèm, chính sách hoàn cọc theo bậc.
+Có thêm: hợp đồng thương mại nhiều dòng + PDF, phụ lục, chi phí phát sinh, hoá đơn cuối, nhóm khách không cần tên, sơ đồ bàn theo mẫu cố định, đơn in, thông báo, báo cáo.
+5. Vòng đời trạng thái (state machine)
+5.1 Booking – phase
+DRAFT
+  │ timeline được Manager + Couple duyệt
+  ▼
+AWAITING_DEPOSIT
+  │ cọc được BE xác nhận (IPN VNPay hoặc Manager ghi nhận thủ công)
+  ▼
+CONFIRMED
+  │ Manager hoàn tất / job tự động (giờ kết thúc + 12h)
+  ▼
+COMPLETED
+DRAFT / AWAITING_DEPOSIT / CONFIRMED ──(Manager huỷ hoặc duyệt yêu cầu huỷ)──▶ CANCELLED
+Phase
+Nghĩa
+Couple thấy gì
+DRAFT
+Đang lập đề xuất, timeline chưa đủ 2 bên duyệt
+Workspace RESTRICTED: timeline, tên, hợp đồng
+AWAITING_DEPOSIT
+Đủ điều kiện cọc (timeline đã duyệt)
+Hợp đồng + nút đặt cọc khi eligibleForDeposit = true
+CONFIRMED
+Đã cọc, slot khoá
+Mở các tab FULL
+COMPLETED
+Đã hoàn tất (Manager hoặc job: giờ kết thúc + 12h)
+Chỉ đọc; vẫn xem hoá đơn, trả số dư
+CANCELLED
+Đã huỷ
+Chỉ đọc lịch sử; hoàn tiền qua Manager
+5.2 Timeline revision – state
+CURRENT (bản đang bàn) → EFFECTIVE (đã được cả Manager và Couple duyệt: mutuallyApproved = true) · bản cũ thành SUPERSEDED. Sửa timeline = tạo revision mới (truyền predecessorRevisionId), mọi duyệt cũ mất hiệu lực. Sau cọc chỉ được đề xuất thay đổi qua change-requests kèm lý do.
+5.3 Hợp đồng và phụ lục – state
+DRAFT ──submit──▶ AWAITING_APPROVAL ──(Manager + Couple cùng duyệt 1 revision)──▶ APPROVED
+  ▲                       │
+  └──── withdraw (lý do) ┘   Bản bị thay thế → SUPERSEDED (giữ lịch sử, PDF không đổi)
+Sửa nội dung = tạo revision mới (predecessorRevisionId = revision hiện tại), không PATCH.
+Hai bên phải duyệt đúng cùng revisionId/documentDigest. Cọc chỉ được khi hợp đồng APPROVED và timeline EFFECTIVE đúng revision mà hợp đồng gắn (timelineRevisionId).
+Phụ lục có cùng vòng đời; chỉ sau khi APPROVED mới thay đổi effectiveTotalVnd.
+5.4 Giao dịch thanh toán – status
+status
+Hiển thị
+Ghi chú
+CREATED / PENDING
+Đang chờ kết quả
+Cho phép mở lại checkoutUrl nếu chưa hết expiresAt; poll trạng thái
+SUCCEEDED
+Thành công
+Cọc: thêm applicationStatus (PENDING → SUCCEEDED khi booking đã được xác nhận)
+FAILED
+Thất bại
+Có thể tạo giao dịch mới (key mới)
+UNKNOWN
+Chưa rõ kết quả
+Không cho tạo giao dịch mới, không cho sửa tiền; chờ BE đối soát (PAYMENT_ATTEMPT_ACTIVE)
+5.5 Đơn in – status
+REQUESTED → (Manager báo giá) QUOTED → (Couple duyệt) APPROVED → IN_PRODUCTION → READY_FOR_HANDOVER → HANDED_OVER. Có thể CANCELLED theo điều kiện. Báo giá thay thế (pendingReplacementProposal) chặn sản xuất cho đến khi Couple quyết định.
+5.6 Các trạng thái khác
+Đối tượng
+Giá trị
+Ghi chú
+Yêu cầu tư vấn
+NEW → CONVERTED | CLOSED
+Chỉ Manager xử lý
+Quyền Couple
+RESTRICTED → FULL
+Nâng tự động khi cọc được xác nhận
+Nhóm khách / Khách
+ACTIVE ↔ ARCHIVED
+Không xoá cứng; tối đa 100 nhóm, 10.000 khách
+Sơ đồ bàn
+DRAFT → CONFIRMED · REQUIRES_REVIEW
+REQUIRES_REVIEW khi số khách dự kiến đổi → phải xác nhận lại
+Check-in mode
+NONE (mặc định) | BY_GUEST_NAME
+locked = true sau bản ghi check-in đầu tiên
+Đo tham dự
+NOT_RECORDED | LISTED_GUESTS_ONLY
+NOT_RECORDED → checkedInGuestCount = null
+Thiết kế/mẫu thiệp
+DRAFT | PUBLISHED | SUPERSEDED
+Xuất bản tạo slug công khai
+Thông báo (Manager)
+QUEUED, IN_FLIGHT, DELIVERED, PROVIDER_ACCEPTED, RETRYABLE_FAILED, UNKNOWN, DEAD_LETTER, SKIPPED_STALE, CANCELLED
+Chỉ DEAD_LETTER được requeue
+6. Quy tắc nghiệp vụ FE bắt buộc tuân thủ
+Mã
+Chủ đề
+Quy tắc
+FR-01
+Slot
+Slot = hallId + eventDate + shiftCode. Một sảnh chỉ có một tiệc đã xác nhận cho cùng ngày và ca. Giữ chỗ 15 phút do Manager tạo; giao dịch UNKNOWN giữ slot kể cả khi hold hết hạn.
+FR-02
+Không tự đặt
+Catalog công khai không có giữ chỗ/checkout. CTA chính là “Yêu cầu tư vấn”. Không quảng cáo “giữ chỗ ngay”.
+FR-03
+Tên cô dâu/chú rể
+Hai trường riêng brideName, groomName (1–120 ký tự). Có thể bỏ trống lúc tư vấn nhưng bắt buộc trước khi gửi duyệt hợp đồng (COUPLE_NAMES_INCOMPLETE). Không tách tên từ displayName.
+FR-04
+Hợp đồng
+Lines gồm MENU (số bàn), PRINT (số bản), SERVICE (theo đơn vị). 1–50 nguồn khác nhau, ít nhất 1 MENU, tổng bàn ≤ 500, số lượng nguyên dương ≤ 10.000. FE chỉ gửi sourceId, sourceRevisionId, quantity; giá và tổng do BE tính.
+FR-05
+Duyệt kép
+Manager và Couple duyệt cùng một revision. Sửa bất kỳ dòng nào → revision mới, duyệt lại từ đầu. Hiển thị ai đã duyệt, lúc nào.
+FR-06
+PDF
+PDF hợp đồng có đủ dòng, tổng tiền và câu “Các chi phí phát sinh sẽ được tính sau”. Bản nháp được đánh dấu nháp. PDF đã duyệt không đổi.
+FR-07
+Tiền cọc
+depositAmountVnd = ceil(contractTotalVnd × 30 / 100) – lấy từ BE, không tự tính. Gửi kèm timelineRevisionId, contractRevisionId, documentDigest đúng giá trị BE trả.
+FR-08
+Redirect VNPay
+Trang “quay về từ VNPay” chỉ là trang chờ kết quả. Lưu paymentAttemptId trước khi redirect (sessionStorage), sau đó poll GET /bookings/{id}/payments/{attemptId}. Chỉ báo thành công khi status = SUCCEEDED.
+FR-09
+Khoá khi chưa rõ
+Khi có giao dịch PENDING/UNKNOWN: khoá sửa hợp đồng, phụ lục, tạo thanh toán mới; hiển thị “Thanh toán chưa rõ kết quả”.
+FR-10
+Phụ lục
+Sau cọc, mọi thay đổi menu/bàn/in/dịch vụ dùng phụ lục có lý do, hiển thị trước–sau và deltaVnd (có dấu). Phụ lục không thu thêm cọc. Sau khi chốt hoá đơn thì dùng điều chỉnh hoá đơn, không tạo phụ lục.
+FR-11
+Nhóm khách
+Nhóm dùng được khi không có tên khách nào. 4 nhóm mặc định: Parents, Groom Side, Bride Side, Friends. Tên nhóm 1–80, màu #RRGGBB. Nhóm còn khách đang hoạt động thì không lưu trữ được (GUEST_GROUP_IN_USE).
+FR-12
+Danh sách tên tùy chọn
+Có thể không nhập, nhập một phần hoặc đầy đủ. Không luồng nào (cọc, thiệp, sơ đồ, in, quyết toán) được ép nhập tên. Trùng tên vẫn là 2 khách khác nhau.
+FR-13
+Ba con số tách biệt
+planningHeadcount (dự kiến, nhập riêng), listedGuestCount (tên đã lập), checkedInGuestCount (tên đã check-in). Thêm/xoá/import khách không đổi số dự kiến. Không tính “tỷ lệ tham dự” từ danh sách một phần.
+FR-14
+Người đi kèm
+Khách được dẫn theo người đi kèm, nhưng chưa có trường đếm người đi kèm. Không tự thêm.
+FR-15
+Check-in
+Mặc định NONE → hiển thị “Chưa ghi nhận”. Chỉ Couple FULL/Manager bật BY_GUEST_NAME khi có ≥ 1 khách có tên. Sau lần check-in đầu tiên không tắt được. Guest/QR công khai không có nút check-in.
+FR-16
+Khung giờ check-in
+Từ giờ bắt đầu − 2 giờ đến giờ kết thúc + 12 giờ (giờ Việt Nam). Staff chỉ hoàn tác bản ghi của mình. Manager ghi đè cần overrideReason 10–500 ký tự.
+FR-17
+Sơ đồ bàn
+Chọn mẫu cố định của sảnh, gán nhãn nhóm cho bàn (một bàn tối đa 1 nhóm, một nhóm nhiều bàn). Không kéo thả vẽ hình, không xếp từng người vào ghế. Xác nhận cần số khách dự kiến > 0 và nằm trong khoảng mẫu (Manager có thể duyệt ngoại lệ).
+FR-18
+Thiệp
+Editor đầy đủ chỉ trên Web. Android chỉ sửa textFields trên thiết kế có sẵn. Ảnh có hạn chót chỉnh sửa (media cutoff, mặc định giờ bắt đầu tiệc − 72 giờ; Manager có thể đổi) – sau hạn trả MEDIA_CUTOFF_REACHED, UI hiển thị khoá.
+FR-19
+Link khách
+Link thiệp cá nhân đặt credential trong #fragment (#credential=wgc_…), không đưa vào path/query/analytics. Hết hạn lúc kết thúc tiệc + 24h. Link không hợp lệ → thông báo chung “Liên kết không khả dụng”.
+FR-20
+In
+Số lượng in đã nằm trong hợp đồng không bị thu tiền lần hai. In thêm/bớt → phụ lục.
+FR-21
+Phát sinh
+Chỉ Manager nhập, chỉ sau giờ kết thúc tiệc (EVENT_NOT_ENDED). Couple chỉ xem, không duyệt phát sinh/hoá đơn. Có thể chốt hoá đơn không có phát sinh.
+FR-22
+Hoá đơn
+Không ghi đè/xoá hoá đơn đã chốt; điều chỉnh tạo revision mới có lý do. CREDIT không phải hoàn tiền ngân hàng.
+FR-23
+Hoàn tiền
+Thủ công: Manager duyệt → ghi nhận chứng từ. Không có hoàn VNPay tự động.
+FR-24
+Huỷ
+Couple chỉ gửi yêu cầu huỷ (lý do); Manager quyết định hoặc tự huỷ. Huỷ không tự hoàn tiền.
+FR-25
+Trạng thái riêng biệt
+Hợp đồng, cọc, đơn in, hoàn tất tiệc, quyết toán là các trạng thái khác nhau – hiển thị riêng, không gộp thành một “trạng thái đơn”.
+FR-26
+Múi giờ
+Hiển thị mọi timestamp theo Asia/Ho_Chi_Minh.
+7. Công thức tiền (chỉ để hiểu – FE không tự tính)
+lineTotalVnd     = quantity × unitPriceVnd
+contractTotalVnd = Σ lineTotalVnd (MENU + PRINT + SERVICE)
+depositVnd       = ceil(contractTotalVnd × 30 / 100)
+finalTotalVnd    = originalContractTotalVnd + approvedAppendixDeltaVnd
+                 + incidentalTotalVnd + invoiceAdjustmentDeltaVnd
+netPaidVnd       = settledPaymentsVnd − settledRefundsVnd
+balanceVnd       = finalTotalVnd − netPaidVnd
+outstandingVnd   = max(balanceVnd, 0)      // còn phải thu
+creditVnd        = max(−balanceVnd, 0)     // trả dư
+GET /bookings/{id}/billing trả sẵn totals: acceptedChargesVnd, paidVnd, refundedVnd, netPaidVnd, outstandingVnd, creditVnd và history từng bút toán (kind: CHARGE, PAYMENT, REFUND, CREDIT_ADJUSTMENT; sourceType: CONTRACT, CONTRACT_APPENDIX, INCIDENTAL_FINALIZATION, INVOICE_ADJUSTMENT, PRINT_ORDER, PAYMENT_ATTEMPT, …). Số check-in không bao giờ ảnh hưởng tiền.
+Ví dụ: hợp đồng 100.000.000đ → cọc 30.000.000đ. Phụ lục +5.000.000đ, phát sinh 2.000.000đ → tổng cuối 107.000.000đ; đã trả 30.000.000đ → còn phải thu 77.000.000đ.
+8. Chi tiết nghiệp vụ theo module
+8.1 Identity & tài khoản
+Xem mục 2.4. Các màn: đăng nhập, nhận lời mời, quên mật khẩu OTP, hồ sơ, đổi mật khẩu, phiên đăng nhập.
+API
+Ai
+Ghi chú cho FE
+POST /auth/web-sessions · /web-session-refreshes
+Mọi người
+Rate limit 10 lần/15 phút → hiển thị chờ khi 429
+GET /auth/me
+Đã đăng nhập
+Định tuyến theo roles
+GET/PATCH /auth/profile
+Đã đăng nhập
+PATCH cần expectedRevision
+POST /auth/password-otp-requests → /password-otp-completions
+Public
+Đếm ngược gửi lại 60s; OTP hết hạn 600s
+POST /auth/password-change-otp-requests → /password-changes
+Đã đăng nhập
+Đổi mật khẩu bằng OTP
+GET /auth/sessions · DELETE /auth/sessions/{id} · /current
+Đã đăng nhập
+Danh sách thiết bị, thu hồi
+POST /workspace-invitation-acceptances
+Couple mới
+Token từ link email; trả phiên đăng nhập
+8.2 Tư vấn (Intake) và hồ sơ cặp đôi
+API
+Ai
+Ghi chú cho FE
+POST /consultation-requests
+Public
+submissionId (UUID tạo 1 lần cho mỗi lần gửi – chống gửi trùng), displayName, email, phone, message, preferredDate?, expectedGuests?, brideName?, groomName?. Trả 202 {accepted: true}
+GET /management/consultation-requests
+Manager
+Inbox: NEW / CONVERTED / CLOSED
+POST …/{id}/conversion · /closure
+Manager
+Chuyển thành consultation hoặc đóng
+POST /management/consultations
+Manager
+intendedEmail, displayName, note?
+POST /management/consultations/{cid}/workspace-invitations
+Manager
+Tối đa 3 lần/24h cho một email
+GET/PATCH /consultations/{cid}/couple-profile
+Couple, Manager
+{expectedRevision, brideName?, groomName?}
+GET /couple/bookings
+Couple
+Danh sách tiệc: phase, accessLevel, hallName, eventDate, shiftCode, planningHeadcount, managerApproved, coupleApproved
+8.3 Catalog nhà hàng (Venue)
+Dữ liệu catalog có phiên bản: món, gói menu, mẫu timeline, mẫu sơ đồ bàn đều theo mô hình “aggregate + version DRAFT/PUBLISHED”. Sửa = clone version mới → sửa nháp → publish. Không xoá cứng: retire / restore.
+API
+Ai
+Ghi chú cho FE
+GET /catalog/restaurant · /halls · /halls/{id} · /menu-packages · /dishes
+Public
+Chỉ dữ liệu đang hoạt động
+GET /catalog/services · /print-offerings
+Đã đăng nhập
+Dùng để chọn vào hợp đồng (có sourceRevisionId, unitPriceVnd)
+/management/catalog/restaurant · /shifts/{shiftCode}
+Manager
+Hồ sơ nhà hàng, giờ 2 ca LUNCH/DINNER
+/management/catalog/halls…
+Manager
+CRUD sảnh + retire/restore, expectedRevision
+/management/catalog/dishes… · /menu-packages…
+Manager
+Aggregate → versions → publication
+/management/catalog/timeline-templates… · /layout-templates…
+Manager
+Mẫu timeline; mẫu sơ đồ bàn + đăng ký bàn (/tables)
+POST /management/catalog/media-assets · /{resource}/{id}/media · /media-order
+Manager
+Ảnh catalog (jpeg/png/webp), sắp xếp thứ tự
+/management/services · /management/print-offerings
+Manager
+Dịch vụ (tên, đơn vị, giá) và sản phẩm in (mẫu, chất liệu, giá/bản)
+8.4 Booking và timeline
+Manager tạo booking; Couple cộng tác qua proposal. planningHeadcount (số khách dự kiến) nhập khi tạo booking.
+API
+Ai
+Ghi chú cho FE
+GET /management/availability?hallId&eventDate&shiftCode
+Manager
+Trạng thái slot
+POST /bookings
+Manager
+consultationId, hallId, eventDate, shiftCode, menuPackageVersionId, tableCount, planningHeadcount, expectedRevision (revision consultation)
+POST /bookings/{id}/slot-holds
+Manager
+Giữ 15 phút, trả expiresAt
+GET /bookings/{id}/proposal
+Manager, Couple
+phase, revision, proposal (sảnh, menu, ca, số bàn, depositAmountVnd), timeline, effectiveTimeline, capabilities, cancellationRequests
+POST …/timeline-revisions
+Manager, Couple
+{expectedRevision, predecessorRevisionId, items[{order, startTime "HH:mm", title, description?, itemId?}]}
+POST …/timeline-revisions/{rev}/approvals · /withdrawals
+Manager, Couple
+Duyệt/rút duyệt đúng revision
+POST …/change-requests
+Couple FULL
+Đổi timeline sau cọc: items + reason
+POST …/cancellation-requests
+Couple
+{expectedRevision, reason} → 202
+POST /management/bookings/{id}/cancellation · /cancellation-requests/{rid}/decision · /completion
+Manager
+Huỷ, quyết định APPROVE/REJECT, hoàn tất
+8.5 Hợp đồng thương mại và phụ lục
+Model mới FULL_CONTRACT_V1 (booking cũ có thể là LEGACY_PROPOSAL_V1).
+API
+Ai
+Ghi chú cho FE
+GET /bookings/{id}/contracts
+Manager, Couple
+currentRevisionId, eligibleForDeposit, bookingRevision, revisions[] (document, approvals, state)
+POST /bookings/{id}/contracts
+Manager, Couple
+{expectedRevision (Booking), predecessorRevisionId|null, timelineRevisionId, lines[{category, sourceId, sourceRevisionId, quantity}]}
+POST …/contracts/{rev}/submissions · /approvals
+Manager, Couple
+{expectedRevision}
+POST …/contracts/{rev}/withdrawals
+Manager, Couple
+{expectedRevision, reason} → tạo DRAFT mới
+GET …/contracts/{rev}/pdf
+Manager, Couple
+File PDF (header X-Content-SHA256) – tải bằng fetch có Bearer rồi mở blob
+GET/POST /bookings/{id}/contract-appendices · /submissions · /approvals
+Manager, Couple FULL
+Tạo: {expectedRevision, predecessorRevisionId, reason, lines (toàn bộ lựa chọn sau thay đổi)}; xem beforeLines/afterLines/deltaVnd
+Lỗi hay gặp: COUPLE_NAMES_INCOMPLETE, COMMERCIAL_PRICE_REVISION_STALE / OFFERING_NOT_SELECTABLE (giá catalog đã đổi → chọn lại), CONTRACT_REVISION_STALE, CONTRACT_CAPACITY_EXCEEDED, DEPOSIT_INTENT_ACTIVE, CONTRACT_PRINT_SOURCE_ALLOCATED.
+8.6 Thanh toán, công nợ, hoá đơn
+API
+Ai
+Ghi chú cho FE
+POST /bookings/{id}/payments/deposit
+Couple
+{timelineRevisionId, contractRevisionId, documentDigest} → {checkoutUrl, paymentAttemptId, expiresAt, status}
+POST /bookings/{id}/payments/balance
+Couple FULL, Manager
+{expectedBillingRevision} lấy từ GET …/billing
+GET /bookings/{id}/payments/{attemptId}
+Couple, Manager
+Nguồn sự thật sau khi quay về từ VNPay
+GET /bookings/{id}/billing
+Couple FULL, Manager
+Tổng + lịch sử bút toán, phân trang
+GET /bookings/{id}/incidental-expenses
+Couple FULL, Manager
+Chỉ đọc với Couple
+GET/POST /management/bookings/{id}/incidental-expenses · PATCH/DELETE …/{lineId}
+Manager
+{expectedRevision, name 1–120, quantity, unit 1–80, unitPriceVnd, note?}; DELETE gửi body {expectedRevision}
+POST /management/bookings/{id}/final-invoices
+Manager
+{expectedDraftRevision, expectedCommercialRevisionId, expectedBillingRevision}
+POST /management/bookings/{id}/invoice-adjustments
+Manager
+{expectedInvoiceRevisionId, expectedBillingRevision, reason, lines[{kind DEBIT|CREDIT, name, quantity, unit, unitPriceVnd}]}
+GET /bookings/{id}/final-invoices · /{invoiceRevisionId}
+Couple FULL, Manager
+Hoá đơn immutable: hợp đồng gốc, phụ lục, phát sinh, điều chỉnh, tổng
+POST /management/billing/payments/manual · /refund-approvals · /refunds
+Manager
+Thu thủ công (cọc cần contract revision + digest), duyệt hoàn, ghi nhận hoàn
+8.7 Khách mời (Guest management)
+Chỉ dùng khi booking đã CONFIRMED và Couple FULL (hoặc Manager).
+API
+Ai
+Ghi chú cho FE
+GET/POST /bookings/{id}/guest-groups · PATCH …/{groupId}
+Couple FULL, Manager
+GET lần đầu tự tạo 4 nhóm mặc định
+GET/PATCH /bookings/{id}/guest-plan
+Couple FULL, Manager
+{expectedRevision, planningHeadcount}; đổi số này làm sơ đồ bàn cần xác nhận lại
+GET/POST /bookings/{id}/guests · PATCH …/{guestId}
+Couple FULL, Manager
+name 1–120, guestGroupId, phone? (E.164, vd. +8490…), operationalNote? ≤500; list limit 1–50
+POST …/guests/import-previews → POST …/guests/imports
+Couple FULL, Manager
+FE tự parse CSV → rows[{externalRowKey, name, guestGroupId, phone?, operationalNote?}] (≤1.000 dòng, ≤5MB); xem trước rồi xác nhận {previewId, digest} trong 30 phút
+POST …/guests/{gid}/personalized-invitations
+Couple FULL, Manager
+{expectedRevision} → credential, fragment (chỉ trả 1 lần – hiển thị/copy ngay)
+POST …/guests/{gid}/delivery
+Couple FULL, Manager
+Gửi email link cá nhân: {expectedRevision, intendedEmail} (email worker đang tắt)
+Ô CSV bắt đầu bằng =, +, -, @ (công thức) sẽ bị từ chối – báo lỗi theo dòng.
+Không có màn “ai đã xác nhận tham dự” (đã bỏ RSVP).
+8.8 Sơ đồ bàn (Seating)
+API
+Ai
+Ghi chú cho FE
+GET /bookings/{id}/seating-layout-options
+Couple FULL, Manager
+Mẫu của sảnh, compatible, minGuests–maxGuests, totalSeatCapacity, warning
+POST /bookings/{id}/seating-plans
+Couple FULL, Manager
+{layoutTemplateVersionId, expectedBookingRevision} → DRAFT
+POST …/seating-plans/{planId}/revisions
+Couple FULL, Manager
+{expectedRevision, labels?[{layoutTableId, guestGroupId}], layoutTemplateVersionId?, remap?}
+POST …/seating-plans/{planId}/confirmation
+Couple FULL, Manager
+{expectedRevision, expectedBookingRevision}
+GET …/seating-plans/{planId}
+Couple FULL, Manager
+renderSnapshot[] (x, y, width, height, rotationDegrees, shape ROUND/RECTANGLE, tableLabel, màu nhóm) → vẽ SVG
+POST /management/seating-plans/{planId}/exceptions
+Manager
+Ngoại lệ sức chứa, reason 10–500
+Lưu ý: chưa có API liệt kê sơ đồ theo booking → FE lưu seatingPlanId sau khi tạo; tạo lại sẽ báo SEATING_PLAN_EXISTS. Đã ghi vào danh sách hỏi BE (mục 11).
+8.9 Thiệp, ảnh cưới, đơn in (Invitation Studio)
+Thiết kế thiệp gồm title, textFields (brideName, groomName, greeting, message, footer) và sections[] (kind: HERO, MESSAGE, EVENT, TIMELINE, SEATING, FOOTER; mỗi section có thể gắn ảnh PNG công khai).
+API
+Ai
+Ghi chú cho FE
+GET /invitation-templates?bookingId
+Couple FULL
+Mẫu thiệp để bắt đầu
+POST /bookings/{id}/media (multipart: file, altText)
+Couple FULL
+Ảnh gốc private, jpeg/png/webp, trước media cutoff
+GET/PATCH/DELETE /bookings/{id}/media/{assetId}
+Couple FULL
+URL ký xem ảnh gốc; sửa alt / thay ảnh; gỡ
+POST /bookings/{id}/invitation-derived-assets
+Couple FULL
+Tạo PNG công khai đã bỏ metadata – chỉ ảnh này được đưa lên thiệp
+POST /bookings/{id}/invitation-image-generations
+Couple FULL
+Ảnh AI {prompt, aspectRatio} – có phí, không tự test
+GET/POST /bookings/{id}/invitations · GET …/{designId}
+Couple FULL, Manager đọc
+Tạo từ templateId/templateVersionId hoặc content
+POST …/invitations/{designId}/revisions
+Couple FULL
+{expectedRevision, content} (Web) hoặc {expectedRevision, textFields} (Android)
+POST/DELETE …/invitations/{designId}/publication
+Couple FULL
+Xuất bản → publicSlug, genericQrPayload; gỡ xuất bản
+GET /public/invitations/{slug} · /render · /qr · /public/invitation-assets/{slug}
+Guest
+Thiệp công khai, QR chung, ảnh
+POST /guest/invitation-sessions → GET /guest/invitation
+Guest có link cá nhân
+Đổi credential lấy capability wgs_… (≤15 phút) → Authorization: Bearer wgs_…; trả thêm recipientGreeting
+GET/POST /bookings/{id}/print-orders · /{orderId} · /approval · /cancellation · /cancellation-intents · /replacement-approvals
+Couple FULL
+Tạo lines[{designId, quantity, commercialSource?}]; duyệt báo giá {commercialRevisionId, expectedRevision}
+GET …/printable-revisions/{id}/file
+Couple FULL, Manager
+File in A5 (có/không sơ đồ bàn)
+/management/print-orders/{id}/quotations · /production · /ready · /handover · /cancellation · /replacement-proposals
+Manager
+Vận hành đơn in
+/management/invitation-templates… · PATCH /management/bookings/{id}/media-policy
+Manager
+Mẫu thiệp; đổi hạn chót ảnh
+8.10 Staff và check-in
+Staff mới được cấp bằng email; tự thiết lập mật khẩu qua OTP. Tắt quyền tác nghiệp sẽ thu hồi phân công và phiên.
+API
+Ai
+Ghi chú cho FE
+POST /management/staff-accounts {email}
+Manager
+Trả credentialSetupRequired
+POST /management/staff-accounts/{accountId}/operational-access {enabled, reason}
+Manager
+Bật/tắt
+GET/POST /management/events/{bookingId}/assignments · /{aid}/revocation
+Manager
+{staffAccountId, expectedRevision}, thu hồi {expectedRevision, reason}
+GET/PATCH /bookings/{id}/check-in-settings
+Manager, Couple FULL
+{checkInMode, expectedRevision}
+GET /bookings/{id}/attendance-summary
+Manager, Couple FULL
+checkInMode, measurementStatus, checkedInGuestCount|null, byGuestGroup[]
+GET /staff/events/{bookingId}/guests/search?query&limit&cursor
+Staff, Manager
+query 2–120; kết quả: tên, phoneLast4, nhóm, trạng thái, nhãn bàn
+POST /staff/events/{bookingId}/guests/{gid}/check-ins
+Staff, Manager
+Staff gửi {}; Manager gửi {overrideReason}
+POST …/check-in-undos
+Staff, Manager
+{checkInRecordId, expectedLedgerRevision, reason}
+GET …/guests/{gid}/check-ins
+Staff, Manager
+Nhật ký append-only
+Chưa có API liệt kê sự kiện được giao cho Staff. Staff vào bằng bookingId (Manager chia sẻ link/QR nội bộ có bookingId). Không thiết kế dashboard Staff như thể API đó có.
+Không bao giờ tự chọn kết quả trùng tên đầu tiên – Staff phải chọn đúng người (dựa vào nhóm, 4 số cuối SĐT).
+Lỗi: CHECK_IN_DISABLED, CHECK_IN_WINDOW_CLOSED, EVENT_ASSIGNMENT_REQUIRED, GUEST_ALREADY_CHECKED_IN, CHECK_IN_MODE_LOCKED, NAMED_GUEST_LIST_REQUIRED.
+8.11 Thông báo
+Thông báo trong app (inbox) dùng cho cả Web và App. Push Android do team app làm.
+API
+Ai
+Ghi chú cho FE
+GET /notifications/inbox · /unread-count
+Couple, Manager
+Item: title, message, purpose, resource {owner, bookingId, data}, readAt
+POST /notifications/inbox/{id}/read · /read-all
+Couple, Manager
+read: {expectedRevision}; read-all: {throughCreatedAt}
+GET/PATCH /notifications/preferences
+Couple, Manager
+{expectedRevision, reminderEmail?, reminderPush?}
+/notifications/android-installations
+App
+Đăng ký/huỷ FCM token
+/management/notifications · /recipient · /{id}/requeue
+Manager
+Theo dõi trạng thái gửi, requeue DEAD_LETTER
+Định tuyến khi bấm thông báo dựa vào purpose + resource.bookingId (vd. CONTRACT → tab hợp đồng; PAYMENT → thanh toán; PRINT → đơn in).
+8.12 Báo cáo (Analytics)
+API
+Ai
+Ghi chú cho FE
+GET /management/analytics/overview · /revenue · /bookings · /attendance · /print-orders
+Manager
+Có trạng thái nguồn READY / STALE / SOURCE_NOT_READY → hiển thị “dữ liệu cũ / chưa sẵn sàng”, không hiện 0
+GET /management/analytics/exports/overview
+Manager
+Xuất JSON (không có XLSX)
+POST /management/analytics/rebuild
+Manager
+Dựng lại số liệu
+9. Màn hình theo từng FE
+Mỗi nhóm màn hình cần đủ trạng thái: có dữ liệu, rỗng, đang tải/gửi, thành công, lỗi từng field, lỗi mạng, hết phiên, thiếu quyền, dữ liệu đã đổi cần tải lại, provider chưa sẵn sàng, thanh toán chưa rõ kết quả. Thao tác quan trọng cần hộp xác nhận và khóa nút khi đang gửi. Thiết kế desktop 1440px và mobile 390px.
+9.1 wedding-web – Nguyễn Tuấn Toàn (Public, Couple, Guest)
+ID
+Màn hình & nội dung
+API
+Điều kiện / lưu ý
+P1
+Trang chủ: ảnh, giới thiệu nhà hàng, sảnh nổi bật, menu, dịch vụ, CTA “Yêu cầu tư vấn”
+/catalog/restaurant, /catalog/halls, /catalog/menu-packages
+Không có nút “Đặt ngay”
+P2
+Danh sách & chi tiết sảnh, gói menu, món
+/catalog/halls/{id}, /catalog/dishes
+Giá và sức chứa lấy từ API
+P3
+Form yêu cầu tư vấn + màn gửi thành công
+POST /consultation-requests
+submissionId tạo khi mở form; tên cô dâu/chú rể tùy chọn
+A1
+Đăng nhập · Nhận lời mời (đặt mật khẩu) · Quên mật khẩu OTP
+/auth/web-sessions, /workspace-invitation-acceptances, /auth/password-otp-*
+Bỏ flow reset bằng link
+A2
+Hồ sơ, đổi mật khẩu OTP, phiên đăng nhập, đăng xuất
+/auth/profile, /auth/password-change*, /auth/sessions
+—
+C1
+Danh sách tiệc + tổng quan tiệc: ngày/ca/sảnh, phase, quyền, việc cần làm; tab bị khoá có lý do
+/couple/bookings, /bookings/{id}/proposal
+Tab FULL khoá khi RESTRICTED
+C2
+Hồ sơ cô dâu/chú rể · Timeline (sửa, duyệt) · Hợp đồng (chọn menu nhiều combo, dịch vụ, in; gửi duyệt; duyệt; PDF)
+/couple-profile, /timeline-revisions…, /catalog/services, /catalog/print-offerings, /contracts…
+RESTRICTED + FULL
+C3
+Đặt cọc & kết quả thanh toán; yêu cầu đổi timeline; yêu cầu huỷ
+/payments/deposit, /payments/{attemptId}, /change-requests, /cancellation-requests
+Trang /payment-return chỉ poll trạng thái
+C4
+Nhóm khách, số khách dự kiến, danh sách tên, import CSV có preview, link thiệp cá nhân, gửi email
+/guest-groups, /guest-plan, /guests…, /personalized-invitations, /delivery
+FULL
+C5
+Sơ đồ bàn: chọn mẫu, xem hình bàn, gán nhãn nhóm, cảnh báo sức chứa, xác nhận
+/seating-layout-options, /seating-plans…
+FULL; vẽ SVG từ renderSnapshot
+C6
+Studio thiệp: chọn mẫu, ảnh, chữ, xem trước, revision, xuất bản / gỡ, link + QR, ảnh AI
+/invitation-templates, /media, /invitation-derived-assets, /invitations…, /publication
+FULL; editor đầy đủ chỉ Web
+C7
+Đơn in · Phụ lục (trước–sau, chênh lệch, duyệt) · Phát sinh · Hoá đơn cuối · Công nợ, trả số dư
+/print-orders…, /contract-appendices…, /incidental-expenses, /final-invoices…, /billing, /payments/balance
+FULL
+N1
+Chuông thông báo, inbox, đánh dấu đọc, tùy chọn
+/notifications/*
+Couple
+G1
+Thiệp công khai /invitation/[slug] và thiệp cá nhân (đọc #credential), link hết hạn / thu hồi / chưa xuất bản
+/public/invitations/{slug}, /qr, /guest/invitation-sessions, /guest/invitation
+Chỉ đọc; không RSVP, không check-in
+9.2 wedding-manage-web – Long Trì (Manager, Staff)
+ID
+Màn hình & nội dung
+API
+Điều kiện / lưu ý
+M1
+Inbox tư vấn, chuyển đổi/đóng, tạo consultation, mời workspace, tìm hồ sơ
+/management/consultation-requests…, /management/consultations…
+—
+M2
+Lịch sảnh/ngày/ca, availability, tạo booking, giữ chỗ, timeline, hợp đồng, phụ lục, duyệt; yêu cầu đổi/huỷ; hoàn tất
+/management/availability, /bookings…, /contracts…, /contract-appendices…, /management/bookings/{id}/*
+Một sảnh – một tiệc xác nhận/ngày/ca
+M3
+Catalog: nhà hàng, ca, sảnh, món, gói menu, dịch vụ, sản phẩm in, mẫu thiệp, mẫu timeline, mẫu sơ đồ; version/publish/retire; ảnh, giá
+/management/catalog/*, /management/services, /management/print-offerings, /management/invitation-templates
+Đã có phần lớn trong repo
+M4
+Đơn in toàn nhà hàng: báo giá, sản xuất, sẵn sàng, bàn giao, thay thế, huỷ
+/management/print-orders…
+—
+M5
+Tài chính từng tiệc: thu thủ công, lịch sử, duyệt & ghi nhận hoàn tiền; phát sinh; chốt hoá đơn; điều chỉnh
+/bookings/{id}/billing, /management/billing/*, /management/bookings/{id}/incidental-expenses…, /final-invoices, /invoice-adjustments
+Phát sinh chỉ sau giờ kết thúc
+M6
+Tài khoản Staff, bật/tắt, phân công/thu hồi; cấu hình check-in; nhật ký và sửa sai có lý do; ngoại lệ sơ đồ
+/management/staff-accounts…, /management/events/{id}/assignments…, /check-in-settings, /management/seating-plans/{id}/exceptions
+—
+M7
+Dashboard & báo cáo: tiền đã thu, công nợ, booking, sử dụng sảnh, in ấn, số người/check-in; lọc ngày/sảnh; xuất JSON
+/management/analytics/*
+Hiển thị độ mới dữ liệu
+S1
+Staff: mở tiệc theo bookingId, tìm khách, phân biệt trùng tên, gợi ý bàn, check-in, hoàn tác
+/staff/events/{id}/guests/search, /check-ins, /check-in-undos
+Nút lớn, tương phản cao
+S2
+Kết quả/nhật ký, đã check-in, check-in đang tắt, hết giờ, không được phân công
+/staff/events/{id}/guests/{gid}/check-ins
+Staff không sửa khách/tiền
+N1
+Inbox thông báo + màn trạng thái gửi, requeue
+/notifications/*, /management/notifications…
+—
+9.3 wedding-app – Lã Gia Huy (Couple Android)
+ID
+Màn hình & nội dung
+API
+Điều kiện / lưu ý
+A1
+Đăng nhập Android, quên mật khẩu OTP, hồ sơ, đổi mật khẩu, đăng xuất
+/auth/android-sessions, /auth/android-session-refreshes, /auth/password-*, /auth/profile
+Refresh token trong SecureStore
+C1
+Danh sách tiệc, tổng quan, tiến độ, quyền
+/couple/bookings?client=ANDROID, /bookings/{id}/proposal
+Workspace RESTRICTED chỉ trên Web → app hướng dẫn mở Web
+C3
+Đặt cọc/số dư qua VNPay (mở trình duyệt), xem trạng thái giao dịch
+/payments/deposit, /payments/balance, /payments/{attemptId}
+Không tin redirect
+C4
+Xem nhóm khách, số dự kiến, danh sách tên (tùy phạm vi chọn làm)
+/guest-groups, /guest-plan, /guests
+FULL
+C6
+Sửa nhanh chữ trên thiệp có sẵn, xem link/QR
+/invitations/{designId}, /revisions (chỉ textFields)
+Không làm editor đầy đủ
+C7
+Xem hợp đồng, phụ lục, đơn in, phát sinh, hoá đơn, công nợ
+/contracts, /contract-appendices, /print-orders, /incidental-expenses, /final-invoices, /billing
+Chỉ đọc là đủ cho MVP
+N1
+Inbox thông báo, đăng ký push FCM
+/notifications/*, /notifications/android-installations
+Push đang tắt phía BE
+S1*
+Tùy chọn: Staff check-in trên app
+/staff/events/…
+Chỉ khi team quyết định
+10. Hiện trạng code FE và việc cần làm
+Khảo sát nhánh main của 3 repo ngày 13/10/2026 (nhánh dev/huy đã được merge vào main).
+Repo
+Đã có
+Thiếu / cần sửa
+wedding-web
+Trang public (catalog, tư vấn), đăng nhập, nhận lời mời, OTP, hồ sơ, tổng quan Couple, timeline, billing (cọc/số dư/trạng thái), studio thiệp & media, đơn in (đọc), thiệp công khai /invitation/[slug]. Giao diện v0.
+Nâng contract; bỏ endpoint reset-link và lệnh management/…/completion khỏi web Couple; thêm: tên cô dâu/chú rể, hợp đồng + PDF, cọc theo hợp đồng, phụ lục, nhóm khách/tên/import, sơ đồ bàn, link cá nhân + trang Guest, đơn in đầy đủ, phát sinh/hoá đơn, check-in settings, thông báo, trang payment-return.
+wedding-manage-web
+Catalog đầy đủ (sảnh, món, menu, mẫu timeline, mẫu sơ đồ, ảnh), inbox tư vấn, consultation, mời workspace, availability, tạo booking, slot hold, timeline, thu thủ công, hoàn tiền, huỷ, hoàn tất.
+Nâng contract; thêm: dịch vụ & sản phẩm in, mẫu thiệp, hợp đồng/phụ lục phía Manager, đơn in (báo giá → bàn giao), phát sinh + hoá đơn cuối + điều chỉnh, Staff & phân công, check-in settings, khu Staff, ngoại lệ sơ đồ, thông báo, báo cáo.
+wedding-app
+Đăng nhập Android, tổng quan Couple, billing, sửa nhanh thiệp, xem thiệp công khai.
+Nâng contract; bỏ reset-link; thêm: hợp đồng (xem), cọc theo hợp đồng, phụ lục/hoá đơn (xem), khách (xem), thông báo + FCM.
+Thứ tự làm đề xuất (cho cả 3 người)
+Nâng api-contract.lock.json, sinh type, sửa lỗi typecheck (mục 2.2).
+Chuẩn hoá lớp gọi API: lỗi theo error.code, Idempotency-Key, refresh token, hiển thị requestId.
+Luồng xương sống: tư vấn → booking → timeline → tên → hợp đồng → cọc (Web: Toàn; Manager: Trì).
+Sau cọc: khách, sơ đồ bàn, thiệp, đơn in (Toàn) song song Staff/in/tài chính (Trì) và các màn xem trên app (Huy).
+Phát sinh, hoá đơn cuối, số dư, báo cáo, thông báo.
+Test end-to-end 2 kịch bản BE đã seed: không có tên khách và có một phần tên khách.
+11. Hạn chế đã biết và câu hỏi cần BE trả lời
+#
+Vấn đề
+Ảnh hưởng FE
+Đề xuất tạm thời
+Q1
+Đã chốt 13/10: dùng wedding-be-production-e1dc
+—
+Mọi tài khoản/booking test tạo trên môi trường này
+Q2
+Email worker tắt → OTP, lời mời workspace, gửi thiệp không tới
+Không tự tạo được tài khoản Couple/Staff để test
+Xin BE tài khoản test các vai trò + booking mẫu trên production-e1dc
+Q3
+Cookie refresh khác site (localhost/Vercel ↔ Railway)
+Mất phiên sau 10 phút hoặc khi reload
+Proxy /api/v1 qua Next.js rewrites (mục 2.1); BE xác nhận AUTH_TRUST_PROXY_HOPS
+Q4
+Không có API liệt kê sự kiện Staff được giao
+Staff không có danh sách việc
+Nhập/scan bookingId do Manager chia sẻ
+Q5
+Không có API liệt kê sơ đồ bàn theo booking
+Reload trang mất seatingPlanId
+Lưu tạm phía client; xin BE thêm GET hoặc trả planId trong lỗi SEATING_PLAN_EXISTS
+Q6
+Không có API liệt kê ảnh (media) của booking
+Studio khó hiển thị thư viện ảnh
+Lấy từ derivedAssetIds trong thiết kế; hỏi BE
+Q7
+VNPAY_RETURN_URL trỏ về trang nào của FE?
+Cần route trang “kết quả thanh toán”
+Thống nhất /payment-return trên wedding-web
+Q8
+Số người đi kèm chưa chốt nghiệp vụ
+Không có trường để hiển thị
+Không làm
+Q9
+Link thiệp cá nhân trong email trỏ tới đâu (NOTIFICATIONS_GUEST_LINK_URL)?
+Trang Guest cần đúng URL
+Đề xuất https://<web>/invitation/personal#credential=…
+Checklist tích hợp FE (từ hand-off BE)
+☐ Ghim commit client và đúng digest OpenAPI; dùng DTO/lỗi strict.
+☐ Kiểm tra cookie, refresh, CORS/origin và các trường hợp bị từ chối quyền.
+☐ Hỗ trợ không có danh sách khách, sơ đồ theo nhóm, số dự kiến nhập riêng, attendance NONE/null.
+☐ Giữ số tiền nguyên VND, tổng từ server, revision cũ (stale) và Idempotency-Key.
+☐ Link thiệp tối giản chỉ đọc; đọc fragment Guest an toàn.
+☐ (App) Firebase/Android session, installation, refresh/thu hồi token, hiển thị và điều hướng thông báo.
+☐ Ghi lại build client và bằng chứng tích hợp sản phẩm.
+Phụ lục A. Danh sách đầy đủ 218 endpoint
+Kênh: W = wedding-web · M = wedding-manage-web · A = wedding-app · BE = chỉ server. Đường dẫn tính sau /api/v1 (trừ /health). Quyền chi tiết luôn kiểm tra lại trong OpenAPI.
+Analytics (7)
+Method
+Path
+Mô tả
+Auth
+Kênh
+GET
+/management/analytics/attendance
+Báo cáo số người (dự kiến / danh sách / check-in)
+Bearer
+M
+GET
+/management/analytics/bookings
+Báo cáo booking
+Bearer
+M
+GET
+/management/analytics/exports/overview
+Xuất JSON tổng hợp
+Bearer
+M
+GET
+/management/analytics/overview
+Dashboard tổng quan
+Bearer
+M
+GET
+/management/analytics/print-orders
+Báo cáo đơn in
+Bearer
+M
+GET
+/management/analytics/revenue
+Báo cáo doanh thu / công nợ
+Bearer
+M
+POST
+/management/analytics/rebuild
+Manager dựng lại projection báo cáo
+Bearer
+M
+Booking Lifecycle (14)
+Method
+Path
+Mô tả
+Auth
+Kênh
+GET
+/bookings/{bookingId}/proposal
+Không gian đề xuất: booking, timeline, capabilities theo quyền
+Bearer
+W, M, A
+GET
+/management/availability
+Manager kiểm tra slot sảnh + ngày + ca
+Bearer
+M
+POST
+/bookings
+Manager tạo đề xuất booking (sảnh, ngày, ca, menu, số bàn, số khách dự kiến)
+Bearer
+M
+POST
+/bookings/{bookingId}/cancellation-requests
+Couple gửi yêu cầu huỷ (không tự huỷ, không tự hoàn tiền)
+Bearer
+W, A
+POST
+/bookings/{bookingId}/change-requests
+Couple đề xuất đổi timeline sau cọc (kèm lý do)
+Bearer
+W, A
+POST
+/bookings/{bookingId}/slot-holds
+Manager giữ chỗ slot 15 phút
+Bearer
+M
+POST
+/bookings/{bookingId}/timeline-revisions
+Tạo revision timeline mới (Manager hoặc Couple trước cọc)
+Bearer
+W, M, A
+POST
+/bookings/{bookingId}/timeline-revisions/{revisionId}/approvals
+Duyệt đúng revision timeline hiện tại
+Bearer
+W, M, A
+POST
+/bookings/{bookingId}/timeline-revisions/{revisionId}/withdrawals
+Rút lại duyệt timeline của mình
+Bearer
+W, M, A
+POST
+/management/bookings/{bookingId}/cancellation
+Manager huỷ booking (lý do)
+Bearer
+M
+POST
+/management/bookings/{bookingId}/cancellation-requests/{requestId}/decision
+Manager duyệt / từ chối yêu cầu huỷ
+Bearer
+M
+POST
+/management/bookings/{bookingId}/completion
+Manager hoàn tất tiệc đã đến hạn
+Bearer
+M
+POST
+/management/consultations
+Manager tạo consultation trực tiếp
+Bearer
+M
+POST
+/management/consultations/{consultationId}/workspace-invitations
+Manager gửi lời mời workspace (quyền RESTRICTED) cho Couple
+Bearer
+M
+Booking lifecycle (12)
+Method
+Path
+Mô tả
+Auth
+Kênh
+GET
+/bookings/{bookingId}/contract-appendices
+Danh sách phụ lục + tổng thoả thuận hiệu lực
+Bearer
+W, M, A
+GET
+/bookings/{bookingId}/contracts
+Hợp đồng hiện tại + lịch sử revision, eligibleForDeposit
+Bearer
+W, M, A
+GET
+/bookings/{bookingId}/contracts/{revisionId}/pdf
+Tải PDF hợp đồng của revision
+Bearer
+W, M, A
+GET
+/consultations/{consultationId}/couple-profile
+Đọc tên cô dâu / chú rể
+Bearer
+W, M, A
+PATCH
+/consultations/{consultationId}/couple-profile
+Cập nhật tên cô dâu / chú rể (bắt buộc trước khi gửi duyệt hợp đồng)
+Bearer
+W, M, A
+POST
+/bookings/{bookingId}/contract-appendices
+Tạo phụ lục sau cọc (lý do, lines sau thay đổi)
+Bearer
+W, M, A
+POST
+/bookings/{bookingId}/contract-appendices/{revisionId}/approvals
+Bên mình duyệt phụ lục
+Bearer
+W, M, A
+POST
+/bookings/{bookingId}/contract-appendices/{revisionId}/submissions
+Gửi duyệt phụ lục
+Bearer
+W, M, A
+POST
+/bookings/{bookingId}/contracts
+Tạo bản nháp hợp đồng / successor (lines MENU, PRINT, SERVICE)
+Bearer
+W, M, A
+POST
+/bookings/{bookingId}/contracts/{revisionId}/approvals
+Bên mình duyệt đúng revision hợp đồng
+Bearer
+W, M, A
+POST
+/bookings/{bookingId}/contracts/{revisionId}/submissions
+Gửi duyệt (khoá giá, cần đủ tên cô dâu/chú rể)
+Bearer
+W, M, A
+POST
+/bookings/{bookingId}/contracts/{revisionId}/withdrawals
+Rút duyệt → tạo DRAFT mới (lý do)
+Bearer
+W, M, A
+Guest management (13)
+Method
+Path
+Mô tả
+Auth
+Kênh
+GET
+/bookings/{bookingId}/guest-groups
+Danh sách nhóm khách (tự khởi tạo 4 nhóm mặc định)
+Bearer
+W (Couple), M
+GET
+/bookings/{bookingId}/guest-plan
+Đọc số khách dự kiến (planningHeadcount)
+Bearer
+W (Couple), M
+GET
+/bookings/{bookingId}/guests
+Danh sách khách có tên (cursor, lọc nhóm/trạng thái)
+Bearer
+W (Couple), M
+GET
+/guest/invitation
+Guest xem thiệp cá nhân (Bearer wgs_…)
+Guest capability
+W (Guest)
+PATCH
+/bookings/{bookingId}/guest-groups/{groupId}
+Đổi tên / màu / lưu trữ / khôi phục nhóm
+Bearer
+W (Couple), M
+PATCH
+/bookings/{bookingId}/guest-plan
+Sửa số khách dự kiến (tạo plan revision)
+Bearer
+W (Couple), M
+PATCH
+/bookings/{bookingId}/guests/{guestId}
+Sửa / lưu trữ / khôi phục khách
+Bearer
+W (Couple), M
+POST
+/bookings/{bookingId}/guest-groups
+Tạo nhóm khách (tên, màu #RRGGBB)
+Bearer
+W (Couple), M
+POST
+/bookings/{bookingId}/guests
+Thêm 1 khách có tên
+Bearer
+W (Couple), M
+POST
+/bookings/{bookingId}/guests/import-previews
+Xem trước import (rows JSON đã parse từ CSV)
+Bearer
+W (Couple), M
+POST
+/bookings/{bookingId}/guests/imports
+Xác nhận import theo previewId + digest
+Bearer
+W (Couple), M
+POST
+/bookings/{bookingId}/guests/{guestId}/personalized-invitations
+Cấp / cấp lại link thiệp cá nhân (credential trả 1 lần)
+Bearer
+W (Couple), M
+POST
+/guest/invitation-sessions
+Guest đổi credential (từ #fragment) lấy capability ≤15 phút
+Công khai
+W (Guest)
+Health (2)
+Method
+Path
+Mô tả
+Auth
+Kênh
+GET
+/health/live
+Kiểm tra process sống (ngoài /api/v1)
+Không bearer
+W, M, A
+GET
+/health/ready
+Kiểm tra sẵn sàng (ngoài /api/v1)
+Không bearer
+W, M, A
+Identity (11)
+Method
+Path
+Mô tả
+Auth
+Kênh
+DELETE
+/auth/sessions/current
+Đăng xuất phiên hiện tại
+Bearer
+W, M, A
+DELETE
+/auth/sessions/{sessionId}
+Thu hồi một phiên khác của mình
+Bearer
+W, M, A
+GET
+/auth/me
+Tài khoản hiện tại và danh sách vai trò
+Bearer
+W, M, A
+GET
+/auth/sessions
+Danh sách phiên đăng nhập của chính mình
+Bearer
+W, M, A
+POST
+/auth/android-session-refreshes
+Làm mới token Android
+Không bearer
+A
+POST
+/auth/android-sessions
+Đăng nhập Android; trả access + refresh token
+Không bearer
+A
+POST
+/auth/password-reset-completions
+ĐÃ NGỪNG (reset bằng link) – không dùng
+Không bearer
+— (ngừng)
+POST
+/auth/password-reset-requests
+ĐÃ NGỪNG (reset bằng link) – không dùng
+Không bearer
+— (ngừng)
+POST
+/auth/web-session-refreshes
+Làm mới access token Web bằng cookie __Host-wedding-refresh
+Không bearer
+W, M
+POST
+/auth/web-sessions
+Đăng nhập Web (email + mật khẩu); trả access token, refresh cookie HttpOnly
+Không bearer
+W, M
+POST
+/workspace-invitation-acceptances
+Couple nhận lời mời workspace: token + đặt mật khẩu → đăng nhập
+Không bearer
+W
+Invitation Media (5)
+Method
+Path
+Mô tả
+Auth
+Kênh
+DELETE
+/bookings/{bookingId}/media/{assetId}
+Gỡ ảnh (giữ lịch sử)
+Bearer
+W (Couple)
+GET
+/bookings/{bookingId}/media/{assetId}
+Lấy URL xem/tải ảnh gốc private
+Bearer
+W (Couple)
+PATCH
+/bookings/{bookingId}/media/{assetId}
+Sửa alt text / thay ảnh (trước hạn chót)
+Bearer
+W (Couple)
+PATCH
+/management/bookings/{bookingId}/media-policy
+Manager đổi hạn chót chỉnh ảnh
+Bearer
+M
+POST
+/bookings/{bookingId}/media
+Upload ảnh cưới private (trước hạn chót media)
+Bearer
+W (Couple)
+Invitation Print Orders (15)
+Method
+Path
+Mô tả
+Auth
+Kênh
+GET
+/bookings/{bookingId}/print-orders
+Couple xem đơn in
+Bearer
+W, M, A
+GET
+/bookings/{bookingId}/print-orders/{orderId}
+Chi tiết đơn in
+Bearer
+W, M, A
+GET
+/management/print-orders
+Manager xem tất cả đơn in
+Bearer
+M
+GET
+/management/print-orders/{orderId}
+Manager xem chi tiết đơn in
+Bearer
+M
+POST
+/bookings/{bookingId}/print-orders
+Couple tạo yêu cầu in
+Bearer
+W, M, A
+POST
+/bookings/{bookingId}/print-orders/{orderId}/approval
+Couple duyệt báo giá
+Bearer
+W, M, A
+POST
+/bookings/{bookingId}/print-orders/{orderId}/cancellation
+Couple huỷ đơn chưa duyệt
+Bearer
+W, M, A
+POST
+/bookings/{bookingId}/print-orders/{orderId}/cancellation-intents
+Couple xác nhận ý định huỷ đơn đã duyệt
+Bearer
+W, M, A
+POST
+/bookings/{bookingId}/print-orders/{orderId}/replacement-approvals
+Couple duyệt báo giá thay thế
+Bearer
+W, M, A
+POST
+/management/print-orders/{orderId}/cancellation
+Manager huỷ đơn in
+Bearer
+M
+POST
+/management/print-orders/{orderId}/handover
+Manager bàn giao (kèm chứng từ)
+Bearer
+M
+POST
+/management/print-orders/{orderId}/production
+Manager chuyển sang sản xuất
+Bearer
+M
+POST
+/management/print-orders/{orderId}/quotations
+Manager báo giá
+Bearer
+M
+POST
+/management/print-orders/{orderId}/ready
+Manager đánh dấu sẵn sàng bàn giao
+Bearer
+M
+POST
+/management/print-orders/{orderId}/replacement-proposals
+Manager đề xuất báo giá thay thế
+Bearer
+M
+Invitation Studio (20)
+Method
+Path
+Mô tả
+Auth
+Kênh
+DELETE
+/bookings/{bookingId}/invitations/{designId}/publication
+Gỡ xuất bản thiệp
+Bearer
+W (Couple)
+GET
+/bookings/{bookingId}/invitation-image-generations
+Manager xem yêu cầu tạo ảnh AI chưa rõ kết quả
+Bearer
+M
+GET
+/bookings/{bookingId}/invitations
+Danh sách thiết kế thiệp của tiệc
+Bearer
+W, M, A
+GET
+/bookings/{bookingId}/invitations/{designId}
+Đọc thiết kế thiệp
+Bearer
+W, M, A
+GET
+/bookings/{bookingId}/printable-revisions/{printableRevisionId}/file
+Tải file in A5 đã chấp nhận
+Bearer
+W, M, A
+GET
+/invitation-templates
+Mẫu thiệp cho Couple chọn
+Bearer
+W, A
+GET
+/management/invitation-templates
+Manager quản lý mẫu thiệp
+Bearer
+M
+GET
+/management/invitation-templates/{templateId}
+Manager xem 1 mẫu thiệp
+Bearer
+M
+GET
+/public/invitation-assets/{slug}
+Ảnh PNG công khai của thiệp
+Công khai
+W (Guest)
+GET
+/public/invitations/{slug}
+Thiệp công khai (JSON)
+Công khai
+W (Guest)
+GET
+/public/invitations/{slug}/qr
+Ảnh QR chung của thiệp
+Công khai
+W (Guest)
+GET
+/public/invitations/{slug}/render
+Thiệp công khai (HTML đã escape)
+Công khai
+W (Guest)
+PATCH
+/management/invitation-templates/{templateId}
+Manager sửa / lưu trữ mẫu thiệp
+Bearer
+M
+POST
+/bookings/{bookingId}/invitation-derived-assets
+Tạo ảnh PNG công khai (bỏ metadata) từ ảnh gốc private
+Bearer
+W (Couple)
+POST
+/bookings/{bookingId}/invitation-image-generations
+Tạo ảnh AI (Gemini, có phí – không tự test)
+Bearer
+W (Couple)
+POST
+/bookings/{bookingId}/invitation-image-generations/{intentDigest}/reconciliation
+Manager đối soát yêu cầu AI chưa rõ kết quả
+Bearer
+M
+POST
+/bookings/{bookingId}/invitations
+Tạo thiết kế thiệp (chỉ Web editor)
+Bearer
+W (Couple)
+POST
+/bookings/{bookingId}/invitations/{designId}/publication
+Xuất bản thiệp → slug công khai + QR
+Bearer
+W (Couple)
+POST
+/bookings/{bookingId}/invitations/{designId}/revisions
+Lưu revision thiết kế (Android chỉ textFields)
+Bearer
+W, A (textFields)
+POST
+/management/invitation-templates
+Manager tạo mẫu thiệp
+Bearer
+M
+Notifications (14)
+Method
+Path
+Mô tả
+Auth
+Kênh
+DELETE
+/notifications/android-installations/{id}
+Huỷ đăng ký thiết bị Android
+Bearer
+A
+GET
+/management/notifications
+Manager xem trạng thái gửi thông báo
+Bearer
+M
+GET
+/management/notifications/recipient
+Cấu hình người nhận thông báo vận hành
+Bearer
+M
+GET
+/notifications/android-installations
+Danh sách thiết bị Android đã đăng ký
+Bearer
+A
+GET
+/notifications/inbox
+Hộp thư thông báo trong app
+Bearer
+W, M, A
+GET
+/notifications/preferences
+Tùy chọn nhận nhắc nhở email / push
+Bearer
+W, M, A
+GET
+/notifications/unread-count
+Số thông báo chưa đọc
+Bearer
+W, M, A
+PATCH
+/management/notifications/recipient
+Sửa cấu hình người nhận thông báo vận hành
+Bearer
+M
+PATCH
+/notifications/preferences
+Sửa tùy chọn nhận thông báo
+Bearer
+W, M, A
+POST
+/bookings/{bookingId}/guests/{guestId}/delivery
+Gửi link thiệp cá nhân qua email (người nhận rõ ràng)
+Bearer
+W (Couple), M
+POST
+/management/notifications/{id}/requeue
+Manager gửi lại thông báo DEAD_LETTER
+Bearer
+M
+POST
+/notifications/android-installations
+Đăng ký FCM token thiết bị Android
+Bearer
+A
+POST
+/notifications/inbox/read-all
+Đánh dấu tất cả đã đọc đến thời điểm
+Bearer
+W, M, A
+POST
+/notifications/inbox/{id}/read
+Đánh dấu đã đọc 1 thông báo
+Bearer
+W, M, A
+Payments and Billing (17)
+Method
+Path
+Mô tả
+Auth
+Kênh
+DELETE
+/management/bookings/{bookingId}/incidental-expenses/{lineId}
+Manager xoá dòng phát sinh nháp (body có expectedRevision)
+Bearer
+M
+GET
+/billing/callbacks/vnpay
+IPN VNPay → backend (FE KHÔNG gọi)
+Công khai
+BE
+GET
+/bookings/{bookingId}/billing
+Sổ cái: tổng phải thu, đã trả, còn nợ, credit + lịch sử
+Bearer
+W, M, A
+GET
+/bookings/{bookingId}/final-invoices
+Danh sách hoá đơn cuối
+Bearer
+W, M, A
+GET
+/bookings/{bookingId}/final-invoices/{invoiceRevisionId}
+Chi tiết hoá đơn cuối (immutable)
+Bearer
+W, M, A
+GET
+/bookings/{bookingId}/incidental-expenses
+Couple/Manager xem chi phí phát sinh
+Bearer
+W, M, A
+GET
+/bookings/{bookingId}/payments/{attemptId}
+Trạng thái giao dịch (nguồn sự thật sau redirect)
+Bearer
+W, M, A
+GET
+/management/bookings/{bookingId}/incidental-expenses
+Manager xem nháp chi phí phát sinh
+Bearer
+M
+PATCH
+/management/bookings/{bookingId}/incidental-expenses/{lineId}
+Manager sửa dòng phát sinh
+Bearer
+M
+POST
+/bookings/{bookingId}/payments/balance
+Tạo giao dịch VNPay số dư (expectedBillingRevision)
+Bearer
+W, M, A
+POST
+/bookings/{bookingId}/payments/deposit
+Tạo giao dịch VNPay đặt cọc (trả checkoutUrl)
+Bearer
+W, M, A
+POST
+/management/billing/payments/manual
+Manager ghi nhận thu tiền thủ công
+Bearer
+M
+POST
+/management/billing/refund-approvals
+Manager duyệt hoàn tiền
+Bearer
+M
+POST
+/management/billing/refunds
+Manager ghi nhận đã hoàn tiền thủ công
+Bearer
+M
+POST
+/management/bookings/{bookingId}/final-invoices
+Manager chốt hoá đơn cuối
+Bearer
+M
+POST
+/management/bookings/{bookingId}/incidental-expenses
+Manager thêm dòng phát sinh (sau giờ kết thúc tiệc)
+Bearer
+M
+POST
+/management/bookings/{bookingId}/invoice-adjustments
+Manager tạo bản điều chỉnh hoá đơn (lý do)
+Bearer
+M
+Product experience (11)
+Method
+Path
+Mô tả
+Auth
+Kênh
+GET
+/auth/profile
+Đọc hồ sơ cá nhân
+Bearer
+W, M, A
+GET
+/couple/bookings
+Couple xem danh sách tiệc của mình (phase, accessLevel, duyệt)
+Bearer
+W, A
+GET
+/management/consultation-requests
+Manager xem inbox yêu cầu tư vấn
+Bearer
+M
+PATCH
+/auth/profile
+Sửa hồ sơ cá nhân (expectedRevision)
+Bearer
+W, M, A
+POST
+/auth/password-change-otp-requests
+Đổi mật khẩu khi đã đăng nhập: yêu cầu OTP
+Bearer
+W, M, A
+POST
+/auth/password-changes
+Đổi mật khẩu bằng OTP
+Bearer
+W, M, A
+POST
+/auth/password-otp-completions
+Hoàn tất đặt mật khẩu bằng challengeId + OTP
+Công khai
+W, M, A
+POST
+/auth/password-otp-requests
+Quên/thiết lập mật khẩu: gửi OTP về email (trả challengeId)
+Công khai
+W, M, A
+POST
+/consultation-requests
+Khách công khai gửi yêu cầu tư vấn (không cần tài khoản)
+Công khai
+W
+POST
+/management/consultation-requests/{id}/closure
+Manager đóng yêu cầu tư vấn
+Bearer
+M
+POST
+/management/consultation-requests/{id}/conversion
+Manager chuyển yêu cầu thành consultation
+Bearer
+M
+Seating plan (6)
+Method
+Path
+Mô tả
+Auth
+Kênh
+GET
+/bookings/{bookingId}/seating-layout-options
+Các mẫu sơ đồ bàn phù hợp với sảnh và số khách dự kiến
+Bearer
+W (Couple), M
+GET
+/bookings/{bookingId}/seating-plans/{planId}
+Xem sơ đồ (hình bàn, nhãn nhóm, cảnh báo)
+Bearer
+W (Couple), M
+POST
+/bookings/{bookingId}/seating-plans
+Chọn mẫu sơ đồ → tạo DRAFT
+Bearer
+W (Couple), M
+POST
+/bookings/{bookingId}/seating-plans/{planId}/confirmation
+Xác nhận sơ đồ
+Bearer
+W (Couple), M
+POST
+/bookings/{bookingId}/seating-plans/{planId}/revisions
+Gán nhãn nhóm cho bàn / đổi mẫu (DRAFT mới)
+Bearer
+W (Couple), M
+POST
+/management/seating-plans/{planId}/exceptions
+Manager xác nhận ngoại lệ sức chứa (lý do)
+Bearer
+M
+Staff operations (12)
+Method
+Path
+Mô tả
+Auth
+Kênh
+GET
+/bookings/{bookingId}/attendance-summary
+Tóm tắt tham dự (null khi NONE)
+Bearer
+W, M, A
+GET
+/bookings/{bookingId}/check-in-settings
+Đọc chế độ check-in (NONE / BY_GUEST_NAME, locked)
+Bearer
+W, M, A
+GET
+/management/events/{bookingId}/assignments
+Danh sách Staff được phân công cho tiệc
+Bearer
+M
+GET
+/staff/events/{bookingId}/guests/search
+Staff tìm khách theo tên / SĐT
+Bearer
+M (Staff)
+GET
+/staff/events/{bookingId}/guests/{guestId}/check-ins
+Lịch sử check-in của 1 khách
+Bearer
+M (Staff)
+PATCH
+/bookings/{bookingId}/check-in-settings
+Bật / tắt check-in theo tên (Couple FULL hoặc Manager)
+Bearer
+W, M, A
+POST
+/management/events/{bookingId}/assignments
+Phân công Staff cho tiệc
+Bearer
+M
+POST
+/management/events/{bookingId}/assignments/{assignmentId}/revocation
+Thu hồi phân công
+Bearer
+M
+POST
+/management/staff-accounts
+Manager cấp tài khoản Staff từ email
+Bearer
+M
+POST
+/management/staff-accounts/{accountId}/operational-access
+Manager bật/tắt quyền tác nghiệp Staff
+Bearer
+M
+POST
+/staff/events/{bookingId}/guests/{guestId}/check-in-undos
+Hoàn tác check-in (lý do)
+Bearer
+M (Staff)
+POST
+/staff/events/{bookingId}/guests/{guestId}/check-ins
+Check-in 1 khách có tên
+Bearer
+M (Staff)
+Venue Catalog (51)
+Method
+Path
+Mô tả
+Auth
+Kênh
+GET
+/catalog/dishes
+List active current dish versions
+Không bearer
+W, M, A
+GET
+/catalog/halls
+List active halls
+Không bearer
+W, M, A
+GET
+/catalog/halls/{hallId}
+Get one active hall
+Không bearer
+W, M, A
+GET
+/catalog/menu-packages
+List active current menu-package versions
+Không bearer
+W, M, A
+GET
+/catalog/restaurant
+Get the active restaurant catalog profile
+Không bearer
+W, M, A
+GET
+/management/catalog/dishes
+List dish aggregates and version history
+Bearer
+M
+GET
+/management/catalog/dishes/{dishId}
+Get one dish aggregate with immutable history
+Bearer
+M
+GET
+/management/catalog/halls
+List halls including retired records and current revisions
+Bearer
+M
+GET
+/management/catalog/layout-templates
+List template aggregates and version history
+Bearer
+M
+GET
+/management/catalog/layout-templates/{templateId}
+Get one template aggregate with immutable history
+Bearer
+M
+GET
+/management/catalog/menu-packages
+List package aggregates and version history
+Bearer
+M
+GET
+/management/catalog/menu-packages/{packageId}
+Get one package aggregate with immutable history
+Bearer
+M
+GET
+/management/catalog/restaurant
+Get the Manager restaurant profile with its current revision
+Bearer
+M
+GET
+/management/catalog/shifts
+List fixed restaurant shifts with lifecycle state and revisions
+Bearer
+M
+GET
+/management/catalog/timeline-templates
+List template aggregates and version history
+Bearer
+M
+GET
+/management/catalog/timeline-templates/{templateId}
+Get one template aggregate with immutable history
+Bearer
+M
+GET
+/management/catalog/{resource}/{resourceId}/media
+List attached catalog media with fresh signed read URLs
+Bearer
+M
+PATCH
+/management/catalog/dish-versions/{versionId}
+Update a dish draft version
+Bearer
+M
+PATCH
+/management/catalog/halls/{hallId}
+Update a hall using its expected revision
+Bearer
+M
+PATCH
+/management/catalog/layout-template-versions/{versionId}
+Update a fixed-layout draft version
+Bearer
+M
+PATCH
+/management/catalog/menu-package-versions/{versionId}
+Update a menu-package draft version
+Bearer
+M
+PATCH
+/management/catalog/restaurant
+Update the restaurant profile using its expected revision
+Bearer
+M
+PATCH
+/management/catalog/shifts/{shiftCode}
+Update one fixed restaurant shift
+Bearer
+M
+PATCH
+/management/catalog/timeline-template-versions/{versionId}
+Update a timeline-template draft version
+Bearer
+M
+PATCH
+/management/catalog/{resource}/{resourceId}/media-order
+Replace the complete attached media order
+Bearer
+M
+POST
+/management/catalog/dish-versions/{versionId}/publication
+Publish one immutable dish version
+Bearer
+M
+POST
+/management/catalog/dishes
+Create a dish aggregate and first draft
+Bearer
+M
+POST
+/management/catalog/dishes/{dishId}/versions
+Clone an immutable dish version into a new draft
+Bearer
+M
+POST
+/management/catalog/dishes/{id}/restoration
+Restore one dish aggregate
+Bearer
+M
+POST
+/management/catalog/dishes/{id}/retirement
+Retire one dish aggregate
+Bearer
+M
+POST
+/management/catalog/halls
+Create a hall
+Bearer
+M
+POST
+/management/catalog/halls/{id}/restoration
+Restore one hall
+Bearer
+M
+POST
+/management/catalog/halls/{id}/retirement
+Retire one hall
+Bearer
+M
+POST
+/management/catalog/layout-template-versions/{versionId}/publication
+Publish one immutable layout-template version
+Bearer
+M
+POST
+/management/catalog/layout-templates
+Create a template aggregate and first draft
+Bearer
+M
+POST
+/management/catalog/layout-templates/{id}/restoration
+Restore one template aggregate
+Bearer
+M
+POST
+/management/catalog/layout-templates/{id}/retirement
+Retire one template aggregate
+Bearer
+M
+POST
+/management/catalog/layout-templates/{templateId}/tables
+Register one stable table identity
+Bearer
+M
+POST
+/management/catalog/layout-templates/{templateId}/tables/{tableId}/retirement
+Retire one stable table identity
+Bearer
+M
+POST
+/management/catalog/layout-templates/{templateId}/versions
+Clone an immutable template version into a new draft
+Bearer
+M
+POST
+/management/catalog/media-assets
+Upload or replace one validated catalog image
+Bearer
+M
+POST
+/management/catalog/menu-package-versions/{versionId}/publication
+Publish one immutable menu-package version
+Bearer
+M
+POST
+/management/catalog/menu-packages
+Create a package aggregate and first draft
+Bearer
+M
+POST
+/management/catalog/menu-packages/{id}/restoration
+Restore one package aggregate
+Bearer
+M
+POST
+/management/catalog/menu-packages/{id}/retirement
+Retire one package aggregate
+Bearer
+M
+POST
+/management/catalog/menu-packages/{packageId}/versions
+Clone an immutable package version into a new draft
+Bearer
+M
+POST
+/management/catalog/timeline-template-versions/{versionId}/publication
+Publish one immutable timeline-template version
+Bearer
+M
+POST
+/management/catalog/timeline-templates
+Create a template aggregate and first draft
+Bearer
+M
+POST
+/management/catalog/timeline-templates/{id}/restoration
+Restore one template aggregate
+Bearer
+M
+POST
+/management/catalog/timeline-templates/{id}/retirement
+Retire one template aggregate
+Bearer
+M
+POST
+/management/catalog/timeline-templates/{templateId}/versions
+Clone an immutable template version into a new draft
+Bearer
+M
+Venue commercial catalog (8)
+Method
+Path
+Mô tả
+Auth
+Kênh
+GET
+/catalog/print-offerings
+Sản phẩm in thiệp đang bán – để chọn vào hợp đồng
+Bearer
+W, M
+GET
+/catalog/services
+Dịch vụ đang bán (MC, nhạc, múa lân…) – để chọn vào hợp đồng
+Bearer
+W, M
+GET
+/management/print-offerings
+Manager quản lý sản phẩm in
+Bearer
+M
+GET
+/management/services
+Manager quản lý dịch vụ
+Bearer
+M
+PATCH
+/management/print-offerings/{id}
+Manager sửa / lưu trữ sản phẩm in
+Bearer
+M
+PATCH
+/management/services/{id}
+Manager sửa / lưu trữ dịch vụ (tạo version mới)
+Bearer
+M
+POST
+/management/print-offerings
+Manager tạo sản phẩm in
+Bearer
+M
+POST
+/management/services
+Manager tạo dịch vụ
+Bearer
+M
+Phụ lục B. Prompt mẫu khi làm việc với AI
+Đính kèm tài liệu này (hoặc mục liên quan) và file openapi.json, rồi dùng prompt:
+Bạn là frontend developer cho dự án FPT606 (quản lý tiệc cưới, 1 nhà hàng).
+Repo: [wedding-web | wedding-manage-web | wedding-app], stack: [Next.js 16 + openapi-fetch | Expo RN].
+Nhiệm vụ: làm màn [ID màn hình, vd. C2 – Hợp đồng] cho vai trò [Couple RESTRICTED/FULL | Manager | Staff].
+Bắt buộc:
+- Chỉ dùng endpoint có trong openapi.json đính kèm; dùng type sinh ở src/lib/api/generated/schema.d.ts.
+- Mọi lệnh ghi gửi Idempotency-Key (1 key cho 1 lần bấm) và expectedRevision mới nhất.
+- Xử lý lỗi theo error.code; 409 → tải lại dữ liệu; hiển thị requestId.
+- Tiền là số nguyên VND do server tính; không tự tính tổng; không báo thanh toán thành công từ redirect.
+- Không làm RSVP, Household, QR check-in, đếm người đi kèm, tự đặt tiệc từ catalog.
+- Đủ trạng thái: loading, rỗng, lỗi field, lỗi mạng, hết phiên, thiếu quyền, dữ liệu đã đổi, provider chưa sẵn sàng.
+- Giao diện tiếng Việt, font sans có dấu, không uppercase; responsive 390px và 1440px.
+Trả về: danh sách file thay đổi, code, và giải thích ngắn vì sao chọn cách làm.

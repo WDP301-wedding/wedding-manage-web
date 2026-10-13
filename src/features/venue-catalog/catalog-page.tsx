@@ -167,7 +167,23 @@ function ManagerVenueWorkspace({
   authorize,
   gateway,
 }: Readonly<{ authorize: Authorize; gateway: VenueCatalogGateway | CatalogGateway }>) {
-  const [activeTab, setActiveTab] = useState<CatalogTab>('venue');
+  const [activeTab, setActiveTab] = useState<CatalogTab>(() => {
+    if (typeof window !== 'undefined') {
+      const tabParam = new URLSearchParams(window.location.search).get('tab');
+      if (tabParam === 'food' || tabParam === 'timeline' || tabParam === 'layout') {
+        return tabParam;
+      }
+    }
+    return 'venue';
+  });
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const tabParam = new URLSearchParams(window.location.search).get('tab');
+    if (tabParam === 'food' || tabParam === 'timeline' || tabParam === 'layout' || tabParam === 'venue') {
+      setActiveTab(tabParam as CatalogTab);
+    }
+  }, []);
   const [snapshot, setSnapshot] = useState<VenueCatalogSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [pending, setPending] = useState(false);

@@ -5,6 +5,7 @@ import { type FormEvent, useEffect, useLayoutEffect, useState } from 'react';
 
 import { PasswordResetOtpForm } from './password-reset-otp-form';
 import { OperationsShell } from './operations-shell';
+import { DashboardLiveView } from './dashboard-live';
 import { ApiClientError } from '../../lib/api/client';
 import {
   consumeResetFragment,
@@ -218,7 +219,7 @@ function OperationsDashboard({
         <header className="dashboard-header" id="overview">
           <div>
             <span className="preview-label">Wedding Estate · Operations</span>
-            <p>Chủ nhật, 04 tháng 10</p>
+            <p>Hệ thống vận hành tiệc cưới</p>
             <h1>Tổng quan hôm nay</h1>
           </div>
           {manager ? (
@@ -232,96 +233,12 @@ function OperationsDashboard({
             Máy chủ đã từ chối thao tác. Dữ liệu trình bày không thay đổi quyền thực tế.
           </p>
         )}
-        <section className="estate-showcase" aria-label="Không gian vận hành nổi bật">
-          <div className="estate-showcase-copy">
-            <span>Không gian hôm nay</span>
-            <strong>Sảnh Ánh Dương</strong>
-            <p>Tiệc tối · 320 khách · Đón khách lúc 17:30</p>
-          </div>
-          <div
-            className="estate-showcase-photo"
-            role="img"
-            aria-label="Bàn tiệc cưới với hoa trắng"
-          />
-        </section>
-        <section className="metrics-strip" aria-label="Chỉ số vận hành hôm nay">
-          <Metric label="Tiệc hôm nay" value="03" detail="1 tiệc đang diễn ra" />
-          <Metric label="Khách dự kiến" value="860" detail="Theo lịch đã xác nhận" />
-          <Metric label="Công việc hoàn tất" value="84%" detail="42 trên 50 đầu việc" />
-          <Metric label="Cần xử lý" value="04" detail="2 việc ưu tiên cao" attention />
-        </section>
-        <section className="schedule-panel dashboard-schedule" id="upcoming-events">
-          <div className="section-heading">
-            <div>
-              <p className="section-kicker">Lịch sắp tới</p>
-              <h2>Tiệc cưới sắp diễn ra</h2>
-            </div>
-          </div>
-          <div className="table-scroll">
-            <table aria-label="Tiệc cưới sắp diễn ra">
-              <thead>
-                <tr>
-                  <th scope="col">Ngày tổ chức</th>
-                  <th scope="col">Cặp đôi</th>
-                  <th scope="col">Không gian</th>
-                  <th scope="col">Khách</th>
-                  <th scope="col">Trạng thái</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>
-                    <strong>12 tháng 10, 2026</strong>
-                    <span>17:30</span>
-                  </td>
-                  <td>
-                    <strong>Minh Anh &amp; Hoàng Nam</strong>
-                    <span>EVT-1028</span>
-                  </td>
-                  <td>Sảnh Ánh Dương</td>
-                  <td>320</td>
-                  <td>
-                    <span className="status status-ready">Sẵn sàng</span>
-                  </td>
-                </tr>
-                <tr>
-                  <td>
-                    <strong>18 tháng 10, 2026</strong>
-                    <span>11:00</span>
-                  </td>
-                  <td>
-                    <strong>Khánh Linh &amp; Đức Minh</strong>
-                    <span>EVT-1031</span>
-                  </td>
-                  <td>Vườn Nguyệt Quế</td>
-                  <td>180</td>
-                  <td>
-                    <span className="status status-review">Cần duyệt</span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
+        <DashboardLiveView isManager={manager} />
       </main>
     </OperationsShell>
   );
 }
 
-function Metric({
-  attention = false,
-  detail,
-  label,
-  value,
-}: Readonly<{ attention?: boolean; detail: string; label: string; value: string }>) {
-  return (
-    <article>
-      <span className="metric-label">{label}</span>
-      <strong className={attention ? 'attention-value' : undefined}>{value}</strong>
-      <small>{detail}</small>
-    </article>
-  );
-}
 
 function AuthForm({
   children,

@@ -48,6 +48,16 @@ export function consumeResetFragment(
   return token !== null && resetPattern.test(token) ? token : null;
 }
 
+const STORAGE_KEY = 'wedding_ops_session';
+
+interface PersistedSessionData {
+  accessToken: string;
+  accessExpiresAt: string;
+  sessionId: string;
+  actor: CurrentActor;
+  presentation: 'denied' | 'manager' | 'staff';
+}
+
 export class ManagementIdentitySession {
   private accessToken: string | null = null;
   private restoreOperation: Promise<ManagementSessionSnapshot> | null = null;
@@ -68,6 +78,25 @@ export class ManagementIdentitySession {
   }
 
   restore(): Promise<ManagementSessionSnapshot> {
+    if (this.state.status === 'authenticated' && this.accessToken !== null) {
+      return Promise.resolve(this.state);
+    }
+
+    const persisted = this.readPersisted();
+    if (persisted && persisted.accessToken) {
+      const expiresAt = new Date(persisted.accessExpiresAt).getTime();
+      if (expiresAt > Date.now() + 15_000) {
+        this.accessToken = persisted.accessToken;
+        this.state = {
+          status: 'authenticated',
+          actor: persisted.actor,
+          denial: null,
+          presentation: persisted.presentation,
+        };
+        return Promise.resolve(this.state);
+      }
+    }
+
     this.restoreOperation ??= this.restoreFromCookie().finally(() => {
       this.restoreOperation = null;
     });
@@ -96,6 +125,18 @@ export class ManagementIdentitySession {
   }
 
   async authorize<T>(operation: (accessToken: string) => Promise<T>): Promise<T> {
+    if (this.accessToken === null) {
+      const persisted = this.readPersisted();
+      if (persisted && persisted.accessToken) {
+        this.accessToken = persisted.accessToken;
+        this.state = {
+          status: 'authenticated',
+          actor: persisted.actor,
+          denial: null,
+          presentation: persisted.presentation,
+        };
+      }
+    }
     if (this.accessToken === null) throw new Error('Authentication is required.');
 
     try {
@@ -117,6 +158,31 @@ export class ManagementIdentitySession {
     }
   }
 
+  private readPersisted(): PersistedSessionData | null {
+    if (typeof window === 'undefined') return null;
+    try {
+      const raw = window.localStorage.getItem(STORAGE_KEY);
+      if (!raw) return null;
+      return JSON.parse(raw) as PersistedSessionData;
+    } catch {
+      return null;
+    }
+  }
+
+  private persist(data: PersistedSessionData): void {
+    if (typeof window === 'undefined') return;
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    } catch {}
+  }
+
+  private removePersisted(): void {
+    if (typeof window === 'undefined') return;
+    try {
+      window.localStorage.removeItem(STORAGE_KEY);
+    } catch {}
+  }
+
   private async restoreFromCookie(): Promise<ManagementSessionSnapshot> {
     try {
       return await this.finishSignIn(await this.api.refreshSession());
@@ -136,6 +202,13 @@ export class ManagementIdentitySession {
           ? 'staff'
           : 'denied';
       this.state = { status: 'authenticated', actor, denial: null, presentation };
+      this.persist({
+        accessToken: credential.accessToken,
+        accessExpiresAt: credential.accessExpiresAt,
+        sessionId: credential.sessionId,
+        actor,
+        presentation,
+      });
       return this.state;
     } catch (error) {
       this.clear();
@@ -146,6 +219,7 @@ export class ManagementIdentitySession {
   private clear(): void {
     this.accessToken = null;
     this.state = anonymousSnapshot;
+    this.removePersisted();
   }
 }
 

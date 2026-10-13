@@ -19,6 +19,8 @@ const newRequest: Item = {
   createdAt: '2026-10-09T00:00:00Z',
   consultationId: null,
   consultationRevision: null,
+  brideName: null,
+  groomName: null,
 };
 
 const fetchMock = vi.fn<(request: Request) => Promise<Response>>();

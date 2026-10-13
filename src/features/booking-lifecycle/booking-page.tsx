@@ -1,11 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { type FormEvent, useEffect, useState } from 'react';
+import { type FormEvent, useCallback, useEffect, useState } from 'react';
 
 import { ApiClientError } from '../../lib/api/client';
 import { minimumEventDate, useMinimumEventDate } from '../../lib/event-date';
 import { TimelineEditor } from './timeline-editor';
+import { ContractPanel } from './contract-panel';
 import { createVenueCatalogGateway } from '../venue-catalog/catalog-api';
 import { createIdentityApi, ManagementIdentitySession } from '../identity-access/session';
 import type { ManagementSessionSnapshot } from '../identity-access/session';
@@ -23,7 +24,11 @@ const session = new ManagementIdentitySession(createIdentityApi());
 const gateway = createManagementBookingGateway();
 const catalogGateway = createVenueCatalogGateway();
 
-export function ManagementBookingPage() {
+export function ManagementBookingPage({
+  autoLoadCatalog = false,
+}: {
+  autoLoadCatalog?: boolean;
+} = {}) {
   const [access, setAccess] = useState<'loading' | 'anonymous' | 'denied' | 'manager'>('loading');
   const [snapshot, setSnapshot] = useState<ManagementSessionSnapshot | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
@@ -82,6 +87,7 @@ export function ManagementBookingPage() {
       <ManagementBookingWorkspace
         authorize={(operation) => session.authorize(operation)}
         gateway={gateway}
+        autoLoadCatalog={autoLoadCatalog}
       />
     );
   return (
@@ -100,7 +106,12 @@ export function ManagementBookingPage() {
 export function ManagementBookingWorkspace({
   authorize,
   gateway,
-}: Readonly<{ authorize: Authorize; gateway: ManagementBookingGateway }>) {
+  autoLoadCatalog = false,
+}: Readonly<{
+  authorize: Authorize;
+  gateway: ManagementBookingGateway;
+  autoLoadCatalog?: boolean;
+}>) {
   const [consultation, setConsultation] = useState<{ id: string; revision: number } | null>(null);
   const [bookingId, setBookingId] = useState('');
   const [proposal, setProposal] = useState<ProposalView | null>(null);
@@ -119,6 +130,15 @@ export function ManagementBookingWorkspace({
       revision > 0
     ) {
       queueMicrotask(() => setConsultation({ id, revision }));
+    }
+    const bId = params.get('bookingId');
+    if (bId !== null && /^[a-f0-9-]{36}$/iu.test(bId)) {
+      setBookingId(bId);
+      void run('load', () => authorize((token) => gateway.loadProposal(token, bId))).then(
+        (result) => {
+          if (result !== null) setProposal(result);
+        },
+      );
     }
   }, []);
 
@@ -149,6 +169,11 @@ export function ManagementBookingWorkspace({
     if (proposal !== null) await loadProposal(proposal.bookingId);
   };
 
+  const resetConsultation = () => {
+    setConsultation(null);
+    setMessage('Đã xóa mã tư vấn cũ. Hãy nhập thông tin cặp đôi mới ở Bước 01 rồi bấm "Tạo hồ sơ tư vấn".');
+  };
+
   return (
     <main className="booking-shell" id="booking-main">
       <header className="booking-header">
@@ -169,6 +194,7 @@ export function ManagementBookingWorkspace({
         <ConsultationPanel
           disabled={pending !== null}
           consultation={consultation}
+          onReset={resetConsultation}
           onCreate={async (input) => {
             const result = await run('consultation', () =>
               authorize((token) => gateway.createConsultation(token, input)),
@@ -197,10 +223,12 @@ export function ManagementBookingWorkspace({
           gateway={gateway}
           authorize={authorize}
           run={run}
+          autoLoadCatalog={autoLoadCatalog}
           onCreated={(result, consultationId) => {
             setBookingId(result.bookingId);
             setConsultation({ id: consultationId, revision: result.consultationRevision });
-            setMessage('Đã tạo hồ sơ đặt tiệc. Hãy tải đề xuất để tiếp tục.');
+            setMessage('Đã tạo hồ sơ đặt tiệc.');
+            void loadProposal(result.bookingId);
           }}
           setMessage={setMessage}
           onValidationError={setError}
@@ -259,11 +287,13 @@ function ConsultationPanel({
   disabled,
   onCreate,
   onInvite,
+  onReset,
 }: Readonly<{
   consultation: { id: string; revision: number } | null;
   disabled: boolean;
   onCreate: (input: { intendedEmail: string; displayName: string; note?: string }) => Promise<void>;
   onInvite: () => Promise<void>;
+  onReset?: () => void;
 }>) {
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -279,6 +309,9 @@ function ConsultationPanel({
     <article className="booking-card">
       <span className="booking-step">01</span>
       <h2>Hồ sơ tư vấn</h2>
+      <p style={{ color: '#5d665f', fontSize: '0.875rem', marginBottom: '0.75rem' }}>
+        Nhập thông tin cặp đôi và bấm <strong>&quot;Tạo hồ sơ tư vấn&quot;</strong> để cấp mã tự động sang Bước 02.
+      </p>
       <form onSubmit={submit}>
         <label>
           Tên cặp đôi
@@ -300,9 +333,16 @@ function ConsultationPanel({
         <div className="booking-result">
           <small>CONSULTATION · REV {consultation.revision}</small>
           <code>{consultation.id}</code>
-          <button disabled={disabled} type="button" onClick={() => void onInvite()}>
-            Gửi lời mời cộng tác
-          </button>
+          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
+            <button disabled={disabled} type="button" onClick={() => void onInvite()}>
+              Gửi lời mời cộng tác
+            </button>
+            {onReset ? (
+              <button disabled={disabled} type="button" className="booking-secondary" onClick={onReset}>
+                + Đặt cho cặp đôi mới
+              </button>
+            ) : null}
+          </div>
         </div>
       )}
     </article>
@@ -318,6 +358,7 @@ function BookingCreatePanel({
   run,
   setMessage,
   onValidationError,
+  autoLoadCatalog = false,
 }: Readonly<{
   authorize: Authorize;
   consultation: { id: string; revision: number } | null;
@@ -334,9 +375,30 @@ function BookingCreatePanel({
   run: <T>(label: string, operation: () => Promise<T>) => Promise<T | null>;
   setMessage: (message: string) => void;
   onValidationError: (message: string) => void;
+  autoLoadCatalog?: boolean;
 }>) {
   const [selections, setSelections] = useState<BookingSelections | null>(null);
+  const [loadingSelections, setLoadingSelections] = useState(false);
   const minimumDate = useMinimumEventDate();
+
+  const loadCatalog = useCallback(() => {
+    if (loadingSelections) return;
+    setLoadingSelections(true);
+    void run('catalog', () => authorize((token) => gateway.loadSelections(token)))
+      .then((result) => {
+        if (result !== null) setSelections(result);
+      })
+      .finally(() => {
+        setLoadingSelections(false);
+      });
+  }, [authorize, gateway, loadingSelections, run]);
+
+  useEffect(() => {
+    if (autoLoadCatalog && selections === null && !loadingSelections) {
+      loadCatalog();
+    }
+  }, [autoLoadCatalog, selections, loadingSelections, loadCatalog]);
+
   const validate = (form: HTMLFormElement, creating: boolean) => {
     if (disabled) return false;
     if (selections === null) {
@@ -387,19 +449,19 @@ function BookingCreatePanel({
       <h2>Kiểm tra &amp; tạo booking</h2>
       <button
         className="booking-secondary"
-        disabled={disabled}
+        disabled={disabled || loadingSelections}
         type="button"
-        onClick={() => {
-          void run('catalog', () => authorize((token) => gateway.loadSelections(token))).then(
-            (result) => {
-              if (result !== null) setSelections(result);
-            },
-          );
-        }}
+        onClick={loadCatalog}
       >
-        Tải danh mục đặt tiệc
+        {loadingSelections
+          ? 'Đang tải danh mục…'
+          : selections === null
+            ? 'Tải danh mục đặt tiệc'
+            : 'Tải lại danh mục đặt tiệc'}
       </button>
-      {selections === null ? (
+      {loadingSelections ? (
+        <p role="status">Đang tải danh mục sảnh, khung giờ và thực đơn đang phục vụ…</p>
+      ) : selections === null ? (
         <p>Tải danh mục để chọn sảnh, khung giờ và thực đơn đang phục vụ.</p>
       ) : selections.halls.length === 0 ||
         selections.menus.length === 0 ||
@@ -407,7 +469,11 @@ function BookingCreatePanel({
         <p role="status">
           Danh mục chưa đủ thông tin đặt tiệc. Cập nhật trong mục Danh mục rồi tải lại.
         </p>
-      ) : null}
+      ) : (
+        <p style={{ color: '#166534', fontSize: '0.875rem' }}>
+          ✓ Đã tải {selections.halls.length} sảnh tiệc, {selections.menus.length} thực đơn đang phục vụ.
+        </p>
+      )}
       <form
         noValidate
         onSubmit={(event) => {
@@ -426,8 +492,14 @@ function BookingCreatePanel({
             name="consultationId"
             required
             defaultValue={consultation?.id ?? ''}
+            placeholder="Tự động điền sau khi hoàn thành Bước 01"
           />
         </label>
+        <small style={{ color: '#5d665f', fontSize: '0.75rem', marginTop: '-0.5rem', marginBottom: '0.75rem', display: 'block' }}>
+          {consultation
+            ? `✓ Đã kết nối hồ sơ tư vấn (Phiên bản ${consultation.revision})`
+            : 'Mã này sẽ tự động điền khi bạn bấm "Tạo hồ sơ tư vấn" ở Bước 01'}
+        </small>
         <label>
           Phiên bản hồ sơ tư vấn
           <input
@@ -441,9 +513,19 @@ function BookingCreatePanel({
         </label>
         <label>
           Sảnh tiệc
-          <select name="hallId" required defaultValue="">
+          <select
+            name="hallId"
+            required
+            defaultValue=""
+            onFocus={() => {
+              if (selections === null) loadCatalog();
+            }}
+            onClick={() => {
+              if (selections === null) loadCatalog();
+            }}
+          >
             <option value="" disabled>
-              Chọn sảnh
+              {loadingSelections ? 'Đang tải sảnh…' : 'Chọn sảnh'}
             </option>
             {selections?.halls.map((hall) => (
               <option key={hall.id} value={hall.id}>
@@ -487,9 +569,19 @@ function BookingCreatePanel({
         </div>
         <label>
           Thực đơn đặt tiệc
-          <select name="menuPackageVersionId" required defaultValue="">
+          <select
+            name="menuPackageVersionId"
+            required
+            defaultValue=""
+            onFocus={() => {
+              if (selections === null) loadCatalog();
+            }}
+            onClick={() => {
+              if (selections === null) loadCatalog();
+            }}
+          >
             <option value="" disabled>
-              Chọn thực đơn
+              {loadingSelections ? 'Đang tải thực đơn…' : 'Chọn thực đơn'}
             </option>
             {selections?.menus.map((menu) => (
               <option key={menu.versionId} value={menu.versionId}>
@@ -684,6 +776,12 @@ function ProposalPanel({
           </button>
         )}
       </article>
+      <ContractPanel
+        bookingId={proposal.bookingId}
+        bookingRevision={proposal.revision}
+        disabled={disabled}
+        onRefresh={() => void refresh('Đã làm mới dữ liệu hợp đồng.')}
+      />
       <article className="proposal-danger">
         <h3>Kết thúc vòng đời</h3>
         {(proposal.cancellationRequests ?? []).map((request) => (
@@ -807,7 +905,8 @@ function errorMessage(error: unknown, shift?: ProposalView['proposal']['shift'])
       ? `Giờ bắt đầu mốc chương trình phải từ ${shift.startTime} đến trước ${shift.endTime}. Hãy sửa giờ rồi lưu lại. Nội dung đã nhập vẫn được giữ lại.`
       : 'Giờ bắt đầu mốc chương trình phải nằm trong ca tiệc đã chọn. Hãy sửa giờ rồi lưu lại.';
   const messages: Record<string, string> = {
-    STALE_BOOKING_REVISION: 'Hồ sơ đã thay đổi ở nơi khác. Hãy tải lại trước khi tiếp tục.',
+    STALE_BOOKING_REVISION:
+      'Hồ sơ đã thay đổi ở nơi khác hoặc mã hồ sơ tư vấn này đã được dùng để tạo tiệc rồi. Hãy bấm "Tạo hồ sơ tư vấn" ở Bước 01 để tạo mã mới cho cặp đôi.',
     SLOT_NOT_AVAILABLE: 'Khung giờ vừa được giữ bởi hồ sơ khác. Hãy chọn lịch khác.',
     DEPOSIT_INTENT_ACTIVE: 'Đang có giao dịch tiền cọc chưa kết thúc nên chưa thể thay đổi hồ sơ.',
     BOOKING_NOT_FOUND: 'Không tìm thấy hồ sơ hoặc tài khoản không có quyền xem.',
