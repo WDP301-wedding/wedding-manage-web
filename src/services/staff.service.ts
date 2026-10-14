@@ -12,14 +12,14 @@ export const staffService = {
   async provisionStaffAccount(
     input: {
       email: string;
-      displayName: string;
+      displayName?: string;
       phone?: string;
     },
     idempotencyKey = crypto.randomUUID(),
   ): Promise<ProvisionStaffAccountResponse> {
     const response = await axiosApiClient.post<{ data: ProvisionStaffAccountResponse }>(
       '/management/staff-accounts',
-      input,
+      { email: input.email.trim().toLowerCase() },
       { headers: { 'Idempotency-Key': idempotencyKey } },
     );
     return response.data.data;

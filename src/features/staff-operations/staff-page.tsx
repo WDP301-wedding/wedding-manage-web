@@ -36,6 +36,7 @@ export function StaffOperationsPage({
   // Manager: Assignments & Provision
   const [assignments, setAssignments] = useState<readonly EventAssignmentItem[]>([]);
   const [loadingAssignments, setLoadingAssignments] = useState(false);
+  const [staffAccountId, setStaffAccountId] = useState('');
 
   useEffect(() => {
     let active = true;
@@ -153,12 +154,15 @@ export function StaffOperationsPage({
     setPending(true);
     setError(null);
     try {
-      await staffService.provisionStaffAccount({
+      const res = await staffService.provisionStaffAccount({
         email,
         displayName,
         ...(phone ? { phone } : {}),
       });
-      setMessage(`Đã cấp tài khoản nhân sự cho ${displayName} (${email}).`);
+      setStaffAccountId(res.accountId);
+      setMessage(
+        `✓ Đã cấp tài khoản Staff thành công cho ${email}! Mã tài khoản (UUID): ${res.accountId} (Đã tự động điền sang Form phân công).`,
+      );
       form.reset();
     } catch (err) {
       if (err instanceof ApiServiceError) {
@@ -556,6 +560,8 @@ export function StaffOperationsPage({
                       name="staffAccountId"
                       type="text"
                       required
+                      value={staffAccountId}
+                      onChange={(e) => setStaffAccountId(e.target.value)}
                       placeholder="UUID tài khoản nhân viên"
                       style={{ width: '100%', padding: '0.5rem', borderRadius: 6, border: '1px solid #d1d5db' }}
                     />
