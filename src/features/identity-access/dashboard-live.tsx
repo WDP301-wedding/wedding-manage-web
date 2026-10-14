@@ -892,27 +892,7 @@ export function DashboardLiveView({
                             >
                               Nhân sự
                             </Link>
-                            {mine ? (
-                              <button
-                                type="button"
-                                title="Bỏ phụ trách tiệc này để quản lý khác có thể tiếp nhận"
-                                onClick={() => handleRelease(booking.bookingId, booking.hallNameSnapshot || undefined)}
-                                style={{
-                                  border: '1px solid #f59e0b',
-                                  borderRadius: '4px',
-                                  background: '#fef3c7',
-                                  color: '#92400e',
-                                  cursor: 'pointer',
-                                  fontSize: '0.75rem',
-                                  fontWeight: 600,
-                                  padding: '3px 8px',
-                                  whiteSpace: 'nowrap',
-                                  lineHeight: '1.2',
-                                }}
-                              >
-                                ★ Bỏ nhận
-                              </button>
-                            ) : assignedToOther ? (
+                            {mine ? null : assignedToOther ? (
                               <button
                                 type="button"
                                 disabled

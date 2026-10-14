@@ -136,17 +136,9 @@ describe('Booking assignment locking and synchronization', () => {
       // Status message is displayed
       await screen.findByText(/Bạn đã tiếp nhận tiệc Sảnh Ruby/);
 
-      // Booking 2 now has "Của bạn" badge and "★ Bỏ nhận" button
+      // Booking 2 now has "Của bạn" badge
       expect(screen.getByText('Của bạn')).toBeInTheDocument();
-      const releaseBtn = screen.getByRole('button', { name: '★ Bỏ nhận' });
-      expect(releaseBtn).toBeEnabled();
-
-      // Manager B clicks "★ Bỏ nhận"
-      fireEvent.click(releaseBtn);
-      await screen.findByText(/Đã hủy nhận tiệc Sảnh Ruby/);
-
-      // Button returns to "☆ Nhận tiệc"
-      expect(screen.getByRole('button', { name: '☆ Nhận tiệc' })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: '★ Bỏ nhận' })).not.toBeInTheDocument();
     });
   });
 });
