@@ -8,6 +8,7 @@ import { ApiClientError } from '../../lib/api/client';
 import {
   createIdentityApi,
   ManagementIdentitySession,
+  sharedManagementSession,
   type ManagementSessionSnapshot,
 } from '../identity-access/session';
 import { OperationsShell } from '../identity-access/operations-shell';
@@ -76,7 +77,7 @@ function CatalogTabs({
   );
 }
 
-const catalogSession = new ManagementIdentitySession(createIdentityApi());
+const catalogSession = sharedManagementSession;
 const catalogGateway = createVenueCatalogGateway();
 const catalogContractDigest = apiContractLock.source.sha256.slice(0, 8);
 

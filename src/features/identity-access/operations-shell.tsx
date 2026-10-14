@@ -224,6 +224,21 @@ export function OperationsShell({
             <span>Danh mục</span>
           </Link>
         </>
+      ) : actor ? (
+        <Link
+          id="ops-nav-staff-checkin"
+          className={navClass('staff')}
+          href="/staff"
+          aria-current={activePage === 'staff' ? 'page' : undefined}
+          aria-label="Bàn đón khách"
+          title="Bàn đón khách"
+          onClick={() => setMobileDrawerOpen(false)}
+        >
+          <span className="nav-icon" aria-hidden="true">
+            <UsersIcon width={18} height={18} />
+          </span>
+          <span>Bàn đón khách</span>
+        </Link>
       ) : null}
     </>
   );

@@ -4,11 +4,11 @@ import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { createApiClient, ApiClientError } from '../../lib/api/client';
 import type { components } from '../../lib/api/generated/schema';
-import { createIdentityApi, ManagementIdentitySession } from '../identity-access/session';
+import { createIdentityApi, ManagementIdentitySession, sharedManagementSession } from '../identity-access/session';
 import type { ManagementSessionSnapshot } from '../identity-access/session';
 import { OperationsShell } from '../identity-access/operations-shell';
 
-const session = new ManagementIdentitySession(createIdentityApi());
+const session = sharedManagementSession;
 let resolvedApi: ReturnType<typeof createApiClient> | undefined;
 const getApi = () => (resolvedApi ??= createApiClient());
 type Queue = components['schemas']['ConsultationRequestList'];

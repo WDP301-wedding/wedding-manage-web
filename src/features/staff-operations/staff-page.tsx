@@ -3,8 +3,8 @@
 import { type FormEvent, useEffect, useState } from 'react';
 import { OperationsShell } from '../identity-access/operations-shell';
 import {
-  createIdentityApi,
   ManagementIdentitySession,
+  sharedManagementSession,
   type ManagementSessionSnapshot,
 } from '../identity-access/session';
 import {
@@ -14,10 +14,8 @@ import {
 } from '../../services/staff.service';
 import { ApiServiceError } from '../../lib/api/axios-client';
 
-const identity = new ManagementIdentitySession(createIdentityApi());
-
 export function StaffOperationsPage({
-  session = identity,
+  session = sharedManagementSession,
 }: Readonly<{
   session?: ManagementIdentitySession;
 }>) {

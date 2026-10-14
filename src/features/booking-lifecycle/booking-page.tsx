@@ -8,7 +8,7 @@ import { minimumEventDate, useMinimumEventDate } from '../../lib/event-date';
 import { TimelineEditor } from './timeline-editor';
 import { ContractPanel } from './contract-panel';
 import { createVenueCatalogGateway } from '../venue-catalog/catalog-api';
-import { createIdentityApi, ManagementIdentitySession } from '../identity-access/session';
+import { createIdentityApi, ManagementIdentitySession, sharedManagementSession } from '../identity-access/session';
 import type { ManagementSessionSnapshot } from '../identity-access/session';
 import { OperationsShell } from '../identity-access/operations-shell';
 import {
@@ -20,7 +20,7 @@ import {
 
 type Authorize = <T>(operation: (accessToken: string) => Promise<T>) => Promise<T>;
 
-const session = new ManagementIdentitySession(createIdentityApi());
+const session = sharedManagementSession;
 const gateway = createManagementBookingGateway();
 const catalogGateway = createVenueCatalogGateway();
 

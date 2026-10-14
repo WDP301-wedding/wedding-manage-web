@@ -7,6 +7,7 @@ import { OperationsShell } from '../identity-access/operations-shell';
 import {
   createIdentityApi,
   ManagementIdentitySession,
+  sharedManagementSession,
   type ManagementSessionSnapshot,
 } from '../identity-access/session';
 import { useFocusTrap } from './focus-trap';
@@ -55,7 +56,7 @@ import {
 } from './print-orders-types';
 import '../../../app/print-orders/print-orders.css';
 
-const defaultIdentity = new ManagementIdentitySession(createIdentityApi());
+const defaultIdentity = sharedManagementSession;
 const defaultGateway = createManagementPrintOrdersGateway();
 
 export const DEMO_MANAGER_SNAPSHOT: ManagementSessionSnapshot = {

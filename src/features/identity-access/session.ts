@@ -78,10 +78,6 @@ export class ManagementIdentitySession {
   }
 
   restore(): Promise<ManagementSessionSnapshot> {
-    if (this.state.status === 'authenticated' && this.accessToken !== null) {
-      return Promise.resolve(this.state);
-    }
-
     const persisted = this.readPersisted();
     if (persisted && persisted.accessToken) {
       const expiresAt = new Date(persisted.accessExpiresAt).getTime();
@@ -95,6 +91,12 @@ export class ManagementIdentitySession {
         };
         return Promise.resolve(this.state);
       }
+    } else if (typeof window !== 'undefined' && persisted === null && this.state.status === 'authenticated') {
+      this.clear();
+    }
+
+    if (this.state.status === 'authenticated' && this.accessToken !== null) {
+      return Promise.resolve(this.state);
     }
 
     this.restoreOperation ??= this.restoreFromCookie().finally(() => {
@@ -281,3 +283,5 @@ function normalizeActor(
 ): CurrentActor {
   return { ...actor, roles: Array.from(actor.roles) };
 }
+
+export const sharedManagementSession = new ManagementIdentitySession(createIdentityApi());

@@ -11,6 +11,7 @@ import {
   consumeResetFragment,
   createIdentityApi,
   ManagementIdentitySession,
+  sharedManagementSession,
   type ManagementSessionSnapshot,
 } from './session';
 
@@ -20,7 +21,7 @@ const browserResetToken =
     : consumeResetFragment(window.location.href, (safePath) =>
         window.history.replaceState(null, '', safePath),
       );
-const browserSession = new ManagementIdentitySession(createIdentityApi());
+const browserSession = sharedManagementSession;
 
 type AuthView = 'login' | 'reset-request' | 'restoring';
 

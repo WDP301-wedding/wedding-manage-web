@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import {
   createIdentityApi,
   ManagementIdentitySession,
+  sharedManagementSession,
   type ManagementSessionSnapshot,
 } from '../identity-access/session';
 import { OperationsShell } from '../identity-access/operations-shell';
@@ -35,7 +36,8 @@ type MutationResult =
   | Awaited<ReturnType<ManagementBillingGateway['recordManual']>>
   | Awaited<ReturnType<ManagementBillingGateway['refund']>>
   | Awaited<ReturnType<ManagementBillingGateway['approveRefund']>>;
-const identity = new ManagementIdentitySession(createIdentityApi());
+
+const identity = sharedManagementSession;
 const billing = createManagementBillingGateway();
 export function ManagementBillingPage({
   session = identity,
