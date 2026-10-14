@@ -17,6 +17,7 @@ import {
   type ProposalView,
   type BookingSelections,
 } from './booking-api';
+import { addMyManagedBookingId, getMyManagedBookingIds } from '../identity-access/dashboard-live';
 
 type Authorize = <T>(operation: (accessToken: string) => Promise<T>) => Promise<T>;
 
@@ -88,6 +89,8 @@ export function ManagementBookingPage({
         authorize={(operation) => session.authorize(operation)}
         gateway={gateway}
         autoLoadCatalog={autoLoadCatalog}
+        currentAccountId={snapshot?.status === 'authenticated' ? snapshot.actor.accountId : undefined}
+        currentEmail={snapshot?.status === 'authenticated' ? snapshot.actor.displayEmail : undefined}
       />
     );
   return (
@@ -107,10 +110,14 @@ export function ManagementBookingWorkspace({
   authorize,
   gateway,
   autoLoadCatalog = false,
+  currentAccountId,
+  currentEmail,
 }: Readonly<{
   authorize: Authorize;
   gateway: ManagementBookingGateway;
-  autoLoadCatalog?: boolean;
+  autoLoadCatalog?: boolean | undefined;
+  currentAccountId?: string | undefined;
+  currentEmail?: string | undefined;
 }>) {
   const [consultation, setConsultation] = useState<{ id: string; revision: number } | null>(null);
   const [bookingId, setBookingId] = useState('');
@@ -118,6 +125,16 @@ export function ManagementBookingWorkspace({
   const [pending, setPending] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [recentBookingIds, setRecentBookingIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    setRecentBookingIds(getMyManagedBookingIds(currentAccountId));
+  }, [currentAccountId]);
+
+  const recordMyBooking = (id: string) => {
+    addMyManagedBookingId(id, currentAccountId, currentEmail);
+    setRecentBookingIds((prev) => (prev.includes(id) ? prev : [id, ...prev]));
+  };
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -161,7 +178,10 @@ export function ManagementBookingWorkspace({
 
   const loadProposal = async (id: string) => {
     const result = await run('load', () => authorize((token) => gateway.loadProposal(token, id)));
-    if (result !== null) setProposal(result);
+    if (result !== null) {
+      setProposal(result);
+      recordMyBooking(id);
+    }
   };
 
   const refresh = async (success: string) => {
@@ -229,6 +249,7 @@ export function ManagementBookingWorkspace({
             setConsultation({ id: consultationId, revision: result.consultationRevision });
             setMessage('Đã tạo hồ sơ đặt tiệc.');
             void loadProposal(result.bookingId);
+            recordMyBooking(result.bookingId);
           }}
           setMessage={setMessage}
           onValidationError={setError}
@@ -241,26 +262,61 @@ export function ManagementBookingWorkspace({
             <p className="section-kicker">Hồ sơ đang xử lý</p>
             <h2 id="proposal-heading">Đề xuất &amp; vòng đời</h2>
           </div>
-          <form
-            className="booking-lookup"
-            onSubmit={(event) => {
-              event.preventDefault();
-              void loadProposal(bookingId.trim());
-            }}
-          >
-            <label>
-              Mã booking
-              <input
-                required
-                value={bookingId}
-                onChange={(event) => setBookingId(event.target.value)}
-                placeholder="Mã hồ sơ đặt tiệc"
-              />
-            </label>
-            <button disabled={pending !== null || bookingId.trim() === ''} type="submit">
-              Tải hồ sơ
-            </button>
-          </form>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-end' }}>
+            <form
+              className="booking-lookup"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void loadProposal(bookingId.trim());
+              }}
+            >
+              <label>
+                Mã booking
+                <input
+                  required
+                  value={bookingId}
+                  onChange={(event) => setBookingId(event.target.value)}
+                  placeholder="Mã hồ sơ đặt tiệc"
+                />
+              </label>
+              <button disabled={pending !== null || bookingId.trim() === ''} type="submit">
+                Tải hồ sơ
+              </button>
+            </form>
+            {recentBookingIds.length > 0 ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem' }}>
+                <span style={{ color: '#64748b' }}>Tiệc của bạn:</span>
+                <select
+                  aria-label="Chọn nhanh mã tiệc gần đây"
+                  value={recentBookingIds.includes(bookingId) ? bookingId : ''}
+                  onChange={(event) => {
+                    const selected = event.target.value;
+                    if (selected) {
+                      setBookingId(selected);
+                      void loadProposal(selected);
+                    }
+                  }}
+                  style={{
+                    padding: '2px 8px',
+                    borderRadius: '4px',
+                    border: '1px solid #cbd5e1',
+                    background: '#ffffff',
+                    fontSize: '0.78rem',
+                    color: '#1e293b',
+                    maxWidth: '280px',
+                    fontFamily: 'monospace',
+                  }}
+                >
+                  <option value="">-- Chọn nhanh mã tiệc ({recentBookingIds.length}) --</option>
+                  {recentBookingIds.map((id) => (
+                    <option key={id} value={id}>
+                      {id}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
+          </div>
         </div>
         {proposal === null ? (
           <div className="booking-empty">
@@ -910,6 +966,8 @@ function errorMessage(error: unknown, shift?: ProposalView['proposal']['shift'])
     SLOT_NOT_AVAILABLE: 'Khung giờ vừa được giữ bởi hồ sơ khác. Hãy chọn lịch khác.',
     DEPOSIT_INTENT_ACTIVE: 'Đang có giao dịch tiền cọc chưa kết thúc nên chưa thể thay đổi hồ sơ.',
     BOOKING_NOT_FOUND: 'Không tìm thấy hồ sơ hoặc tài khoản không có quyền xem.',
+    NOT_FOUND: 'Không tìm thấy hồ sơ hoặc tài khoản không có quyền xem.',
+    FORBIDDEN: 'Tài khoản không có quyền xem hồ sơ đặt tiệc này.',
     TIMELINE_APPROVAL_REQUIRES_ITEM:
       'Hãy thêm và lưu ít nhất một mốc chương trình trước khi phê duyệt.',
     TIMELINE_ITEM_COUNT_INVALID:

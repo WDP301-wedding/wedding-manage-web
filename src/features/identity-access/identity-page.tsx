@@ -234,7 +234,11 @@ function OperationsDashboard({
             Máy chủ đã từ chối thao tác. Dữ liệu trình bày không thay đổi quyền thực tế.
           </p>
         )}
-        <DashboardLiveView isManager={manager} />
+        <DashboardLiveView
+          isManager={manager}
+          currentAccountId={snapshot.actor.accountId}
+          currentEmail={snapshot.actor.displayEmail}
+        />
       </main>
     </OperationsShell>
   );
