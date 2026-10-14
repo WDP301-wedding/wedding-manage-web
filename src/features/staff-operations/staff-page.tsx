@@ -48,6 +48,16 @@ export function StaffOperationsPage({
     };
   }, [session]);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const bId = params.get('bookingId');
+      if (bId !== null && /^[a-f0-9-]{36}$/iu.test(bId)) {
+        setBookingId(bId);
+      }
+    }
+  }, []);
+
   const isManager =
     snapshot?.status === 'authenticated' && snapshot.presentation === 'manager';
 

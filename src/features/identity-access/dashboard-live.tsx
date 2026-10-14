@@ -880,6 +880,18 @@ export function DashboardLiveView({
                             >
                               Thanh toán
                             </Link>
+                            <Link
+                              className="booking-secondary"
+                              href={`/staff?bookingId=${booking.bookingId}`}
+                              style={{
+                                padding: '4px 10px',
+                                fontSize: '0.8rem',
+                                whiteSpace: 'nowrap',
+                                textDecoration: 'none',
+                              }}
+                            >
+                              Nhân sự
+                            </Link>
                             {mine ? (
                               <button
                                 type="button"
