@@ -30,6 +30,10 @@ export function billingMessage(error: unknown): string {
     BILLING_REFUND_NOT_APPROVED: 'Chưa có quyết định hoàn tiền hợp lệ cho khoản thanh toán này.',
     DEPOSIT_NOT_ELIGIBLE:
       'Hồ sơ chưa đủ điều kiện nhận cọc. Hãy kiểm tra lịch giữ chỗ và kịch bản đã duyệt.',
+    PAYMENT_EVIDENCE_CONFLICT:
+      'Số tiền hoặc chứng từ không khớp với thỏa thuận cọc của hồ sơ tiệc. Hãy nhập chính xác số tiền cọc quy định.',
+    CONTRACT_REVISION_STALE:
+      'Hợp đồng tiệc chưa hoàn tất phê duyệt hoặc đã có phiên bản mới. Hãy tải lại trang.',
     PAYMENT_OUTCOME_UNKNOWN:
       'Giao dịch chưa rõ kết quả. Hãy kiểm tra trạng thái, không tạo lần thanh toán mới.',
     REQUEST_IN_PROGRESS: 'Yêu cầu đang được xử lý. Hãy đợi rồi thử lại cùng nội dung.',

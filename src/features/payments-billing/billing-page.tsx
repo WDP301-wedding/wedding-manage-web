@@ -358,6 +358,22 @@ export function ManagementBillingWorkspace({
               </form>
               {attempt !== null && <AttemptStatus attempt={attempt} />}
             </section>
+            {error !== null && (
+              <div
+                style={{
+                  margin: '1.5rem 0 0.5rem',
+                  padding: '12px 16px',
+                  background: '#fef2f2',
+                  border: '1px solid #fecaca',
+                  borderRadius: '6px',
+                  color: '#991b1b',
+                  fontSize: '0.88rem',
+                  lineHeight: 1.5,
+                }}
+              >
+                <strong>⚠ Thao tác chưa hoàn tất:</strong> {error}
+              </div>
+            )}
             <div className="billing-forms">
               <ManualPaymentForm
                 key={`manual:${view.bookingId}`}

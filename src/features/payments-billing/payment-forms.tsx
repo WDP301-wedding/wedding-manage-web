@@ -155,6 +155,9 @@ export function ManualPaymentForm({
               required
             />
           </label>
+          <small style={{ color: '#64748b', fontSize: '0.78rem', marginTop: '-0.25rem', marginBottom: '0.75rem', display: 'block', lineHeight: 1.4 }}>
+            ℹ <strong>Lưu ý:</strong> Đối với loại &quot;Đặt cọc&quot;, số tiền thực nhận bắt buộc phải khớp chính xác số tiền cọc quy định trên hồ sơ tiệc (xem tại mục &quot;Tiền cọc&quot;).
+          </small>
           <label>
             Thời điểm nhận tiền
             <input name="settledAt" type="datetime-local" required />
