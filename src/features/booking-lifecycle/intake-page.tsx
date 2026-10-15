@@ -226,12 +226,24 @@ export function ConsultationRequestsPage() {
                           {item.consultationId}
                         </code>
                       </div>
-                      <Link
-                        className="booking-primary-link"
-                        href={`/bookings?consultationId=${item.consultationId}&consultationRevision=${item.consultationRevision}`}
-                      >
-                        Tiếp tục đặt tiệc
-                      </Link>
+                      {(() => {
+                        const params = new URLSearchParams({
+                          consultationId: item.consultationId,
+                          consultationRevision: String(item.consultationRevision ?? 1),
+                        });
+                        if (item.displayName) params.set('displayName', item.displayName);
+                        if (item.email) params.set('email', item.email);
+                        if (item.preferredDate) params.set('preferredDate', item.preferredDate);
+                        if (item.expectedGuests !== undefined && item.expectedGuests !== null) {
+                          params.set('expectedGuests', String(item.expectedGuests));
+                        }
+                        if (item.message) params.set('note', item.message);
+                        return (
+                          <Link className="booking-primary-link" href={`/bookings?${params.toString()}`}>
+                            Tiếp tục đặt tiệc
+                          </Link>
+                        );
+                      })()}
                     </div>
                   )}
                 </article>

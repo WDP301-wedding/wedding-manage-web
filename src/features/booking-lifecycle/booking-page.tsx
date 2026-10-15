@@ -3,12 +3,13 @@
 import Link from 'next/link';
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
 
-import { ApiClientError } from '../../lib/api/client';
+import { createApiClient, ApiClientError } from '../../lib/api/client';
+import type { components } from '../../lib/api/generated/schema';
 import { minimumEventDate, useMinimumEventDate } from '../../lib/event-date';
 import { TimelineEditor } from './timeline-editor';
 import { ContractPanel } from './contract-panel';
 import { createVenueCatalogGateway } from '../venue-catalog/catalog-api';
-import { createIdentityApi, ManagementIdentitySession, sharedManagementSession } from '../identity-access/session';
+import { sharedManagementSession } from '../identity-access/session';
 import type { ManagementSessionSnapshot } from '../identity-access/session';
 import { OperationsShell } from '../identity-access/operations-shell';
 import {
@@ -106,6 +107,25 @@ export function ManagementBookingPage({
   );
 }
 
+export type InviteLogEntry = Readonly<{
+  id: string;
+  time: string;
+  type: 'pending' | 'success' | 'error';
+  message: string;
+  consultationId?: string | undefined;
+  invitationId?: string | undefined;
+  details?: string | undefined;
+}>;
+
+export type BookingPrefill = Readonly<{
+  displayName?: string | undefined;
+  email?: string | undefined;
+  note?: string | undefined;
+  eventDate?: string | undefined;
+  expectedGuests?: number | undefined;
+  tableCount?: number | undefined;
+}>;
+
 export function ManagementBookingWorkspace({
   authorize,
   gateway,
@@ -126,6 +146,8 @@ export function ManagementBookingWorkspace({
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [recentBookingIds, setRecentBookingIds] = useState<string[]>([]);
+  const [inviteLogs, setInviteLogs] = useState<readonly InviteLogEntry[]>([]);
+  const [prefill, setPrefill] = useState<BookingPrefill>({});
 
   useEffect(() => {
     setRecentBookingIds(getMyManagedBookingIds(currentAccountId));
@@ -156,6 +178,56 @@ export function ManagementBookingWorkspace({
           if (result !== null) setProposal(result);
         },
       );
+    }
+
+    const dName = params.get('displayName') || undefined;
+    const em = params.get('email') || undefined;
+    const nt = params.get('note') || undefined;
+    const pDate = params.get('preferredDate')?.slice(0, 10) || undefined;
+    const expGuestsParam = params.get('expectedGuests');
+    const expG =
+      expGuestsParam && !Number.isNaN(Number(expGuestsParam)) ? Number(expGuestsParam) : undefined;
+    const tCount = expG && expG > 0 ? Math.max(1, Math.ceil(expG / 10)) : undefined;
+
+    if (dName || em || nt || pDate || expG) {
+      setPrefill({
+        displayName: dName,
+        email: em,
+        note: nt,
+        eventDate: pDate,
+        expectedGuests: expG,
+        tableCount: tCount,
+      });
+    }
+
+    if (!dName && !em && id) {
+      void session
+        .authorize((token) =>
+          createApiClient().GET('/management/consultation-requests', {
+            headers: { Authorization: `Bearer ${token}` },
+            params: { query: { limit: 50 } },
+          }),
+        )
+        .then((res) => {
+          type RequestItem = components['schemas']['ConsultationRequestList']['data'][number];
+          const list = (res.data as components['schemas']['ConsultationRequestList'] | undefined)
+            ?.data;
+          const match = list?.find((item: RequestItem) => item.consultationId === id);
+          if (match) {
+            const expGMatch = match.expectedGuests ?? undefined;
+            const tCountMatch =
+              expGMatch && expGMatch > 0 ? Math.max(1, Math.ceil(expGMatch / 10)) : undefined;
+            setPrefill((prev) => ({
+              displayName: prev.displayName ?? match.displayName,
+              email: prev.email ?? match.email,
+              note: prev.note ?? match.message ?? undefined,
+              eventDate: prev.eventDate ?? match.preferredDate?.slice(0, 10),
+              expectedGuests: prev.expectedGuests ?? expGMatch,
+              tableCount: prev.tableCount ?? tCountMatch,
+            }));
+          }
+        })
+        .catch(() => {});
     }
   }, []);
 
@@ -191,6 +263,7 @@ export function ManagementBookingWorkspace({
 
   const resetConsultation = () => {
     setConsultation(null);
+    setPrefill({});
     setMessage('Đã xóa mã tư vấn cũ. Hãy nhập thông tin cặp đôi mới ở Bước 01 rồi bấm "Tạo hồ sơ tư vấn".');
   };
 
@@ -214,6 +287,9 @@ export function ManagementBookingWorkspace({
         <ConsultationPanel
           disabled={pending !== null}
           consultation={consultation}
+          prefill={prefill}
+          logs={inviteLogs}
+          onClearLogs={() => setInviteLogs([])}
           onReset={resetConsultation}
           onCreate={async (input) => {
             const result = await run('consultation', () =>
@@ -221,25 +297,93 @@ export function ManagementBookingWorkspace({
             );
             if (result !== null) {
               setConsultation({ id: result.consultationId, revision: result.revision });
+              setPrefill((prev) => ({
+                ...prev,
+                displayName: input.displayName,
+                email: input.intendedEmail,
+                note: input.note,
+              }));
               setMessage('Đã tạo hồ sơ tư vấn.');
             }
           }}
           onInvite={async () => {
             if (consultation === null) return;
-            const result = await run('invite', () =>
-              authorize((token) =>
+            const now = new Date().toLocaleTimeString('vi-VN');
+            const logId = crypto.randomUUID();
+            console.log(`[Workspace Invitation] ${now} Bắt đầu gửi lời mời cộng tác:`, {
+              consultationId: consultation.id,
+              revision: consultation.revision,
+            });
+            setInviteLogs((prev) => [
+              {
+                id: logId,
+                time: now,
+                type: 'pending',
+                message: 'Đang gửi yêu cầu mời cộng tác tới máy chủ...',
+                consultationId: consultation.id,
+              },
+              ...prev,
+            ]);
+
+            setPending('invite');
+            setMessage(null);
+            setError(null);
+            try {
+              const res = await authorize((token) =>
                 gateway.invite(token, {
                   consultationId: consultation.id,
                   expectedRevision: consultation.revision,
                 }),
-              ),
-            );
-            if (result !== null) setMessage('Đã yêu cầu gửi lời mời không gian cộng tác.');
+              );
+              console.log(`[Workspace Invitation] ${now} Gửi lời mời thành công:`, res);
+              setMessage('Đã yêu cầu gửi lời mời không gian cộng tác.');
+              const invitationId = (res as { invitationId?: string } | undefined)?.invitationId;
+              const isReplayed = (res as { replayed?: boolean } | undefined)?.replayed;
+              setInviteLogs((prev) =>
+                prev.map((item) =>
+                  item.id === logId
+                    ? {
+                        ...item,
+                        type: 'success',
+                        message: 'Đã gửi lời mời thành công tới email của cặp đôi.',
+                        invitationId: invitationId ?? 'Đã phát hành (ISSUED)',
+                        details: isReplayed
+                          ? 'Yêu cầu lặp lại (replayed) - lời mời đã được phát hành trước đó.'
+                          : undefined,
+                      }
+                    : item,
+                ),
+              );
+            } catch (caught) {
+              const errText = errorMessage(caught, proposal?.proposal.shift);
+              console.error(`[Workspace Invitation] ${now} Lỗi gửi lời mời:`, caught);
+              setError(errText);
+              setInviteLogs((prev) =>
+                prev.map((item) =>
+                  item.id === logId
+                    ? {
+                        ...item,
+                        type: 'error',
+                        message: `Gửi lời mời thất bại: ${errText}`,
+                        details:
+                          caught instanceof ApiClientError
+                            ? `HTTP ${caught.status ?? 'N/A'} (${caught.code}): ${caught.message}`
+                            : caught instanceof Error
+                              ? caught.message
+                              : String(caught),
+                      }
+                    : item,
+                ),
+              );
+            } finally {
+              setPending(null);
+            }
           }}
         />
         <BookingCreatePanel
           disabled={pending !== null}
           consultation={consultation}
+          prefill={prefill}
           gateway={gateway}
           authorize={authorize}
           run={run}
@@ -380,15 +524,21 @@ export function ManagementBookingWorkspace({
 function ConsultationPanel({
   consultation,
   disabled,
+  logs,
+  onClearLogs,
   onCreate,
   onInvite,
   onReset,
+  prefill,
 }: Readonly<{
   consultation: { id: string; revision: number } | null;
   disabled: boolean;
+  logs?: readonly InviteLogEntry[] | undefined;
+  onClearLogs?: (() => void) | undefined;
   onCreate: (input: { intendedEmail: string; displayName: string; note?: string }) => Promise<void>;
   onInvite: () => Promise<void>;
-  onReset?: () => void;
+  onReset?: (() => void) | undefined;
+  prefill?: BookingPrefill | undefined;
 }>) {
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -407,18 +557,56 @@ function ConsultationPanel({
       <p style={{ color: '#5d665f', fontSize: '0.875rem', marginBottom: '0.75rem' }}>
         Nhập thông tin cặp đôi và bấm <strong>&quot;Tạo hồ sơ tư vấn&quot;</strong> để cấp mã tự động sang Bước 02.
       </p>
+      {prefill?.displayName || prefill?.email ? (
+        <div
+          style={{
+            padding: '6px 10px',
+            backgroundColor: '#f0fdf4',
+            border: '1px solid #bbf7d0',
+            borderRadius: '6px',
+            fontSize: '0.78rem',
+            color: '#15803d',
+            marginBottom: '0.75rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+          }}
+        >
+          <span>✓</span>
+          <span>Đã tự động điền thông tin từ yêu cầu tư vấn của khách hàng.</span>
+        </div>
+      ) : null}
       <form onSubmit={submit}>
         <label>
           Tên cặp đôi
-          <input name="displayName" required minLength={1} maxLength={120} />
+          <input
+            key={`displayName-${prefill?.displayName ?? ''}`}
+            name="displayName"
+            required
+            minLength={1}
+            maxLength={120}
+            defaultValue={prefill?.displayName ?? ''}
+          />
         </label>
         <label>
           Email liên hệ
-          <input name="email" type="email" required />
+          <input
+            key={`email-${prefill?.email ?? ''}`}
+            name="email"
+            type="email"
+            required
+            defaultValue={prefill?.email ?? ''}
+          />
         </label>
         <label>
           Ghi chú
-          <textarea name="note" maxLength={2000} rows={3} />
+          <textarea
+            key={`note-${prefill?.note ?? ''}`}
+            name="note"
+            maxLength={2000}
+            rows={3}
+            defaultValue={prefill?.note ?? ''}
+          />
         </label>
         <button disabled={disabled} type="submit">
           Tạo hồ sơ tư vấn
@@ -438,6 +626,147 @@ function ConsultationPanel({
               </button>
             ) : null}
           </div>
+
+          <div
+            style={{
+              marginTop: '0.75rem',
+              padding: '0.6rem 0.75rem',
+              backgroundColor: '#eff6ff',
+              border: '1px solid #bfdbfe',
+              borderRadius: '6px',
+              fontSize: '0.78rem',
+              color: '#1e40af',
+              lineHeight: 1.5,
+            }}
+          >
+            <strong>💡 Quy trình tránh lặp form:</strong> Sau khi có mã tư vấn, Quản lý cần hoàn tất <strong>Bước 02: Tạo booking</strong> (chọn sảnh, thực đơn, ngày tiệc bên cạnh). Nếu chưa tạo booking, Couple khi đăng nhập sẽ thấy chưa có tiệc và bị chuyển về form yêu cầu tư vấn.
+          </div>
+
+          <div
+            style={{
+              marginTop: '1rem',
+              padding: '0.75rem',
+              backgroundColor: '#f8fafc',
+              border: '1px solid #e2e8f0',
+              borderRadius: '6px',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '0.5rem',
+              }}
+            >
+              <span
+                style={{
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                  color: '#475569',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                }}
+              >
+                📋 Nhật ký gửi lời mời (Log)
+              </span>
+              {logs && logs.length > 0 && onClearLogs ? (
+                <button
+                  type="button"
+                  onClick={onClearLogs}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    fontSize: '0.72rem',
+                    color: '#94a3b8',
+                    cursor: 'pointer',
+                    padding: '2px 4px',
+                    textDecoration: 'underline',
+                  }}
+                >
+                  Xóa log
+                </button>
+              ) : null}
+            </div>
+
+            {!logs || logs.length === 0 ? (
+              <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b', fontStyle: 'italic' }}>
+                Chưa có thao tác gửi nào. Bấm &quot;Gửi lời mời cộng tác&quot; để gửi email kích hoạt cho Couple.
+              </p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {logs.map((item) => (
+                  <div
+                    key={item.id}
+                    style={{
+                      padding: '0.5rem 0.65rem',
+                      borderRadius: '4px',
+                      fontSize: '0.8rem',
+                      lineHeight: '1.4',
+                      backgroundColor:
+                        item.type === 'success'
+                          ? '#f0fdf4'
+                          : item.type === 'error'
+                            ? '#fef2f2'
+                            : '#fffbeb',
+                      border: `1px solid ${
+                        item.type === 'success'
+                          ? '#bbf7d0'
+                          : item.type === 'error'
+                            ? '#fecaca'
+                            : '#fde68a'
+                      }`,
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: '4px',
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontWeight: 600,
+                          color:
+                            item.type === 'success'
+                              ? '#166534'
+                              : item.type === 'error'
+                                ? '#991b1b'
+                                : '#92400e',
+                        }}
+                      >
+                        {item.type === 'success' ? '✓ Đã gửi thành công' : item.type === 'error' ? '✕ Gửi thất bại' : '⏳ Đang xử lý...'}
+                      </span>
+                      <small style={{ color: '#64748b', fontSize: '0.75rem' }}>{item.time}</small>
+                    </div>
+                    <div style={{ marginTop: '3px', color: '#1e293b' }}>{item.message}</div>
+                    {item.invitationId ? (
+                      <div style={{ marginTop: '4px', fontSize: '0.75rem' }}>
+                        <span style={{ color: '#64748b' }}>Mã lời mời (invitationId): </span>
+                        <code
+                          style={{
+                            background: 'rgba(0,0,0,0.06)',
+                            padding: '1px 5px',
+                            borderRadius: '3px',
+                            wordBreak: 'break-all',
+                          }}
+                        >
+                          {item.invitationId}
+                        </code>
+                      </div>
+                    ) : null}
+                    {item.details ? (
+                      <div style={{ marginTop: '3px', fontSize: '0.75rem', color: '#475569' }}>
+                        {item.details}
+                      </div>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </article>
@@ -454,6 +783,7 @@ function BookingCreatePanel({
   setMessage,
   onValidationError,
   autoLoadCatalog = false,
+  prefill,
 }: Readonly<{
   authorize: Authorize;
   consultation: { id: string; revision: number } | null;
@@ -471,6 +801,7 @@ function BookingCreatePanel({
   setMessage: (message: string) => void;
   onValidationError: (message: string) => void;
   autoLoadCatalog?: boolean;
+  prefill?: BookingPrefill | undefined;
 }>) {
   const [selections, setSelections] = useState<BookingSelections | null>(null);
   const [loadingSelections, setLoadingSelections] = useState(false);
@@ -569,6 +900,32 @@ function BookingCreatePanel({
           ✓ Đã tải {selections.halls.length} sảnh tiệc, {selections.menus.length} thực đơn đang phục vụ.
         </p>
       )}
+      {prefill?.eventDate || prefill?.expectedGuests ? (
+        <div
+          style={{
+            padding: '6px 10px',
+            backgroundColor: '#f0fdf4',
+            border: '1px solid #bbf7d0',
+            borderRadius: '6px',
+            fontSize: '0.78rem',
+            color: '#15803d',
+            marginBottom: '0.75rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+          }}
+        >
+          <span>✓</span>
+          <span>
+            Đã điền sẵn ngày tổ chức
+            {prefill.eventDate ? ` (${prefill.eventDate})` : ''}
+            {prefill.expectedGuests
+              ? ` và ${prefill.expectedGuests} khách (~${prefill.tableCount ?? Math.max(1, Math.ceil(prefill.expectedGuests / 10))} bàn)`
+              : ''}{' '}
+            từ yêu cầu tư vấn.
+          </span>
+        </div>
+      ) : null}
       <form
         noValidate
         onSubmit={(event) => {
@@ -633,9 +990,11 @@ function BookingCreatePanel({
           <label>
             <span id="booking-date-label">Ngày tổ chức</span>
             <input
+              key={`eventDate-${prefill?.eventDate ?? ''}`}
               name="eventDate"
               type="date"
               min={minimumDate}
+              defaultValue={prefill?.eventDate ?? ''}
               aria-labelledby="booking-date-label"
               aria-describedby="booking-date-help"
               required
@@ -688,16 +1047,25 @@ function BookingCreatePanel({
         <div className="booking-fields-inline">
           <label>
             Số bàn
-            <input name="tableCount" type="number" min={1} max={500} defaultValue={20} required />
+            <input
+              key={`tableCount-${prefill?.tableCount ?? 20}`}
+              name="tableCount"
+              type="number"
+              min={1}
+              max={500}
+              defaultValue={prefill?.tableCount ?? 20}
+              required
+            />
           </label>
           <label>
             Số khách dự kiến
             <input
+              key={`planningHeadcount-${prefill?.expectedGuests ?? 200}`}
               name="planningHeadcount"
               type="number"
               min={0}
               max={10000}
-              defaultValue={200}
+              defaultValue={prefill?.expectedGuests ?? 200}
               required
             />
           </label>
