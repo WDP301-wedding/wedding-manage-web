@@ -181,7 +181,12 @@ function ManagerVenueWorkspace({
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const tabParam = new URLSearchParams(window.location.search).get('tab');
-    if (tabParam === 'food' || tabParam === 'timeline' || tabParam === 'layout' || tabParam === 'venue') {
+    if (
+      tabParam === 'food' ||
+      tabParam === 'timeline' ||
+      tabParam === 'layout' ||
+      tabParam === 'venue'
+    ) {
       setActiveTab(tabParam as CatalogTab);
     }
   }, []);

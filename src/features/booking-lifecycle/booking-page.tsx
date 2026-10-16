@@ -90,8 +90,12 @@ export function ManagementBookingPage({
         authorize={(operation) => session.authorize(operation)}
         gateway={gateway}
         autoLoadCatalog={autoLoadCatalog}
-        currentAccountId={snapshot?.status === 'authenticated' ? snapshot.actor.accountId : undefined}
-        currentEmail={snapshot?.status === 'authenticated' ? snapshot.actor.displayEmail : undefined}
+        currentAccountId={
+          snapshot?.status === 'authenticated' ? snapshot.actor.accountId : undefined
+        }
+        currentEmail={
+          snapshot?.status === 'authenticated' ? snapshot.actor.displayEmail : undefined
+        }
       />
     );
   return (
@@ -264,7 +268,9 @@ export function ManagementBookingWorkspace({
   const resetConsultation = () => {
     setConsultation(null);
     setPrefill({});
-    setMessage('Đã xóa mã tư vấn cũ. Hãy nhập thông tin cặp đôi mới ở Bước 01 rồi bấm "Tạo hồ sơ tư vấn".');
+    setMessage(
+      'Đã xóa mã tư vấn cũ. Hãy nhập thông tin cặp đôi mới ở Bước 01 rồi bấm "Tạo hồ sơ tư vấn".',
+    );
   };
 
   return (
@@ -406,7 +412,14 @@ export function ManagementBookingWorkspace({
             <p className="section-kicker">Hồ sơ đang xử lý</p>
             <h2 id="proposal-heading">Đề xuất &amp; vòng đời</h2>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-end' }}>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.5rem',
+              alignItems: 'flex-end',
+            }}
+          >
             <form
               className="booking-lookup"
               onSubmit={(event) => {
@@ -428,7 +441,9 @@ export function ManagementBookingWorkspace({
               </button>
             </form>
             {recentBookingIds.length > 0 ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem' }}>
+              <div
+                style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem' }}
+              >
                 <span style={{ color: '#64748b' }}>Tiệc của bạn:</span>
                 <select
                   aria-label="Chọn nhanh mã tiệc gần đây"
@@ -479,13 +494,28 @@ export function ManagementBookingWorkspace({
                   margin: '1.25rem auto 0',
                 }}
               >
-                <div style={{ color: '#991b1b', fontWeight: 600, fontSize: '0.88rem', marginBottom: '4px' }}>
+                <div
+                  style={{
+                    color: '#991b1b',
+                    fontWeight: 600,
+                    fontSize: '0.88rem',
+                    marginBottom: '4px',
+                  }}
+                >
                   💡 Gợi ý xử lý khi không có quyền xem hồ sơ đề xuất &amp; kịch bản:
                 </div>
-                <p style={{ margin: '0 0 10px', fontSize: '0.82rem', color: '#4b5563', lineHeight: 1.5 }}>
-                  Tiệc cưới <code>{bookingId.slice(0, 8)}…</code> được tạo bởi Quản lý khác (hoặc là dữ liệu mẫu nhà hàng). 
-                  Theo quy định của hệ thống, chỉ Quản lý trực tiếp tạo hồ sơ tư vấn ban đầu mới có quyền duyệt &amp; chỉnh sửa kịch bản tiệc này. 
-                  Bạn vẫn có thể thực hiện các thao tác vận hành khác:
+                <p
+                  style={{
+                    margin: '0 0 10px',
+                    fontSize: '0.82rem',
+                    color: '#4b5563',
+                    lineHeight: 1.5,
+                  }}
+                >
+                  Tiệc cưới <code>{bookingId.slice(0, 8)}…</code> được tạo bởi Quản lý khác (hoặc là
+                  dữ liệu mẫu nhà hàng). Theo quy định của hệ thống, chỉ Quản lý trực tiếp tạo hồ sơ
+                  tư vấn ban đầu mới có quyền duyệt &amp; chỉnh sửa kịch bản tiệc này. Bạn vẫn có
+                  thể thực hiện các thao tác vận hành khác:
                 </p>
                 <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                   <Link
@@ -555,7 +585,8 @@ function ConsultationPanel({
       <span className="booking-step">01</span>
       <h2>Hồ sơ tư vấn</h2>
       <p style={{ color: '#5d665f', fontSize: '0.875rem', marginBottom: '0.75rem' }}>
-        Nhập thông tin cặp đôi và bấm <strong>&quot;Tạo hồ sơ tư vấn&quot;</strong> để cấp mã tự động sang Bước 02.
+        Nhập thông tin cặp đôi và bấm <strong>&quot;Tạo hồ sơ tư vấn&quot;</strong> để cấp mã tự
+        động sang Bước 02.
       </p>
       {prefill?.displayName || prefill?.email ? (
         <div
@@ -621,7 +652,12 @@ function ConsultationPanel({
               Gửi lời mời cộng tác
             </button>
             {onReset ? (
-              <button disabled={disabled} type="button" className="booking-secondary" onClick={onReset}>
+              <button
+                disabled={disabled}
+                type="button"
+                className="booking-secondary"
+                onClick={onReset}
+              >
                 + Đặt cho cặp đôi mới
               </button>
             ) : null}
@@ -639,7 +675,10 @@ function ConsultationPanel({
               lineHeight: 1.5,
             }}
           >
-            <strong>💡 Quy trình tránh lặp form:</strong> Sau khi có mã tư vấn, Quản lý cần hoàn tất <strong>Bước 02: Tạo booking</strong> (chọn sảnh, thực đơn, ngày tiệc bên cạnh). Nếu chưa tạo booking, Couple khi đăng nhập sẽ thấy chưa có tiệc và bị chuyển về form yêu cầu tư vấn.
+            <strong>💡 Quy trình tránh lặp form:</strong> Sau khi có mã tư vấn, Quản lý cần hoàn tất{' '}
+            <strong>Bước 02: Tạo booking</strong> (chọn sảnh, thực đơn, ngày tiệc bên cạnh). Nếu
+            chưa tạo booking, Couple khi đăng nhập sẽ thấy chưa có tiệc và bị chuyển về form yêu cầu
+            tư vấn.
           </div>
 
           <div
@@ -691,7 +730,8 @@ function ConsultationPanel({
 
             {!logs || logs.length === 0 ? (
               <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b', fontStyle: 'italic' }}>
-                Chưa có thao tác gửi nào. Bấm &quot;Gửi lời mời cộng tác&quot; để gửi email kích hoạt cho Couple.
+                Chưa có thao tác gửi nào. Bấm &quot;Gửi lời mời cộng tác&quot; để gửi email kích
+                hoạt cho Couple.
               </p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -737,7 +777,11 @@ function ConsultationPanel({
                                 : '#92400e',
                         }}
                       >
-                        {item.type === 'success' ? '✓ Đã gửi thành công' : item.type === 'error' ? '✕ Gửi thất bại' : '⏳ Đang xử lý...'}
+                        {item.type === 'success'
+                          ? '✓ Đã gửi thành công'
+                          : item.type === 'error'
+                            ? '✕ Gửi thất bại'
+                            : '⏳ Đang xử lý...'}
                       </span>
                       <small style={{ color: '#64748b', fontSize: '0.75rem' }}>{item.time}</small>
                     </div>
@@ -897,7 +941,8 @@ function BookingCreatePanel({
         </p>
       ) : (
         <p style={{ color: '#166534', fontSize: '0.875rem' }}>
-          ✓ Đã tải {selections.halls.length} sảnh tiệc, {selections.menus.length} thực đơn đang phục vụ.
+          ✓ Đã tải {selections.halls.length} sảnh tiệc, {selections.menus.length} thực đơn đang phục
+          vụ.
         </p>
       )}
       {prefill?.eventDate || prefill?.expectedGuests ? (
@@ -947,7 +992,15 @@ function BookingCreatePanel({
             placeholder="Tự động điền sau khi hoàn thành Bước 01"
           />
         </label>
-        <small style={{ color: '#5d665f', fontSize: '0.75rem', marginTop: '-0.5rem', marginBottom: '0.75rem', display: 'block' }}>
+        <small
+          style={{
+            color: '#5d665f',
+            fontSize: '0.75rem',
+            marginTop: '-0.5rem',
+            marginBottom: '0.75rem',
+            display: 'block',
+          }}
+        >
           {consultation
             ? `✓ Đã kết nối hồ sơ tư vấn (Phiên bản ${consultation.revision})`
             : 'Mã này sẽ tự động điền khi bạn bấm "Tạo hồ sơ tư vấn" ở Bước 01'}

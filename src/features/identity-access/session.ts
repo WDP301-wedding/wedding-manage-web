@@ -91,7 +91,11 @@ export class ManagementIdentitySession {
         };
         return Promise.resolve(this.state);
       }
-    } else if (typeof window !== 'undefined' && persisted === null && this.state.status === 'authenticated') {
+    } else if (
+      typeof window !== 'undefined' &&
+      persisted === null &&
+      this.state.status === 'authenticated'
+    ) {
       this.clear();
     }
 

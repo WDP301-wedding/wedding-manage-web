@@ -2,9 +2,20 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
-import { consultationService, type ConsultationRequestItem } from '../../services/consultation.service';
-import { catalogService, type PublicHall, type PublicRestaurant } from '../../services/catalog.service';
-import { analyticsService, type AnalyticsOverviewData, type AnalyticsBookingsData } from '../../services/analytics.service';
+import {
+  consultationService,
+  type ConsultationRequestItem,
+} from '../../services/consultation.service';
+import {
+  catalogService,
+  type PublicHall,
+  type PublicRestaurant,
+} from '../../services/catalog.service';
+import {
+  analyticsService,
+  type AnalyticsOverviewData,
+  type AnalyticsBookingsData,
+} from '../../services/analytics.service';
 import { ApiServiceError } from '../../lib/api/axios-client';
 
 export type DashboardState = 'loading' | 'error' | 'success';
@@ -111,7 +122,7 @@ export function saveBookingAssignments(registry: BookingAssignmentsRegistry): vo
 export function claimBookingAssignment(
   bookingId: string,
   accountId?: string,
-  email?: string
+  email?: string,
 ): { success: boolean; existingAssignment?: BookingAssignment } {
   const currentId = resolveCurrentAccountId(accountId);
   const currentEmail = resolveCurrentAccountEmail(email);
@@ -138,7 +149,7 @@ export function claimBookingAssignment(
 
 export function releaseBookingAssignment(
   bookingId: string,
-  accountId?: string
+  accountId?: string,
 ): { success: boolean } {
   const currentId = resolveCurrentAccountId(accountId);
   const assignments = getBookingAssignments();
@@ -253,7 +264,9 @@ export function DashboardLiveView({
     analytics: null,
   });
   const [userSelectedTab, setUserSelectedTab] = useState<'mine' | 'all' | null>(null);
-  const [assignments, setAssignments] = useState<BookingAssignmentsRegistry>(() => getBookingAssignments());
+  const [assignments, setAssignments] = useState<BookingAssignmentsRegistry>(() =>
+    getBookingAssignments(),
+  );
   const [phaseFilter, setPhaseFilter] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [lockNotice, setLockNotice] = useState<{
@@ -329,31 +342,33 @@ export function DashboardLiveView({
       const bookingDateFrom = bookingStart.toISOString().slice(0, 10);
       const bookingDateTo = bookingEnd.toISOString().slice(0, 10);
 
-      const [restaurantRes, hallsRes, consultationsRes, analyticsRes, bookingsRes] = await Promise.allSettled([
-        catalogService.getRestaurant(),
-        catalogService.getPublicHalls(),
-        isManager ? consultationService.getConsultationRequests({ limit: 10 }) : Promise.resolve(null),
-        isManager ? analyticsService.getOverview({ dateFrom, dateTo }) : Promise.resolve(null),
-        isManager
-          ? analyticsService.getBookings({ dateFrom: bookingDateFrom, dateTo: bookingDateTo, pageSize: 50 })
-          : Promise.resolve(null),
-      ]);
+      const [restaurantRes, hallsRes, consultationsRes, analyticsRes, bookingsRes] =
+        await Promise.allSettled([
+          catalogService.getRestaurant(),
+          catalogService.getPublicHalls(),
+          isManager
+            ? consultationService.getConsultationRequests({ limit: 10 })
+            : Promise.resolve(null),
+          isManager ? analyticsService.getOverview({ dateFrom, dateTo }) : Promise.resolve(null),
+          isManager
+            ? analyticsService.getBookings({
+                dateFrom: bookingDateFrom,
+                dateTo: bookingDateTo,
+                pageSize: 50,
+              })
+            : Promise.resolve(null),
+        ]);
 
-      const restaurant =
-        restaurantRes.status === 'fulfilled' ? restaurantRes.value : null;
+      const restaurant = restaurantRes.status === 'fulfilled' ? restaurantRes.value : null;
       const halls = hallsRes.status === 'fulfilled' ? hallsRes.value : [];
       const consultations =
         consultationsRes.status === 'fulfilled' && consultationsRes.value
           ? consultationsRes.value.data
           : [];
       const analytics =
-        analyticsRes.status === 'fulfilled' && analyticsRes.value
-          ? analyticsRes.value
-          : null;
+        analyticsRes.status === 'fulfilled' && analyticsRes.value ? analyticsRes.value : null;
       const bookings =
-        bookingsRes.status === 'fulfilled' && bookingsRes.value
-          ? bookingsRes.value.items
-          : [];
+        bookingsRes.status === 'fulfilled' && bookingsRes.value ? bookingsRes.value.items : [];
 
       setData({ restaurant, halls, consultations, bookings, analytics });
       setState('success');
@@ -371,13 +386,11 @@ export function DashboardLiveView({
     void fetchData();
   }, [fetchData]);
 
-  const pendingConsultations = data.consultations.filter(
-    (c) => c.status === 'NEW',
-  );
+  const pendingConsultations = data.consultations.filter((c) => c.status === 'NEW');
 
   const isMine = useCallback(
     (bId: string) => assignments[bId]?.assignedAccountId === resolvedAccountId,
-    [assignments, resolvedAccountId]
+    [assignments, resolvedAccountId],
   );
 
   const myBookings = data.bookings.filter((b) => isMine(b.bookingId));
@@ -424,9 +437,7 @@ export function DashboardLiveView({
       <section className="estate-showcase" aria-labelledby="estate-showcase-title">
         <div className="estate-showcase-content">
           <span className="estate-badge">Trung tâm tiệc cưới &amp; Sự kiện</span>
-          <h2 id="estate-showcase-title">
-            {data.restaurant?.displayName || 'Wedding Estate'}
-          </h2>
+          <h2 id="estate-showcase-title">{data.restaurant?.displayName || 'Wedding Estate'}</h2>
           <p className="estate-tagline">
             {data.restaurant?.description ||
               'Nơi khởi đầu cho hạnh phúc vẹn tròn · Vận hành tiêu chuẩn cao cấp'}
@@ -437,8 +448,7 @@ export function DashboardLiveView({
               {data.restaurant?.address || 'Khu đô thị công nghệ cao, TP. Hồ Chí Minh'}
             </span>
             <span>
-              <strong>Liên hệ:</strong>{' '}
-              {data.restaurant?.publicEmail || 'contact@example.com'}
+              <strong>Liên hệ:</strong> {data.restaurant?.publicEmail || 'contact@example.com'}
             </span>
           </div>
         </div>
@@ -454,7 +464,9 @@ export function DashboardLiveView({
         <Metric
           label="Không gian sẵn sàng"
           value={state === 'loading' ? '—' : String(data.halls.length).padStart(2, '0')}
-          detail={state === 'loading' ? 'Đang đồng bộ…' : `${data.halls.length} sảnh tiệc trong danh mục`}
+          detail={
+            state === 'loading' ? 'Đang đồng bộ…' : `${data.halls.length} sảnh tiệc trong danh mục`
+          }
         />
         <Metric
           label="Yêu cầu tư vấn"
@@ -472,12 +484,24 @@ export function DashboardLiveView({
           <>
             <Metric
               label="Tiền thực nhận tháng này"
-              value={state === 'loading' || !data.analytics ? '—' : formatVnd(data.analytics.netCashRevenueVnd)}
-              detail={state === 'loading' ? 'Đang tổng hợp sổ cái…' : 'Thực thu tiền mặt/chuyển khoản (VND)'}
+              value={
+                state === 'loading' || !data.analytics
+                  ? '—'
+                  : formatVnd(data.analytics.netCashRevenueVnd)
+              }
+              detail={
+                state === 'loading'
+                  ? 'Đang tổng hợp sổ cái…'
+                  : 'Thực thu tiền mặt/chuyển khoản (VND)'
+              }
             />
             <Metric
               label="Tổng cọc đã thu"
-              value={state === 'loading' || !data.analytics ? '—' : formatVnd(data.analytics.grossCashReceivedVnd)}
+              value={
+                state === 'loading' || !data.analytics
+                  ? '—'
+                  : formatVnd(data.analytics.grossCashReceivedVnd)
+              }
               detail={
                 state === 'loading'
                   ? 'Đang tính toán…'
@@ -490,7 +514,11 @@ export function DashboardLiveView({
         ) : (
           <Metric
             label="Ca phục vụ"
-            value={state === 'loading' ? '—' : String(data.restaurant?.shifts?.length || 2).padStart(2, '0')}
+            value={
+              state === 'loading'
+                ? '—'
+                : String(data.restaurant?.shifts?.length || 2).padStart(2, '0')
+            }
             detail="Ca trưa & ca tối cố định"
           />
         )}
@@ -498,12 +526,25 @@ export function DashboardLiveView({
 
       {/* Lịch tiệc & Sự kiện đã đặt */}
       {isManager ? (
-        <section className="schedule-panel dashboard-schedule" id="booked-events" style={{ marginBottom: '2.5rem' }}>
-          <div className="section-heading" style={{ flexWrap: 'wrap', gap: '1rem', alignItems: 'flex-start' }}>
+        <section
+          className="schedule-panel dashboard-schedule"
+          id="booked-events"
+          style={{ marginBottom: '2.5rem' }}
+        >
+          <div
+            className="section-heading"
+            style={{ flexWrap: 'wrap', gap: '1rem', alignItems: 'flex-start' }}
+          >
             <div>
               <p className="section-kicker">Vận hành tiệc cưới</p>
               <h2>
-                Lịch tiệc &amp; Sự kiện đã đặt ({state === 'loading' ? '…' : bookingTab === 'mine' ? myBookingsCount : data.bookings.length})
+                Lịch tiệc &amp; Sự kiện đã đặt (
+                {state === 'loading'
+                  ? '…'
+                  : bookingTab === 'mine'
+                    ? myBookingsCount
+                    : data.bookings.length}
+                )
               </h2>
             </div>
             <Link className="text-button" href="/bookings">
@@ -711,23 +752,59 @@ export function DashboardLiveView({
             </div>
           ) : currentTabBookings.length === 0 ? (
             bookingTab === 'mine' ? (
-              <div className="booking-empty" style={{ padding: '2.5rem 1rem', textAlign: 'center' }}>
+              <div
+                className="booking-empty"
+                style={{ padding: '2.5rem 1rem', textAlign: 'center' }}
+              >
                 <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📋</div>
-                <strong style={{ fontSize: '1.05rem', color: '#243b2a', display: 'block', marginBottom: '0.35rem' }}>
+                <strong
+                  style={{
+                    fontSize: '1.05rem',
+                    color: '#243b2a',
+                    display: 'block',
+                    marginBottom: '0.35rem',
+                  }}
+                >
                   Chưa có buổi tiệc nào trong &quot;Tiệc của tôi&quot;
                 </strong>
-                <p style={{ color: '#5d665f', maxWidth: '520px', margin: '0 auto 1.25rem', lineHeight: 1.5 }}>
-                  Bạn chưa nhận phụ trách hoặc tạo tiệc cưới nào. Hãy bấm &quot;Tạo đặt tiệc mới&quot; hoặc chuyển sang tab <strong>Tất cả tiệc nhà hàng</strong> để theo dõi lịch và nhận tiệc.
+                <p
+                  style={{
+                    color: '#5d665f',
+                    maxWidth: '520px',
+                    margin: '0 auto 1.25rem',
+                    lineHeight: 1.5,
+                  }}
+                >
+                  Bạn chưa nhận phụ trách hoặc tạo tiệc cưới nào. Hãy bấm &quot;Tạo đặt tiệc
+                  mới&quot; hoặc chuyển sang tab <strong>Tất cả tiệc nhà hàng</strong> để theo dõi
+                  lịch và nhận tiệc.
                 </p>
-                <div style={{ display: 'inline-flex', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'center' }}>
-                  <Link className="primary-button" href="/bookings" style={{ padding: '6px 14px', fontSize: '0.85rem', textDecoration: 'none' }}>
+                <div
+                  style={{
+                    display: 'inline-flex',
+                    gap: '0.75rem',
+                    flexWrap: 'wrap',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Link
+                    className="primary-button"
+                    href="/bookings"
+                    style={{ padding: '6px 14px', fontSize: '0.85rem', textDecoration: 'none' }}
+                  >
                     + Tạo đặt tiệc mới
                   </Link>
                   <button
                     type="button"
                     className="text-button"
                     onClick={() => setBookingTab('all')}
-                    style={{ padding: '6px 14px', fontSize: '0.85rem', cursor: 'pointer', background: '#ffffff', border: '1px solid #d1d5db' }}
+                    style={{
+                      padding: '6px 14px',
+                      fontSize: '0.85rem',
+                      cursor: 'pointer',
+                      background: '#ffffff',
+                      border: '1px solid #d1d5db',
+                    }}
                   >
                     Xem tất cả tiệc nhà hàng ({data.bookings.length}) →
                   </button>
@@ -736,7 +813,10 @@ export function DashboardLiveView({
             ) : (
               <div className="booking-empty" style={{ padding: '2rem 1rem', textAlign: 'center' }}>
                 <strong>Chưa có buổi tiệc nào trong lịch</strong>
-                <p>Bấm &quot;Tạo đặt tiệc mới&quot; hoặc chọn từ danh sách yêu cầu tư vấn để tạo hồ sơ tiệc cưới.</p>
+                <p>
+                  Bấm &quot;Tạo đặt tiệc mới&quot; hoặc chọn từ danh sách yêu cầu tư vấn để tạo hồ
+                  sơ tiệc cưới.
+                </p>
               </div>
             )
           ) : filteredBookings.length === 0 ? (
@@ -763,7 +843,7 @@ export function DashboardLiveView({
                     const assignment = assignments[booking.bookingId];
                     const mine = assignment?.assignedAccountId === resolvedAccountId;
                     const assignedToOther = Boolean(
-                      assignment && assignment.assignedAccountId !== resolvedAccountId
+                      assignment && assignment.assignedAccountId !== resolvedAccountId,
                     );
                     const assignedEmail = assignment?.assignedEmail ?? 'Quản lý khác';
 
@@ -773,7 +853,14 @@ export function DashboardLiveView({
                           <strong>{new Date(booking.eventDate).toLocaleDateString('vi-VN')}</strong>
                         </td>
                         <td>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap' }}>
+                          <div
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.35rem',
+                              flexWrap: 'wrap',
+                            }}
+                          >
                             <strong>{booking.hallNameSnapshot || 'Sảnh tiệc'}</strong>
                             {mine ? (
                               <span
@@ -818,7 +905,9 @@ export function DashboardLiveView({
                         </td>
                         <td>{booking.tableCount} bàn</td>
                         <td>
-                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                          <div
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
+                          >
                             <code
                               style={{
                                 fontSize: '0.75rem',
@@ -855,7 +944,14 @@ export function DashboardLiveView({
                           </span>
                         </td>
                         <td>
-                          <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                          <div
+                            style={{
+                              display: 'flex',
+                              gap: '0.4rem',
+                              alignItems: 'center',
+                              flexWrap: 'wrap',
+                            }}
+                          >
                             <Link
                               className="booking-primary-link"
                               href={`/bookings?bookingId=${booking.bookingId}`}
@@ -916,7 +1012,12 @@ export function DashboardLiveView({
                               <button
                                 type="button"
                                 title="Tiếp nhận phụ trách tiệc này và khóa với các quản lý khác"
-                                onClick={() => handleClaim(booking.bookingId, booking.hallNameSnapshot || undefined)}
+                                onClick={() =>
+                                  handleClaim(
+                                    booking.bookingId,
+                                    booking.hallNameSnapshot || undefined,
+                                  )
+                                }
                                 style={{
                                   border: '1px solid #86efac',
                                   borderRadius: '4px',
@@ -955,12 +1056,32 @@ export function DashboardLiveView({
             borderRadius: '12px',
           }}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.25rem' }}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '1.25rem',
+            }}
+          >
             <div>
-              <p className="section-kicker" style={{ color: '#16a34a', fontWeight: 600 }}>Tác nghiệp Lễ tân · Check-in</p>
-              <h2 style={{ margin: '0.25rem 0', fontSize: '1.5rem', color: '#166534' }}>Bàn đón tiếp &amp; Điểm danh khách mời</h2>
-              <p style={{ color: '#374151', margin: '0.5rem 0 0', maxWidth: '640px', lineHeight: 1.5 }}>
-                Bạn đang đăng nhập với vai trò <strong>Nhân viên vận hành (Staff)</strong>. Truy cập Bàn đón khách để nhập mã tiệc cưới, tra cứu tên khách và hướng dẫn vị trí bàn tiệc.
+              <p className="section-kicker" style={{ color: '#16a34a', fontWeight: 600 }}>
+                Tác nghiệp Lễ tân · Check-in
+              </p>
+              <h2 style={{ margin: '0.25rem 0', fontSize: '1.5rem', color: '#166534' }}>
+                Bàn đón tiếp &amp; Điểm danh khách mời
+              </h2>
+              <p
+                style={{
+                  color: '#374151',
+                  margin: '0.5rem 0 0',
+                  maxWidth: '640px',
+                  lineHeight: 1.5,
+                }}
+              >
+                Bạn đang đăng nhập với vai trò <strong>Nhân viên vận hành (Staff)</strong>. Truy cập
+                Bàn đón khách để nhập mã tiệc cưới, tra cứu tên khách và hướng dẫn vị trí bàn tiệc.
               </p>
             </div>
             <Link
@@ -1040,7 +1161,9 @@ export function DashboardLiveView({
                     </td>
                     <td>
                       {item.consultationId ? (
-                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                        <div
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
+                        >
                           <code
                             style={{
                               fontSize: '0.75rem',

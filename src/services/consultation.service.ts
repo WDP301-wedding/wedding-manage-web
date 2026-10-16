@@ -36,9 +36,8 @@ export const consultationService = {
   },
 
   async inviteCoupleToWorkspace(consultationId: string, expectedRevision: number): Promise<void> {
-    await axiosApiClient.post(
-      `/management/consultations/${consultationId}/workspace-invitations`,
-      { expectedRevision },
-    );
+    await axiosApiClient.post(`/management/consultations/${consultationId}/workspace-invitations`, {
+      expectedRevision,
+    });
   },
 };
