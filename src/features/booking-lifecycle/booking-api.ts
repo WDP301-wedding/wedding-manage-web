@@ -13,6 +13,13 @@ export type BookingSelections = Readonly<{
   shifts: components['schemas']['CatalogPublicRestaurant']['shifts'];
 }>;
 
+export type WorkspaceInvitationResult = Readonly<{
+  consultationId: string;
+  invitationId: string;
+  status: string;
+  replayed?: boolean;
+}>;
+
 export interface ManagementBookingGateway {
   loadSelections(this: void, accessToken: string): Promise<BookingSelections>;
   createConsultation(
@@ -24,7 +31,7 @@ export interface ManagementBookingGateway {
     this: void,
     accessToken: string,
     input: Readonly<{ consultationId: string; expectedRevision: number }>,
-  ): Promise<void>;
+  ): Promise<WorkspaceInvitationResult | void>;
   checkAvailability(
     this: void,
     accessToken: string,
@@ -177,14 +184,18 @@ export function createManagementBookingGateway(client?: ApiClient): ManagementBo
       return required(data, 'Không nhận được hồ sơ tư vấn.').data;
     },
     async invite(accessToken, input) {
-      await api().POST('/management/consultations/{consultationId}/workspace-invitations', {
-        params: {
-          header: { 'Idempotency-Key': intent('workspace-invitation') },
-          path: { consultationId: input.consultationId },
+      const { data } = await api().POST(
+        '/management/consultations/{consultationId}/workspace-invitations',
+        {
+          params: {
+            header: { 'Idempotency-Key': intent('workspace-invitation') },
+            path: { consultationId: input.consultationId },
+          },
+          body: { expectedRevision: input.expectedRevision },
+          headers: auth(accessToken),
         },
-        body: { expectedRevision: input.expectedRevision },
-        headers: auth(accessToken),
-      });
+      );
+      return data?.data;
     },
     async checkAvailability(accessToken, input) {
       const { data } = await api().GET('/management/availability', {

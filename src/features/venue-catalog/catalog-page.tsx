@@ -8,6 +8,7 @@ import { ApiClientError } from '../../lib/api/client';
 import {
   createIdentityApi,
   ManagementIdentitySession,
+  sharedManagementSession,
   type ManagementSessionSnapshot,
 } from '../identity-access/session';
 import { OperationsShell } from '../identity-access/operations-shell';
@@ -76,7 +77,7 @@ function CatalogTabs({
   );
 }
 
-const catalogSession = new ManagementIdentitySession(createIdentityApi());
+const catalogSession = sharedManagementSession;
 const catalogGateway = createVenueCatalogGateway();
 const catalogContractDigest = apiContractLock.source.sha256.slice(0, 8);
 
@@ -167,7 +168,23 @@ function ManagerVenueWorkspace({
   authorize,
   gateway,
 }: Readonly<{ authorize: Authorize; gateway: VenueCatalogGateway | CatalogGateway }>) {
-  const [activeTab, setActiveTab] = useState<CatalogTab>('venue');
+  const [activeTab, setActiveTab] = useState<CatalogTab>(() => {
+    if (typeof window !== 'undefined') {
+      const tabParam = new URLSearchParams(window.location.search).get('tab');
+      if (tabParam === 'food' || tabParam === 'timeline' || tabParam === 'layout') {
+        return tabParam;
+      }
+    }
+    return 'venue';
+  });
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const tabParam = new URLSearchParams(window.location.search).get('tab');
+    if (tabParam === 'food' || tabParam === 'timeline' || tabParam === 'layout' || tabParam === 'venue') {
+      setActiveTab(tabParam as CatalogTab);
+    }
+  }, []);
   const [snapshot, setSnapshot] = useState<VenueCatalogSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [pending, setPending] = useState(false);

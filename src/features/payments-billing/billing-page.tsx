@@ -5,8 +5,10 @@ import { useEffect, useRef, useState } from 'react';
 import {
   createIdentityApi,
   ManagementIdentitySession,
+  sharedManagementSession,
   type ManagementSessionSnapshot,
 } from '../identity-access/session';
+import { OperationsShell } from '../identity-access/operations-shell';
 import {
   createManagementBillingGateway,
   type AttemptView,
@@ -27,19 +29,24 @@ import {
 } from './billing-display';
 import { ManualPaymentForm, RefundForm, type CommandOutcome } from './payment-forms';
 import { RefundApprovalForm } from './refund-approval-form';
+import { IncidentalsPanel } from './incidentals-panel';
 
 type Authorize = <T>(operation: (token: string) => Promise<T>) => Promise<T>;
 type MutationResult =
   | Awaited<ReturnType<ManagementBillingGateway['recordManual']>>
   | Awaited<ReturnType<ManagementBillingGateway['refund']>>
   | Awaited<ReturnType<ManagementBillingGateway['approveRefund']>>;
-const identity = new ManagementIdentitySession(createIdentityApi());
+
+const identity = sharedManagementSession;
 const billing = createManagementBillingGateway();
 export function ManagementBillingPage({
   session = identity,
   gateway = billing,
 }: Readonly<{ session?: ManagementIdentitySession; gateway?: ManagementBillingGateway }>) {
   const [snapshot, setSnapshot] = useState<ManagementSessionSnapshot | null>(null);
+  const [loggingOut, setLoggingOut] = useState(false);
+  const [logoutError, setLogoutError] = useState<string | null>(null);
+
   useEffect(() => {
     let active = true;
     void session.restore().then((value) => {
@@ -49,30 +56,63 @@ export function ManagementBillingPage({
       active = false;
     };
   }, [session]);
-  if (snapshot === null)
-    return (
-      <main className="billing-shell">
+
+  const handleLogout = () => {
+    setLoggingOut(true);
+    setLogoutError(null);
+    void session
+      .logout()
+      .catch(() =>
+        setLogoutError('Không thể kết nối máy chủ để đăng xuất. Hãy tải lại trang rồi thử lại.'),
+      )
+      .finally(() => {
+        setSnapshot(session.snapshot());
+        setLoggingOut(false);
+      });
+  };
+
+  let content;
+  if (snapshot === null) {
+    content = (
+      <main className="billing-shell" id="billing-content">
         <h1>Đang xác minh quyền quản lý…</h1>
         <p role="status">Đang kiểm tra phiên đăng nhập.</p>
       </main>
     );
-  if (snapshot.status !== 'authenticated' || snapshot.presentation !== 'manager')
-    return (
-      <main className="billing-shell">
+  } else if (snapshot.status !== 'authenticated' || snapshot.presentation !== 'manager') {
+    content = (
+      <main className="billing-shell" id="billing-content">
         <h1>
           {snapshot.status === 'anonymous' ? 'Cần đăng nhập' : 'Không có quyền xem thanh toán'}
         </h1>
         <p role="alert">Khu vực này dành cho tài khoản Quản lý.</p>
-        <Link href="/">Về trang đăng nhập</Link>
+        {logoutError ? <p role="alert">{logoutError}</p> : null}
+        <Link className="billing-primary-link" href="/">
+          Về trang đăng nhập
+        </Link>
       </main>
     );
+  } else {
+    content = (
+      <ManagementBillingWorkspace
+        key={snapshot.actor.accountId}
+        accountId={snapshot.actor.accountId}
+        authorize={(operation) => session.authorize(operation)}
+        gateway={gateway}
+      />
+    );
+  }
+
   return (
-    <ManagementBillingWorkspace
-      key={snapshot.actor.accountId}
-      accountId={snapshot.actor.accountId}
-      authorize={(operation) => session.authorize(operation)}
-      gateway={gateway}
-    />
+    <OperationsShell
+      activePage="billing"
+      contentId="billing-content"
+      snapshot={snapshot}
+      onLogout={handleLogout}
+      pending={loggingOut}
+    >
+      {content}
+    </OperationsShell>
   );
 }
 export function ManagementBillingWorkspace({
@@ -98,6 +138,15 @@ export function ManagementBillingWorkspace({
   const [approvalRevision, setApprovalRevision] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('bookingId');
+    if (id !== null && /^[a-f0-9-]{36}$/iu.test(id)) {
+      setBookingId(id);
+      void run(() => load(id));
+    }
+  }, []);
   const clearDenied = (caught: unknown) => {
     if (denied(caught)) {
       setView(null);
@@ -208,23 +257,13 @@ export function ManagementBillingWorkspace({
     }
   };
   return (
-    <main className="billing-shell">
-      <a className="skip-link" href="#billing-content">
-        Đi đến tổng hợp thanh toán
-      </a>
+    <main className="billing-shell" id="billing-content">
       <header className="billing-header">
         <div>
-          <p lang="en">Wedding Estate · Operations</p>
+          <p className="section-kicker">Wedding Estate · Operations</p>
           <h1>Quản lý thanh toán</h1>
           <p>Theo dõi tiền đặt tiệc, ghi nhận khoản thu và hoàn tiền.</p>
         </div>
-        <nav aria-label="Điều hướng quản lý">
-          <Link href="/bookings">Đặt tiệc</Link>
-          <Link href="/catalog">Danh mục</Link>
-          <Link href="/billing" aria-current="page">
-            Thanh toán
-          </Link>
-        </nav>
       </header>
       <form
         className="billing-lookup"
@@ -319,6 +358,22 @@ export function ManagementBillingWorkspace({
               </form>
               {attempt !== null && <AttemptStatus attempt={attempt} />}
             </section>
+            {error !== null && (
+              <div
+                style={{
+                  margin: '1.5rem 0 0.5rem',
+                  padding: '12px 16px',
+                  background: '#fef2f2',
+                  border: '1px solid #fecaca',
+                  borderRadius: '6px',
+                  color: '#991b1b',
+                  fontSize: '0.88rem',
+                  lineHeight: 1.5,
+                }}
+              >
+                <strong>⚠ Thao tác chưa hoàn tất:</strong> {error}
+              </div>
+            )}
             <div className="billing-forms">
               <ManualPaymentForm
                 key={`manual:${view.bookingId}`}
@@ -343,6 +398,14 @@ export function ManagementBillingWorkspace({
                 onConfirm={(body) => mutate('approval', body)}
               />
             </div>
+            <IncidentalsPanel
+              bookingId={view.bookingId}
+              billingRevision={view.billingRevision}
+              disabled={pending}
+              onRefresh={() => {
+                void run(() => load(view.bookingId));
+              }}
+            />
           </>
         )}
       </div>

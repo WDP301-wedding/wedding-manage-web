@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import type { ManagementSessionSnapshot } from './session';
 import {
-  CalendarDaysIcon,
   CalendarIcon,
   ClipboardListIcon,
   CreditCardIcon,
@@ -13,7 +12,6 @@ import {
   PrinterIcon,
   Settings2Icon,
   UsersIcon,
-  UtensilsCrossedIcon,
   XIcon,
 } from '../print-orders/icons';
 
@@ -27,7 +25,14 @@ export function OperationsShell({
 }: Readonly<{
   children: ReactNode;
   activePage:
-    'overview' | 'bookings' | 'consultations' | 'catalog' | 'account' | 'print-orders' | 'billing';
+    | 'overview'
+    | 'bookings'
+    | 'consultations'
+    | 'catalog'
+    | 'account'
+    | 'print-orders'
+    | 'billing'
+    | 'staff';
   contentId: string;
   snapshot: ManagementSessionSnapshot | null;
   onLogout: () => void;
@@ -132,45 +137,6 @@ export function OperationsShell({
         </span>
         <span>Tổng quan</span>
       </Link>
-      <Link
-        id="ops-nav-upcoming"
-        className="nav-item"
-        href="/#upcoming-events"
-        aria-label="Lịch tiệc"
-        title="Lịch tiệc"
-        onClick={() => setMobileDrawerOpen(false)}
-      >
-        <span className="nav-icon" aria-hidden="true">
-          <CalendarDaysIcon width={18} height={18} />
-        </span>
-        <span>Lịch tiệc</span>
-      </Link>
-      <Link
-        id="ops-nav-customers"
-        className="nav-item"
-        href="/#customers"
-        aria-label="Khách hàng"
-        title="Khách hàng"
-        onClick={() => setMobileDrawerOpen(false)}
-      >
-        <span className="nav-icon" aria-hidden="true">
-          <UsersIcon width={18} height={18} />
-        </span>
-        <span>Khách hàng</span>
-      </Link>
-      <Link
-        id="ops-nav-menu"
-        className="nav-item"
-        href="/#menu"
-        aria-label="Thực đơn"
-        title="Thực đơn"
-        onClick={() => setMobileDrawerOpen(false)}
-      >
-        <span className="nav-icon" aria-hidden="true">
-          <UtensilsCrossedIcon width={18} height={18} />
-        </span>
-        <span>Thực đơn</span>
-      </Link>
       {manager ? (
         <>
           <Link
@@ -231,8 +197,9 @@ export function OperationsShell({
           </Link>
           <Link
             id="ops-nav-staff"
-            className="nav-item"
-            href="/#staff"
+            className={navClass('staff')}
+            href="/staff"
+            aria-current={activePage === 'staff' ? 'page' : undefined}
             aria-label="Nhân sự"
             title="Nhân sự"
             onClick={() => setMobileDrawerOpen(false)}
@@ -257,6 +224,21 @@ export function OperationsShell({
             <span>Danh mục</span>
           </Link>
         </>
+      ) : actor ? (
+        <Link
+          id="ops-nav-staff-checkin"
+          className={navClass('staff')}
+          href="/staff"
+          aria-current={activePage === 'staff' ? 'page' : undefined}
+          aria-label="Bàn đón khách"
+          title="Bàn đón khách"
+          onClick={() => setMobileDrawerOpen(false)}
+        >
+          <span className="nav-icon" aria-hidden="true">
+            <UsersIcon width={18} height={18} />
+          </span>
+          <span>Bàn đón khách</span>
+        </Link>
       ) : null}
     </>
   );

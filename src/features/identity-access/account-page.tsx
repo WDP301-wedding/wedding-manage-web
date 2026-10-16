@@ -7,10 +7,11 @@ import { OperationsShell } from './operations-shell';
 import {
   createIdentityApi,
   ManagementIdentitySession,
+  sharedManagementSession,
   type ManagementSessionSnapshot,
 } from './session';
 
-const browserSession = new ManagementIdentitySession(createIdentityApi());
+const browserSession = sharedManagementSession;
 
 export function ManagementAccountPage() {
   return <ManagementAccountExperience session={browserSession} />;

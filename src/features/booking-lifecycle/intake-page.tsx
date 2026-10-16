@@ -4,11 +4,11 @@ import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { createApiClient, ApiClientError } from '../../lib/api/client';
 import type { components } from '../../lib/api/generated/schema';
-import { createIdentityApi, ManagementIdentitySession } from '../identity-access/session';
+import { createIdentityApi, ManagementIdentitySession, sharedManagementSession } from '../identity-access/session';
 import type { ManagementSessionSnapshot } from '../identity-access/session';
 import { OperationsShell } from '../identity-access/operations-shell';
 
-const session = new ManagementIdentitySession(createIdentityApi());
+const session = sharedManagementSession;
 let resolvedApi: ReturnType<typeof createApiClient> | undefined;
 const getApi = () => (resolvedApi ??= createApiClient());
 type Queue = components['schemas']['ConsultationRequestList'];
@@ -219,12 +219,32 @@ export function ConsultationRequestsPage() {
                     </div>
                   )}
                   {item.status === 'CONVERTED' && item.consultationId && (
-                    <Link
-                      className="booking-primary-link"
-                      href={`/bookings?consultationId=${item.consultationId}&consultationRevision=${item.consultationRevision}`}
-                    >
-                      Tiếp tục đặt tiệc
-                    </Link>
+                    <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                        <small style={{ color: '#64748b' }}>Mã hồ sơ tư vấn:</small>
+                        <code style={{ fontSize: '0.8rem', background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px' }}>
+                          {item.consultationId}
+                        </code>
+                      </div>
+                      {(() => {
+                        const params = new URLSearchParams({
+                          consultationId: item.consultationId,
+                          consultationRevision: String(item.consultationRevision ?? 1),
+                        });
+                        if (item.displayName) params.set('displayName', item.displayName);
+                        if (item.email) params.set('email', item.email);
+                        if (item.preferredDate) params.set('preferredDate', item.preferredDate);
+                        if (item.expectedGuests !== undefined && item.expectedGuests !== null) {
+                          params.set('expectedGuests', String(item.expectedGuests));
+                        }
+                        if (item.message) params.set('note', item.message);
+                        return (
+                          <Link className="booking-primary-link" href={`/bookings?${params.toString()}`}>
+                            Tiếp tục đặt tiệc
+                          </Link>
+                        );
+                      })()}
+                    </div>
                   )}
                 </article>
               ))}

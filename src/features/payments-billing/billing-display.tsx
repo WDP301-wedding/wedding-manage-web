@@ -30,6 +30,10 @@ export function billingMessage(error: unknown): string {
     BILLING_REFUND_NOT_APPROVED: 'Chưa có quyết định hoàn tiền hợp lệ cho khoản thanh toán này.',
     DEPOSIT_NOT_ELIGIBLE:
       'Hồ sơ chưa đủ điều kiện nhận cọc. Hãy kiểm tra lịch giữ chỗ và kịch bản đã duyệt.',
+    PAYMENT_EVIDENCE_CONFLICT:
+      'Số tiền hoặc chứng từ không khớp với thỏa thuận cọc của hồ sơ tiệc. Hãy nhập chính xác số tiền cọc quy định.',
+    CONTRACT_REVISION_STALE:
+      'Hợp đồng tiệc chưa hoàn tất phê duyệt hoặc đã có phiên bản mới. Hãy tải lại trang.',
     PAYMENT_OUTCOME_UNKNOWN:
       'Giao dịch chưa rõ kết quả. Hãy kiểm tra trạng thái, không tạo lần thanh toán mới.',
     REQUEST_IN_PROGRESS: 'Yêu cầu đang được xử lý. Hãy đợi rồi thử lại cùng nội dung.',
@@ -56,7 +60,11 @@ const kinds = {
   REFUND: 'Hoàn tiền',
   CREDIT_ADJUSTMENT: 'Điều chỉnh giảm',
 };
-const sources = {
+const sources: Record<BillingView['history'][number]['sourceType'], string> = {
+  CONTRACT: 'Hợp đồng tiệc',
+  CONTRACT_APPENDIX: 'Phụ lục hợp đồng',
+  INCIDENTAL_FINALIZATION: 'Quyết toán phát sinh',
+  INVOICE_ADJUSTMENT: 'Điều chỉnh hóa đơn',
   BASE_BOOKING: 'Tiệc cưới',
   PRINT_ORDER: 'Đơn in',
   PAYMENT_ATTEMPT: 'Khoản thanh toán',

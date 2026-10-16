@@ -19,6 +19,8 @@ const newRequest: Item = {
   createdAt: '2026-10-09T00:00:00Z',
   consultationId: null,
   consultationRevision: null,
+  brideName: null,
+  groomName: null,
 };
 
 const fetchMock = vi.fn<(request: Request) => Promise<Response>>();
@@ -116,7 +118,7 @@ describe('Consultation navigation', () => {
     expect(within(fresh).getByText(newRequest.message)).toBeVisible();
     expect(screen.getByRole('link', { name: 'Tiếp tục đặt tiệc' })).toHaveAttribute(
       'href',
-      `/bookings?consultationId=${consultationId}&consultationRevision=3`,
+      expect.stringContaining(`/bookings?consultationId=${consultationId}&consultationRevision=3`),
     );
     const closedArticle = screen
       .getByRole('heading', { name: closed.displayName })
@@ -167,7 +169,7 @@ describe('Consultation navigation', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Mở hồ sơ tư vấn' }));
     expect(await screen.findByRole('link', { name: 'Tiếp tục đặt tiệc' })).toHaveAttribute(
       'href',
-      `/bookings?consultationId=${consultationId}&consultationRevision=1`,
+      expect.stringContaining(`/bookings?consultationId=${consultationId}&consultationRevision=1`),
     );
     expect(screen.getByRole('status')).toHaveTextContent('Đã mở hồ sơ tư vấn');
     expect(screen.queryByRole('button', { name: 'Mở hồ sơ tư vấn' })).not.toBeInTheDocument();
