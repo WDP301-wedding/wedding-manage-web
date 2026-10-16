@@ -7,10 +7,7 @@ export type ContractRevisionItem = ContractListData['revisions'][number];
 export type ContractLineItem = ContractRevisionItem['document']['lines'][number];
 
 export const contractService = {
-  async getContracts(
-    bookingId: string,
-    query?: { cursor?: string },
-  ): Promise<ContractListData> {
+  async getContracts(bookingId: string, query?: { cursor?: string }): Promise<ContractListData> {
     const response = await axiosApiClient.get<{ data: ContractListData }>(
       `/bookings/${bookingId}/contracts`,
       { params: query },
@@ -70,11 +67,9 @@ export const contractService = {
     body: { expectedRevision: number; reason: string },
     idempotencyKey = crypto.randomUUID(),
   ): Promise<void> {
-    await axiosApiClient.post(
-      `/bookings/${bookingId}/contracts/${revisionId}/withdrawals`,
-      body,
-      { headers: { 'Idempotency-Key': idempotencyKey } },
-    );
+    await axiosApiClient.post(`/bookings/${bookingId}/contracts/${revisionId}/withdrawals`, body, {
+      headers: { 'Idempotency-Key': idempotencyKey },
+    });
   },
 
   async downloadContractPdf(bookingId: string, revisionId: string): Promise<Blob> {
@@ -104,11 +99,9 @@ export const contractService = {
     },
     idempotencyKey = crypto.randomUUID(),
   ): Promise<void> {
-    await axiosApiClient.patch(
-      `/consultations/${consultationId}/couple-profile`,
-      body,
-      { headers: { 'Idempotency-Key': idempotencyKey } },
-    );
+    await axiosApiClient.patch(`/consultations/${consultationId}/couple-profile`, body, {
+      headers: { 'Idempotency-Key': idempotencyKey },
+    });
   },
 
   async createAppendix(

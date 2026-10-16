@@ -89,11 +89,9 @@ export const billingService = {
     },
     idempotencyKey = crypto.randomUUID(),
   ): Promise<void> {
-    await axiosApiClient.post(
-      `/management/bookings/${bookingId}/incidental-expenses`,
-      body,
-      { headers: { 'Idempotency-Key': idempotencyKey } },
-    );
+    await axiosApiClient.post(`/management/bookings/${bookingId}/incidental-expenses`, body, {
+      headers: { 'Idempotency-Key': idempotencyKey },
+    });
   },
 
   async updateIncidental(
@@ -121,10 +119,9 @@ export const billingService = {
     lineId: string,
     expectedRevision: number,
   ): Promise<void> {
-    await axiosApiClient.delete(
-      `/management/bookings/${bookingId}/incidental-expenses/${lineId}`,
-      { data: { expectedRevision } },
-    );
+    await axiosApiClient.delete(`/management/bookings/${bookingId}/incidental-expenses/${lineId}`, {
+      data: { expectedRevision },
+    });
   },
 
   async getFinalInvoices(bookingId: string): Promise<FinalInvoicesResponse> {
@@ -143,11 +140,9 @@ export const billingService = {
     },
     idempotencyKey = crypto.randomUUID(),
   ): Promise<void> {
-    await axiosApiClient.post(
-      `/management/bookings/${bookingId}/final-invoices`,
-      body,
-      { headers: { 'Idempotency-Key': idempotencyKey } },
-    );
+    await axiosApiClient.post(`/management/bookings/${bookingId}/final-invoices`, body, {
+      headers: { 'Idempotency-Key': idempotencyKey },
+    });
   },
 
   async adjustInvoice(
@@ -166,10 +161,8 @@ export const billingService = {
     },
     idempotencyKey = crypto.randomUUID(),
   ): Promise<void> {
-    await axiosApiClient.post(
-      `/management/bookings/${bookingId}/invoice-adjustments`,
-      body,
-      { headers: { 'Idempotency-Key': idempotencyKey } },
-    );
+    await axiosApiClient.post(`/management/bookings/${bookingId}/invoice-adjustments`, body, {
+      headers: { 'Idempotency-Key': idempotencyKey },
+    });
   },
 };

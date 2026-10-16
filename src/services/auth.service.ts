@@ -90,11 +90,7 @@ export const authService = {
     return response.data.data;
   },
 
-  async completePasswordOtp(
-    challengeId: string,
-    code: string,
-    newPassword: string,
-  ): Promise<void> {
+  async completePasswordOtp(challengeId: string, code: string, newPassword: string): Promise<void> {
     await axiosApiClient.post('/auth/password-otp-completions', {
       challengeId,
       code,

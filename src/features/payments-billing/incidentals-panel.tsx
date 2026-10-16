@@ -98,11 +98,7 @@ export function IncidentalsPanel({
     setLoading(true);
     setError(null);
     try {
-      await billingService.deleteIncidental(
-        bookingId,
-        lineId,
-        incidentals?.revision ?? 1,
-      );
+      await billingService.deleteIncidental(bookingId, lineId, incidentals?.revision ?? 1);
       setMessage('Đã xoá dòng phát sinh.');
       await loadData();
       onRefresh();
@@ -119,11 +115,19 @@ export function IncidentalsPanel({
 
   return (
     <section className="billing-panel" style={{ marginTop: '2rem' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '1rem',
+        }}
+      >
         <div>
           <h2>Chi phí phát sinh &amp; Hoá đơn cuối</h2>
           <p style={{ color: '#6b7280', fontSize: '0.875rem' }}>
-            Ghi nhận các khoản phát sinh sau giờ tiệc (đồ uống thêm, thời gian quá giờ, hư hỏng) và chốt quyết toán.
+            Ghi nhận các khoản phát sinh sau giờ tiệc (đồ uống thêm, thời gian quá giờ, hư hỏng) và
+            chốt quyết toán.
           </p>
         </div>
         <button
@@ -137,13 +141,33 @@ export function IncidentalsPanel({
       </div>
 
       {message ? (
-        <div role="status" style={{ background: '#ecfdf5', color: '#065f46', padding: '0.5rem 0.75rem', borderRadius: 6, marginBottom: '1rem', fontSize: '0.875rem' }}>
+        <div
+          role="status"
+          style={{
+            background: '#ecfdf5',
+            color: '#065f46',
+            padding: '0.5rem 0.75rem',
+            borderRadius: 6,
+            marginBottom: '1rem',
+            fontSize: '0.875rem',
+          }}
+        >
           {message}
         </div>
       ) : null}
 
       {error ? (
-        <div role="alert" style={{ background: '#fef2f2', color: '#991b1b', padding: '0.5rem 0.75rem', borderRadius: 6, marginBottom: '1rem', fontSize: '0.875rem' }}>
+        <div
+          role="alert"
+          style={{
+            background: '#fef2f2',
+            color: '#991b1b',
+            padding: '0.5rem 0.75rem',
+            borderRadius: 6,
+            marginBottom: '1rem',
+            fontSize: '0.875rem',
+          }}
+        >
           {error}
         </div>
       ) : null}
@@ -151,18 +175,33 @@ export function IncidentalsPanel({
       {/* Danh sách dòng phát sinh */}
       <div style={{ marginBottom: '1.5rem' }}>
         <h3 style={{ fontSize: '1rem', marginBottom: '0.5rem' }}>
-          Chi phí phát sinh nháp ({incidentals?.lines?.length ?? 0}) · REV {incidentals?.revision ?? 0}
+          Chi phí phát sinh nháp ({incidentals?.lines?.length ?? 0}) · REV{' '}
+          {incidentals?.revision ?? 0}
         </h3>
 
         {!incidentals || incidentals.lines.length === 0 ? (
-          <p style={{ color: '#6b7280', fontSize: '0.875rem', padding: '1rem', background: '#f9fafb', borderRadius: 6 }}>
+          <p
+            style={{
+              color: '#6b7280',
+              fontSize: '0.875rem',
+              padding: '1rem',
+              background: '#f9fafb',
+              borderRadius: 6,
+            }}
+          >
             Chưa có dòng chi phí phát sinh nào được ghi nhận.
           </p>
         ) : (
           <div className="table-scroll">
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
               <thead>
-                <tr style={{ background: '#f3f4f6', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>
+                <tr
+                  style={{
+                    background: '#f3f4f6',
+                    textAlign: 'left',
+                    borderBottom: '1px solid #e5e7eb',
+                  }}
+                >
                   <th style={{ padding: '0.5rem' }}>Hạng mục</th>
                   <th style={{ padding: '0.5rem' }}>Ghi chú</th>
                   <th style={{ padding: '0.5rem' }}>Số lượng</th>
@@ -176,15 +215,24 @@ export function IncidentalsPanel({
                   <tr key={l.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
                     <td style={{ padding: '0.5rem', fontWeight: 600 }}>{l.name}</td>
                     <td style={{ padding: '0.5rem', color: '#6b7280' }}>{l.note || '—'}</td>
-                    <td style={{ padding: '0.5rem' }}>{l.quantity} {l.unit}</td>
+                    <td style={{ padding: '0.5rem' }}>
+                      {l.quantity} {l.unit}
+                    </td>
                     <td style={{ padding: '0.5rem' }}>{formatVnd(l.unitPriceVnd)}</td>
-                    <td style={{ padding: '0.5rem', textAlign: 'right', fontWeight: 600 }}>{formatVnd(l.totalVnd)}</td>
+                    <td style={{ padding: '0.5rem', textAlign: 'right', fontWeight: 600 }}>
+                      {formatVnd(l.totalVnd)}
+                    </td>
                     <td style={{ padding: '0.5rem', textAlign: 'right' }}>
                       <button
                         type="button"
                         disabled={disabled || loading}
                         onClick={() => void handleDeleteLine(l.id)}
-                        style={{ color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer' }}
+                        style={{
+                          color: '#dc2626',
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                        }}
                       >
                         ✕
                       </button>
@@ -207,35 +255,132 @@ export function IncidentalsPanel({
               + Thêm chi phí phát sinh
             </button>
           ) : (
-            <form onSubmit={handleCreateIncidental} style={{ background: '#f9fafb', padding: '1rem', borderRadius: 8, border: '1px solid #e5e7eb', marginTop: '0.5rem' }}>
-              <h4 style={{ fontSize: '0.95rem', marginBottom: '0.75rem' }}>Ghi nhận chi phí phát sinh mới</h4>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem' }}>
+            <form
+              onSubmit={handleCreateIncidental}
+              style={{
+                background: '#f9fafb',
+                padding: '1rem',
+                borderRadius: 8,
+                border: '1px solid #e5e7eb',
+                marginTop: '0.5rem',
+              }}
+            >
+              <h4 style={{ fontSize: '0.95rem', marginBottom: '0.75rem' }}>
+                Ghi nhận chi phí phát sinh mới
+              </h4>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                  gap: '0.75rem',
+                }}
+              >
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600 }}>Tên hạng mục</label>
-                  <input name="name" required placeholder="VD: Nước ngọt phát sinh" style={{ width: '100%', padding: '0.4rem', borderRadius: 4, border: '1px solid #d1d5db' }} />
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600 }}>
+                    Tên hạng mục
+                  </label>
+                  <input
+                    name="name"
+                    required
+                    placeholder="VD: Nước ngọt phát sinh"
+                    style={{
+                      width: '100%',
+                      padding: '0.4rem',
+                      borderRadius: 4,
+                      border: '1px solid #d1d5db',
+                    }}
+                  />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600 }}>Số lượng</label>
-                  <input name="quantity" type="number" min={1} defaultValue={1} required style={{ width: '100%', padding: '0.4rem', borderRadius: 4, border: '1px solid #d1d5db' }} />
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600 }}>
+                    Số lượng
+                  </label>
+                  <input
+                    name="quantity"
+                    type="number"
+                    min={1}
+                    defaultValue={1}
+                    required
+                    style={{
+                      width: '100%',
+                      padding: '0.4rem',
+                      borderRadius: 4,
+                      border: '1px solid #d1d5db',
+                    }}
+                  />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600 }}>Đơn vị tính</label>
-                  <input name="unit" defaultValue="thùng" required style={{ width: '100%', padding: '0.4rem', borderRadius: 4, border: '1px solid #d1d5db' }} />
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600 }}>
+                    Đơn vị tính
+                  </label>
+                  <input
+                    name="unit"
+                    defaultValue="thùng"
+                    required
+                    style={{
+                      width: '100%',
+                      padding: '0.4rem',
+                      borderRadius: 4,
+                      border: '1px solid #d1d5db',
+                    }}
+                  />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600 }}>Đơn giá (VND)</label>
-                  <input name="unitPriceVnd" type="number" min={0} step={1} required placeholder="VD: 300000" style={{ width: '100%', padding: '0.4rem', borderRadius: 4, border: '1px solid #d1d5db' }} />
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600 }}>
+                    Đơn giá (VND)
+                  </label>
+                  <input
+                    name="unitPriceVnd"
+                    type="number"
+                    min={0}
+                    step={1}
+                    required
+                    placeholder="VD: 300000"
+                    style={{
+                      width: '100%',
+                      padding: '0.4rem',
+                      borderRadius: 4,
+                      border: '1px solid #d1d5db',
+                    }}
+                  />
                 </div>
               </div>
               <div style={{ marginTop: '0.75rem' }}>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600 }}>Ghi chú / Biên bản</label>
-                <input name="note" placeholder="VD: Theo yêu cầu của gia đình chú rể" style={{ width: '100%', padding: '0.4rem', borderRadius: 4, border: '1px solid #d1d5db' }} />
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600 }}>
+                  Ghi chú / Biên bản
+                </label>
+                <input
+                  name="note"
+                  placeholder="VD: Theo yêu cầu của gia đình chú rể"
+                  style={{
+                    width: '100%',
+                    padding: '0.4rem',
+                    borderRadius: 4,
+                    border: '1px solid #d1d5db',
+                  }}
+                />
               </div>
               <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem' }}>
-                <button type="submit" disabled={disabled || loading} style={{ padding: '0.5rem 1rem', background: '#2563eb', color: '#fff', border: 'none', borderRadius: 6, fontWeight: 600, cursor: 'pointer' }}>
+                <button
+                  type="submit"
+                  disabled={disabled || loading}
+                  style={{
+                    padding: '0.5rem 1rem',
+                    background: '#2563eb',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: 6,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
                   Lưu phát sinh
                 </button>
-                <button type="button" onClick={() => setShowAddForm(false)} className="billing-secondary">
+                <button
+                  type="button"
+                  onClick={() => setShowAddForm(false)}
+                  className="billing-secondary"
+                >
                   Huỷ
                 </button>
               </div>
@@ -250,16 +395,37 @@ export function IncidentalsPanel({
           Hoá đơn quyết toán cuối ({finalInvoices?.revisions?.length ?? 0})
         </h3>
         {!finalInvoices || finalInvoices.revisions.length === 0 ? (
-          <p style={{ color: '#6b7280', fontSize: '0.875rem', padding: '1rem', background: '#f9fafb', borderRadius: 6 }}>
+          <p
+            style={{
+              color: '#6b7280',
+              fontSize: '0.875rem',
+              padding: '1rem',
+              background: '#f9fafb',
+              borderRadius: 6,
+            }}
+          >
             Chưa có hoá đơn cuối nào được chốt cho tiệc này.
           </p>
         ) : (
           <div>
             {finalInvoices.revisions.map((inv) => (
-              <div key={inv.invoiceRevisionId} style={{ background: '#f9fafb', padding: '1rem', borderRadius: 6, border: '1px solid #e5e7eb', marginBottom: '0.75rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div
+                key={inv.invoiceRevisionId}
+                style={{
+                  background: '#f9fafb',
+                  padding: '1rem',
+                  borderRadius: 6,
+                  border: '1px solid #e5e7eb',
+                  marginBottom: '0.75rem',
+                }}
+              >
+                <div
+                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                >
                   <div>
-                    <strong>Hoá đơn {inv.invoiceNumber} · REV {inv.revisionNumber}</strong>
+                    <strong>
+                      Hoá đơn {inv.invoiceNumber} · REV {inv.revisionNumber}
+                    </strong>
                     <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>
                       Chốt lúc: {new Date(inv.issuedAt).toLocaleString('vi-VN')}
                     </div>

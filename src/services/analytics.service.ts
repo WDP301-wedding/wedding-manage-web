@@ -54,7 +54,14 @@ export const analyticsService = {
   async getPrintOrders(query: {
     dateFrom: string;
     dateTo: string;
-    status?: 'DRAFT' | 'QUOTED' | 'APPROVED' | 'IN_PRODUCTION' | 'READY_FOR_HANDOVER' | 'HANDED_OVER' | 'CANCELLED';
+    status?:
+      | 'DRAFT'
+      | 'QUOTED'
+      | 'APPROVED'
+      | 'IN_PRODUCTION'
+      | 'READY_FOR_HANDOVER'
+      | 'HANDED_OVER'
+      | 'CANCELLED';
     pageSize?: number;
     cursor?: string;
   }): Promise<AnalyticsPrintOrdersData> {

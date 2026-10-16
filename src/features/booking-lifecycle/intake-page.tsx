@@ -4,7 +4,11 @@ import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { createApiClient, ApiClientError } from '../../lib/api/client';
 import type { components } from '../../lib/api/generated/schema';
-import { createIdentityApi, ManagementIdentitySession, sharedManagementSession } from '../identity-access/session';
+import {
+  createIdentityApi,
+  ManagementIdentitySession,
+  sharedManagementSession,
+} from '../identity-access/session';
 import type { ManagementSessionSnapshot } from '../identity-access/session';
 import { OperationsShell } from '../identity-access/operations-shell';
 
@@ -219,10 +223,25 @@ export function ConsultationRequestsPage() {
                     </div>
                   )}
                   {item.status === 'CONVERTED' && item.consultationId && (
-                    <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                    <div
+                      style={{
+                        marginTop: '0.75rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.75rem',
+                        flexWrap: 'wrap',
+                      }}
+                    >
                       <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
                         <small style={{ color: '#64748b' }}>Mã hồ sơ tư vấn:</small>
-                        <code style={{ fontSize: '0.8rem', background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px' }}>
+                        <code
+                          style={{
+                            fontSize: '0.8rem',
+                            background: '#f1f5f9',
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                          }}
+                        >
                           {item.consultationId}
                         </code>
                       </div>
@@ -239,7 +258,10 @@ export function ConsultationRequestsPage() {
                         }
                         if (item.message) params.set('note', item.message);
                         return (
-                          <Link className="booking-primary-link" href={`/bookings?${params.toString()}`}>
+                          <Link
+                            className="booking-primary-link"
+                            href={`/bookings?${params.toString()}`}
+                          >
                             Tiếp tục đặt tiệc
                           </Link>
                         );

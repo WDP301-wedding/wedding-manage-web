@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import {
   createIdentityApi,
-  ManagementIdentitySession,
+  type ManagementIdentitySession,
   sharedManagementSession,
   type ManagementSessionSnapshot,
 } from '../identity-access/session';

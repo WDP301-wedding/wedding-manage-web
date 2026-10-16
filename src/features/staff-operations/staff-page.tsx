@@ -3,7 +3,7 @@
 import { type FormEvent, useEffect, useState } from 'react';
 import { OperationsShell } from '../identity-access/operations-shell';
 import {
-  ManagementIdentitySession,
+  type ManagementIdentitySession,
   sharedManagementSession,
   type ManagementSessionSnapshot,
 } from '../identity-access/session';
@@ -58,8 +58,7 @@ export function StaffOperationsPage({
     }
   }, []);
 
-  const isManager =
-    snapshot?.status === 'authenticated' && snapshot.presentation === 'manager';
+  const isManager = snapshot?.status === 'authenticated' && snapshot.presentation === 'manager';
 
   const handleLogout = () => {
     void session.logout().then(() => {
@@ -192,9 +191,7 @@ export function StaffOperationsPage({
     const data = new FormData(form);
     const staffAccountId = String(data.get('staffAccountId') || '').trim();
     const roleCode = String(data.get('roleCode') || 'CHECK_IN') as
-      | 'CHECK_IN'
-      | 'COORDINATOR'
-      | 'GENERAL_SUPPORT';
+      'CHECK_IN' | 'COORDINATOR' | 'GENERAL_SUPPORT';
 
     setPending(true);
     setError(null);
@@ -245,24 +242,49 @@ export function StaffOperationsPage({
       onLogout={handleLogout}
       pending={pending}
     >
-      <main className="staff-shell" id="staff-content" style={{ padding: '2rem 1.5rem', maxWidth: 1200, margin: '0 auto' }}>
+      <main
+        className="staff-shell"
+        id="staff-content"
+        style={{ padding: '2rem 1.5rem', maxWidth: 1200, margin: '0 auto' }}
+      >
         <header style={{ marginBottom: '2rem' }}>
           <p className="section-kicker">Operations &amp; Hospitality</p>
           <h1>Nhân sự &amp; Tác nghiệp</h1>
           <p>
-            Đón tiếp và xác nhận khách mời tại sảnh cưới (Check-in), phân công nhân sự và điều phối vận hành.
+            Đón tiếp và xác nhận khách mời tại sảnh cưới (Check-in), phân công nhân sự và điều phối
+            vận hành.
           </p>
         </header>
 
         {/* Global Feedback Notifications */}
         <div aria-live="polite" style={{ marginBottom: '1.5rem' }}>
           {message ? (
-            <div className="booking-live" role="status" style={{ background: '#ecfdf5', color: '#065f46', padding: '0.75rem 1rem', borderRadius: 6, marginBottom: '1rem' }}>
+            <div
+              className="booking-live"
+              role="status"
+              style={{
+                background: '#ecfdf5',
+                color: '#065f46',
+                padding: '0.75rem 1rem',
+                borderRadius: 6,
+                marginBottom: '1rem',
+              }}
+            >
               {message}
             </div>
           ) : null}
           {error ? (
-            <div className="booking-error" role="alert" style={{ background: '#fef2f2', color: '#991b1b', padding: '0.75rem 1rem', borderRadius: 6, marginBottom: '1rem' }}>
+            <div
+              className="booking-error"
+              role="alert"
+              style={{
+                background: '#fef2f2',
+                color: '#991b1b',
+                padding: '0.75rem 1rem',
+                borderRadius: 6,
+                marginBottom: '1rem',
+              }}
+            >
               {error}
             </div>
           ) : null}
@@ -270,7 +292,11 @@ export function StaffOperationsPage({
 
         {/* Navigation Tabs for Manager */}
         {isManager ? (
-          <div className="catalog-tabs" role="tablist" style={{ display: 'flex', gap: '0.5rem', marginBottom: '2rem' }}>
+          <div
+            className="catalog-tabs"
+            role="tablist"
+            style={{ display: 'flex', gap: '0.5rem', marginBottom: '2rem' }}
+          >
             <button
               type="button"
               role="tab"
@@ -316,17 +342,42 @@ export function StaffOperationsPage({
         {/* SECTION 1: Check-in Desk (S1 & S2) */}
         {activeTab === 'checkin' ? (
           <section aria-labelledby="checkin-desk-title">
-            <div style={{ background: '#f9fafb', padding: '1.5rem', borderRadius: 8, border: '1px solid #e5e7eb', marginBottom: '2rem' }}>
+            <div
+              style={{
+                background: '#f9fafb',
+                padding: '1.5rem',
+                borderRadius: 8,
+                border: '1px solid #e5e7eb',
+                marginBottom: '2rem',
+              }}
+            >
               <h2 id="checkin-desk-title" style={{ fontSize: '1.25rem', marginBottom: '1rem' }}>
                 Bàn đón tiếp &amp; Tra cứu khách mời
               </h2>
               <p style={{ color: '#6b7280', fontSize: '0.9rem', marginBottom: '1.25rem' }}>
-                Nhập mã tiệc (bookingId) để tải dữ liệu khách mời. Tra cứu nhanh theo họ tên hoặc số điện thoại.
+                Nhập mã tiệc (bookingId) để tải dữ liệu khách mời. Tra cứu nhanh theo họ tên hoặc số
+                điện thoại.
               </p>
 
-              <form onSubmit={handleSearchGuests} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr)) auto', gap: '1rem', alignItems: 'flex-end' }}>
+              <form
+                onSubmit={handleSearchGuests}
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr)) auto',
+                  gap: '1rem',
+                  alignItems: 'flex-end',
+                }}
+              >
                 <div>
-                  <label htmlFor="staff-booking-id" style={{ display: 'block', fontWeight: 600, marginBottom: '0.25rem', fontSize: '0.875rem' }}>
+                  <label
+                    htmlFor="staff-booking-id"
+                    style={{
+                      display: 'block',
+                      fontWeight: 600,
+                      marginBottom: '0.25rem',
+                      fontSize: '0.875rem',
+                    }}
+                  >
                     Mã tiệc (Booking ID)
                   </label>
                   <input
@@ -336,12 +387,25 @@ export function StaffOperationsPage({
                     placeholder="VD: cd0b75ab-6256-427e-9b37-777f8b9c2822"
                     value={bookingId}
                     onChange={(e) => setBookingId(e.target.value)}
-                    style={{ width: '100%', padding: '0.625rem', borderRadius: 6, border: '1px solid #d1d5db' }}
+                    style={{
+                      width: '100%',
+                      padding: '0.625rem',
+                      borderRadius: 6,
+                      border: '1px solid #d1d5db',
+                    }}
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="staff-search-query" style={{ display: 'block', fontWeight: 600, marginBottom: '0.25rem', fontSize: '0.875rem' }}>
+                  <label
+                    htmlFor="staff-search-query"
+                    style={{
+                      display: 'block',
+                      fontWeight: 600,
+                      marginBottom: '0.25rem',
+                      fontSize: '0.875rem',
+                    }}
+                  >
                     Họ tên hoặc SĐT khách
                   </label>
                   <input
@@ -350,7 +414,12 @@ export function StaffOperationsPage({
                     placeholder="Nhập tên khách mời hoặc số điện thoại"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    style={{ width: '100%', padding: '0.625rem', borderRadius: 6, border: '1px solid #d1d5db' }}
+                    style={{
+                      width: '100%',
+                      padding: '0.625rem',
+                      borderRadius: 6,
+                      border: '1px solid #d1d5db',
+                    }}
                   />
                 </div>
 
@@ -380,22 +449,41 @@ export function StaffOperationsPage({
               </h3>
 
               {guests.length === 0 ? (
-                <div style={{ padding: '3rem 1rem', textAlign: 'center', background: '#fff', border: '1px dashed #d1d5db', borderRadius: 8 }}>
+                <div
+                  style={{
+                    padding: '3rem 1rem',
+                    textAlign: 'center',
+                    background: '#fff',
+                    border: '1px dashed #d1d5db',
+                    borderRadius: 8,
+                  }}
+                >
                   <p style={{ color: '#6b7280' }}>
                     Chưa có khách mời nào được hiển thị. Hãy nhập mã tiệc và bấm tra cứu.
                   </p>
                 </div>
               ) : (
                 <div className="table-scroll">
-                  <table aria-label="Danh sách khách mời check-in" style={{ width: '100%', borderCollapse: 'collapse', background: '#fff' }}>
+                  <table
+                    aria-label="Danh sách khách mời check-in"
+                    style={{ width: '100%', borderCollapse: 'collapse', background: '#fff' }}
+                  >
                     <thead>
-                      <tr style={{ background: '#f3f4f6', textAlign: 'left', borderBottom: '2px solid #e5e7eb' }}>
+                      <tr
+                        style={{
+                          background: '#f3f4f6',
+                          textAlign: 'left',
+                          borderBottom: '2px solid #e5e7eb',
+                        }}
+                      >
                         <th style={{ padding: '0.875rem 1rem' }}>Họ và tên</th>
                         <th style={{ padding: '0.875rem 1rem' }}>Số đuôi SĐT</th>
                         <th style={{ padding: '0.875rem 1rem' }}>Nhóm khách</th>
                         <th style={{ padding: '0.875rem 1rem' }}>Bàn gợi ý</th>
                         <th style={{ padding: '0.875rem 1rem' }}>Trạng thái</th>
-                        <th style={{ padding: '0.875rem 1rem', textAlign: 'right' }}>Thao tác tác nghiệp</th>
+                        <th style={{ padding: '0.875rem 1rem', textAlign: 'right' }}>
+                          Thao tác tác nghiệp
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
@@ -408,7 +496,16 @@ export function StaffOperationsPage({
                               {g.phoneLast4 ? `…${g.phoneLast4}` : '—'}
                             </td>
                             <td style={{ padding: '1rem' }}>
-                              <span style={{ display: 'inline-block', padding: '0.25rem 0.625rem', borderRadius: 9999, fontSize: '0.75rem', background: '#e0e7ff', color: '#3730a3' }}>
+                              <span
+                                style={{
+                                  display: 'inline-block',
+                                  padding: '0.25rem 0.625rem',
+                                  borderRadius: 9999,
+                                  fontSize: '0.75rem',
+                                  background: '#e0e7ff',
+                                  color: '#3730a3',
+                                }}
+                              >
                                 {g.groupName || 'Chung'}
                               </span>
                             </td>
@@ -488,17 +585,42 @@ export function StaffOperationsPage({
         {/* SECTION 2: Manager Admin (M6) */}
         {isManager && activeTab === 'management' ? (
           <section aria-labelledby="staff-admin-title">
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '2rem' }}>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+                gap: '2rem',
+              }}
+            >
               {/* Form 1: Cấp tài khoản nhân sự */}
-              <div style={{ background: '#fff', padding: '1.5rem', borderRadius: 8, border: '1px solid #e5e7eb' }}>
-                <h3 style={{ fontSize: '1.125rem', marginBottom: '0.5rem' }}>Cấp tài khoản Staff mới</h3>
+              <div
+                style={{
+                  background: '#fff',
+                  padding: '1.5rem',
+                  borderRadius: 8,
+                  border: '1px solid #e5e7eb',
+                }}
+              >
+                <h3 style={{ fontSize: '1.125rem', marginBottom: '0.5rem' }}>
+                  Cấp tài khoản Staff mới
+                </h3>
                 <p style={{ color: '#6b7280', fontSize: '0.875rem', marginBottom: '1.25rem' }}>
                   Tạo tài khoản nhân viên vận hành sảnh để phân công công việc.
                 </p>
 
-                <form onSubmit={handleProvisionStaff} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <form
+                  onSubmit={handleProvisionStaff}
+                  style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
+                >
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.25rem' }}>
+                    <label
+                      style={{
+                        display: 'block',
+                        fontSize: '0.875rem',
+                        fontWeight: 600,
+                        marginBottom: '0.25rem',
+                      }}
+                    >
                       Email nhân viên
                     </label>
                     <input
@@ -506,12 +628,24 @@ export function StaffOperationsPage({
                       type="email"
                       required
                       placeholder="staff.name@example.com"
-                      style={{ width: '100%', padding: '0.5rem', borderRadius: 6, border: '1px solid #d1d5db' }}
+                      style={{
+                        width: '100%',
+                        padding: '0.5rem',
+                        borderRadius: 6,
+                        border: '1px solid #d1d5db',
+                      }}
                     />
                   </div>
 
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.25rem' }}>
+                    <label
+                      style={{
+                        display: 'block',
+                        fontSize: '0.875rem',
+                        fontWeight: 600,
+                        marginBottom: '0.25rem',
+                      }}
+                    >
                       Họ và tên hiển thị
                     </label>
                     <input
@@ -519,19 +653,36 @@ export function StaffOperationsPage({
                       type="text"
                       required
                       placeholder="Nguyễn Văn A"
-                      style={{ width: '100%', padding: '0.5rem', borderRadius: 6, border: '1px solid #d1d5db' }}
+                      style={{
+                        width: '100%',
+                        padding: '0.5rem',
+                        borderRadius: 6,
+                        border: '1px solid #d1d5db',
+                      }}
                     />
                   </div>
 
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.25rem' }}>
+                    <label
+                      style={{
+                        display: 'block',
+                        fontSize: '0.875rem',
+                        fontWeight: 600,
+                        marginBottom: '0.25rem',
+                      }}
+                    >
                       Số điện thoại (tuỳ chọn)
                     </label>
                     <input
                       name="phone"
                       type="tel"
                       placeholder="0901234567"
-                      style={{ width: '100%', padding: '0.5rem', borderRadius: 6, border: '1px solid #d1d5db' }}
+                      style={{
+                        width: '100%',
+                        padding: '0.5rem',
+                        borderRadius: 6,
+                        border: '1px solid #d1d5db',
+                      }}
                     />
                   </div>
 
@@ -555,15 +706,34 @@ export function StaffOperationsPage({
               </div>
 
               {/* Form 2: Phân công tiệc */}
-              <div style={{ background: '#fff', padding: '1.5rem', borderRadius: 8, border: '1px solid #e5e7eb' }}>
-                <h3 style={{ fontSize: '1.125rem', marginBottom: '0.5rem' }}>Phân công nhân sự vào tiệc</h3>
+              <div
+                style={{
+                  background: '#fff',
+                  padding: '1.5rem',
+                  borderRadius: 8,
+                  border: '1px solid #e5e7eb',
+                }}
+              >
+                <h3 style={{ fontSize: '1.125rem', marginBottom: '0.5rem' }}>
+                  Phân công nhân sự vào tiệc
+                </h3>
                 <p style={{ color: '#6b7280', fontSize: '0.875rem', marginBottom: '1.25rem' }}>
                   Giao quyền đón khách hoặc điều phối tiệc cho nhân viên.
                 </p>
 
-                <form onSubmit={handleAssignStaff} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <form
+                  onSubmit={handleAssignStaff}
+                  style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
+                >
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.25rem' }}>
+                    <label
+                      style={{
+                        display: 'block',
+                        fontSize: '0.875rem',
+                        fontWeight: 600,
+                        marginBottom: '0.25rem',
+                      }}
+                    >
                       Mã tài khoản nhân sự (staffAccountId)
                     </label>
                     <input
@@ -573,18 +743,35 @@ export function StaffOperationsPage({
                       value={staffAccountId}
                       onChange={(e) => setStaffAccountId(e.target.value)}
                       placeholder="UUID tài khoản nhân viên"
-                      style={{ width: '100%', padding: '0.5rem', borderRadius: 6, border: '1px solid #d1d5db' }}
+                      style={{
+                        width: '100%',
+                        padding: '0.5rem',
+                        borderRadius: 6,
+                        border: '1px solid #d1d5db',
+                      }}
                     />
                   </div>
 
                   <div>
-                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.25rem' }}>
+                    <label
+                      style={{
+                        display: 'block',
+                        fontSize: '0.875rem',
+                        fontWeight: 600,
+                        marginBottom: '0.25rem',
+                      }}
+                    >
                       Vai trò phân công
                     </label>
                     <select
                       name="roleCode"
                       defaultValue="CHECK_IN"
-                      style={{ width: '100%', padding: '0.5rem', borderRadius: 6, border: '1px solid #d1d5db' }}
+                      style={{
+                        width: '100%',
+                        padding: '0.5rem',
+                        borderRadius: 6,
+                        border: '1px solid #d1d5db',
+                      }}
                     >
                       <option value="CHECK_IN">Đón khách &amp; Check-in (CHECK_IN)</option>
                       <option value="COORDINATOR">Điều phối chương trình (COORDINATOR)</option>
@@ -613,14 +800,37 @@ export function StaffOperationsPage({
             </div>
 
             {/* Bảng phân công hiện tại của booking */}
-            <div style={{ marginTop: '2rem', background: '#fff', padding: '1.5rem', borderRadius: 8, border: '1px solid #e5e7eb' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <h3 style={{ fontSize: '1.125rem' }}>Danh sách phân công của tiệc ({assignments.length})</h3>
+            <div
+              style={{
+                marginTop: '2rem',
+                background: '#fff',
+                padding: '1.5rem',
+                borderRadius: 8,
+                border: '1px solid #e5e7eb',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: '1rem',
+                }}
+              >
+                <h3 style={{ fontSize: '1.125rem' }}>
+                  Danh sách phân công của tiệc ({assignments.length})
+                </h3>
                 <button
                   type="button"
                   disabled={loadingAssignments || !bookingId.trim()}
                   onClick={() => void handleLoadAssignments()}
-                  style={{ padding: '0.375rem 0.75rem', borderRadius: 4, border: '1px solid #d1d5db', cursor: 'pointer', background: '#f9fafb' }}
+                  style={{
+                    padding: '0.375rem 0.75rem',
+                    borderRadius: 4,
+                    border: '1px solid #d1d5db',
+                    cursor: 'pointer',
+                    background: '#f9fafb',
+                  }}
                 >
                   {loadingAssignments ? 'Đang tải…' : 'Làm mới'}
                 </button>
@@ -634,7 +844,13 @@ export function StaffOperationsPage({
                 <div className="table-scroll">
                   <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
-                      <tr style={{ background: '#f9fafb', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>
+                      <tr
+                        style={{
+                          background: '#f9fafb',
+                          textAlign: 'left',
+                          borderBottom: '1px solid #e5e7eb',
+                        }}
+                      >
                         <th style={{ padding: '0.75rem' }}>Mã nhân viên (Account ID)</th>
                         <th style={{ padding: '0.75rem' }}>Trạng thái</th>
                         <th style={{ padding: '0.75rem' }}>Phiên bản (Revision)</th>
