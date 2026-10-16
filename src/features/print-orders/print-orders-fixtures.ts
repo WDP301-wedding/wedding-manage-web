@@ -1,426 +1,21 @@
+import type { ManagementSessionSnapshot } from '../identity-access/session';
 import type { ManagementPrintOrdersGateway } from './print-orders-api';
+import { DEMO_PRINT_ORDERS } from './print-orders-fixture-data';
 import type { CommercialRevisionView, PrintOrderView, QuotedLineView } from './print-orders-types';
 
-export const DEMO_PRINT_ORDERS: readonly PrintOrderView[] = [
-  {
-    orderId: 'IN-2408-018',
-    bookingId: 'bk_2408_018_ngoclan',
-    status: 'APPROVED',
-    revision: 3,
-    displayCouple: 'Minh Anh & Quốc Bảo',
-    displayEventDate: '24/08/2026',
-    displayHall: 'Sảnh Ngọc Lan',
-    lines: [
-      {
-        lineId: 'line_18_1',
-        designId: 'IVY-24-FOLDED',
-        quantity: 220,
-        printableRevisionId: 'prev_18_3',
-        displayVariant: 'Thiệp gập · Ivory',
-      },
-      {
-        lineId: 'line_18_2',
-        designId: 'IVY-24-THANKYOU',
-        quantity: 220,
-        printableRevisionId: 'prev_18_3_ty',
-        displayVariant: 'Thiệp cảm ơn đi kèm',
-      },
-    ],
-    currentCommercialRevisionId: 'rev_18_3',
-    currentCommercialRevision: {
-      commercialRevisionId: 'rev_18_3',
-      revisionNumber: 3,
-      lines: [
-        {
-          lineId: 'line_18_1',
-          designId: 'IVY-24-FOLDED',
-          quantity: 220,
-          unitPriceVnd: 70000,
-          lineTotalVnd: 15400000,
-          displayVariant: 'Thiệp gập · Ivory',
-        },
-        {
-          lineId: 'line_18_2',
-          designId: 'IVY-24-THANKYOU',
-          quantity: 220,
-          unitPriceVnd: 15000,
-          lineTotalVnd: 3300000,
-          displayVariant: 'Thiệp cảm ơn đi kèm',
-        },
-      ],
-      orderTotalVnd: 18700000,
-      estimatedHandoverAt: '2026-08-20T10:00:00.000Z',
-      expiresAt: '2026-08-15T10:00:00.000Z',
-      createdAt: '2026-08-08T14:30:00.000Z',
-    },
-    pendingReplacementProposal: null,
-    receivableChargeId: 'chg_18_3',
-    readyAt: null,
-    handedOverAt: null,
-    evidenceReference: null,
-    createdAt: '2026-08-08T10:12:00.000Z',
-    updatedAt: '2026-08-09T09:38:00.000Z',
+export { DEMO_PRINT_ORDERS } from './print-orders-fixture-data';
+
+export const DEMO_MANAGER_SNAPSHOT: ManagementSessionSnapshot = {
+  status: 'authenticated',
+  actor: {
+    accountId: 'demo-manager-account',
+    displayEmail: 'quanly.demo@wedding-estate.vn',
+    roles: ['MANAGER'],
+    sessionId: 'demo-manager-session',
   },
-  {
-    orderId: 'IN-2408-017',
-    bookingId: 'bk_2408_017_vuoncam',
-    status: 'QUOTED',
-    revision: 2,
-    displayCouple: 'Thanh Vy & Đức Huy',
-    displayEventDate: '30/08/2026',
-    displayHall: 'Sảnh Vườn Cam',
-    lines: [
-      {
-        lineId: 'line_17_1',
-        designId: 'IVY-24-FLAT',
-        quantity: 180,
-        printableRevisionId: 'prev_17_2',
-        displayVariant: 'Thiệp phẳng · Sage',
-      },
-    ],
-    currentCommercialRevisionId: 'rev_17_2',
-    currentCommercialRevision: {
-      commercialRevisionId: 'rev_17_2',
-      revisionNumber: 2,
-      lines: [
-        {
-          lineId: 'line_17_1',
-          designId: 'IVY-24-FLAT',
-          quantity: 180,
-          unitPriceVnd: 70000,
-          lineTotalVnd: 12600000,
-          displayVariant: 'Thiệp phẳng · Sage',
-        },
-      ],
-      orderTotalVnd: 12600000,
-      estimatedHandoverAt: '2026-08-25T10:00:00.000Z',
-      expiresAt: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
-      createdAt: '2026-08-11T16:00:00.000Z',
-    },
-    pendingReplacementProposal: null,
-    receivableChargeId: null,
-    readyAt: null,
-    handedOverAt: null,
-    evidenceReference: null,
-    createdAt: '2026-08-11T14:00:00.000Z',
-    updatedAt: '2026-08-11T16:00:00.000Z',
-  },
-  {
-    orderId: 'IN-2408-016',
-    bookingId: 'bk_2408_016_thuyta',
-    status: 'IN_PRODUCTION',
-    revision: 4,
-    displayCouple: 'Khánh Linh & Hoàng Nam',
-    displayEventDate: '06/09/2026',
-    displayHall: 'Sảnh Thủy Tạ',
-    lines: [
-      {
-        lineId: 'line_16_1',
-        designId: 'IVY-24-LINEN',
-        quantity: 260,
-        printableRevisionId: 'prev_16_4',
-        displayVariant: 'Thiệp gập · Linen',
-      },
-    ],
-    currentCommercialRevisionId: 'rev_16_4',
-    currentCommercialRevision: {
-      commercialRevisionId: 'rev_16_4',
-      revisionNumber: 4,
-      lines: [
-        {
-          lineId: 'line_16_1',
-          designId: 'IVY-24-LINEN',
-          quantity: 260,
-          unitPriceVnd: 90000,
-          lineTotalVnd: 23400000,
-          displayVariant: 'Thiệp gập · Linen',
-        },
-      ],
-      orderTotalVnd: 23400000,
-      estimatedHandoverAt: '2026-09-01T10:00:00.000Z',
-      expiresAt: '2026-08-19T10:00:00.000Z',
-      createdAt: '2026-08-12T17:00:00.000Z',
-    },
-    pendingReplacementProposal: null,
-    receivableChargeId: 'chg_16_4',
-    readyAt: null,
-    handedOverAt: null,
-    evidenceReference: null,
-    createdAt: '2026-08-12T16:20:00.000Z',
-    updatedAt: '2026-08-13T09:00:00.000Z',
-  },
-  {
-    orderId: 'IN-2408-015',
-    bookingId: 'bk_2408_015_ngoclan',
-    status: 'QUOTED',
-    revision: 1,
-    displayCouple: 'Hương Giang & Quang Huy',
-    displayEventDate: '12/09/2026',
-    displayHall: 'Sảnh Ngọc Lan',
-    lines: [
-      {
-        lineId: 'line_15_1',
-        designId: 'IVY-24-VELLUM',
-        quantity: 300,
-        printableRevisionId: 'prev_15_1',
-        displayVariant: 'Thiệp phong thư · Vellum',
-      },
-    ],
-    currentCommercialRevisionId: 'rev_15_1',
-    currentCommercialRevision: {
-      commercialRevisionId: 'rev_15_1',
-      revisionNumber: 1,
-      lines: [
-        {
-          lineId: 'line_15_1',
-          designId: 'IVY-24-VELLUM',
-          quantity: 300,
-          unitPriceVnd: 65000,
-          lineTotalVnd: 19500000,
-          displayVariant: 'Thiệp phong thư · Vellum',
-        },
-      ],
-      orderTotalVnd: 19500000,
-      estimatedHandoverAt: '2026-08-30T10:00:00.000Z',
-      expiresAt: '2026-08-01T10:12:00.000Z',
-      createdAt: '2026-08-01T10:12:00.000Z',
-    },
-    pendingReplacementProposal: null,
-    receivableChargeId: null,
-    readyAt: null,
-    handedOverAt: null,
-    evidenceReference: null,
-    createdAt: '2026-08-01T10:12:00.000Z',
-    updatedAt: '2026-08-01T10:12:00.000Z',
-  },
-  {
-    orderId: 'IN-2408-020',
-    bookingId: 'bk_2408_020_thuyta',
-    status: 'APPROVED',
-    revision: 5,
-    displayCouple: 'Mỹ Linh & Anh Dũng',
-    displayEventDate: '18/10/2026',
-    displayHall: 'Sảnh Thủy Tạ',
-    lines: [
-      {
-        lineId: 'line_20_1',
-        designId: 'IVY-24-VELLUM-FOIL',
-        quantity: 300,
-        printableRevisionId: 'prev_20_5',
-        displayVariant: 'Thiệp phong thư · Vellum Ép kim vàng',
-      },
-    ],
-    currentCommercialRevisionId: 'rev_20_4',
-    currentCommercialRevision: {
-      commercialRevisionId: 'rev_20_4',
-      revisionNumber: 4,
-      lines: [
-        {
-          lineId: 'line_20_1',
-          designId: 'IVY-24-VELLUM-FOIL',
-          quantity: 300,
-          unitPriceVnd: 95000,
-          lineTotalVnd: 28500000,
-          displayVariant: 'Thiệp phong thư · Vellum Ép kim vàng',
-        },
-      ],
-      orderTotalVnd: 28500000,
-      estimatedHandoverAt: '2026-09-30T10:00:00.000Z',
-      expiresAt: '2026-09-15T10:12:00.000Z',
-      createdAt: '2026-09-08T11:00:00.000Z',
-    },
-    pendingReplacementProposal: {
-      commercialRevisionId: 'prop_20_5',
-      revisionNumber: 5,
-      lines: [
-        {
-          lineId: 'line_20_1',
-          designId: 'IVY-24-VELLUM-FOIL',
-          quantity: 300,
-          unitPriceVnd: 110000,
-          lineTotalVnd: 33000000,
-          displayVariant: 'Thiệp phong thư · Vellum Ép kim vàng',
-        },
-      ],
-      orderTotalVnd: 33000000,
-      estimatedHandoverAt: '2026-10-05T10:00:00.000Z',
-      expiresAt: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000).toISOString(),
-      createdAt: '2026-09-14T09:00:00.000Z',
-    },
-    receivableChargeId: 'chg_20_4',
-    readyAt: null,
-    handedOverAt: null,
-    evidenceReference: null,
-    createdAt: '2026-09-08T10:12:00.000Z',
-    updatedAt: '2026-09-14T09:00:00.000Z',
-  },
-  {
-    orderId: 'IN-2408-014',
-    bookingId: 'bk_2408_014_vuoncam',
-    status: 'READY_FOR_HANDOVER',
-    revision: 3,
-    displayCouple: 'Ngọc Hà & Tuấn Kiệt',
-    displayEventDate: '19/09/2026',
-    displayHall: 'Sảnh Vườn Cam',
-    lines: [
-      {
-        lineId: 'line_14_1',
-        designId: 'IVY-24-MENU-2SIDE',
-        quantity: 24,
-        printableRevisionId: 'prev_14_3',
-        displayVariant: 'Menu bàn · 2 mặt',
-      },
-    ],
-    currentCommercialRevisionId: 'rev_14_3',
-    currentCommercialRevision: {
-      commercialRevisionId: 'rev_14_3',
-      revisionNumber: 3,
-      lines: [
-        {
-          lineId: 'line_14_1',
-          designId: 'IVY-24-MENU-2SIDE',
-          quantity: 24,
-          unitPriceVnd: 120000,
-          lineTotalVnd: 2880000,
-          displayVariant: 'Menu bàn · 2 mặt',
-        },
-      ],
-      orderTotalVnd: 2880000,
-      estimatedHandoverAt: '2026-08-15T10:00:00.000Z',
-      expiresAt: '2026-08-14T10:00:00.000Z',
-      createdAt: '2026-08-07T14:30:00.000Z',
-    },
-    pendingReplacementProposal: null,
-    receivableChargeId: 'chg_14_3',
-    readyAt: '2026-08-12T10:00:00.000Z',
-    handedOverAt: null,
-    evidenceReference: null,
-    createdAt: '2026-08-07T14:05:00.000Z',
-    updatedAt: '2026-08-12T10:00:00.000Z',
-  },
-  {
-    orderId: 'IN-2408-013',
-    bookingId: 'bk_2408_013_hoangyen',
-    status: 'HANDED_OVER',
-    revision: 4,
-    displayCouple: 'Văn Lâm & Yến Nhi',
-    displayEventDate: '28/08/2026',
-    displayHall: 'Sảnh Hoàng Yến',
-    lines: [
-      {
-        lineId: 'line_13_1',
-        designId: 'IVY-24-MINIMAL',
-        quantity: 200,
-        printableRevisionId: 'prev_13_4',
-        displayVariant: 'Thiệp cưới tối giản Minimal',
-      },
-    ],
-    currentCommercialRevisionId: 'rev_13_3',
-    currentCommercialRevision: {
-      commercialRevisionId: 'rev_13_3',
-      revisionNumber: 3,
-      lines: [
-        {
-          lineId: 'line_13_1',
-          designId: 'IVY-24-MINIMAL',
-          quantity: 200,
-          unitPriceVnd: 60000,
-          lineTotalVnd: 12000000,
-          displayVariant: 'Thiệp cưới tối giản Minimal',
-        },
-      ],
-      orderTotalVnd: 12000000,
-      estimatedHandoverAt: '2026-08-10T10:00:00.000Z',
-      expiresAt: '2026-08-05T10:00:00.000Z',
-      createdAt: '2026-08-01T09:00:00.000Z',
-    },
-    pendingReplacementProposal: null,
-    receivableChargeId: 'chg_13_3',
-    readyAt: '2026-08-08T14:00:00.000Z',
-    handedOverAt: '2026-08-10T11:20:00.000Z',
-    evidenceReference: 'BBBG-2408-013-VL-YN',
-    createdAt: '2026-08-01T08:00:00.000Z',
-    updatedAt: '2026-08-10T11:20:00.000Z',
-  },
-  {
-    orderId: 'IN-2408-012',
-    bookingId: 'bk_2408_012_ngoclan',
-    status: 'CANCELLED',
-    revision: 2,
-    displayCouple: 'Thế Vinh & Mỹ Duyên',
-    displayEventDate: '02/10/2026',
-    displayHall: 'Sảnh Ngọc Lan',
-    lines: [
-      {
-        lineId: 'line_12_1',
-        designId: 'IVY-24-CUSTOM-ART',
-        quantity: 250,
-        printableRevisionId: 'prev_12_1',
-        displayVariant: 'Thiệp vẽ tay mỹ thuật',
-      },
-    ],
-    currentCommercialRevisionId: 'rev_12_1',
-    currentCommercialRevision: {
-      commercialRevisionId: 'rev_12_1',
-      revisionNumber: 1,
-      lines: [
-        {
-          lineId: 'line_12_1',
-          designId: 'IVY-24-CUSTOM-ART',
-          quantity: 250,
-          unitPriceVnd: 120000,
-          lineTotalVnd: 30000000,
-          displayVariant: 'Thiệp vẽ tay mỹ thuật',
-        },
-      ],
-      orderTotalVnd: 30000000,
-      estimatedHandoverAt: '2026-08-20T10:00:00.000Z',
-      expiresAt: '2026-08-10T10:00:00.000Z',
-      createdAt: '2026-08-03T10:00:00.000Z',
-    },
-    pendingReplacementProposal: null,
-    receivableChargeId: null,
-    readyAt: null,
-    handedOverAt: null,
-    evidenceReference: null,
-    createdAt: '2026-08-03T09:00:00.000Z',
-    updatedAt: '2026-08-06T15:00:00.000Z',
-  },
-  {
-    orderId: 'IN-2408-019',
-    bookingId: 'bk_2408_019_hoangyen',
-    status: 'REQUESTED',
-    revision: 1,
-    displayCouple: 'Hải Đăng & Thùy Dương',
-    displayEventDate: '15/10/2026',
-    displayHall: 'Sảnh Hoàng Yến',
-    lines: [
-      {
-        lineId: 'line_19_1',
-        designId: 'IVY-24-PREMIUM-GOLD',
-        quantity: 300,
-        printableRevisionId: 'prev_19_1',
-        displayVariant: 'Thiệp cưới ép kim cao cấp',
-      },
-      {
-        lineId: 'line_19_2',
-        designId: 'IVY-24-SAVE-THE-DATE',
-        quantity: 150,
-        printableRevisionId: 'prev_19_1_std',
-        displayVariant: 'Thiệp báo hỷ (Save the Date)',
-      },
-    ],
-    currentCommercialRevisionId: null,
-    currentCommercialRevision: null,
-    pendingReplacementProposal: null,
-    receivableChargeId: null,
-    readyAt: null,
-    handedOverAt: null,
-    evidenceReference: null,
-    createdAt: '2026-08-05T08:30:00.000Z',
-    updatedAt: '2026-08-05T08:30:00.000Z',
-  },
-];
+  presentation: 'manager',
+  denial: null,
+};
 
 export function createFixturePrintOrdersGateway(
   initialOrders: readonly PrintOrderView[] = DEMO_PRINT_ORDERS,
@@ -428,25 +23,25 @@ export function createFixturePrintOrdersGateway(
   const orders = [...initialOrders];
 
   return {
-    async list(_token, query) {
+    async list(_token, params) {
       await Promise.resolve();
-      let filtered = [...orders];
-      if (query?.bookingId) {
-        filtered = filtered.filter((o) => o.bookingId === query.bookingId);
-      }
+      const limit = params?.limit ?? 10;
+      const cursor = params?.cursor;
+
       let startIndex = 0;
-      if (query?.cursor) {
-        const found = filtered.findIndex((o) => o.orderId === query.cursor);
+      if (cursor) {
+        const found = orders.findIndex((o) => o.orderId === cursor);
         if (found !== -1) {
-          startIndex = found;
+          startIndex = found + 1;
         }
       }
-      const limit = query?.limit ?? filtered.length;
-      const pageItems = filtered.slice(startIndex, startIndex + limit);
-      const nextItem = filtered[startIndex + limit];
-      const nextCursor = nextItem ? nextItem.orderId : null;
+
+      const paged = orders.slice(startIndex, startIndex + limit);
+      const nextItem = orders[startIndex + limit];
+      const nextCursor = nextItem ? (paged[paged.length - 1]?.orderId ?? null) : null;
+
       return {
-        items: pageItems,
+        items: paged,
         nextCursor,
       };
     },
