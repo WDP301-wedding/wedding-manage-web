@@ -3,7 +3,7 @@
 import { type FormEvent, useEffect, useState } from 'react';
 import { OperationsShell } from '../identity-access/operations-shell';
 import {
-  ManagementIdentitySession,
+  type ManagementIdentitySession,
   sharedManagementSession,
   type ManagementSessionSnapshot,
 } from '../identity-access/session';

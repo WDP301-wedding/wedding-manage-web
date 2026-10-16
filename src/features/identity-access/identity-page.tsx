@@ -10,7 +10,7 @@ import { ApiClientError } from '../../lib/api/client';
 import {
   consumeResetFragment,
   createIdentityApi,
-  ManagementIdentitySession,
+  type ManagementIdentitySession,
   sharedManagementSession,
   type ManagementSessionSnapshot,
 } from './session';

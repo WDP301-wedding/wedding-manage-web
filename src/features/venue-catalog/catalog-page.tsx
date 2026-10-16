@@ -187,7 +187,7 @@ function ManagerVenueWorkspace({
       tabParam === 'layout' ||
       tabParam === 'venue'
     ) {
-      setActiveTab(tabParam as CatalogTab);
+      setActiveTab(tabParam);
     }
   }, []);
   const [snapshot, setSnapshot] = useState<VenueCatalogSnapshot | null>(null);

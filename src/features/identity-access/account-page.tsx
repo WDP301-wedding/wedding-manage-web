@@ -6,7 +6,7 @@ import { AccountSettings } from './account-settings';
 import { OperationsShell } from './operations-shell';
 import {
   createIdentityApi,
-  ManagementIdentitySession,
+  type ManagementIdentitySession,
   sharedManagementSession,
   type ManagementSessionSnapshot,
 } from './session';

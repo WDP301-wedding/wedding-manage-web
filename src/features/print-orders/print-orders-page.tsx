@@ -6,7 +6,7 @@ import { ApiClientError } from '../../lib/api/client';
 import { OperationsShell } from '../identity-access/operations-shell';
 import {
   createIdentityApi,
-  ManagementIdentitySession,
+  type ManagementIdentitySession,
   sharedManagementSession,
   type ManagementSessionSnapshot,
 } from '../identity-access/session';

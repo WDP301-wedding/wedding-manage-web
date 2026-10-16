@@ -106,7 +106,12 @@ export function createAxiosApiClient(customConfig: AxiosRequestConfig = {}): Axi
 
       return config;
     },
-    (error) => Promise.reject(error),
+    (error: unknown) =>
+      Promise.reject(
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'Request error'),
+      ),
   );
 
   instance.interceptors.response.use(
