@@ -2,6 +2,7 @@ import { createApiClient, type ApiClient } from '../../lib/api/client';
 import type { components } from '../../lib/api/generated/schema';
 import { installCommandRetries } from './command-retries';
 
+export type Authorize = <T>(operation: (accessToken: string) => Promise<T>) => Promise<T>;
 export type ProposalView = components['schemas']['BookingProposalResponse']['data'];
 export type TimelineItemInput = components['schemas']['TimelineRevisionBody']['items'][number];
 export type BookingSelections = Readonly<{
