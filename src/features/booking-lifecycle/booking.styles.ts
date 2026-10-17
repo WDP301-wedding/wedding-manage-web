@@ -1,19 +1,63 @@
 import type { CSSProperties } from 'react';
 
 export const bookingStyles = {
+  tabList: {
+    display: 'inline-flex',
+    gap: '0.375rem',
+    background: 'var(--hy-surface-container, #fdf6ee)',
+    padding: '4px',
+    borderRadius: '8px',
+    border: '1px solid var(--hy-outline, #eadfd6)',
+    marginBottom: '1.5rem',
+  } satisfies CSSProperties,
+
+  tabButton: (active: boolean): CSSProperties => ({
+    border: 'none',
+    borderRadius: '6px',
+    padding: '8px 16px',
+    fontSize: '0.88rem',
+    fontWeight: active ? 600 : 500,
+    cursor: 'pointer',
+    background: active ? '#ffffff' : 'transparent',
+    color: active ? 'var(--hy-wine, #7a1f3d)' : 'var(--hy-text-muted, #6e5d63)',
+    boxShadow: active ? '0 1px 3px rgba(122, 31, 61, 0.08)' : 'none',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+    transition: 'all 0.15s ease',
+  }),
+
+  badgeActive: {
+    background: 'var(--hy-status-success, #2f6b4f)',
+    color: '#ffffff',
+    borderRadius: '999px',
+    padding: '1px 7px',
+    fontSize: '0.72rem',
+    fontWeight: 700,
+  } satisfies CSSProperties,
+
+  badgeDraft: {
+    background: 'var(--hy-status-warning, #8a5300)',
+    color: '#ffffff',
+    borderRadius: '999px',
+    padding: '1px 7px',
+    fontSize: '0.72rem',
+    fontWeight: 700,
+  } satisfies CSSProperties,
+
   stepKicker: {
-    color: '#5d665f',
+    color: 'var(--hy-text-muted, #6e5d63)',
     fontSize: '0.875rem',
     marginBottom: '0.75rem',
   } satisfies CSSProperties,
 
   prefillBox: {
     padding: '6px 10px',
-    backgroundColor: '#f0fdf4',
-    border: '1px solid #bbf7d0',
+    backgroundColor: 'var(--hy-status-success-bg, #e7f1ea)',
+    border: '1px solid var(--hy-status-success-border, #bbf7d0)',
     borderRadius: '6px',
     fontSize: '0.78rem',
-    color: '#15803d',
+    color: 'var(--hy-status-success, #2f6b4f)',
     marginBottom: '0.75rem',
   } satisfies CSSProperties,
 
@@ -23,7 +67,7 @@ export const bookingStyles = {
     background: 'none',
     border: 'none',
     cursor: 'pointer',
-    color: '#15803d',
+    color: 'var(--hy-status-success, #2f6b4f)',
     fontWeight: 600,
     padding: 0,
     fontSize: 'inherit',
@@ -41,9 +85,9 @@ export const bookingStyles = {
     padding: '2px 8px',
     borderRadius: '4px',
     fontSize: '0.75rem',
-    background: '#dcfce7',
-    color: '#15803d',
-    border: '1px solid #86efac',
+    background: 'var(--hy-status-success-bg, #e7f1ea)',
+    color: 'var(--hy-status-success, #2f6b4f)',
+    border: '1px solid var(--hy-status-success-border, #86efac)',
     fontWeight: 600,
   } satisfies CSSProperties,
 
@@ -52,27 +96,27 @@ export const bookingStyles = {
     fontSize: '0.75rem',
     cursor: 'pointer',
     background: '#ffffff',
-    border: '1px solid #d1d5db',
+    border: '1px solid var(--hy-outline, #eadfd6)',
     borderRadius: '4px',
-    color: '#374151',
+    color: 'var(--hy-text, #2b1d22)',
   } satisfies CSSProperties,
 
   statusBanner: (type: 'info' | 'warning' | 'error' | 'success'): CSSProperties => {
-    let bg = '#eff6ff';
-    let text = '#1e40af';
-    let border = '#bfdbfe';
+    let bg = 'var(--hy-status-info-bg, #e6eef2)';
+    let text = 'var(--hy-status-info, #3f5b6b)';
+    let border = 'var(--hy-status-info-border, #cbd5e1)';
     if (type === 'warning') {
-      bg = '#fffbeb';
-      text = '#92400e';
-      border = '#fde68a';
+      bg = 'var(--hy-status-warning-bg, #fcefd6)';
+      text = 'var(--hy-status-warning, #8a5300)';
+      border = 'var(--hy-status-warning-border, #fcd34d)';
     } else if (type === 'error') {
-      bg = '#fef2f2';
-      text = '#991b1b';
-      border = '#fecaca';
+      bg = 'var(--hy-status-error-bg, #fdecea)';
+      text = 'var(--hy-status-error, #c62828)';
+      border = 'var(--hy-status-error-border, #fca5a5)';
     } else if (type === 'success') {
-      bg = '#f0fdf4';
-      text = '#166534';
-      border = '#bbf7d0';
+      bg = 'var(--hy-status-success-bg, #e7f1ea)';
+      text = 'var(--hy-status-success, #2f6b4f)';
+      border = 'var(--hy-status-success-border, #bbf7d0)';
     }
     return {
       padding: '0.75rem 1rem',
@@ -88,9 +132,9 @@ export const bookingStyles = {
   logContainer: {
     marginTop: '0.75rem',
     padding: '8px',
-    background: '#f8fafc',
+    background: 'var(--hy-surface-container, #fdf6ee)',
     borderRadius: '6px',
-    border: '1px solid #e2e8f0',
+    border: '1px solid var(--hy-outline, #eadfd6)',
     fontSize: '0.78rem',
   } satisfies CSSProperties,
 };

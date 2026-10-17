@@ -7,8 +7,10 @@ import { addMyManagedBookingId, getMyManagedBookingIds } from '../identity-acces
 import { sharedManagementSession } from '../identity-access/session';
 import { type BookingPrefill, errorMessage, type InviteLogEntry } from './booking-helpers';
 import { BookingCreatePanel } from './booking-create-panel';
+import { BookingLifecycleStepper } from './booking-lifecycle-stepper';
 import { BookingLookupBar } from './booking-lookup-bar';
 import { BookingUnauthorizedHint } from './booking-unauthorized-hint';
+import { bookingStyles } from './booking.styles';
 import { ConsultationPanel } from './consultation-panel';
 import type { Authorize, ManagementBookingGateway, ProposalView } from './booking-api';
 import { ProposalPanel } from './proposal-panel';
@@ -30,6 +32,7 @@ export function ManagementBookingWorkspace({
   currentAccountId,
   currentEmail,
 }: Readonly<ManagementBookingWorkspaceProps>) {
+  const [activeTab, setActiveTab] = useState<'manage' | 'create'>('create');
   const [consultation, setConsultation] = useState<{ id: string; revision: number } | null>(null);
   const [bookingId, setBookingId] = useState('');
   const [proposal, setProposal] = useState<ProposalView | null>(null);
@@ -59,11 +62,15 @@ export function ManagementBookingWorkspace({
       Number.isSafeInteger(revision) &&
       revision > 0
     ) {
-      queueMicrotask(() => setConsultation({ id, revision }));
+      queueMicrotask(() => {
+        setConsultation({ id, revision });
+        setActiveTab('create');
+      });
     }
     const bId = params.get('bookingId');
     if (bId !== null && /^[a-f0-9-]{36}$/iu.test(bId)) {
       setBookingId(bId);
+      setActiveTab('manage');
       void run('load', () => authorize((token) => gateway.loadProposal(token, bId))).then(
         (result) => {
           if (result !== null) setProposal(result);
@@ -81,6 +88,7 @@ export function ManagementBookingWorkspace({
     const tCount = expG && expG > 0 ? Math.max(1, Math.ceil(expG / 10)) : undefined;
 
     if (dName || em || nt || pDate || expG) {
+      setActiveTab('create');
       setPrefill({
         displayName: dName,
         email: em,
@@ -139,11 +147,14 @@ export function ManagementBookingWorkspace({
     }
   };
 
-  const loadProposal = async (id: string) => {
+  const loadProposal = async (id: string, switchTab = true) => {
     const result = await run('load', () => authorize((token) => gateway.loadProposal(token, id)));
     if (result !== null) {
       setProposal(result);
       recordMyBooking(id);
+      if (switchTab) {
+        setActiveTab('manage');
+      }
     }
   };
 
@@ -163,10 +174,27 @@ export function ManagementBookingWorkspace({
   return (
     <main className="booking-shell" id="booking-main">
       <header className="booking-header">
-        <div>
-          <p className="section-kicker">Wedding Estate · Operations</p>
-          <h1>Điều phối đặt tiệc</h1>
-          <p>Tạo hồ sơ tư vấn, giữ lịch và kiểm soát vòng đời bằng revision từ máy chủ.</p>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+            flexWrap: 'wrap',
+            gap: '1rem',
+          }}
+        >
+          <div>
+            <p className="section-kicker">Wedding Estate · Operations</p>
+            <h1>Điều phối đặt tiệc</h1>
+            <p>Tạo hồ sơ tư vấn, giữ lịch và kiểm soát vòng đời bằng revision từ máy chủ.</p>
+          </div>
+          <BookingLookupBar
+            bookingId={bookingId}
+            setBookingId={setBookingId}
+            onLoadProposal={loadProposal}
+            pending={pending}
+            recentBookingIds={recentBookingIds}
+          />
         </div>
       </header>
 
@@ -176,7 +204,38 @@ export function ManagementBookingWorkspace({
         {error === null ? null : <span role="alert">{error}</span>}
       </div>
 
-      <section className="booking-grid" aria-label="Khởi tạo đặt tiệc">
+      {/* Chế độ làm việc: Phân tách Tiệc đang xử lý & Tạo tiệc mới */}
+      <div role="tablist" aria-label="Chế độ làm việc" style={bookingStyles.tabList}>
+        <button
+          type="button"
+          role="tab"
+          id="tab-manage"
+          aria-selected={activeTab === 'manage'}
+          onClick={() => setActiveTab('manage')}
+          style={bookingStyles.tabButton(activeTab === 'manage')}
+        >
+          <span>📋 Tiệc đang xử lý</span>
+          {proposal ? <span style={bookingStyles.badgeActive}>Đang mở</span> : null}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          id="tab-create"
+          aria-selected={activeTab === 'create'}
+          onClick={() => setActiveTab('create')}
+          style={bookingStyles.tabButton(activeTab === 'create')}
+        >
+          <span>➕ Tạo đặt tiệc mới</span>
+          {consultation ? <span style={bookingStyles.badgeDraft}>Đã có mã tư vấn</span> : null}
+        </button>
+      </div>
+
+      {/* Tab 2: Khởi tạo đặt tiệc (Wizard 2 bước) */}
+      <section
+        className="booking-grid"
+        aria-label="Khởi tạo đặt tiệc"
+        style={{ display: activeTab === 'create' ? 'grid' : 'none' }}
+      >
         <ConsultationPanel
           disabled={pending !== null}
           consultation={consultation}
@@ -285,7 +344,7 @@ export function ManagementBookingWorkspace({
             setBookingId(result.bookingId);
             setConsultation({ id: consultationId, revision: result.consultationRevision });
             setMessage('Đã tạo hồ sơ đặt tiệc.');
-            void loadProposal(result.bookingId);
+            void loadProposal(result.bookingId, false);
             recordMyBooking(result.bookingId);
           }}
           setMessage={setMessage}
@@ -293,35 +352,68 @@ export function ManagementBookingWorkspace({
         />
       </section>
 
-      <section className="booking-workspace" aria-labelledby="proposal-heading">
+      {/* Tab 1: Đề xuất & Vòng đời tiệc cưới */}
+      <section
+        className="booking-workspace"
+        aria-labelledby="proposal-heading"
+        style={{ display: activeTab === 'manage' ? 'block' : 'none' }}
+      >
         <div className="booking-section-heading">
           <div>
             <p className="section-kicker">Hồ sơ đang xử lý</p>
             <h2 id="proposal-heading">Đề xuất &amp; vòng đời</h2>
           </div>
-          <BookingLookupBar
-            bookingId={bookingId}
-            setBookingId={setBookingId}
-            onLoadProposal={loadProposal}
-            pending={pending}
-            recentBookingIds={recentBookingIds}
-          />
         </div>
         {proposal === null ? (
-          <div className="booking-empty">
-            <strong>Chưa chọn hồ sơ</strong>
-            <p>Nhập mã booking hoặc tạo hồ sơ mới để xem đề xuất và thao tác hợp lệ.</p>
+          <div className="booking-empty" style={{ textAlign: 'center', padding: '3rem 1.5rem' }}>
+            <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>📋</div>
+            <strong
+              style={{
+                fontSize: '1.15rem',
+                color: 'var(--hy-wine, #7a1f3d)',
+                display: 'block',
+                marginBottom: '0.5rem',
+              }}
+            >
+              Chưa chọn hồ sơ
+            </strong>
+            <p
+              style={{
+                color: 'var(--hy-text-muted, #6e5d63)',
+                maxWidth: '520px',
+                margin: '0 auto 1.5rem',
+                lineHeight: 1.6,
+              }}
+            >
+              Nhập mã booking ở thanh tra cứu phía trên hoặc chọn nhanh từ danh mục{' '}
+              <strong>&quot;Tiệc của bạn&quot;</strong> để xem đề xuất, kịch bản và hợp đồng.
+            </p>
+            <button
+              type="button"
+              className="primary-button"
+              onClick={() => setActiveTab('create')}
+              style={{ padding: '8px 18px', fontSize: '0.9rem' }}
+            >
+              ➕ Tạo đặt tiệc mới ngay →
+            </button>
             {error && bookingId ? <BookingUnauthorizedHint bookingId={bookingId} /> : null}
           </div>
         ) : (
-          <ProposalPanel
-            disabled={pending !== null}
-            proposal={proposal}
-            run={run}
-            authorize={authorize}
-            gateway={gateway}
-            refresh={refresh}
-          />
+          <>
+            <BookingLifecycleStepper
+              phase={proposal.phase}
+              hasTimeline={proposal.timeline !== null}
+              hasContract={true}
+            />
+            <ProposalPanel
+              disabled={pending !== null}
+              proposal={proposal}
+              run={run}
+              authorize={authorize}
+              gateway={gateway}
+              refresh={refresh}
+            />
+          </>
         )}
       </section>
     </main>
