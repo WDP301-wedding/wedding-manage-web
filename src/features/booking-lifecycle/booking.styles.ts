@@ -137,4 +137,68 @@ export const bookingStyles = {
     border: '1px solid var(--hy-outline, #eadfd6)',
     fontSize: '0.78rem',
   } satisfies CSSProperties,
+
+  wizardStepper: {
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: '0.75rem',
+    marginBottom: '1.75rem',
+    flexWrap: 'wrap',
+  } satisfies CSSProperties,
+
+  wizardStepButton: (active: boolean, completed: boolean): CSSProperties => ({
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+    padding: '8px 18px',
+    borderRadius: '24px',
+    border: `1.5px solid ${active ? 'var(--hy-wine, #7a1f3d)' : 'var(--hy-outline, #eadfd6)'}`,
+    background: active
+      ? 'var(--hy-wine, #7a1f3d)'
+      : completed
+        ? 'var(--hy-surface-container, #fdf6ee)'
+        : '#ffffff',
+    color: active ? '#ffffff' : 'var(--hy-text, #2b1d22)',
+    fontWeight: active ? 600 : 500,
+    fontSize: '0.88rem',
+    cursor: 'pointer',
+    transition: 'all 0.15s ease',
+  }),
+
+  wizardStepBadge: (active: boolean, completed: boolean): CSSProperties => ({
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '20px',
+    height: '20px',
+    borderRadius: '50%',
+    background: active
+      ? '#ffffff'
+      : completed
+        ? 'var(--hy-status-success, #2f6b4f)'
+        : 'var(--hy-outline, #eadfd6)',
+    color: active
+      ? 'var(--hy-wine, #7a1f3d)'
+      : completed
+        ? '#ffffff'
+        : 'var(--hy-text-muted, #6e5d63)',
+    fontSize: '0.72rem',
+    fontWeight: 700,
+  }),
+
+  stepContainerVisible: (maxWidth = '780px'): CSSProperties => ({
+    display: 'block',
+    maxWidth,
+    margin: '0 auto',
+    width: '100%',
+  }),
+
+  stepContainerHidden: {
+    position: 'absolute',
+    left: '-9999px',
+    top: '-9999px',
+    height: '1px',
+    overflow: 'hidden',
+  } satisfies CSSProperties,
 };

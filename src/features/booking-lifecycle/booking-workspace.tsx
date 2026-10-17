@@ -33,6 +33,7 @@ export function ManagementBookingWorkspace({
   currentEmail,
 }: Readonly<ManagementBookingWorkspaceProps>) {
   const [activeTab, setActiveTab] = useState<'manage' | 'create'>('create');
+  const [wizardStep, setWizardStep] = useState<1 | 2>(1);
   const [consultation, setConsultation] = useState<{ id: string; revision: number } | null>(null);
   const [bookingId, setBookingId] = useState('');
   const [proposal, setProposal] = useState<ProposalView | null>(null);
@@ -65,6 +66,7 @@ export function ManagementBookingWorkspace({
       queueMicrotask(() => {
         setConsultation({ id, revision });
         setActiveTab('create');
+        setWizardStep(2);
       });
     }
     const bId = params.get('bookingId');
@@ -166,6 +168,7 @@ export function ManagementBookingWorkspace({
   const resetConsultation = () => {
     setConsultation(null);
     setPrefill({});
+    setWizardStep(1);
     setMessage(
       'Đã xóa mã tư vấn cũ. Hãy nhập thông tin cặp đôi mới ở Bước 01 rồi bấm "Tạo hồ sơ tư vấn".',
     );
@@ -230,126 +233,224 @@ export function ManagementBookingWorkspace({
         </button>
       </div>
 
-      {/* Tab 2: Khởi tạo đặt tiệc (Wizard 2 bước) */}
+      {/* Tab 2: Khởi tạo đặt tiệc (Wizard 2 bước tuần tự) */}
       <section
-        className="booking-grid"
         aria-label="Khởi tạo đặt tiệc"
-        style={{ display: activeTab === 'create' ? 'grid' : 'none' }}
+        style={{ display: activeTab === 'create' ? 'block' : 'none' }}
       >
-        <ConsultationPanel
-          disabled={pending !== null}
-          consultation={consultation}
-          prefill={prefill}
-          logs={inviteLogs}
-          onClearLogs={() => setInviteLogs([])}
-          onReset={resetConsultation}
-          onCreate={async (input) => {
-            const result = await run('consultation', () =>
-              authorize((token) => gateway.createConsultation(token, input)),
-            );
-            if (result !== null) {
-              setConsultation({ id: result.consultationId, revision: result.revision });
-              setPrefill((prev) => ({
-                ...prev,
-                displayName: input.displayName,
-                email: input.intendedEmail,
-                note: input.note,
-              }));
-              setMessage('Đã tạo hồ sơ tư vấn.');
-            }
-          }}
-          onInvite={async () => {
-            if (consultation === null) return;
-            const now = new Date().toLocaleTimeString('vi-VN');
-            const logId = crypto.randomUUID();
-            console.log(`[Workspace Invitation] ${now} Bắt đầu gửi lời mời cộng tác:`, {
-              consultationId: consultation.id,
-              revision: consultation.revision,
-            });
-            setInviteLogs((prev) => [
-              {
-                id: logId,
-                time: now,
-                type: 'pending',
-                message: 'Đang gửi yêu cầu mời cộng tác tới máy chủ...',
-                consultationId: consultation.id,
-              },
-              ...prev,
-            ]);
+        {/* Thanh chuyển bước Wizard */}
+        <div
+          style={bookingStyles.wizardStepper}
+          role="tablist"
+          aria-label="Các bước thiết lập tiệc"
+        >
+          <button
+            type="button"
+            role="tab"
+            id="wizard-step-1"
+            aria-selected={wizardStep === 1}
+            onClick={() => setWizardStep(1)}
+            style={bookingStyles.wizardStepButton(wizardStep === 1, consultation !== null)}
+          >
+            <span style={bookingStyles.wizardStepBadge(wizardStep === 1, consultation !== null)}>
+              {consultation ? '✓' : '1'}
+            </span>
+            <span>Bước 01: Hồ sơ tư vấn</span>
+          </button>
 
-            setPending('invite');
-            setMessage(null);
-            setError(null);
-            try {
-              const res = await authorize((token) =>
-                gateway.invite(token, {
+          <span style={{ color: 'var(--hy-outline, #eadfd6)', fontWeight: 600 }}>───▶</span>
+
+          <button
+            type="button"
+            role="tab"
+            id="wizard-step-2"
+            aria-selected={wizardStep === 2}
+            onClick={() => setWizardStep(2)}
+            style={bookingStyles.wizardStepButton(wizardStep === 2, false)}
+          >
+            <span style={bookingStyles.wizardStepBadge(wizardStep === 2, false)}>2</span>
+            <span>Bước 02: Khảo sát sảnh &amp; Đặt tiệc</span>
+          </button>
+        </div>
+
+        {/* BƯỚC 01: HỒ SƠ TƯ VẤN (Rộng rãi, tập trung) */}
+        <div
+          style={
+            wizardStep === 1
+              ? bookingStyles.stepContainerVisible('780px')
+              : bookingStyles.stepContainerHidden
+          }
+        >
+          <ConsultationPanel
+            disabled={pending !== null}
+            consultation={consultation}
+            prefill={prefill}
+            logs={inviteLogs}
+            onClearLogs={() => setInviteLogs([])}
+            onReset={resetConsultation}
+            onCreate={async (input) => {
+              const result = await run('consultation', () =>
+                authorize((token) => gateway.createConsultation(token, input)),
+              );
+              if (result !== null) {
+                setConsultation({ id: result.consultationId, revision: result.revision });
+                setPrefill((prev) => ({
+                  ...prev,
+                  displayName: input.displayName,
+                  email: input.intendedEmail,
+                  note: input.note,
+                }));
+                setMessage('Đã tạo hồ sơ tư vấn.');
+                setWizardStep(2);
+              }
+            }}
+            onInvite={async () => {
+              if (consultation === null) return;
+              const now = new Date().toLocaleTimeString('vi-VN');
+              const logId = crypto.randomUUID();
+              console.log(`[Workspace Invitation] ${now} Bắt đầu gửi lời mời cộng tác:`, {
+                consultationId: consultation.id,
+                revision: consultation.revision,
+              });
+              setInviteLogs((prev) => [
+                {
+                  id: logId,
+                  time: now,
+                  type: 'pending',
+                  message: 'Đang gửi yêu cầu mời cộng tác tới máy chủ...',
                   consultationId: consultation.id,
-                  expectedRevision: consultation.revision,
-                }),
-              );
-              console.log(`[Workspace Invitation] ${now} Gửi lời mời thành công:`, res);
-              setMessage('Đã yêu cầu gửi lời mời không gian cộng tác.');
-              const invitationId = (res as { invitationId?: string } | undefined)?.invitationId;
-              const isReplayed = (res as { replayed?: boolean } | undefined)?.replayed;
-              setInviteLogs((prev) =>
-                prev.map((item) =>
-                  item.id === logId
-                    ? {
-                        ...item,
-                        type: 'success',
-                        message: 'Đã gửi lời mời thành công tới email của cặp đôi.',
-                        invitationId: invitationId ?? 'Đã phát hành (ISSUED)',
-                        details: isReplayed
-                          ? 'Yêu cầu lặp lại (replayed) - lời mời đã được phát hành trước đó.'
-                          : undefined,
-                      }
-                    : item,
-                ),
-              );
-            } catch (caught) {
-              const errText = errorMessage(caught, proposal?.proposal.shift);
-              console.error(`[Workspace Invitation] ${now} Lỗi gửi lời mời:`, caught);
-              setError(errText);
-              setInviteLogs((prev) =>
-                prev.map((item) =>
-                  item.id === logId
-                    ? {
-                        ...item,
-                        type: 'error',
-                        message: `Gửi lời mời thất bại: ${errText}`,
-                        details:
-                          caught instanceof ApiClientError
-                            ? `HTTP ${caught.status ?? 'N/A'} (${caught.code}): ${caught.message}`
-                            : caught instanceof Error
-                              ? caught.message
-                              : String(caught),
-                      }
-                    : item,
-                ),
-              );
-            } finally {
-              setPending(null);
-            }
-          }}
-        />
-        <BookingCreatePanel
-          disabled={pending !== null}
-          consultation={consultation}
-          prefill={prefill}
-          gateway={gateway}
-          authorize={authorize}
-          run={run}
-          autoLoadCatalog={autoLoadCatalog}
-          onCreated={(result, consultationId) => {
-            setBookingId(result.bookingId);
-            setConsultation({ id: consultationId, revision: result.consultationRevision });
-            setMessage('Đã tạo hồ sơ đặt tiệc.');
-            void loadProposal(result.bookingId, false);
-            recordMyBooking(result.bookingId);
-          }}
-          setMessage={setMessage}
-          onValidationError={setError}
-        />
+                },
+                ...prev,
+              ]);
+
+              setPending('invite');
+              setMessage(null);
+              setError(null);
+              try {
+                const res = await authorize((token) =>
+                  gateway.invite(token, {
+                    consultationId: consultation.id,
+                    expectedRevision: consultation.revision,
+                  }),
+                );
+                console.log(`[Workspace Invitation] ${now} Gửi lời mời thành công:`, res);
+                setMessage('Đã yêu cầu gửi lời mời không gian cộng tác.');
+                const invitationId = (res as { invitationId?: string } | undefined)?.invitationId;
+                const isReplayed = (res as { replayed?: boolean } | undefined)?.replayed;
+                setInviteLogs((prev) =>
+                  prev.map((item) =>
+                    item.id === logId
+                      ? {
+                          ...item,
+                          type: 'success',
+                          message: 'Đã gửi lời mời thành công tới email của cặp đôi.',
+                          invitationId: invitationId ?? 'Đã phát hành (ISSUED)',
+                          details: isReplayed
+                            ? 'Yêu cầu lặp lại (replayed) - lời mời đã được phát hành trước đó.'
+                            : undefined,
+                        }
+                      : item,
+                  ),
+                );
+              } catch (caught) {
+                const errText = errorMessage(caught, proposal?.proposal.shift);
+                console.error(`[Workspace Invitation] ${now} Lỗi gửi lời mời:`, caught);
+                setError(errText);
+                setInviteLogs((prev) =>
+                  prev.map((item) =>
+                    item.id === logId
+                      ? {
+                          ...item,
+                          type: 'error',
+                          message: `Gửi lời mời thất bại: ${errText}`,
+                          details:
+                            caught instanceof ApiClientError
+                              ? `HTTP ${caught.status ?? 'N/A'} (${caught.code}): ${caught.message}`
+                              : caught instanceof Error
+                                ? caught.message
+                                : String(caught),
+                        }
+                      : item,
+                  ),
+                );
+              } finally {
+                setPending(null);
+              }
+            }}
+          />
+          <div style={{ marginTop: '1.25rem', display: 'flex', justifyContent: 'flex-end' }}>
+            <button
+              type="button"
+              className="primary-button"
+              onClick={() => setWizardStep(2)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '10px 22px',
+                fontSize: '0.92rem',
+                fontWeight: 600,
+                borderRadius: '6px',
+                background: 'var(--hy-wine, #7a1f3d)',
+                color: '#ffffff',
+                border: 'none',
+                cursor: 'pointer',
+              }}
+            >
+              <span>Tiếp tục sang bước Khảo sát sảnh &amp; Đặt tiệc</span>
+              <span>→</span>
+            </button>
+          </div>
+        </div>
+
+        {/* BƯỚC 02: KHẢO SÁT SẢNH & TẠO BOOKING (Rộng rãi, tập trung) */}
+        <div
+          style={
+            wizardStep === 2
+              ? bookingStyles.stepContainerVisible('840px')
+              : bookingStyles.stepContainerHidden
+          }
+        >
+          <div style={{ marginBottom: '1rem' }}>
+            <button
+              type="button"
+              onClick={() => setWizardStep(1)}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--hy-wine, #7a1f3d)',
+                cursor: 'pointer',
+                fontSize: '0.88rem',
+                fontWeight: 600,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '4px 0',
+              }}
+            >
+              <span>←</span>
+              <span>Quay lại Bước 01: Hồ sơ tư vấn</span>
+            </button>
+          </div>
+          <BookingCreatePanel
+            disabled={pending !== null}
+            consultation={consultation}
+            prefill={prefill}
+            gateway={gateway}
+            authorize={authorize}
+            run={run}
+            autoLoadCatalog={autoLoadCatalog}
+            onCreated={(result, consultationId) => {
+              setBookingId(result.bookingId);
+              setConsultation({ id: consultationId, revision: result.consultationRevision });
+              setMessage('Đã tạo hồ sơ đặt tiệc.');
+              void loadProposal(result.bookingId, false);
+              recordMyBooking(result.bookingId);
+            }}
+            setMessage={setMessage}
+            onValidationError={setError}
+          />
+        </div>
       </section>
 
       {/* Tab 1: Đề xuất & Vòng đời tiệc cưới */}
