@@ -156,29 +156,36 @@
 
 .booking-card {
   position: relative;
-  padding: clamp(1.25rem, 3vw, 2.25rem);
-  background: #fffdf9;
+  padding: clamp(1.5rem, 3vw, 2.5rem);
+  background: #ffffff;
+  border: 1px solid var(--hy-outline, #eadfd6);
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(122, 31, 61, 0.04);
 }
 
 .booking-card h2 {
-  margin-bottom: 1.4rem;
-  font-size: 1.6rem;
+  margin-bottom: 1.25rem;
+  font-size: 1.5rem;
+  color: var(--hy-wine, #7a1f3d);
+  font-weight: 600;
 }
 
 .booking-step {
   position: absolute;
   top: 1.25rem;
-  right: 1.25rem;
-  color: #c5a880;
-  font-family: var(--font-display);
+  right: 1.5rem;
+  color: var(--hy-wine-gold, #c5a880);
+  font-family: var(--font-display, inherit);
   font-size: 1.5rem;
+  font-weight: 700;
+  opacity: 0.7;
 }
 
 .booking-card form,
 .proposal-layout form,
 .booking-lookup {
   display: grid;
-  gap: 1rem;
+  gap: 1.15rem;
 }
 
 .booking-card label,
@@ -186,9 +193,9 @@
 .booking-lookup label {
   display: grid;
   gap: 0.4rem;
-  color: #334537;
-  font-size: 0.75rem;
-  font-weight: 800;
+  color: var(--hy-text, #2b1d22);
+  font-size: 0.82rem;
+  font-weight: 600;
   letter-spacing: normal;
   text-transform: none;
 }
@@ -200,14 +207,28 @@
 .proposal-layout textarea,
 .booking-lookup input {
   width: 100%;
-  min-height: 2.8rem;
-  padding: 0.7rem 0.75rem;
-  color: #232321;
-  background: #faf8f5;
-  border: 1px solid #abb4ad;
-  border-radius: 2px;
+  min-height: 2.75rem;
+  padding: 0.65rem 0.85rem;
+  color: var(--hy-text, #2b1d22);
+  background: #ffffff;
+  border: 1px solid var(--hy-outline, #eadfd6);
+  border-radius: 10px;
   font: inherit;
+  font-size: 0.88rem;
   text-transform: none;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.booking-card input:focus,
+.booking-card select:focus,
+.booking-card textarea:focus,
+.proposal-layout input:focus,
+.booking-lookup input:focus {
+  outline: none;
+  border-color: var(--hy-wine, #7a1f3d);
+  box-shadow: 0 0 0 3px rgba(122, 31, 61, 0.1);
 }
 
 .booking-card textarea,
@@ -219,32 +240,45 @@
 .proposal-layout button,
 .booking-lookup button,
 .booking-primary-link {
-  min-height: 2.9rem;
+  min-height: 2.75rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.7rem 1rem;
-  color: #faf8f5;
-  background: #334537;
-  border: 1px solid #334537;
-  border-radius: 2px;
-  font-size: 0.75rem;
-  font-weight: 800;
+  padding: 0.65rem 1.25rem;
+  color: #ffffff;
+  background: var(--hy-wine, #7a1f3d);
+  border: 1px solid var(--hy-wine, #7a1f3d);
+  border-radius: 10px;
+  font-size: 0.88rem;
+  font-weight: 600;
   letter-spacing: normal;
   text-transform: none;
   cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.booking-card button:hover:not(:disabled),
+.booking-lookup button:hover:not(:disabled) {
+  background: var(--hy-wine-bold, #5c1430);
+  border-color: var(--hy-wine-bold, #5c1430);
 }
 
 .booking-card button:disabled,
 .proposal-layout button:disabled,
 .booking-lookup button:disabled {
   cursor: not-allowed;
-  opacity: 0.48;
+  opacity: 0.45;
 }
 
 .booking-secondary {
-  color: #334537 !important;
-  background: transparent !important;
+  color: var(--hy-wine, #7a1f3d) !important;
+  background: #ffffff !important;
+  border: 1px solid var(--hy-outline, #eadfd6) !important;
+  border-radius: 10px !important;
+}
+
+.booking-secondary:hover:not(:disabled) {
+  background: var(--hy-surface-container, #fdf6ee) !important;
 }
 
 .booking-fields-inline,
