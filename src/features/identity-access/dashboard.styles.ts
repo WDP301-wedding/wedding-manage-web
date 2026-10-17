@@ -20,9 +20,25 @@ export const dashboardStyles = {
     margin: '0.75rem 0',
     fontSize: '0.85rem',
     lineHeight: 1.4,
-    background: type === 'success' ? '#f0fdf4' : type === 'warning' ? '#fffbeb' : '#f8fafc',
-    border: `1px solid ${type === 'success' ? '#86efac' : type === 'warning' ? '#fcd34d' : '#cbd5e1'}`,
-    color: type === 'success' ? '#166534' : type === 'warning' ? '#92400e' : '#334155',
+    background:
+      type === 'success'
+        ? 'var(--hy-status-success-bg, #e7f1ea)'
+        : type === 'warning'
+          ? 'var(--hy-status-warning-bg, #fcefd6)'
+          : 'var(--hy-status-info-bg, #e6eef2)',
+    border: `1px solid ${
+      type === 'success'
+        ? 'var(--hy-status-success-border, #bbf7d0)'
+        : type === 'warning'
+          ? 'var(--hy-status-warning-border, #fcd34d)'
+          : 'var(--hy-status-info-border, #cbd5e1)'
+    }`,
+    color:
+      type === 'success'
+        ? 'var(--hy-status-success, #2f6b4f)'
+        : type === 'warning'
+          ? 'var(--hy-status-warning, #8a5300)'
+          : 'var(--hy-status-info, #3f5b6b)',
   }),
 
   filterBar: {
@@ -33,16 +49,16 @@ export const dashboardStyles = {
     gap: '0.75rem',
     margin: '1.25rem 0 1rem',
     paddingBottom: '0.75rem',
-    borderBottom: '1px solid #e5e7eb',
+    borderBottom: '1px solid var(--hy-outline, #eadfd6)',
   } satisfies CSSProperties,
 
   tabList: {
     display: 'inline-flex',
     gap: '0.375rem',
-    background: '#f1f5f9',
+    background: 'var(--hy-surface-container, #fdf6ee)',
     padding: '4px',
     borderRadius: '8px',
-    border: '1px solid #e2e8f0',
+    border: '1px solid var(--hy-outline, #eadfd6)',
   } satisfies CSSProperties,
 
   tabButton: (active: boolean): CSSProperties => ({
@@ -53,8 +69,8 @@ export const dashboardStyles = {
     fontWeight: active ? 600 : 500,
     cursor: 'pointer',
     background: active ? '#ffffff' : 'transparent',
-    color: active ? '#1e293b' : '#64748b',
-    boxShadow: active ? '0 1px 2px rgba(0,0,0,0.08)' : 'none',
+    color: active ? 'var(--hy-wine, #7a1f3d)' : 'var(--hy-text-muted, #6e5d63)',
+    boxShadow: active ? '0 1px 2px rgba(122, 31, 61, 0.08)' : 'none',
     display: 'inline-flex',
     alignItems: 'center',
     gap: '6px',
@@ -62,8 +78,12 @@ export const dashboardStyles = {
   }),
 
   tabCountBadge: (active: boolean, isMineTab: boolean): CSSProperties => ({
-    background: active ? (isMineTab ? '#15803d' : '#334537') : '#cbd5e1',
-    color: active ? '#ffffff' : '#475569',
+    background: active
+      ? isMineTab
+        ? 'var(--hy-status-success, #2f6b4f)'
+        : 'var(--hy-wine, #7a1f3d)'
+      : 'var(--hy-outline, #eadfd6)',
+    color: active ? '#ffffff' : 'var(--hy-text-muted, #6e5d63)',
     borderRadius: '999px',
     padding: '1px 7px',
     fontSize: '0.72rem',
@@ -71,21 +91,22 @@ export const dashboardStyles = {
   }),
 
   searchInput: {
-    padding: '5px 10px',
-    fontSize: '0.8rem',
-    border: '1px solid #d1d5db',
+    padding: '6px 12px',
+    fontSize: '0.85rem',
+    border: '1px solid var(--hy-outline, #eadfd6)',
     borderRadius: '6px',
     minWidth: '170px',
     background: '#ffffff',
+    color: 'var(--hy-text, #2b1d22)',
   } satisfies CSSProperties,
 
   selectFilter: {
-    padding: '5px 8px',
-    fontSize: '0.8rem',
-    border: '1px solid #d1d5db',
+    padding: '6px 10px',
+    fontSize: '0.85rem',
+    border: '1px solid var(--hy-outline, #eadfd6)',
     borderRadius: '6px',
     background: '#ffffff',
-    color: '#374151',
+    color: 'var(--hy-text, #2b1d22)',
     cursor: 'pointer',
   } satisfies CSSProperties,
 
@@ -98,9 +119,11 @@ export const dashboardStyles = {
     padding: '4px 10px',
     fontSize: '0.75rem',
     fontWeight: 600,
-    background: disabled ? '#f3f4f6' : '#f0fdf4',
-    color: disabled ? '#9ca3af' : '#15803d',
-    border: `1px solid ${disabled ? '#e5e7eb' : '#bbf7d0'}`,
+    background: disabled
+      ? 'var(--hy-surface-container, #fdf6ee)'
+      : 'var(--hy-status-success-bg, #e7f1ea)',
+    color: disabled ? 'var(--hy-text-muted, #6e5d63)' : 'var(--hy-status-success, #2f6b4f)',
+    border: `1px solid ${disabled ? 'var(--hy-outline, #eadfd6)' : 'var(--hy-status-success-border, #bbf7d0)'}`,
     borderRadius: '4px',
     cursor: disabled ? 'not-allowed' : 'pointer',
     display: 'inline-flex',
@@ -109,25 +132,25 @@ export const dashboardStyles = {
   }),
 
   phaseBadge: (phase: string): CSSProperties => {
-    let bg = '#f3f4f6';
-    let text = '#374151';
-    let border = '#e5e7eb';
+    let bg = 'var(--hy-surface-container, #fdf6ee)';
+    let text = 'var(--hy-text-muted, #6e5d63)';
+    let border = 'var(--hy-outline, #eadfd6)';
     if (phase === 'CONFIRMED') {
-      bg = '#ecfdf5';
-      text = '#065f46';
-      border = '#a7f3d0';
+      bg = 'var(--hy-status-success-bg, #e7f1ea)';
+      text = 'var(--hy-status-success, #2f6b4f)';
+      border = 'var(--hy-status-success-border, #a7f3d0)';
     } else if (phase === 'AWAITING_DEPOSIT') {
-      bg = '#fffbeb';
-      text = '#92400e';
-      border = '#fde68a';
+      bg = 'var(--hy-status-warning-bg, #fcefd6)';
+      text = 'var(--hy-status-warning, #8a5300)';
+      border = 'var(--hy-status-warning-border, #fde68a)';
     } else if (phase === 'COMPLETED') {
-      bg = '#eff6ff';
-      text = '#1e40af';
-      border = '#bfdbfe';
+      bg = 'var(--hy-status-info-bg, #e6eef2)';
+      text = 'var(--hy-status-info, #3f5b6b)';
+      border = 'var(--hy-status-info-border, #bfdbfe)';
     } else if (phase === 'CANCELLED') {
-      bg = '#fef2f2';
-      text = '#991b1b';
-      border = '#fecaca';
+      bg = 'var(--hy-status-error-bg, #fdecea)';
+      text = 'var(--hy-status-error, #c62828)';
+      border = 'var(--hy-status-error-border, #fecaca)';
     }
     return {
       display: 'inline-block',
@@ -151,9 +174,9 @@ export const dashboardStyles = {
 
   mineBadge: {
     fontSize: '0.68rem',
-    background: '#dcfce7',
-    color: '#166534',
-    border: '1px solid #bbf7d0',
+    background: 'var(--hy-status-success-bg, #e7f1ea)',
+    color: 'var(--hy-status-success, #2f6b4f)',
+    border: '1px solid var(--hy-status-success-border, #bbf7d0)',
     borderRadius: '4px',
     padding: '1px 5px',
     fontWeight: 600,
@@ -161,9 +184,9 @@ export const dashboardStyles = {
 
   assignedBadge: {
     fontSize: '0.68rem',
-    background: '#fee2e2',
-    color: '#991b1b',
-    border: '1px solid #fecaca',
+    background: 'var(--hy-status-error-bg, #fdecea)',
+    color: 'var(--hy-status-error, #c62828)',
+    border: '1px solid var(--hy-status-error-border, #fecaca)',
     borderRadius: '4px',
     padding: '1px 5px',
     fontWeight: 600,
@@ -180,10 +203,10 @@ export const dashboardStyles = {
   } satisfies CSSProperties,
 
   lockedButton: {
-    border: '1px solid #e2e8f0',
+    border: '1px solid var(--hy-outline, #eadfd6)',
     borderRadius: '4px',
-    background: '#f1f5f9',
-    color: '#94a3b8',
+    background: 'var(--hy-surface-container, #fdf6ee)',
+    color: 'var(--hy-text-muted, #6e5d63)',
     cursor: 'not-allowed',
     fontSize: '0.75rem',
     fontWeight: 500,
@@ -193,10 +216,10 @@ export const dashboardStyles = {
   } satisfies CSSProperties,
 
   claimActiveButton: {
-    border: '1px solid #86efac',
+    border: '1px solid var(--hy-status-success-border, #86efac)',
     borderRadius: '4px',
-    background: '#f0fdf4',
-    color: '#166534',
+    background: 'var(--hy-status-success-bg, #e7f1ea)',
+    color: 'var(--hy-status-success, #2f6b4f)',
     cursor: 'pointer',
     fontSize: '0.75rem',
     fontWeight: 600,
@@ -211,7 +234,7 @@ export const dashboardStyles = {
     cursor: 'pointer',
     padding: '2px 4px',
     fontSize: '0.75rem',
-    color: copied ? '#16a34a' : '#64748b',
+    color: copied ? 'var(--hy-status-success, #2f6b4f)' : 'var(--hy-text-muted, #6e5d63)',
     borderRadius: '3px',
   }),
 };

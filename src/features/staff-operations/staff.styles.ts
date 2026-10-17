@@ -11,27 +11,30 @@ export const staffStyles = {
     padding: '0.625rem 1.25rem',
     borderRadius: 6,
     fontWeight: 600,
-    border: '1px solid #d1d5db',
-    background: active ? '#111827' : '#fff',
-    color: active ? '#fff' : '#374151',
+    border: '1px solid var(--hy-outline, #eadfd6)',
+    background: active ? 'var(--hy-wine, #7a1f3d)' : '#ffffff',
+    color: active ? '#ffffff' : 'var(--hy-text, #2b1d22)',
     cursor: 'pointer',
+    transition: 'all 0.15s ease',
   }),
 
   cardBox: {
-    background: '#f9fafb',
+    background: 'var(--hy-surface-container, #fdf6ee)',
     padding: '1.5rem',
     borderRadius: 8,
-    border: '1px solid #e5e7eb',
+    border: '1px solid var(--hy-outline, #eadfd6)',
     marginBottom: '2rem',
   } satisfies CSSProperties,
 
   cardTitle: {
     fontSize: '1.25rem',
+    color: 'var(--hy-wine, #7a1f3d)',
+    fontWeight: 600,
     marginBottom: '1rem',
   } satisfies CSSProperties,
 
   cardSubtitle: {
-    color: '#6b7280',
+    color: 'var(--hy-text-muted, #6e5d63)',
     fontSize: '0.9rem',
     marginBottom: '1.25rem',
   } satisfies CSSProperties,
@@ -48,20 +51,23 @@ export const staffStyles = {
     fontWeight: 600,
     marginBottom: '0.25rem',
     fontSize: '0.875rem',
+    color: 'var(--hy-text, #2b1d22)',
   } satisfies CSSProperties,
 
   input: {
     width: '100%',
     padding: '0.625rem',
     borderRadius: 6,
-    border: '1px solid #d1d5db',
+    border: '1px solid var(--hy-outline, #eadfd6)',
+    background: '#ffffff',
+    color: 'var(--hy-text, #2b1d22)',
   } satisfies CSSProperties,
 
   primaryButton: (disabled?: boolean): CSSProperties => ({
     padding: '0.625rem 1.5rem',
-    background: '#2563eb',
-    color: '#fff',
-    border: 'none',
+    background: disabled ? 'var(--hy-surface-container, #fdf6ee)' : 'var(--hy-wine, #7a1f3d)',
+    color: disabled ? 'var(--hy-text-muted, #6e5d63)' : '#ffffff',
+    border: disabled ? '1px solid var(--hy-outline, #eadfd6)' : 'none',
     borderRadius: 6,
     fontWeight: 600,
     cursor: disabled ? 'not-allowed' : 'pointer',
@@ -71,33 +77,37 @@ export const staffStyles = {
   emptyBox: {
     padding: '3rem 1rem',
     textAlign: 'center',
-    background: '#fff',
-    border: '1px dashed #d1d5db',
+    background: '#ffffff',
+    border: '1px dashed var(--hy-outline, #eadfd6)',
     borderRadius: 8,
+    color: 'var(--hy-text-muted, #6e5d63)',
   } satisfies CSSProperties,
 
   table: {
     width: '100%',
     borderCollapse: 'collapse',
-    background: '#fff',
+    background: '#ffffff',
   } satisfies CSSProperties,
 
   tableHeadRow: {
-    background: '#f3f4f6',
+    background: 'var(--hy-surface-container, #fdf6ee)',
     textAlign: 'left',
-    borderBottom: '2px solid #e5e7eb',
+    borderBottom: '2px solid var(--hy-outline, #eadfd6)',
   } satisfies CSSProperties,
 
   tableHeadCell: {
     padding: '0.875rem 1rem',
+    color: 'var(--hy-text, #2b1d22)',
+    fontWeight: 600,
   } satisfies CSSProperties,
 
   tableBodyRow: {
-    borderBottom: '1px solid #e5e7eb',
+    borderBottom: '1px solid var(--hy-outline, #eadfd6)',
   } satisfies CSSProperties,
 
   tableCell: {
     padding: '1rem',
+    color: 'var(--hy-text, #2b1d22)',
   } satisfies CSSProperties,
 
   groupBadge: {
@@ -105,8 +115,10 @@ export const staffStyles = {
     padding: '0.25rem 0.625rem',
     borderRadius: 9999,
     fontSize: '0.75rem',
-    background: '#e0e7ff',
-    color: '#3730a3',
+    fontWeight: 600,
+    background: 'var(--hy-surface-container, #fdf6ee)',
+    color: 'var(--hy-wine, #7a1f3d)',
+    border: '1px solid var(--hy-outline, #eadfd6)',
   } satisfies CSSProperties,
 
   statusBadge: (checkedIn: boolean): CSSProperties => ({
@@ -115,29 +127,34 @@ export const staffStyles = {
     borderRadius: 9999,
     fontSize: '0.75rem',
     fontWeight: 600,
-    background: checkedIn ? '#d1fae5' : '#fef3c7',
-    color: checkedIn ? '#065f46' : '#92400e',
+    background: checkedIn
+      ? 'var(--hy-status-success-bg, #e7f1ea)'
+      : 'var(--hy-status-warning-bg, #fcefd6)',
+    color: checkedIn ? 'var(--hy-status-success, #2f6b4f)' : 'var(--hy-status-warning, #8a5300)',
+    border: `1px solid ${checkedIn ? 'var(--hy-status-success-border, #bbf7d0)' : 'var(--hy-status-warning-border, #fde68a)'}`,
   }),
 
   checkinButton: (disabled?: boolean): CSSProperties => ({
     padding: '0.75rem 1.5rem',
     fontSize: '1rem',
     fontWeight: 700,
-    background: '#16a34a',
-    color: '#ffffff',
+    background: disabled
+      ? 'var(--hy-surface-container, #fdf6ee)'
+      : 'var(--hy-status-success, #2f6b4f)',
+    color: disabled ? 'var(--hy-text-muted, #6e5d63)' : '#ffffff',
     border: 'none',
     borderRadius: 8,
     cursor: disabled ? 'not-allowed' : 'pointer',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+    boxShadow: '0 2px 4px rgba(47, 107, 79, 0.2)',
   }),
 
   undoButton: (disabled?: boolean): CSSProperties => ({
     padding: '0.5rem 1rem',
     fontSize: '0.875rem',
     fontWeight: 600,
-    background: '#fee2e2',
-    color: '#b91c1c',
-    border: '1px solid #f87171',
+    background: 'var(--hy-status-error-bg, #fdecea)',
+    color: 'var(--hy-status-error, #c62828)',
+    border: '1px solid var(--hy-status-error-border, #fca5a5)',
     borderRadius: 6,
     cursor: disabled ? 'not-allowed' : 'pointer',
   }),
@@ -149,11 +166,11 @@ export const staffStyles = {
   } satisfies CSSProperties,
 
   adminCard: {
-    background: '#fff',
+    background: '#ffffff',
     padding: '1.5rem',
     borderRadius: 8,
-    border: '1px solid #e5e7eb',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+    border: '1px solid var(--hy-outline, #eadfd6)',
+    boxShadow: '0 1px 3px rgba(122, 31, 61, 0.05)',
   } satisfies CSSProperties,
 
   adminCardHeader: {
@@ -175,26 +192,26 @@ export const staffStyles = {
   } satisfies CSSProperties,
 
   fieldHint: {
-    color: '#6b7280',
+    color: 'var(--hy-text-muted, #6e5d63)',
     fontSize: '0.8rem',
     marginTop: '0.25rem',
   } satisfies CSSProperties,
 
   successBox: {
-    background: '#f0fdf4',
+    background: 'var(--hy-status-success-bg, #e7f1ea)',
     padding: '1rem',
     borderRadius: 6,
-    border: '1px solid #bbf7d0',
-    color: '#15803d',
+    border: '1px solid var(--hy-status-success-border, #bbf7d0)',
+    color: 'var(--hy-status-success, #2f6b4f)',
     marginBottom: '1rem',
   } satisfies CSSProperties,
 
   errorBox: {
-    background: '#fef2f2',
+    background: 'var(--hy-status-error-bg, #fdecea)',
     padding: '1rem',
     borderRadius: 6,
-    border: '1px solid #fecaca',
-    color: '#b91c1c',
+    border: '1px solid var(--hy-status-error-border, #fca5a5)',
+    color: 'var(--hy-status-error, #c62828)',
     marginBottom: '1rem',
   } satisfies CSSProperties,
 
@@ -204,17 +221,18 @@ export const staffStyles = {
     borderRadius: 4,
     fontSize: '0.75rem',
     fontWeight: 600,
-    background: '#e0f2fe',
-    color: '#0369a1',
+    background: 'var(--hy-status-info-bg, #e6eef2)',
+    color: 'var(--hy-status-info, #3f5b6b)',
+    border: '1px solid var(--hy-status-info-border, #cbd5e1)',
   } satisfies CSSProperties,
 
   revokeButton: (disabled?: boolean): CSSProperties => ({
     padding: '0.375rem 0.75rem',
     fontSize: '0.8rem',
     fontWeight: 600,
-    background: '#fff',
-    color: '#dc2626',
-    border: '1px solid #fca5a5',
+    background: '#ffffff',
+    color: 'var(--hy-status-error, #c62828)',
+    border: '1px solid var(--hy-status-error-border, #fca5a5)',
     borderRadius: 4,
     cursor: disabled ? 'not-allowed' : 'pointer',
   }),
@@ -222,9 +240,10 @@ export const staffStyles = {
   refreshButton: (disabled?: boolean): CSSProperties => ({
     padding: '0.375rem 0.75rem',
     fontSize: '0.8rem',
-    border: '1px solid #d1d5db',
+    border: '1px solid var(--hy-outline, #eadfd6)',
     borderRadius: 4,
-    background: '#fff',
+    background: '#ffffff',
+    color: 'var(--hy-text, #2b1d22)',
     cursor: disabled ? 'not-allowed' : 'pointer',
   }),
 };

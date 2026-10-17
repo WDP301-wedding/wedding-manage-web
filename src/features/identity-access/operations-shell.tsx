@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import type { ManagementSessionSnapshot } from './session';
+import { BrandMark } from '../../design-system/brand-mark';
+import { OfflineBanner } from '../../design-system/offline-banner';
 import {
   CalendarIcon,
   ClipboardListIcon,
@@ -313,15 +315,7 @@ export function OperationsShell({
           <MenuIcon width={22} height={22} />
         </button>
         <div className="admin-brand operations-mobile-brand">
-          <span className="admin-brand-mark latin-wordmark" lang="en" aria-hidden="true">
-            W
-          </span>
-          <span>
-            <span className="latin-wordmark" lang="en">
-              WEDDING
-            </span>
-            <small>OPERATIONS</small>
-          </span>
+          <BrandMark compact tagline="Quản trị nhà hàng" />
         </div>
       </div>
 
@@ -343,15 +337,7 @@ export function OperationsShell({
         aria-label="Bảng điều hướng quản trị"
       >
         <div className="admin-brand">
-          <span className="admin-brand-mark latin-wordmark" lang="en" aria-hidden="true">
-            W
-          </span>
-          <span>
-            <span className="latin-wordmark" lang="en">
-              WEDDING
-            </span>
-            <small>OPERATIONS</small>
-          </span>
+          <BrandMark tagline="Quản trị nhà hàng" />
           {mobileDrawerOpen ? (
             <button
               ref={closeButtonRef}
@@ -372,7 +358,10 @@ export function OperationsShell({
         {footerProfile}
       </aside>
 
-      <div className="operations-main-container">{children}</div>
+      <div className="operations-main-container">
+        <OfflineBanner />
+        {children}
+      </div>
     </div>
   );
 }

@@ -5,7 +5,7 @@ import { useCallback, useState } from 'react';
 import type { AnalyticsBookingsData } from '../../services/analytics.service';
 import type { BookingAssignmentsRegistry } from './booking-assignments';
 import { dashboardStyles } from './dashboard.styles';
-
+import { DashboardBookingsTable } from './dashboard-bookings-table';
 import { StaffCheckinBanner } from './staff-checkin-banner';
 
 export type DashboardBookingItem = AnalyticsBookingsData['items'][number];
@@ -25,29 +25,13 @@ export function CopyButton({ text }: Readonly<{ text: string }>) {
       type="button"
       onClick={handleCopy}
       title={copied ? 'Đã sao chép UUID!' : 'Sao chép mã UUID'}
-      style={{
-        border: 'none',
-        background: 'transparent',
-        cursor: 'pointer',
-        padding: '2px 4px',
-        fontSize: '0.75rem',
-        color: copied ? '#16a34a' : '#64748b',
-        borderRadius: '3px',
-      }}
+      style={dashboardStyles.copyButton(copied)}
       aria-label="Sao chép UUID"
     >
       {copied ? '✓' : '⧉'}
     </button>
   );
 }
-
-const PHASE_LABELS: Record<string, string> = {
-  DRAFT: 'Bản nháp',
-  AWAITING_DEPOSIT: 'Chờ cọc',
-  CONFIRMED: 'Đã xác nhận',
-  COMPLETED: 'Hoàn thành',
-  CANCELLED: 'Đã hủy',
-};
 
 export interface DashboardBookingsSectionProps {
   isManager: boolean;
@@ -149,7 +133,7 @@ export function DashboardBookingsSection({
       {/* Bộ lọc chuyển tab & tìm kiếm */}
       <div style={dashboardStyles.filterBar}>
         {/* Tab Switcher */}
-        <div role="tablist" aria-label="Phân loại lịch tiệc" style={dashboardStyles.tabList}>
+        <div role="tablist" aria-label="Phan loai lich tiec" style={dashboardStyles.tabList}>
           <button
             type="button"
             role="tab"
@@ -205,7 +189,13 @@ export function DashboardBookingsSection({
       </div>
 
       {state === 'loading' ? (
-        <div style={{ padding: '2rem 1rem', textAlign: 'center', color: '#5d665f' }}>
+        <div
+          style={{
+            padding: '2rem 1rem',
+            textAlign: 'center',
+            color: 'var(--hy-text-muted, #6e5d63)',
+          }}
+        >
           <p>Đang đồng bộ danh sách tiệc cưới từ máy chủ…</p>
         </div>
       ) : currentTabBookings.length === 0 ? (
@@ -215,7 +205,7 @@ export function DashboardBookingsSection({
             <strong
               style={{
                 fontSize: '1.05rem',
-                color: '#243b2a',
+                color: 'var(--hy-wine, #7a1f3d)',
                 display: 'block',
                 marginBottom: '0.35rem',
               }}
@@ -224,7 +214,7 @@ export function DashboardBookingsSection({
             </strong>
             <p
               style={{
-                color: '#5d665f',
+                color: 'var(--hy-text-muted, #6e5d63)',
                 maxWidth: '520px',
                 margin: '0 auto 1.25rem',
                 lineHeight: 1.5,
@@ -258,7 +248,8 @@ export function DashboardBookingsSection({
                   fontSize: '0.85rem',
                   cursor: 'pointer',
                   background: '#ffffff',
-                  border: '1px solid #d1d5db',
+                  border: '1px solid var(--hy-outline, #eadfd6)',
+                  color: 'var(--hy-text, #2b1d22)',
                 }}
               >
                 Xem tất cả tiệc nhà hàng ({bookings.length}) →
@@ -280,153 +271,12 @@ export function DashboardBookingsSection({
           <p>Không có buổi tiệc nào khớp với từ khóa tìm kiếm hoặc trạng thái lọc đã chọn.</p>
         </div>
       ) : (
-        <div className="table-scroll">
-          <table aria-label="Lịch tiệc và sự kiện đã đặt">
-            <thead>
-              <tr>
-                <th scope="col">Ngày tổ chức</th>
-                <th scope="col">Sảnh tiệc</th>
-                <th scope="col">Ca</th>
-                <th scope="col">Quy mô</th>
-                <th scope="col">Mã booking (UUID)</th>
-                <th scope="col">Trạng thái</th>
-                <th scope="col">Thao tác</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredBookings.map((booking) => {
-                const assignment = assignments[booking.bookingId];
-                const mine = assignment?.assignedAccountId === resolvedAccountId;
-                const assignedToOther = Boolean(
-                  assignment && assignment.assignedAccountId !== resolvedAccountId,
-                );
-                const assignedEmail = assignment?.assignedEmail ?? 'Quản lý khác';
-
-                return (
-                  <tr key={booking.bookingId}>
-                    <td>
-                      <strong>{new Date(booking.eventDate).toLocaleDateString('vi-VN')}</strong>
-                    </td>
-                    <td>
-                      <div
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.35rem',
-                          flexWrap: 'wrap',
-                        }}
-                      >
-                        <strong>{booking.hallNameSnapshot || 'Sảnh tiệc'}</strong>
-                        {mine ? (
-                          <span
-                            style={dashboardStyles.mineBadge}
-                            title="Bạn đang phụ trách tiệc này"
-                          >
-                            Của bạn
-                          </span>
-                        ) : assignedToOther ? (
-                          <span
-                            style={dashboardStyles.assignedBadge}
-                            title={`Tiệc đã được tiếp nhận và khóa bởi: ${assignedEmail}`}
-                          >
-                            🔒 {assignedEmail}
-                          </span>
-                        ) : null}
-                      </div>
-                    </td>
-                    <td>
-                      <span className="shift-badge">
-                        {booking.shiftCode === 'LUNCH' ? 'Trưa' : 'Tối'}
-                      </span>
-                    </td>
-                    <td>{booking.tableCount} bàn</td>
-                    <td>
-                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-                        <code
-                          style={{
-                            fontSize: '0.75rem',
-                            fontFamily: 'monospace',
-                            background: '#f1f5f9',
-                            padding: '2px 6px',
-                            borderRadius: '4px',
-                            maxWidth: '170px',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                            display: 'inline-block',
-                          }}
-                          title={booking.bookingId}
-                        >
-                          {booking.bookingId}
-                        </code>
-                        <CopyButton text={booking.bookingId} />
-                      </div>
-                    </td>
-                    <td>
-                      <span
-                        className={`status ${
-                          booking.phase === 'CONFIRMED' || booking.phase === 'COMPLETED'
-                            ? 'status-ready'
-                            : booking.phase === 'CANCELLED'
-                              ? 'status-closed'
-                              : 'status-review'
-                        }`}
-                      >
-                        {PHASE_LABELS[booking.phase] ?? booking.phase}
-                      </span>
-                    </td>
-                    <td>
-                      <div style={dashboardStyles.actionGroup}>
-                        <Link
-                          className="booking-primary-link"
-                          href={`/bookings?bookingId=${booking.bookingId}`}
-                          style={dashboardStyles.actionLink}
-                        >
-                          Xem hồ sơ →
-                        </Link>
-                        <Link
-                          className="booking-secondary"
-                          href={`/billing?bookingId=${booking.bookingId}`}
-                          style={dashboardStyles.actionLink}
-                        >
-                          Thanh toán
-                        </Link>
-                        <Link
-                          className="booking-secondary"
-                          href={`/staff?bookingId=${booking.bookingId}`}
-                          style={dashboardStyles.actionLink}
-                        >
-                          Nhân sự
-                        </Link>
-                        {mine ? null : assignedToOther ? (
-                          <button
-                            type="button"
-                            disabled
-                            title={`Tiệc này đã được ${assignedEmail} tiếp nhận và đang khóa`}
-                            style={dashboardStyles.lockedButton}
-                          >
-                            🔒 Đã có người nhận
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            title="Tiếp nhận phụ trách tiệc này và khóa với các quản lý khác"
-                            onClick={() =>
-                              onClaim(booking.bookingId, booking.hallNameSnapshot || undefined)
-                            }
-                            style={dashboardStyles.claimActiveButton}
-                          >
-                            ☆ Nhận tiệc
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <DashboardBookingsTable
+          bookings={filteredBookings}
+          assignments={assignments}
+          resolvedAccountId={resolvedAccountId}
+          onClaim={onClaim}
+        />
       )}
     </section>
   );

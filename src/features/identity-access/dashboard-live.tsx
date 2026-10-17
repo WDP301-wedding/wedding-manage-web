@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import {
   analyticsService,
@@ -16,7 +15,7 @@ import {
   consultationService,
   type ConsultationRequestItem,
 } from '../../services/consultation.service';
-import { ApiServiceError } from '../../lib/api/axios-client';
+import { describeApiError } from '../../lib/api/api-errors';
 import {
   type BookingAssignment,
   type BookingAssignmentsRegistry,
@@ -35,6 +34,8 @@ import {
 } from './booking-assignments';
 import { DashboardBookingsSection } from './dashboard-bookings-section';
 import { DashboardConsultationsSection } from './dashboard-consultations-section';
+import { DashboardKpiStrip } from './dashboard-kpi-strip';
+import { DashboardVenueHalls } from './dashboard-venue-halls';
 
 // Re-export assignment types & utilities for consumers
 export type { BookingAssignment, BookingAssignmentsRegistry };
@@ -62,11 +63,6 @@ export interface DashboardData {
   consultations: readonly ConsultationRequestItem[];
   bookings: readonly DashboardBookingItem[];
   analytics: AnalyticsOverviewData | null;
-}
-
-function formatVnd(amount: number | null): string {
-  if (amount === null || Number.isNaN(amount)) return '—';
-  return `${new Intl.NumberFormat('vi-VN').format(amount)} đ`;
 }
 
 export function DashboardLiveView({
@@ -201,11 +197,8 @@ export function DashboardLiveView({
       setData({ restaurant, halls, consultations, bookings, analytics });
       setState('success');
     } catch (error) {
-      if (error instanceof ApiServiceError) {
-        setErrorMessage(error.message);
-      } else {
-        setErrorMessage('Không thể tải dữ liệu tổng quan. Vui lòng thử lại.');
-      }
+      const friendly = describeApiError(error);
+      setErrorMessage(friendly.message || 'Không thể tải dữ liệu tổng quan. Vui lòng thử lại.');
       setState('error');
     }
   }, [isManager]);
@@ -213,8 +206,6 @@ export function DashboardLiveView({
   useEffect(() => {
     void fetchData();
   }, [fetchData]);
-
-  const pendingConsultations = data.consultations.filter((c) => c.status === 'NEW');
 
   return (
     <div className="dashboard-live-container">
@@ -233,7 +224,7 @@ export function DashboardLiveView({
       <section className="estate-showcase" aria-labelledby="estate-showcase-title">
         <div className="estate-showcase-content">
           <span className="estate-badge">Trung tâm tiệc cưới &amp; Sự kiện</span>
-          <h2 id="estate-showcase-title">{data.restaurant?.displayName || 'Wedding Estate'}</h2>
+          <h2 id="estate-showcase-title">{data.restaurant?.displayName || 'Hỷ Yến'}</h2>
           <p className="estate-tagline">
             {data.restaurant?.description ||
               'Nơi khởi đầu cho hạnh phúc vẹn tròn · Vận hành tiêu chuẩn cao cấp'}
@@ -244,81 +235,26 @@ export function DashboardLiveView({
               {data.restaurant?.address || 'Khu đô thị công nghệ cao, TP. Hồ Chí Minh'}
             </span>
             <span>
-              <strong>Liên hệ:</strong> {data.restaurant?.publicEmail || 'contact@example.com'}
+              <strong>Liên hệ:</strong> {data.restaurant?.publicEmail || 'contact@hyyen.vn'}
             </span>
           </div>
         </div>
         <div
           className="estate-showcase-photo"
           role="img"
-          aria-label="Bàn tiệc cưới với hoa trắng"
+          aria-label="Bàn tiệc cưới với hoa trắng phong cách Hỷ Yến"
         />
       </section>
 
       {/* Dải chỉ số KPI */}
-      <section className="metrics-strip" aria-label="Chỉ số vận hành">
-        <Metric
-          label="Không gian sẵn sàng"
-          value={state === 'loading' ? '—' : String(data.halls.length).padStart(2, '0')}
-          detail={
-            state === 'loading' ? 'Đang đồng bộ…' : `${data.halls.length} sảnh tiệc trong danh mục`
-          }
-        />
-        <Metric
-          label="Yêu cầu tư vấn"
-          value={state === 'loading' ? '—' : String(data.consultations.length).padStart(2, '0')}
-          detail={
-            state === 'loading'
-              ? 'Đang đồng bộ…'
-              : pendingConsultations.length > 0
-                ? `${pendingConsultations.length} yêu cầu chờ xử lý`
-                : 'Đã hoàn tất xử lý'
-          }
-          attention={pendingConsultations.length > 0}
-        />
-        {isManager ? (
-          <>
-            <Metric
-              label="Tiền thực nhận tháng này"
-              value={
-                state === 'loading' || !data.analytics
-                  ? '—'
-                  : formatVnd(data.analytics.netCashRevenueVnd)
-              }
-              detail={
-                state === 'loading'
-                  ? 'Đang tổng hợp sổ cái…'
-                  : 'Thực thu tiền mặt/chuyển khoản (VND)'
-              }
-            />
-            <Metric
-              label="Tổng cọc đã thu"
-              value={
-                state === 'loading' || !data.analytics
-                  ? '—'
-                  : formatVnd(data.analytics.grossCashReceivedVnd)
-              }
-              detail={
-                state === 'loading'
-                  ? 'Đang tính toán…'
-                  : data.analytics?.meta.refreshedAt
-                    ? `Độ mới: ${new Date(data.analytics.meta.refreshedAt).toLocaleTimeString('vi-VN')}`
-                    : 'Sổ cái đã chốt'
-              }
-            />
-          </>
-        ) : (
-          <Metric
-            label="Ca phục vụ"
-            value={
-              state === 'loading'
-                ? '—'
-                : String(data.restaurant?.shifts?.length || 2).padStart(2, '0')
-            }
-            detail="Ca trưa & ca tối cố định"
-          />
-        )}
-      </section>
+      <DashboardKpiStrip
+        isManager={isManager}
+        isLoading={state === 'loading'}
+        halls={data.halls}
+        consultations={data.consultations}
+        analytics={data.analytics}
+        restaurant={data.restaurant}
+      />
 
       {/* Lịch tiệc & Sự kiện đã đặt (Bookings Section) */}
       <DashboardBookingsSection
@@ -340,72 +276,7 @@ export function DashboardLiveView({
       />
 
       {/* Danh sách Sảnh Tiệc Sẵn Sàng */}
-      <section className="schedule-panel dashboard-schedule" id="available-halls">
-        <div className="section-heading">
-          <div>
-            <p className="section-kicker">Không gian tiệc</p>
-            <h2>Danh mục sảnh cưới khả dụng ({data.halls.length})</h2>
-          </div>
-          {isManager ? (
-            <Link className="text-button" href="/catalog">
-              Quản lý danh mục →
-            </Link>
-          ) : null}
-        </div>
-
-        {data.halls.length === 0 ? (
-          <div className="booking-empty" style={{ padding: '2rem 1rem', textAlign: 'center' }}>
-            <p>Không có sảnh cưới nào đang mở trong hệ thống.</p>
-          </div>
-        ) : (
-          <div className="table-scroll">
-            <table aria-label="Danh mục sảnh tiệc">
-              <thead>
-                <tr>
-                  <th scope="col">Tên sảnh</th>
-                  <th scope="col">Sức chứa tối đa</th>
-                  <th scope="col">Trạng thái hoạt động</th>
-                  <th scope="col">Mô tả</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.halls.map((h) => (
-                  <tr key={h.id}>
-                    <td>
-                      <strong>{h.name}</strong>
-                    </td>
-                    <td>{h.maxGuests} khách</td>
-                    <td>
-                      <span className="status status-ready">Đang hoạt động</span>
-                    </td>
-                    <td style={{ maxWidth: '300px' }}>{h.description || '—'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
-    </div>
-  );
-}
-
-function Metric({
-  attention = false,
-  detail,
-  label,
-  value,
-}: Readonly<{
-  attention?: boolean;
-  detail: string;
-  label: string;
-  value: string;
-}>) {
-  return (
-    <div className={`metric-card${attention ? ' metric-attention' : ''}`}>
-      <span className="metric-label">{label}</span>
-      <span className="metric-value">{value}</span>
-      <span className="metric-detail">{detail}</span>
+      <DashboardVenueHalls halls={data.halls} isManager={isManager} />
     </div>
   );
 }

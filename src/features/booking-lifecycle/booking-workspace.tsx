@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { ApiClientError, createApiClient } from '../../lib/api/client';
 import type { components } from '../../lib/api/generated/schema';
@@ -8,6 +7,8 @@ import { addMyManagedBookingId, getMyManagedBookingIds } from '../identity-acces
 import { sharedManagementSession } from '../identity-access/session';
 import { type BookingPrefill, errorMessage, type InviteLogEntry } from './booking-helpers';
 import { BookingCreatePanel } from './booking-create-panel';
+import { BookingLookupBar } from './booking-lookup-bar';
+import { BookingUnauthorizedHint } from './booking-unauthorized-hint';
 import { ConsultationPanel } from './consultation-panel';
 import type { Authorize, ManagementBookingGateway, ProposalView } from './booking-api';
 import { ProposalPanel } from './proposal-panel';
@@ -298,129 +299,19 @@ export function ManagementBookingWorkspace({
             <p className="section-kicker">Hồ sơ đang xử lý</p>
             <h2 id="proposal-heading">Đề xuất &amp; vòng đời</h2>
           </div>
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '0.5rem',
-              alignItems: 'flex-end',
-            }}
-          >
-            <form
-              className="booking-lookup"
-              onSubmit={(event) => {
-                event.preventDefault();
-                void loadProposal(bookingId.trim());
-              }}
-            >
-              <label>
-                Mã booking
-                <input
-                  required
-                  value={bookingId}
-                  onChange={(event) => setBookingId(event.target.value)}
-                  placeholder="Mã hồ sơ đặt tiệc"
-                />
-              </label>
-              <button disabled={pending !== null || bookingId.trim() === ''} type="submit">
-                Tải hồ sơ
-              </button>
-            </form>
-            {recentBookingIds.length > 0 ? (
-              <div
-                style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem' }}
-              >
-                <span style={{ color: '#64748b' }}>Tiệc của bạn:</span>
-                <select
-                  aria-label="Chọn nhanh mã tiệc gần đây"
-                  value={recentBookingIds.includes(bookingId) ? bookingId : ''}
-                  onChange={(event) => {
-                    const selected = event.target.value;
-                    if (selected) {
-                      setBookingId(selected);
-                      void loadProposal(selected);
-                    }
-                  }}
-                  style={{
-                    padding: '2px 8px',
-                    borderRadius: '4px',
-                    border: '1px solid #cbd5e1',
-                    background: '#ffffff',
-                    fontSize: '0.78rem',
-                    color: '#1e293b',
-                    maxWidth: '280px',
-                    fontFamily: 'monospace',
-                  }}
-                >
-                  <option value="">-- Chọn nhanh mã tiệc ({recentBookingIds.length}) --</option>
-                  {recentBookingIds.map((id) => (
-                    <option key={id} value={id}>
-                      {id}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            ) : null}
-          </div>
+          <BookingLookupBar
+            bookingId={bookingId}
+            setBookingId={setBookingId}
+            onLoadProposal={loadProposal}
+            pending={pending}
+            recentBookingIds={recentBookingIds}
+          />
         </div>
         {proposal === null ? (
           <div className="booking-empty">
             <strong>Chưa chọn hồ sơ</strong>
             <p>Nhập mã booking hoặc tạo hồ sơ mới để xem đề xuất và thao tác hợp lệ.</p>
-            {error && bookingId ? (
-              <div
-                style={{
-                  marginTop: '1.25rem',
-                  padding: '12px 16px',
-                  background: '#fef2f2',
-                  border: '1px solid #fecaca',
-                  borderRadius: '6px',
-                  textAlign: 'left',
-                  maxWidth: '640px',
-                  margin: '1.25rem auto 0',
-                }}
-              >
-                <div
-                  style={{
-                    color: '#991b1b',
-                    fontWeight: 600,
-                    fontSize: '0.88rem',
-                    marginBottom: '4px',
-                  }}
-                >
-                  💡 Gợi ý xử lý khi không có quyền xem hồ sơ đề xuất &amp; kịch bản:
-                </div>
-                <p
-                  style={{
-                    margin: '0 0 10px',
-                    fontSize: '0.82rem',
-                    color: '#4b5563',
-                    lineHeight: 1.5,
-                  }}
-                >
-                  Tiệc cưới <code>{bookingId.slice(0, 8)}…</code> được tạo bởi Quản lý khác (hoặc là
-                  dữ liệu mẫu nhà hàng). Theo quy định của hệ thống, chỉ Quản lý trực tiếp tạo hồ sơ
-                  tư vấn ban đầu mới có quyền duyệt &amp; chỉnh sửa kịch bản tiệc này. Bạn vẫn có
-                  thể thực hiện các thao tác vận hành khác:
-                </p>
-                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                  <Link
-                    className="booking-secondary"
-                    href={`/billing?bookingId=${bookingId}`}
-                    style={{ textDecoration: 'none', padding: '5px 12px', fontSize: '0.8rem' }}
-                  >
-                    💳 Xem thanh toán &amp; Tiền cọc →
-                  </Link>
-                  <Link
-                    className="booking-secondary"
-                    href={`/staff?bookingId=${bookingId}`}
-                    style={{ textDecoration: 'none', padding: '5px 12px', fontSize: '0.8rem' }}
-                  >
-                    👥 Phân công Staff tiệc này →
-                  </Link>
-                </div>
-              </div>
-            ) : null}
+            {error && bookingId ? <BookingUnauthorizedHint bookingId={bookingId} /> : null}
           </div>
         ) : (
           <ProposalPanel

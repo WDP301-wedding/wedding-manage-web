@@ -7,6 +7,7 @@ import {
   type ContractRevisionItem,
 } from '../../services/contract.service';
 import { ApiServiceError } from '../../lib/api/axios-client';
+import { ContractLinesTable } from './contract-lines-table';
 
 function formatVnd(amount: number): string {
   return `${amount.toLocaleString('vi-VN')} đ`;
@@ -133,8 +134,8 @@ export function ContractPanel({
       className="proposal-summary"
       style={{
         marginTop: '2rem',
-        background: '#fff',
-        border: '1px solid #e5e7eb',
+        background: '#ffffff',
+        border: '1px solid var(--hy-outline, #eadfd6)',
         borderRadius: 8,
         padding: '1.5rem',
       }}
@@ -149,7 +150,11 @@ export function ContractPanel({
       >
         <div>
           <span className="section-kicker">Pháp lý &amp; Cam kết</span>
-          <h3 style={{ margin: '0.25rem 0', fontSize: '1.25rem' }}>Hợp đồng tiệc cưới</h3>
+          <h3
+            style={{ margin: '0.25rem 0', fontSize: '1.25rem', color: 'var(--hy-wine, #7a1f3d)' }}
+          >
+            Hợp đồng tiệc cưới
+          </h3>
         </div>
         {currentRevision ? (
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
@@ -162,16 +167,23 @@ export function ContractPanel({
                 fontWeight: 600,
                 background:
                   currentRevision.state === 'APPROVED'
-                    ? '#d1fae5'
+                    ? 'var(--hy-status-success-bg, #e7f1ea)'
                     : currentRevision.state === 'AWAITING_APPROVAL'
-                      ? '#dbeafe'
-                      : '#fef3c7',
+                      ? 'var(--hy-status-info-bg, #e6eef2)'
+                      : 'var(--hy-status-warning-bg, #fcefd6)',
                 color:
                   currentRevision.state === 'APPROVED'
-                    ? '#065f46'
+                    ? 'var(--hy-status-success, #2f6b4f)'
                     : currentRevision.state === 'AWAITING_APPROVAL'
-                      ? '#1e40af'
-                      : '#92400e',
+                      ? 'var(--hy-status-info, #3f5b6b)'
+                      : 'var(--hy-status-warning, #8a5300)',
+                border: `1px solid ${
+                  currentRevision.state === 'APPROVED'
+                    ? 'var(--hy-status-success-border, #bbf7d0)'
+                    : currentRevision.state === 'AWAITING_APPROVAL'
+                      ? 'var(--hy-status-info-border, #cbd5e1)'
+                      : 'var(--hy-status-warning-border, #fde68a)'
+                }`,
               }}
             >
               {currentRevision.state === 'APPROVED'
@@ -182,7 +194,9 @@ export function ContractPanel({
                     ? 'Đã thay thế'
                     : 'Bản nháp (Draft)'}
             </span>
-            <small style={{ color: '#6b7280' }}>REV {currentRevision.revisionNumber}</small>
+            <small style={{ color: 'var(--hy-text-muted, #6e5d63)' }}>
+              REV {currentRevision.revisionNumber}
+            </small>
           </div>
         ) : null}
       </div>
@@ -191,8 +205,9 @@ export function ContractPanel({
         <div
           role="status"
           style={{
-            background: '#ecfdf5',
-            color: '#065f46',
+            background: 'var(--hy-status-success-bg, #e7f1ea)',
+            color: 'var(--hy-status-success, #2f6b4f)',
+            border: '1px solid var(--hy-status-success-border, #bbf7d0)',
             padding: '0.5rem 0.75rem',
             borderRadius: 6,
             marginBottom: '1rem',
@@ -207,8 +222,9 @@ export function ContractPanel({
         <div
           role="alert"
           style={{
-            background: '#fef2f2',
-            color: '#991b1b',
+            background: 'var(--hy-status-error-bg, #fdecea)',
+            color: 'var(--hy-status-error, #c62828)',
+            border: '1px solid var(--hy-status-error-border, #fecaca)',
             padding: '0.5rem 0.75rem',
             borderRadius: 6,
             marginBottom: '1rem',
@@ -220,17 +236,20 @@ export function ContractPanel({
       ) : null}
 
       {loading && !currentRevision ? (
-        <p style={{ color: '#6b7280', fontSize: '0.875rem' }}>Đang tải hợp đồng…</p>
+        <p style={{ color: 'var(--hy-text-muted, #6e5d63)', fontSize: '0.875rem' }}>
+          Đang tải hợp đồng…
+        </p>
       ) : !currentRevision ? (
         <div
           style={{
             padding: '2rem 1rem',
             textAlign: 'center',
-            background: '#f9fafb',
+            background: 'var(--hy-surface-container, #fdf6ee)',
             borderRadius: 6,
+            border: '1px dashed var(--hy-outline, #eadfd6)',
           }}
         >
-          <p style={{ color: '#6b7280', marginBottom: '1rem' }}>
+          <p style={{ color: 'var(--hy-text-muted, #6e5d63)', margin: 0 }}>
             Tiệc này chưa có bản ghi hợp đồng chính thức.
           </p>
         </div>
@@ -241,84 +260,49 @@ export function ContractPanel({
               display: 'grid',
               gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
               gap: '1rem',
-              background: '#f9fafb',
+              background: 'var(--hy-surface-container, #fdf6ee)',
+              border: '1px solid var(--hy-outline, #eadfd6)',
               padding: '1rem',
               borderRadius: 6,
               marginBottom: '1.25rem',
             }}
           >
             <div>
-              <small style={{ color: '#6b7280', display: 'block' }}>Cô dâu &amp; Chú rể</small>
+              <small style={{ color: 'var(--hy-text-muted, #6e5d63)', display: 'block' }}>
+                Cô dâu &amp; Chú rể
+              </small>
               <strong>
                 {currentRevision.document.brideName || '—'} &amp;{' '}
                 {currentRevision.document.groomName || '—'}
               </strong>
             </div>
             <div>
-              <small style={{ color: '#6b7280', display: 'block' }}>Sảnh &amp; Ngày tiệc</small>
+              <small style={{ color: 'var(--hy-text-muted, #6e5d63)', display: 'block' }}>
+                Sảnh &amp; Ngày tiệc
+              </small>
               <strong>
                 {currentRevision.document.hallName} ({currentRevision.document.eventDate})
               </strong>
             </div>
             <div>
-              <small style={{ color: '#6b7280', display: 'block' }}>Tổng giá trị hợp đồng</small>
-              <strong style={{ color: '#111827' }}>
+              <small style={{ color: 'var(--hy-text-muted, #6e5d63)', display: 'block' }}>
+                Tổng giá trị hợp đồng
+              </small>
+              <strong style={{ color: 'var(--hy-wine, #7a1f3d)' }}>
                 {formatVnd(currentRevision.document.contractTotalVnd)}
               </strong>
             </div>
             <div>
-              <small style={{ color: '#6b7280', display: 'block' }}>Tiền cọc cam kết (30%)</small>
-              <strong style={{ color: '#2563eb' }}>
+              <small style={{ color: 'var(--hy-text-muted, #6e5d63)', display: 'block' }}>
+                Tiền cọc cam kết (30%)
+              </small>
+              <strong style={{ color: 'var(--hy-wine-bold, #5c1430)' }}>
                 {formatVnd(currentRevision.document.depositAmountVnd)}
               </strong>
             </div>
           </div>
 
-          {/* Dòng dịch vụ cam kết */}
-          <h4 style={{ fontSize: '0.95rem', marginBottom: '0.5rem' }}>
-            Chi tiết dịch vụ trong hợp đồng ({currentRevision.document.lines.length})
-          </h4>
-          <div className="table-scroll" style={{ marginBottom: '1.25rem' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
-              <thead>
-                <tr
-                  style={{
-                    background: '#f3f4f6',
-                    textAlign: 'left',
-                    borderBottom: '1px solid #e5e7eb',
-                  }}
-                >
-                  <th style={{ padding: '0.5rem' }}>Phân loại</th>
-                  <th style={{ padding: '0.5rem' }}>Hạng mục</th>
-                  <th style={{ padding: '0.5rem' }}>Số lượng</th>
-                  <th style={{ padding: '0.5rem' }}>Đơn giá</th>
-                  <th style={{ padding: '0.5rem', textAlign: 'right' }}>Thành tiền</th>
-                </tr>
-              </thead>
-              <tbody>
-                {currentRevision.document.lines.map((line, idx) => (
-                  <tr key={`${line.sourceId}-${idx}`} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                    <td style={{ padding: '0.5rem', fontWeight: 600 }}>{line.category}</td>
-                    <td style={{ padding: '0.5rem' }}>
-                      <strong>{line.name}</strong>
-                      {line.description ? (
-                        <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>
-                          {line.description}
-                        </div>
-                      ) : null}
-                    </td>
-                    <td style={{ padding: '0.5rem' }}>
-                      {line.quantity} {line.unit}
-                    </td>
-                    <td style={{ padding: '0.5rem' }}>{formatVnd(line.unitPriceVnd)}</td>
-                    <td style={{ padding: '0.5rem', textAlign: 'right', fontWeight: 600 }}>
-                      {formatVnd(line.lineTotalVnd)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <ContractLinesTable lines={currentRevision.document.lines} />
 
           {/* Trạng thái phê duyệt 2 bên */}
           <div
@@ -326,7 +310,8 @@ export function ContractPanel({
               display: 'flex',
               gap: '2rem',
               padding: '0.75rem',
-              background: '#f9fafb',
+              background: 'var(--hy-surface-container, #fdf6ee)',
+              border: '1px solid var(--hy-outline, #eadfd6)',
               borderRadius: 6,
               marginBottom: '1.25rem',
               fontSize: '0.875rem',
@@ -334,13 +319,25 @@ export function ContractPanel({
           >
             <div>
               <span>Quản lý (Manager): </span>
-              <strong style={{ color: managerApproved ? '#16a34a' : '#ea580c' }}>
+              <strong
+                style={{
+                  color: managerApproved
+                    ? 'var(--hy-status-success, #2f6b4f)'
+                    : 'var(--hy-status-warning, #8a5300)',
+                }}
+              >
                 {managerApproved ? '✓ Đã phê duyệt' : 'Chưa duyệt'}
               </strong>
             </div>
             <div>
               <span>Cặp đôi (Couple): </span>
-              <strong style={{ color: coupleApproved ? '#16a34a' : '#ea580c' }}>
+              <strong
+                style={{
+                  color: coupleApproved
+                    ? 'var(--hy-status-success, #2f6b4f)'
+                    : 'var(--hy-status-warning, #8a5300)',
+                }}
+              >
                 {coupleApproved ? '✓ Đã phê duyệt' : 'Chưa duyệt'}
               </strong>
             </div>
@@ -355,8 +352,9 @@ export function ContractPanel({
               style={{
                 padding: '0.5rem 1rem',
                 borderRadius: 6,
-                border: '1px solid #d1d5db',
-                background: '#fff',
+                border: '1px solid var(--hy-outline, #eadfd6)',
+                background: '#ffffff',
+                color: 'var(--hy-text, #2b1d22)',
                 cursor: disabled || downloadingPdf ? 'not-allowed' : 'pointer',
                 fontWeight: 600,
               }}
@@ -373,8 +371,8 @@ export function ContractPanel({
                   padding: '0.5rem 1rem',
                   borderRadius: 6,
                   border: 'none',
-                  background: '#2563eb',
-                  color: '#fff',
+                  background: 'var(--hy-wine, #7a1f3d)',
+                  color: '#ffffff',
                   cursor: disabled || loading ? 'not-allowed' : 'pointer',
                   fontWeight: 600,
                 }}
@@ -392,8 +390,8 @@ export function ContractPanel({
                   padding: '0.5rem 1rem',
                   borderRadius: 6,
                   border: 'none',
-                  background: '#16a34a',
-                  color: '#fff',
+                  background: 'var(--hy-status-success, #2f6b4f)',
+                  color: '#ffffff',
                   cursor: disabled || loading ? 'not-allowed' : 'pointer',
                   fontWeight: 600,
                 }}

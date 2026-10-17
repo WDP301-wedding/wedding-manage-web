@@ -11,17 +11,16 @@ import {
   CatalogAccessPanel,
   catalogErrorMessage,
   CatalogStatus,
-  HallForm,
   RestaurantForm,
   SectionHeading,
   ShiftForm,
   shiftLabel,
-  Status,
 } from './catalog-forms';
 import { DishMenuPanel } from './dish-menu-panel';
 import { LayoutPanel } from './layout-panel';
 import { MediaPanel } from './media-panel';
 import { TimelinePanel } from './timeline-panel';
+import { VenueHallsSection } from './venue-halls-section';
 
 export type Authorize = <T>(operation: (accessToken: string) => Promise<T>) => Promise<T>;
 
@@ -194,7 +193,9 @@ export function ManagerVenueWorkspace({
     <main id="catalog-content" className="catalog-main">
       <header className="catalog-header">
         <div>
-          <span className="preview-label">Wedding Estate · Catalog</span>
+          <span className="preview-label" style={{ color: 'var(--hy-wine)' }}>
+            Hỷ Yến · Quản trị nhà hàng
+          </span>
           <p className="section-kicker">Danh mục vận hành</p>
           <h1>Danh mục địa điểm</h1>
         </div>
@@ -258,131 +259,50 @@ export function ManagerVenueWorkspace({
           </div>
         </section>
 
-        <section className="catalog-section" aria-labelledby="hall-title">
-          <div className="catalog-section-toolbar">
-            <SectionHeading eyebrow={`${snapshot.halls.length} bản ghi`} title="Danh sách sảnh" />
-            <div className="catalog-toolbar-actions">
-              <label>
-                Lọc trạng thái sảnh
-                <select
-                  value={hallFilter}
-                  onChange={(event) =>
-                    setHallFilter(event.currentTarget.value as typeof hallFilter)
-                  }
-                >
-                  <option value="ALL">Tất cả</option>
-                  <option value="ACTIVE">Đang hoạt động</option>
-                  <option value="RETIRED">Đã ngừng</option>
-                </select>
-              </label>
-              <button
-                className="catalog-primary-button"
-                type="button"
-                onClick={() => {
-                  setEditingHall(null);
-                  setCreatingHall(true);
-                }}
-              >
-                Thêm sảnh
-              </button>
-            </div>
-          </div>
-
-          {halls.length === 0 ? (
-            <p className="catalog-empty">Không có sảnh phù hợp bộ lọc hiện tại.</p>
-          ) : (
-            <div className="catalog-table-scroll">
-              <table className="catalog-table">
-                <caption className="sr-only">Danh sách sảnh theo trạng thái</caption>
-                <thead>
-                  <tr>
-                    <th scope="col">Sảnh</th>
-                    <th scope="col">Sức chứa</th>
-                    <th scope="col">Thứ tự</th>
-                    <th scope="col">Trạng thái</th>
-                    <th scope="col">Thao tác</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {halls.map((hall) => (
-                    <tr key={hall.id}>
-                      <td>
-                        <strong>{hall.name}</strong>
-                        <span>{hall.description || 'Chưa có mô tả'}</span>
-                      </td>
-                      <td>{hall.maxGuests.toLocaleString('vi-VN')} khách</td>
-                      <td>{hall.displayOrder}</td>
-                      <td>
-                        <Status lifecycle={hall.lifecycle} />
-                      </td>
-                      <td>
-                        <div className="catalog-row-actions">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setCreatingHall(false);
-                              setEditingHall(hall);
-                            }}
-                            aria-label={`Chỉnh sửa ${hall.name}`}
-                          >
-                            Chỉnh sửa
-                          </button>
-                          <button
-                            type="button"
-                            disabled={pending}
-                            onClick={() =>
-                              void run(
-                                hall.lifecycle === 'ACTIVE'
-                                  ? `Đã ngừng ${hall.name}.`
-                                  : `Đã khôi phục ${hall.name}.`,
-                                (token) =>
-                                  gateway.changeHallLifecycle(token, {
-                                    id: hall.id,
-                                    expectedRevision: hall.revision,
-                                    transition: hall.lifecycle === 'ACTIVE' ? 'RETIRE' : 'RESTORE',
-                                  }),
-                              )
-                            }
-                          >
-                            {hall.lifecycle === 'ACTIVE' ? 'Ngừng hoạt động' : 'Khôi phục'}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {creatingHall || editingHall !== null ? (
-            <HallForm
-              hall={editingHall}
-              pending={pending}
-              onCancel={() => {
-                setCreatingHall(false);
-                setEditingHall(null);
-              }}
-              onSubmit={async (input) => {
-                const succeeded = await run(
-                  editingHall === null ? 'Đã tạo sảnh mới.' : 'Đã lưu thay đổi sảnh.',
-                  (token) =>
-                    editingHall === null
-                      ? gateway.createHall(token, { ...input, id: crypto.randomUUID() })
-                      : gateway.updateHall(token, {
-                          ...input,
-                          id: editingHall.id,
-                          expectedRevision: editingHall.revision,
-                        }),
-                );
-                if (succeeded) {
-                  setCreatingHall(false);
-                  setEditingHall(null);
-                }
-              }}
-            />
-          ) : null}
-        </section>
+        <VenueHallsSection
+          halls={snapshot.halls}
+          hallFilter={hallFilter}
+          setHallFilter={setHallFilter}
+          creatingHall={creatingHall}
+          setCreatingHall={setCreatingHall}
+          editingHall={editingHall}
+          setEditingHall={setEditingHall}
+          pending={pending}
+          onToggleLifecycle={(hall) =>
+            void run(
+              hall.lifecycle === 'ACTIVE' ? `Đã ngừng ${hall.name}.` : `Đã khôi phục ${hall.name}.`,
+              (token) =>
+                gateway.changeHallLifecycle(token, {
+                  id: hall.id,
+                  expectedRevision: hall.revision,
+                  transition: hall.lifecycle === 'ACTIVE' ? 'RETIRE' : 'RESTORE',
+                }),
+            )
+          }
+          onSaveHall={async (input) => {
+            const hallData = {
+              name: input.name,
+              maxGuests: input.maxGuests,
+              description: input.description ?? '',
+              displayOrder: input.displayOrder ?? 0,
+            };
+            const succeeded = await run(
+              editingHall === null ? 'Đã tạo sảnh mới.' : 'Đã lưu thay đổi sảnh.',
+              (token) =>
+                editingHall === null
+                  ? gateway.createHall(token, { ...hallData, id: crypto.randomUUID() })
+                  : gateway.updateHall(token, {
+                      ...hallData,
+                      id: editingHall.id,
+                      expectedRevision: editingHall.revision,
+                    }),
+            );
+            if (succeeded) {
+              setCreatingHall(false);
+              setEditingHall(null);
+            }
+          }}
+        />
         {supportsMedia(gateway) ? <MediaPanel gateway={gateway} authorize={authorize} /> : null}
       </div>
       <div

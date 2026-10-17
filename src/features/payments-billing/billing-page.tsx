@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import {
-  createIdentityApi,
   type ManagementIdentitySession,
   sharedManagementSession,
   type ManagementSessionSnapshot,
@@ -20,15 +19,15 @@ import {
 } from './billing-api';
 import { BillingIntentMismatchError, createBillingIntents } from './billing-intents';
 import {
-  AttemptStatus,
   BillingHistory,
   BillingSummary,
   billingMessage,
   denied,
   unresolved,
 } from './billing-display';
-import { ManualPaymentForm, RefundForm, type CommandOutcome } from './payment-forms';
-import { RefundApprovalForm } from './refund-approval-form';
+import type { CommandOutcome } from './payment-forms';
+import { AttemptLookupPanel } from './attempt-lookup-panel';
+import { BillingMutationsSection } from './billing-mutations-section';
 import { IncidentalsPanel } from './incidentals-panel';
 
 type Authorize = <T>(operation: (token: string) => Promise<T>) => Promise<T>;
@@ -39,6 +38,7 @@ type MutationResult =
 
 const identity = sharedManagementSession;
 const billing = createManagementBillingGateway();
+
 export function ManagementBillingPage({
   session = identity,
   gateway = billing,
@@ -115,6 +115,7 @@ export function ManagementBillingPage({
     </OperationsShell>
   );
 }
+
 export function ManagementBillingWorkspace({
   accountId,
   authorize,
@@ -147,6 +148,7 @@ export function ManagementBillingWorkspace({
       void run(() => load(id));
     }
   }, []);
+
   const clearDenied = (caught: unknown) => {
     if (denied(caught)) {
       setView(null);
@@ -154,6 +156,7 @@ export function ManagementBillingWorkspace({
     }
     setError(billingMessage(caught));
   };
+
   const run = async (operation: () => Promise<void>) => {
     if (busy.current) return;
     busy.current = true;
@@ -168,6 +171,7 @@ export function ManagementBillingWorkspace({
       setPending(false);
     }
   };
+
   const load = async (id: string, more = false) => {
     const query =
       more && view !== null && view.nextCursor !== null
@@ -203,6 +207,7 @@ export function ManagementBillingWorkspace({
       more && view !== null ? { ...value, history: [...view.history, ...value.history] } : value,
     );
   };
+
   const mutate = async (
     kind: 'manual' | 'refund' | 'approval',
     body: ManualPaymentBody | RefundBody | RefundApprovalBody,
@@ -244,7 +249,6 @@ export function ManagementBillingWorkspace({
     } catch (caught) {
       clearDenied(caught);
       if (caught instanceof BillingIntentMismatchError) {
-        // Nothing was sent; unlock only this draft while retaining its durable intent.
         setUncertain(kind);
         return 'failed';
       }
@@ -256,6 +260,7 @@ export function ManagementBillingWorkspace({
       setPending(false);
     }
   };
+
   return (
     <main className="billing-shell" id="billing-content">
       <header className="billing-header">
@@ -329,44 +334,30 @@ export function ManagementBillingWorkspace({
                 Tải thêm lịch sử
               </button>
             )}
-            <section className="billing-panel">
-              <h2>Tra cứu trạng thái giao dịch</h2>
-              <p>Nhập mã giao dịch thanh toán để xem kết quả và tình trạng cập nhật hồ sơ.</p>
-              <form
-                className="billing-lookup"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  void run(async () => {
-                    setAttempt(
-                      await authorize((token) =>
-                        gateway.loadAttempt(token, view.bookingId, attemptId.trim()),
-                      ),
-                    );
-                  });
-                }}
-              >
-                <label>
-                  Mã giao dịch thanh toán
-                  <input
-                    value={attemptId}
-                    onChange={(event) => setAttemptId(event.target.value)}
-                    required
-                    disabled={pending}
-                  />
-                </label>
-                <button disabled={pending}>Tra cứu giao dịch</button>
-              </form>
-              {attempt !== null && <AttemptStatus attempt={attempt} />}
-            </section>
+            <AttemptLookupPanel
+              disabled={pending}
+              attemptId={attemptId}
+              setAttemptId={setAttemptId}
+              attempt={attempt}
+              onLookup={() => {
+                void run(async () => {
+                  setAttempt(
+                    await authorize((token) =>
+                      gateway.loadAttempt(token, view.bookingId, attemptId.trim()),
+                    ),
+                  );
+                });
+              }}
+            />
             {error !== null && (
               <div
                 style={{
                   margin: '1.5rem 0 0.5rem',
                   padding: '12px 16px',
-                  background: '#fef2f2',
-                  border: '1px solid #fecaca',
+                  background: 'var(--hy-status-error-bg, #fdecea)',
+                  border: '1px solid var(--hy-status-error-border, #fecaca)',
                   borderRadius: '6px',
-                  color: '#991b1b',
+                  color: 'var(--hy-status-error, #c62828)',
                   fontSize: '0.88rem',
                   lineHeight: 1.5,
                 }}
@@ -374,30 +365,14 @@ export function ManagementBillingWorkspace({
                 <strong>⚠ Thao tác chưa hoàn tất:</strong> {error}
               </div>
             )}
-            <div className="billing-forms">
-              <ManualPaymentForm
-                key={`manual:${view.bookingId}`}
-                bookingId={view.bookingId}
-                disabled={pending || (uncertain !== null && uncertain !== 'manual')}
-                onConfirm={(body) => mutate('manual', body)}
-              />
-              <RefundForm
-                key={`refund:${view.bookingId}`}
-                booking={
-                  refundRevision === null ? view : { ...view, billingRevision: refundRevision }
-                }
-                disabled={pending || (uncertain !== null && uncertain !== 'refund')}
-                onConfirm={(body) => mutate('refund', body)}
-              />
-              <RefundApprovalForm
-                key={`approval:${view.bookingId}`}
-                booking={
-                  approvalRevision === null ? view : { ...view, billingRevision: approvalRevision }
-                }
-                disabled={pending || (uncertain !== null && uncertain !== 'approval')}
-                onConfirm={(body) => mutate('approval', body)}
-              />
-            </div>
+            <BillingMutationsSection
+              view={view}
+              pending={pending}
+              uncertain={uncertain}
+              refundRevision={refundRevision}
+              approvalRevision={approvalRevision}
+              onMutate={mutate}
+            />
             <IncidentalsPanel
               bookingId={view.bookingId}
               billingRevision={view.billingRevision}
