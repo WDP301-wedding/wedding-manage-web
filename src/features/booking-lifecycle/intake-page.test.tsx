@@ -374,4 +374,89 @@ describe('Consultation navigation', () => {
     expect(screen.queryByText('Chưa có yêu cầu tư vấn')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Đăng xuất' })).not.toBeInTheDocument();
   });
+
+  it('filters requests by status tab and KPI cards', async () => {
+    useAuthorizedApi();
+    const converted: Item = {
+      ...newRequest,
+      id: consultationId,
+      status: 'CONVERTED',
+      displayName: 'Lan & Nam',
+      consultationId,
+      consultationRevision: 3,
+    };
+    const closed: Item = {
+      ...newRequest,
+      id: '00000000-0000-4000-8000-000000000103',
+      status: 'CLOSED',
+      displayName: 'Hà & Bình',
+      phone: '',
+      preferredDate: null,
+      expectedGuests: null,
+      message: '',
+    };
+    fetchMock.mockResolvedValueOnce(queueResponse([newRequest, converted, closed]));
+    render(<ConsultationRequestsPage />);
+
+    expect(await screen.findByRole('heading', { name: 'Minh & An' })).toBeVisible();
+    expect(screen.getByRole('heading', { name: 'Lan & Nam' })).toBeVisible();
+    expect(screen.getByRole('heading', { name: 'Hà & Bình' })).toBeVisible();
+
+    // Click "Chờ tiếp nhận" filter tab
+    fireEvent.click(screen.getByRole('button', { name: /^Chờ tiếp nhận/ }));
+    expect(screen.getByRole('heading', { name: 'Minh & An' })).toBeVisible();
+    expect(screen.queryByRole('heading', { name: 'Lan & Nam' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Hà & Bình' })).not.toBeInTheDocument();
+
+    // Click "Đã mở tư vấn" filter tab
+    fireEvent.click(screen.getByRole('button', { name: /^Đã mở tư vấn/ }));
+    expect(screen.queryByRole('heading', { name: 'Minh & An' })).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Lan & Nam' })).toBeVisible();
+    expect(screen.queryByRole('heading', { name: 'Hà & Bình' })).not.toBeInTheDocument();
+
+    // Click "Tất cả" filter tab
+    fireEvent.click(screen.getByRole('button', { name: /^Tất cả/ }));
+    expect(screen.getByRole('heading', { name: 'Minh & An' })).toBeVisible();
+    expect(screen.getByRole('heading', { name: 'Lan & Nam' })).toBeVisible();
+    expect(screen.getByRole('heading', { name: 'Hà & Bình' })).toBeVisible();
+
+    // Click KPI card for "Chờ tiếp nhận"
+    fireEvent.click(screen.getByRole('button', { name: /Thẻ thống kê: Chờ tiếp nhận/ }));
+    expect(screen.getByRole('heading', { name: 'Minh & An' })).toBeVisible();
+    expect(screen.queryByRole('heading', { name: 'Lan & Nam' })).not.toBeInTheDocument();
+  });
+
+  it('filters requests by search query and shows empty state when nothing matches', async () => {
+    useAuthorizedApi();
+    const item2: Item = {
+      ...newRequest,
+      id: consultationId,
+      displayName: 'Hoàng & Mai',
+      email: 'hoangmai@example.com',
+    };
+    fetchMock.mockResolvedValueOnce(queueResponse([newRequest, item2]));
+    render(<ConsultationRequestsPage />);
+
+    expect(await screen.findByRole('heading', { name: 'Minh & An' })).toBeVisible();
+    expect(screen.getByRole('heading', { name: 'Hoàng & Mai' })).toBeVisible();
+
+    const searchInput = screen.getByPlaceholderText(/Tìm theo tên/);
+    fireEvent.change(searchInput, { target: { value: 'Hoàng' } });
+
+    expect(screen.queryByRole('heading', { name: 'Minh & An' })).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Hoàng & Mai' })).toBeVisible();
+
+    // Search for non-existent text
+    fireEvent.change(searchInput, { target: { value: 'xyz123nonexistent' } });
+    expect(screen.queryByRole('heading', { name: 'Minh & An' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Hoàng & Mai' })).not.toBeInTheDocument();
+    expect(
+      screen.getByText('Không tìm thấy yêu cầu tư vấn nào phù hợp với bộ lọc hiện tại.'),
+    ).toBeVisible();
+
+    // Reset filter
+    fireEvent.click(screen.getByRole('button', { name: 'Xóa bộ lọc' }));
+    expect(screen.getByRole('heading', { name: 'Minh & An' })).toBeVisible();
+    expect(screen.getByRole('heading', { name: 'Hoàng & Mai' })).toBeVisible();
+  });
 });
