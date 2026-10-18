@@ -16,11 +16,17 @@ const PHASE_LABELS: Record<string, string> = {
   CANCELLED: 'Đã hủy',
 };
 
+export type BookingSortField = 'eventDate' | 'hallName' | 'shiftCode' | 'tableCount' | 'phase';
+export type SortOrder = 'asc' | 'desc';
+
 export interface DashboardBookingsTableProps {
   bookings: readonly DashboardBookingItem[];
   assignments: BookingAssignmentsRegistry;
   resolvedAccountId: string;
   onClaim: (bookingId: string, hallName?: string) => void;
+  sortField?: BookingSortField;
+  sortOrder?: SortOrder;
+  onSortChange?: (field: BookingSortField) => void;
 }
 
 export function DashboardBookingsTable({
@@ -28,18 +34,81 @@ export function DashboardBookingsTable({
   assignments,
   resolvedAccountId,
   onClaim,
+  sortField,
+  sortOrder,
+  onSortChange,
 }: Readonly<DashboardBookingsTableProps>) {
   return (
     <div className="table-scroll">
       <table aria-label="Lịch tiệc và sự kiện đã đặt">
         <thead>
           <tr>
-            <th scope="col">Ngày tổ chức</th>
-            <th scope="col">Sảnh tiệc</th>
-            <th scope="col">Ca</th>
-            <th scope="col">Quy mô</th>
+            <th scope="col">
+              <button
+                type="button"
+                onClick={() => onSortChange?.('eventDate')}
+                style={dashboardStyles.thSortButton}
+                title="Sắp xếp theo ngày tổ chức"
+              >
+                <span>Ngày tổ chức</span>
+                <span style={dashboardStyles.sortIcon(sortField === 'eventDate')}>
+                  {sortField === 'eventDate' ? (sortOrder === 'asc' ? '↑' : '↓') : '↕'}
+                </span>
+              </button>
+            </th>
+            <th scope="col">
+              <button
+                type="button"
+                onClick={() => onSortChange?.('hallName')}
+                style={dashboardStyles.thSortButton}
+                title="Sắp xếp theo sảnh tiệc"
+              >
+                <span>Sảnh tiệc</span>
+                <span style={dashboardStyles.sortIcon(sortField === 'hallName')}>
+                  {sortField === 'hallName' ? (sortOrder === 'asc' ? '↑' : '↓') : '↕'}
+                </span>
+              </button>
+            </th>
+            <th scope="col">
+              <button
+                type="button"
+                onClick={() => onSortChange?.('shiftCode')}
+                style={dashboardStyles.thSortButton}
+                title="Sắp xếp theo ca tiệc"
+              >
+                <span>Ca</span>
+                <span style={dashboardStyles.sortIcon(sortField === 'shiftCode')}>
+                  {sortField === 'shiftCode' ? (sortOrder === 'asc' ? '↑' : '↓') : '↕'}
+                </span>
+              </button>
+            </th>
+            <th scope="col">
+              <button
+                type="button"
+                onClick={() => onSortChange?.('tableCount')}
+                style={dashboardStyles.thSortButton}
+                title="Sắp xếp theo quy mô số bàn"
+              >
+                <span>Quy mô</span>
+                <span style={dashboardStyles.sortIcon(sortField === 'tableCount')}>
+                  {sortField === 'tableCount' ? (sortOrder === 'asc' ? '↑' : '↓') : '↕'}
+                </span>
+              </button>
+            </th>
             <th scope="col">Mã booking (UUID)</th>
-            <th scope="col">Trạng thái</th>
+            <th scope="col">
+              <button
+                type="button"
+                onClick={() => onSortChange?.('phase')}
+                style={dashboardStyles.thSortButton}
+                title="Sắp xếp theo trạng thái"
+              >
+                <span>Trạng thái</span>
+                <span style={dashboardStyles.sortIcon(sortField === 'phase')}>
+                  {sortField === 'phase' ? (sortOrder === 'asc' ? '↑' : '↓') : '↕'}
+                </span>
+              </button>
+            </th>
             <th scope="col">Thao tác</th>
           </tr>
         </thead>

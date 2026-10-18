@@ -151,7 +151,21 @@ export function BookingCreatePanel({
             từ yêu cầu tư vấn.
           </span>
         </div>
-      ) : null}
+      ) : (
+        <div
+          style={{
+            ...bookingStyles.statusBanner('info'),
+            fontSize: '0.82rem',
+            padding: '8px 12px',
+            marginBottom: '0.75rem',
+            lineHeight: 1.5,
+          }}
+        >
+          💡 <strong>Gợi ý nghiệp vụ:</strong> Cặp đôi chưa chọn ngày cưới dự kiến khi gửi yêu cầu
+          tư vấn. Quản lý vui lòng trao đổi, thống nhất ngày cưới &amp; quy mô cùng khách hàng rồi
+          chọn ngày phù hợp bên dưới để kiểm tra lịch sảnh.
+        </div>
+      )}
       <form
         noValidate
         onSubmit={(event) => {

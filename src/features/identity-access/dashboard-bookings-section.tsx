@@ -5,6 +5,7 @@ import { useCallback, useState } from 'react';
 import type { AnalyticsBookingsData } from '../../services/analytics.service';
 import type { BookingAssignmentsRegistry } from './booking-assignments';
 import { dashboardStyles } from './dashboard.styles';
+import type { BookingSortField, SortOrder } from './dashboard-bookings-table';
 import { DashboardBookingsTable } from './dashboard-bookings-table';
 import { StaffCheckinBanner } from './staff-checkin-banner';
 
@@ -60,6 +61,10 @@ export function DashboardBookingsSection({
   const [userSelectedTab, setUserSelectedTab] = useState<'mine' | 'all' | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [phaseFilter, setPhaseFilter] = useState('ALL');
+  const [sortField, setSortField] = useState<BookingSortField>('eventDate');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const isMine = useCallback(
     (bId: string) => assignments[bId]?.assignedAccountId === resolvedAccountId,
@@ -69,7 +74,27 @@ export function DashboardBookingsSection({
   const myBookings = bookings.filter((b) => isMine(b.bookingId));
   const myBookingsCount = myBookings.length;
   const bookingTab = userSelectedTab ?? (myBookingsCount > 0 ? 'mine' : 'all');
-  const setBookingTab = (tab: 'mine' | 'all') => setUserSelectedTab(tab);
+  const setBookingTab = (tab: 'mine' | 'all') => {
+    setUserSelectedTab(tab);
+    setCurrentPage(1);
+  };
+
+  const handleSortChange = (field: BookingSortField) => {
+    if (sortField === field) {
+      setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortField(field);
+      setSortOrder(field === 'tableCount' ? 'desc' : 'asc');
+    }
+    setCurrentPage(1);
+  };
+
+  const handleQuickSortChange = (val: string) => {
+    const [f, o] = val.split('-') as [BookingSortField, SortOrder];
+    setSortField(f);
+    setSortOrder(o);
+    setCurrentPage(1);
+  };
 
   const currentTabBookings = bookingTab === 'mine' ? myBookings : bookings;
 
@@ -84,6 +109,33 @@ export function DashboardBookingsSection({
     }
     return true;
   });
+
+  const sortedBookings = [...filteredBookings].sort((a, b) => {
+    let cmp = 0;
+    if (sortField === 'eventDate') {
+      const timeA = new Date(a.eventDate).getTime();
+      const timeB = new Date(b.eventDate).getTime();
+      cmp = timeA - timeB;
+      if (cmp === 0) {
+        cmp = a.shiftCode.localeCompare(b.shiftCode);
+      }
+    } else if (sortField === 'hallName') {
+      cmp = (a.hallNameSnapshot || '').localeCompare(b.hallNameSnapshot || '', 'vi');
+    } else if (sortField === 'tableCount') {
+      cmp = (a.tableCount || 0) - (b.tableCount || 0);
+    } else if (sortField === 'shiftCode') {
+      cmp = a.shiftCode.localeCompare(b.shiftCode);
+    } else if (sortField === 'phase') {
+      cmp = a.phase.localeCompare(b.phase);
+    }
+    return sortOrder === 'asc' ? cmp : -cmp;
+  });
+
+  const totalPages = Math.max(1, Math.ceil(sortedBookings.length / pageSize));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const startIndex = (safeCurrentPage - 1) * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, sortedBookings.length);
+  const paginatedBookings = sortedBookings.slice(startIndex, endIndex);
 
   if (!isManager) {
     return <StaffCheckinBanner />;
@@ -130,7 +182,7 @@ export function DashboardBookingsSection({
         </div>
       ) : null}
 
-      {/* Bộ lọc chuyển tab & tìm kiếm */}
+      {/* Bộ lọc chuyển tab & tìm kiếm & sắp xếp */}
       <div style={dashboardStyles.filterBar}>
         {/* Tab Switcher */}
         <div role="tablist" aria-label="Phan loai lich tiec" style={dashboardStyles.tabList}>
@@ -162,19 +214,25 @@ export function DashboardBookingsSection({
           </button>
         </div>
 
-        {/* Quick Filter: Search + Status */}
+        {/* Quick Filter: Search + Status + Sort */}
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
           <input
             type="search"
             placeholder="Tìm sảnh tiệc, UUID…"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setCurrentPage(1);
+            }}
             aria-label="Tìm kiếm tiệc cưới"
             style={dashboardStyles.searchInput}
           />
           <select
             value={phaseFilter}
-            onChange={(e) => setPhaseFilter(e.target.value)}
+            onChange={(e) => {
+              setPhaseFilter(e.target.value);
+              setCurrentPage(1);
+            }}
             aria-label="Lọc theo trạng thái tiệc"
             style={dashboardStyles.selectFilter}
           >
@@ -184,6 +242,21 @@ export function DashboardBookingsSection({
             <option value="DRAFT">Bản nháp</option>
             <option value="COMPLETED">Hoàn thành</option>
             <option value="CANCELLED">Đã hủy</option>
+          </select>
+
+          <select
+            value={`${sortField}-${sortOrder}`}
+            onChange={(e) => handleQuickSortChange(e.target.value)}
+            aria-label="Sắp xếp danh sách"
+            style={dashboardStyles.selectFilter}
+          >
+            <option value="eventDate-asc">📅 Ngày tiệc: Gần nhất trước</option>
+            <option value="eventDate-desc">📅 Ngày tiệc: Xa nhất trước</option>
+            <option value="tableCount-desc">👥 Quy mô: Nhiều bàn nhất</option>
+            <option value="tableCount-asc">👥 Quy mô: Ít bàn nhất</option>
+            <option value="hallName-asc">🏛️ Sảnh: A → Z</option>
+            <option value="hallName-desc">🏛️ Sảnh: Z → A</option>
+            <option value="phase-asc">🏷️ Trạng thái: A → Z</option>
           </select>
         </div>
       </div>
@@ -271,12 +344,135 @@ export function DashboardBookingsSection({
           <p>Không có buổi tiệc nào khớp với từ khóa tìm kiếm hoặc trạng thái lọc đã chọn.</p>
         </div>
       ) : (
-        <DashboardBookingsTable
-          bookings={filteredBookings}
-          assignments={assignments}
-          resolvedAccountId={resolvedAccountId}
-          onClaim={onClaim}
-        />
+        <>
+          <DashboardBookingsTable
+            bookings={paginatedBookings}
+            assignments={assignments}
+            resolvedAccountId={resolvedAccountId}
+            onClaim={onClaim}
+            sortField={sortField}
+            sortOrder={sortOrder}
+            onSortChange={handleSortChange}
+          />
+
+          {/* Thanh phân trang kiểm soát quy mô */}
+          <div style={dashboardStyles.paginationContainer}>
+            <div style={dashboardStyles.paginationInfo}>
+              <span>
+                Hiển thị <strong>{filteredBookings.length === 0 ? 0 : startIndex + 1}</strong> –{' '}
+                <strong>{endIndex}</strong> trên tổng số <strong>{filteredBookings.length}</strong>{' '}
+                tiệc cưới
+              </span>
+              <label
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  marginLeft: '8px',
+                }}
+              >
+                <span style={{ fontSize: '0.8rem', color: 'var(--hy-text-muted, #6e5d63)' }}>
+                  Hiển thị:
+                </span>
+                <select
+                  value={pageSize}
+                  onChange={(e) => {
+                    setPageSize(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                  style={dashboardStyles.pageSizeSelect}
+                  aria-label="Số dòng hiển thị mỗi trang"
+                >
+                  <option value={5}>5 / trang</option>
+                  <option value={10}>10 / trang</option>
+                  <option value={20}>20 / trang</option>
+                  <option value={50}>50 / trang</option>
+                </select>
+              </label>
+            </div>
+
+            {totalPages > 1 ? (
+              <div
+                style={dashboardStyles.paginationButtonGroup}
+                role="navigation"
+                aria-label="Phân trang lịch tiệc"
+              >
+                <button
+                  type="button"
+                  disabled={safeCurrentPage === 1}
+                  onClick={() => setCurrentPage(1)}
+                  style={dashboardStyles.paginationNavButton(safeCurrentPage === 1)}
+                  title="Trang đầu"
+                  aria-label="Trang đầu"
+                >
+                  «
+                </button>
+                <button
+                  type="button"
+                  disabled={safeCurrentPage === 1}
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  style={dashboardStyles.paginationNavButton(safeCurrentPage === 1)}
+                  title="Trang trước"
+                  aria-label="Trang trước"
+                >
+                  ‹
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => {
+                  if (
+                    totalPages > 7 &&
+                    pageNum !== 1 &&
+                    pageNum !== totalPages &&
+                    Math.abs(pageNum - safeCurrentPage) > 2
+                  ) {
+                    if (pageNum === 2 || pageNum === totalPages - 1) {
+                      return (
+                        <span
+                          key={`ellipsis-${pageNum}`}
+                          style={{ padding: '0 4px', color: 'var(--hy-text-muted, #6e5d63)' }}
+                        >
+                          …
+                        </span>
+                      );
+                    }
+                    return null;
+                  }
+                  const isActive = pageNum === safeCurrentPage;
+                  return (
+                    <button
+                      key={pageNum}
+                      type="button"
+                      onClick={() => setCurrentPage(pageNum)}
+                      style={dashboardStyles.paginationPageButton(isActive)}
+                      aria-current={isActive ? 'page' : undefined}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+                <button
+                  type="button"
+                  disabled={safeCurrentPage === totalPages}
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  style={dashboardStyles.paginationNavButton(safeCurrentPage === totalPages)}
+                  title="Trang sau"
+                  aria-label="Trang sau"
+                >
+                  ›
+                </button>
+                <button
+                  type="button"
+                  disabled={safeCurrentPage === totalPages}
+                  onClick={() => setCurrentPage(totalPages)}
+                  style={dashboardStyles.paginationNavButton(safeCurrentPage === totalPages)}
+                  title="Trang cuối"
+                  aria-label="Trang cuối"
+                >
+                  »
+                </button>
+              </div>
+            ) : null}
+          </div>
+        </>
       )}
     </section>
   );
