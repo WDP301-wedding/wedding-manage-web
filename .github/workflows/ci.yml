@@ -20,6 +20,9 @@ jobs:
     name: Static, contract, test, and build gates
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      CI: true
+      NEXT_TELEMETRY_DISABLED: 1
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -32,8 +35,18 @@ jobs:
           node-version-file: '.node-version'
           cache: npm
 
+      - name: Restore node_modules cache
+        id: node-modules-cache
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-manage-node-modules-${{ hashFiles('package-lock.json', '.node-version') }}
+          restore-keys: |
+            ${{ runner.os }}-manage-node-modules-
+
       - name: Install locked dependencies
-        run: npm ci --no-audit --no-fund
+        if: steps.node-modules-cache.outputs.cache-hit != 'true'
+        run: npm ci --prefer-offline --no-audit --no-fund
 
       - name: Check formatting
         run: npm run format:check
@@ -108,7 +121,7 @@ jobs:
 
       - name: Run automated tests (optional)
         continue-on-error: true
-        run: npm run test:coverage -- --maxWorkers=1 || true
+        run: npm test -- --maxWorkers=2 || true
 
       # Main is built once, with the real production environment, in deploy.
       - name: Restore PR build cache
@@ -132,6 +145,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
+      CI: true
+      NEXT_TELEMETRY_DISABLED: 1
       VERCEL_ORG_ID: team_MM73EDATkR2ak6X6qlv3SSnV
       VERCEL_PROJECT_ID: prj_i5q30jat8OfYnra7SxeyXjRxTIyV
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
@@ -154,7 +169,7 @@ jobs:
             ${{ runner.os }}-next-production-vercel63-${{ hashFiles('.node-version', 'package-lock.json', 'next.config.*', 'vercel.json') }}-
       - name: Install pinned Vercel CLI
         timeout-minutes: 3
-        run: npm install --global vercel@63.1.0 --no-audit --no-fund
+        run: npm install --global vercel@63.1.0 --prefer-offline --no-audit --no-fund
       - name: Pull production configuration
         timeout-minutes: 2
         run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
