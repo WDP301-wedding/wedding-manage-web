@@ -20,84 +20,16 @@ function required<T>(value: T | undefined, operation: string): T {
   return value;
 }
 
-interface ScopedCacheEntry<T> {
-  readonly data: T;
-  readonly cachedAt: number;
-}
-
-const inFlightRequests = new Map<string, Promise<unknown>>();
-const sharedCatalogCache = new Map<string, ScopedCacheEntry<unknown>>();
-
-function makeCacheKey(
-  accessToken: string,
-  endpoint: string,
-  params?: Record<string, unknown>,
-): string {
-  const tokenSig =
-    accessToken.length > 32
-      ? `${accessToken.slice(0, 16)}...${accessToken.slice(-16)}`
-      : accessToken;
-  const paramStr = params ? JSON.stringify(params) : '';
-  return `${tokenSig}::${endpoint}::${paramStr}`;
-}
-
-export function clearCatalogCache(tokenSig?: string): void {
-  if (tokenSig) {
-    for (const key of sharedCatalogCache.keys()) {
-      if (key.startsWith(`${tokenSig}::`)) sharedCatalogCache.delete(key);
-    }
-    for (const key of inFlightRequests.keys()) {
-      if (key.startsWith(`${tokenSig}::`)) inFlightRequests.delete(key);
-    }
-  } else {
-    sharedCatalogCache.clear();
-    inFlightRequests.clear();
-  }
-}
-
-export function invalidateCatalogResource(accessToken: string, endpoint: string): void {
-  const tokenSig =
-    accessToken.length > 32
-      ? `${accessToken.slice(0, 16)}...${accessToken.slice(-16)}`
-      : accessToken;
-  const prefix = `${tokenSig}::${endpoint}`;
-  for (const key of sharedCatalogCache.keys()) {
-    if (key.startsWith(prefix)) {
-      sharedCatalogCache.delete(key);
-    }
-  }
-}
-
-export async function fetchSharedCatalogResource<T>(
-  accessToken: string,
-  endpoint: string,
-  params: Record<string, unknown> | undefined,
-  fetcher: () => Promise<T>,
-): Promise<T> {
-  const cacheKey = makeCacheKey(accessToken, endpoint, params);
-
-  const existing = sharedCatalogCache.get(cacheKey);
-  if (existing !== undefined) {
-    return existing.data as T;
-  }
-
-  const inFlight = inFlightRequests.get(cacheKey);
-  if (inFlight !== undefined) {
-    return inFlight as Promise<T>;
-  }
-
-  const promise = fetcher()
-    .then((result) => {
-      sharedCatalogCache.set(cacheKey, { data: result, cachedAt: Date.now() });
-      return result;
-    })
-    .finally(() => {
-      inFlightRequests.delete(cacheKey);
-    });
-
-  inFlightRequests.set(cacheKey, promise);
-  return promise;
-}
+export {
+  clearCatalogCache,
+  invalidateCatalogResource,
+  fetchSharedCatalogResource,
+} from './catalog-cache';
+import {
+  clearCatalogCache,
+  invalidateCatalogResource,
+  fetchSharedCatalogResource,
+} from './catalog-cache';
 
 export function createVenueCatalogGateway(client?: ApiClient): CatalogGateway {
   let resolvedClient = client;

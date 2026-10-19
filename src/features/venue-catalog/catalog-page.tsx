@@ -63,6 +63,7 @@ import { useManagementSession } from '../identity-access/use-management-session'
 const catalogSession = sharedManagementSession;
 const catalogGateway = createVenueCatalogGateway();
 const catalogContractDigest = apiContractLock.source.sha256.slice(0, 8);
+const authorizeCatalogSession: Authorize = (operation) => catalogSession.authorize(operation);
 
 export function VenueCatalogPage() {
   const {
@@ -97,7 +98,7 @@ export function VenueCatalogPage() {
       <VenueCatalogWorkspace
         role={state === 'manager' ? 'MANAGER' : 'STAFF'}
         gateway={catalogGateway}
-        authorize={(operation) => catalogSession.authorize(operation)}
+        authorize={authorizeCatalogSession}
       />
     );
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ApiClientError, createApiClient } from '../../lib/api/client';
 import type { components } from '../../lib/api/generated/schema';
 import { addMyManagedBookingId, getMyManagedBookingIds } from '../identity-access/dashboard-live';
@@ -33,6 +33,20 @@ export function ManagementBookingWorkspace({
   currentEmail,
 }: Readonly<ManagementBookingWorkspaceProps>) {
   const [activeTab, setActiveTab] = useState<'manage' | 'consultation' | 'booking'>('consultation');
+  const [visitedTabs, setVisitedTabs] = useState<Set<'manage' | 'consultation' | 'booking'>>(
+    () => new Set([activeTab]),
+  );
+
+  const switchTab = useCallback((tab: 'manage' | 'consultation' | 'booking') => {
+    setActiveTab(tab);
+    setVisitedTabs((prev) => {
+      if (prev.has(tab)) return prev;
+      const next = new Set(prev);
+      next.add(tab);
+      return next;
+    });
+  }, []);
+
   const [consultation, setConsultation] = useState<{ id: string; revision: number } | null>(null);
   const [bookingId, setBookingId] = useState('');
   const [proposal, setProposal] = useState<ProposalView | null>(null);
@@ -64,13 +78,13 @@ export function ManagementBookingWorkspace({
     ) {
       queueMicrotask(() => {
         setConsultation({ id, revision });
-        setActiveTab('booking');
+        switchTab('booking');
       });
     }
     const bId = params.get('bookingId');
     if (bId !== null && /^[a-f0-9-]{36}$/iu.test(bId)) {
       setBookingId(bId);
-      setActiveTab('manage');
+      switchTab('manage');
       void run('load', () => authorize((token) => gateway.loadProposal(token, bId))).then(
         (result) => {
           if (result !== null) setProposal(result);
@@ -88,7 +102,7 @@ export function ManagementBookingWorkspace({
     const tCount = expG && expG > 0 ? Math.max(1, Math.ceil(expG / 10)) : undefined;
 
     if (dName || em || nt || pDate || expG) {
-      setActiveTab('consultation');
+      switchTab('consultation');
       setPrefill({
         displayName: dName,
         email: em,
@@ -147,13 +161,13 @@ export function ManagementBookingWorkspace({
     }
   };
 
-  const loadProposal = async (id: string, switchTab = true) => {
+  const loadProposal = async (id: string, shouldSwitchTab = true) => {
     const result = await run('load', () => authorize((token) => gateway.loadProposal(token, id)));
     if (result !== null) {
       setProposal(result);
       recordMyBooking(id);
-      if (switchTab) {
-        setActiveTab('manage');
+      if (shouldSwitchTab) {
+        switchTab('manage');
       }
     }
   };
@@ -166,7 +180,7 @@ export function ManagementBookingWorkspace({
   const resetConsultation = () => {
     setConsultation(null);
     setPrefill({});
-    setActiveTab('consultation');
+    switchTab('consultation');
     setMessage(
       'Đã xóa mã tư vấn cũ. Hãy nhập thông tin cặp đôi mới ở Bước 01 rồi bấm "Tạo hồ sơ tư vấn".',
     );
@@ -212,7 +226,7 @@ export function ManagementBookingWorkspace({
           role="tab"
           id="tab-manage"
           aria-selected={activeTab === 'manage'}
-          onClick={() => setActiveTab('manage')}
+          onClick={() => switchTab('manage')}
           style={bookingStyles.tabButton(activeTab === 'manage')}
         >
           <span>📋 Tiệc đang xử lý</span>
@@ -223,7 +237,7 @@ export function ManagementBookingWorkspace({
           role="tab"
           id="tab-consultation"
           aria-selected={activeTab === 'consultation'}
-          onClick={() => setActiveTab('consultation')}
+          onClick={() => switchTab('consultation')}
           style={bookingStyles.tabButton(activeTab === 'consultation')}
         >
           <span>📝 1. Hồ sơ tư vấn</span>
@@ -234,7 +248,7 @@ export function ManagementBookingWorkspace({
           role="tab"
           id="tab-booking"
           aria-selected={activeTab === 'booking'}
-          onClick={() => setActiveTab('booking')}
+          onClick={() => switchTab('booking')}
           style={bookingStyles.tabButton(activeTab === 'booking')}
         >
           <span>🏛️ 2. Khảo sát sảnh &amp; Đặt tiệc</span>
@@ -271,7 +285,7 @@ export function ManagementBookingWorkspace({
                 note: input.note,
               }));
               setMessage('Đã tạo hồ sơ tư vấn.');
-              setActiveTab('booking');
+              switchTab('booking');
             }
           }}
           onInvite={async () => {
@@ -352,7 +366,7 @@ export function ManagementBookingWorkspace({
           <button
             type="button"
             className="primary-button"
-            onClick={() => setActiveTab('booking')}
+            onClick={() => switchTab('booking')}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -382,70 +396,74 @@ export function ManagementBookingWorkspace({
             : bookingStyles.stepContainerHidden
         }
       >
-        <div
-          style={{
-            marginBottom: '1rem',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            gap: '0.5rem',
-          }}
-        >
-          <button
-            type="button"
-            onClick={() => setActiveTab('consultation')}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: 'var(--hy-wine, #7a1f3d)',
-              cursor: 'pointer',
-              fontSize: '0.88rem',
-              fontWeight: 600,
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '4px 0',
-            }}
-          >
-            <span>←</span>
-            <span>Quay lại Bước 01: Hồ sơ tư vấn</span>
-          </button>
-          {consultation ? (
-            <span
+        {visitedTabs.has('booking') ? (
+          <>
+            <div
               style={{
-                fontSize: '0.82rem',
-                color: 'var(--hy-status-success, #2f6b4f)',
-                background: 'var(--hy-status-success-bg, #e7f1ea)',
-                padding: '4px 10px',
-                borderRadius: '6px',
-                fontWeight: 600,
-                border: '1px solid var(--hy-status-success-border, #bbf7d0)',
+                marginBottom: '1rem',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '0.5rem',
               }}
             >
-              ✓ Đã kết nối mã tư vấn: {consultation.id.slice(0, 8)}… (Phiên bản{' '}
-              {consultation.revision})
-            </span>
-          ) : null}
-        </div>
-        <BookingCreatePanel
-          disabled={pending !== null}
-          consultation={consultation}
-          prefill={prefill}
-          gateway={gateway}
-          authorize={authorize}
-          run={run}
-          autoLoadCatalog={autoLoadCatalog && activeTab === 'booking'}
-          onCreated={(result, consultationId) => {
-            setBookingId(result.bookingId);
-            setConsultation({ id: consultationId, revision: result.consultationRevision });
-            setMessage('Đã tạo hồ sơ đặt tiệc.');
-            void loadProposal(result.bookingId, true);
-            recordMyBooking(result.bookingId);
-          }}
-          setMessage={setMessage}
-          onValidationError={setError}
-        />
+              <button
+                type="button"
+                onClick={() => switchTab('consultation')}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--hy-wine, #7a1f3d)',
+                  cursor: 'pointer',
+                  fontSize: '0.88rem',
+                  fontWeight: 600,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '4px 0',
+                }}
+              >
+                <span>←</span>
+                <span>Quay lại Bước 01: Hồ sơ tư vấn</span>
+              </button>
+              {consultation ? (
+                <span
+                  style={{
+                    fontSize: '0.82rem',
+                    color: 'var(--hy-status-success, #2f6b4f)',
+                    background: 'var(--hy-status-success-bg, #e7f1ea)',
+                    padding: '4px 10px',
+                    borderRadius: '6px',
+                    fontWeight: 600,
+                    border: '1px solid var(--hy-status-success-border, #bbf7d0)',
+                  }}
+                >
+                  ✓ Đã kết nối mã tư vấn: {consultation.id.slice(0, 8)}… (Phiên bản{' '}
+                  {consultation.revision})
+                </span>
+              ) : null}
+            </div>
+            <BookingCreatePanel
+              disabled={pending !== null}
+              consultation={consultation}
+              prefill={prefill}
+              gateway={gateway}
+              authorize={authorize}
+              run={run}
+              autoLoadCatalog={autoLoadCatalog && activeTab === 'booking'}
+              onCreated={(result, consultationId) => {
+                setBookingId(result.bookingId);
+                setConsultation({ id: consultationId, revision: result.consultationRevision });
+                setMessage('Đã tạo hồ sơ đặt tiệc.');
+                void loadProposal(result.bookingId, true);
+                recordMyBooking(result.bookingId);
+              }}
+              setMessage={setMessage}
+              onValidationError={setError}
+            />
+          </>
+        ) : null}
       </section>
 
       {/* Phân hệ 3: Tiệc đang xử lý (Đề xuất & Vòng đời) */}
@@ -499,7 +517,7 @@ export function ManagementBookingWorkspace({
               <button
                 type="button"
                 className="primary-button"
-                onClick={() => setActiveTab('consultation')}
+                onClick={() => switchTab('consultation')}
                 style={{ padding: '8px 18px', fontSize: '0.9rem' }}
               >
                 📝 1. Tạo hồ sơ tư vấn mới →
@@ -507,7 +525,7 @@ export function ManagementBookingWorkspace({
               <button
                 type="button"
                 className="primary-button booking-secondary"
-                onClick={() => setActiveTab('booking')}
+                onClick={() => switchTab('booking')}
                 style={{ padding: '8px 18px', fontSize: '0.9rem' }}
               >
                 🏛️ 2. Khảo sát sảnh &amp; Đặt tiệc →

@@ -1,5 +1,6 @@
 import type { components } from '../../lib/api/generated/schema';
 import { ApiClientError, createApiClient, type ApiClient } from '../../lib/api/client';
+import { clearCatalogCache } from '../venue-catalog/catalog-cache';
 
 type Role = components['schemas']['CurrentUserResponse']['data']['roles'][number];
 
@@ -268,6 +269,7 @@ export class ManagementIdentitySession {
     this.accessToken = null;
     this.state = anonymousSnapshot;
     this.removePersisted();
+    clearCatalogCache();
   }
 }
 
