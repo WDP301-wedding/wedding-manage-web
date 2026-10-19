@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   contractService,
   type ContractListData,
@@ -26,27 +26,36 @@ export function ContractPanel({
   const [error, setError] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const activeBookingIdRef = useRef(bookingId);
 
-  const loadContracts = async () => {
-    if (!bookingId) return;
+  const loadContracts = async (targetId = bookingId) => {
+    if (!targetId) return;
     setLoading(true);
     setError(null);
     try {
-      const res = await contractService.getContracts(bookingId);
+      const res = await contractService.getContracts(targetId);
+      if (activeBookingIdRef.current !== targetId) return;
       setData(res);
     } catch (err) {
+      if (activeBookingIdRef.current !== targetId) return;
       if (err instanceof ApiServiceError) {
         setError(err.message);
       } else {
         setError('Không thể tải thông tin hợp đồng tiệc.');
       }
     } finally {
-      setLoading(false);
+      if (activeBookingIdRef.current === targetId) {
+        setLoading(false);
+      }
     }
   };
 
   useEffect(() => {
-    void loadContracts();
+    activeBookingIdRef.current = bookingId;
+    setData(null);
+    setError(null);
+    setActionMessage(null);
+    void loadContracts(bookingId);
   }, [bookingId]);
 
   const currentRevision: ContractRevisionItem | null =

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import type { AnalyticsBookingsData } from '../../services/analytics.service';
 import type { BookingAssignmentsRegistry } from './booking-assignments';
 import { dashboardStyles } from './dashboard.styles';
@@ -71,71 +71,96 @@ export function DashboardBookingsSection({
     [assignments, resolvedAccountId],
   );
 
-  const myBookings = bookings.filter((b) => isMine(b.bookingId));
+  const myBookings = useMemo(() => bookings.filter((b) => isMine(b.bookingId)), [bookings, isMine]);
   const myBookingsCount = myBookings.length;
   const bookingTab = userSelectedTab ?? (myBookingsCount > 0 ? 'mine' : 'all');
-  const setBookingTab = (tab: 'mine' | 'all') => {
+  const setBookingTab = useCallback((tab: 'mine' | 'all') => {
     setUserSelectedTab(tab);
     setCurrentPage(1);
-  };
+  }, []);
 
-  const handleSortChange = (field: BookingSortField) => {
-    if (sortField === field) {
-      setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'));
-    } else {
-      setSortField(field);
+  const handleSortChange = useCallback((field: BookingSortField) => {
+    setSortField((currentField) => {
+      if (currentField === field) {
+        setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+        return currentField;
+      }
       setSortOrder(field === 'tableCount' ? 'desc' : 'asc');
-    }
+      return field;
+    });
     setCurrentPage(1);
-  };
+  }, []);
 
-  const handleQuickSortChange = (val: string) => {
+  const handleQuickSortChange = useCallback((val: string) => {
     const [f, o] = val.split('-') as [BookingSortField, SortOrder];
     setSortField(f);
     setSortOrder(o);
     setCurrentPage(1);
-  };
+  }, []);
 
-  const currentTabBookings = bookingTab === 'mine' ? myBookings : bookings;
+  const normalizedQuery = useMemo(() => searchQuery.toLowerCase().trim(), [searchQuery]);
 
-  const filteredBookings = currentTabBookings.filter((b) => {
-    if (phaseFilter !== 'ALL' && b.phase !== phaseFilter) return false;
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim();
-      const hallMatch = (b.hallNameSnapshot || '').toLowerCase().includes(q);
-      const idMatch = b.bookingId.toLowerCase().includes(q);
-      const emailMatch = (assignments[b.bookingId]?.assignedEmail || '').toLowerCase().includes(q);
-      return hallMatch || idMatch || emailMatch;
-    }
-    return true;
-  });
+  const currentTabBookings = useMemo(
+    () => (bookingTab === 'mine' ? myBookings : bookings),
+    [bookingTab, myBookings, bookings],
+  );
 
-  const sortedBookings = [...filteredBookings].sort((a, b) => {
-    let cmp = 0;
-    if (sortField === 'eventDate') {
-      const timeA = new Date(a.eventDate).getTime();
-      const timeB = new Date(b.eventDate).getTime();
-      cmp = timeA - timeB;
-      if (cmp === 0) {
-        cmp = a.shiftCode.localeCompare(b.shiftCode);
+  const filteredBookings = useMemo(() => {
+    if (phaseFilter === 'ALL' && !normalizedQuery) return currentTabBookings;
+    return currentTabBookings.filter((b) => {
+      if (phaseFilter !== 'ALL' && b.phase !== phaseFilter) return false;
+      if (normalizedQuery) {
+        const hallMatch = (b.hallNameSnapshot || '').toLowerCase().includes(normalizedQuery);
+        const idMatch = b.bookingId.toLowerCase().includes(normalizedQuery);
+        const emailMatch = (assignments[b.bookingId]?.assignedEmail || '')
+          .toLowerCase()
+          .includes(normalizedQuery);
+        return hallMatch || idMatch || emailMatch;
       }
-    } else if (sortField === 'hallName') {
-      cmp = (a.hallNameSnapshot || '').localeCompare(b.hallNameSnapshot || '', 'vi');
-    } else if (sortField === 'tableCount') {
-      cmp = (a.tableCount || 0) - (b.tableCount || 0);
-    } else if (sortField === 'shiftCode') {
-      cmp = a.shiftCode.localeCompare(b.shiftCode);
-    } else if (sortField === 'phase') {
-      cmp = a.phase.localeCompare(b.phase);
+      return true;
+    });
+  }, [assignments, currentTabBookings, normalizedQuery, phaseFilter]);
+
+  const sortedBookings = useMemo(() => {
+    if (filteredBookings.length <= 1) return filteredBookings;
+    const items = [...filteredBookings];
+    if (sortField === 'eventDate') {
+      const timestamps = new Map<string, number>();
+      for (const b of items) {
+        timestamps.set(b.bookingId, new Date(b.eventDate).getTime());
+      }
+      items.sort((a, b) => {
+        const timeA = timestamps.get(a.bookingId) ?? 0;
+        const timeB = timestamps.get(b.bookingId) ?? 0;
+        const cmp = timeA !== timeB ? timeA - timeB : a.shiftCode.localeCompare(b.shiftCode);
+        return sortOrder === 'asc' ? cmp : -cmp;
+      });
+    } else {
+      items.sort((a, b) => {
+        let cmp = 0;
+        if (sortField === 'hallName') {
+          cmp = (a.hallNameSnapshot || '').localeCompare(b.hallNameSnapshot || '', 'vi');
+        } else if (sortField === 'tableCount') {
+          cmp = (a.tableCount || 0) - (b.tableCount || 0);
+        } else if (sortField === 'shiftCode') {
+          cmp = a.shiftCode.localeCompare(b.shiftCode);
+        } else if (sortField === 'phase') {
+          cmp = a.phase.localeCompare(b.phase);
+        }
+        return sortOrder === 'asc' ? cmp : -cmp;
+      });
     }
-    return sortOrder === 'asc' ? cmp : -cmp;
-  });
+    return items;
+  }, [filteredBookings, sortField, sortOrder]);
 
   const totalPages = Math.max(1, Math.ceil(sortedBookings.length / pageSize));
   const safeCurrentPage = Math.min(currentPage, totalPages);
   const startIndex = (safeCurrentPage - 1) * pageSize;
   const endIndex = Math.min(startIndex + pageSize, sortedBookings.length);
-  const paginatedBookings = sortedBookings.slice(startIndex, endIndex);
+  const paginatedBookings = useMemo(
+    () => sortedBookings.slice(startIndex, endIndex),
+    [sortedBookings, startIndex, endIndex],
+  );
 
   if (!isManager) {
     return <StaffCheckinBanner />;

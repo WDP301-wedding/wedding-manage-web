@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   billingService,
   type IncidentalExpensesResponse,
@@ -28,28 +28,55 @@ export function IncidentalsPanel({
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const activeBookingIdRef = useRef(bookingId);
 
-  const loadData = async () => {
-    if (!bookingId) return;
+  const loadData = async (targetId = bookingId) => {
+    if (!targetId) return;
     setLoading(true);
     setError(null);
     try {
       const [incRes, finRes] = await Promise.allSettled([
-        billingService.getIncidentals(bookingId),
-        billingService.getFinalInvoices(bookingId),
+        billingService.getIncidentals(targetId),
+        billingService.getFinalInvoices(targetId),
       ]);
-      if (incRes.status === 'fulfilled') setIncidentals(incRes.value);
-      if (finRes.status === 'fulfilled') setFinalInvoices(finRes.value);
+      if (activeBookingIdRef.current !== targetId) return;
+
+      const errors: string[] = [];
+      if (incRes.status === 'fulfilled') {
+        setIncidentals(incRes.value);
+      } else {
+        const friendly = describeApiError(incRes.reason);
+        errors.push(`Phát sinh: ${friendly.message}`);
+      }
+
+      if (finRes.status === 'fulfilled') {
+        setFinalInvoices(finRes.value);
+      } else {
+        const friendly = describeApiError(finRes.reason);
+        errors.push(`Hoá đơn: ${friendly.message}`);
+      }
+
+      if (errors.length > 0) {
+        setError(errors.join(' | '));
+      }
     } catch (err) {
+      if (activeBookingIdRef.current !== targetId) return;
       const friendly = describeApiError(err);
       setError(friendly.message);
     } finally {
-      setLoading(false);
+      if (activeBookingIdRef.current === targetId) {
+        setLoading(false);
+      }
     }
   };
 
   useEffect(() => {
-    void loadData();
+    activeBookingIdRef.current = bookingId;
+    setIncidentals(null);
+    setFinalInvoices(null);
+    setError(null);
+    setMessage(null);
+    void loadData(bookingId);
   }, [bookingId]);
 
   const handleCreateIncidental = async (formData: IncidentalFormData) => {

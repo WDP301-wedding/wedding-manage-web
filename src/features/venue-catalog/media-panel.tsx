@@ -22,6 +22,7 @@ export function MediaPanel({
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const assetsLoadedAtRef = useRef<number>(0);
+  const inFlightRenewRef = useRef<boolean>(false);
 
   const selected = useMemo(
     () => resources.find((resource) => mediaResourceKey(resource) === selectedKey) ?? resources[0],
@@ -80,16 +81,31 @@ export function MediaPanel({
         : 0;
     const remainingSeconds = minimumTtl - elapsedSeconds;
 
-    if (remainingSeconds <= 30) {
-      void loadAssets(selected).catch((caught: unknown) => setError(mediaErrorMessage(caught)));
-      return;
+    // Renew 30s before expiry with minimum 15s delay to prevent tight hotloops
+    const delaySeconds = Math.max(15, remainingSeconds - 30);
+
+    const triggerRenew = () => {
+      if (inFlightRenewRef.current) return;
+      inFlightRenewRef.current = true;
+      void loadAssets(selected)
+        .catch((caught: unknown) => setError(mediaErrorMessage(caught)))
+        .finally(() => {
+          inFlightRenewRef.current = false;
+        });
+    };
+
+    if (typeof document !== 'undefined' && document.hidden) {
+      const onVisible = () => {
+        if (!document.hidden) {
+          document.removeEventListener('visibilitychange', onVisible);
+          triggerRenew();
+        }
+      };
+      document.addEventListener('visibilitychange', onVisible);
+      return () => document.removeEventListener('visibilitychange', onVisible);
     }
 
-    const timeout = setTimeout(
-      () =>
-        void loadAssets(selected).catch((caught: unknown) => setError(mediaErrorMessage(caught))),
-      Math.max(1, remainingSeconds - 30) * 1000,
-    );
+    const timeout = setTimeout(triggerRenew, delaySeconds * 1000);
     return () => clearTimeout(timeout);
   }, [active, assets, loadAssets, selected]);
 
@@ -101,7 +117,7 @@ export function MediaPanel({
     try {
       await authorize(operation);
       setMessage(success);
-      await load(mediaResourceKey(selected));
+      await loadAssets(selected);
       return true;
     } catch (caught) {
       setError(mediaErrorMessage(caught));
