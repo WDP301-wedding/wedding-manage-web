@@ -11,3 +11,9 @@
 @import './styles/globals/layout-media-intake.css';
 @import './styles/globals/operations-drawer.css';
 @import './styles/globals/hy-core-components.css';
+
+:root {
+  --font-display: 'Be Vietnam Pro', 'Segoe UI', Arial, sans-serif;
+  --font-body: 'Be Vietnam Pro', 'Segoe UI', Arial, sans-serif;
+  --font-script: 'Be Vietnam Pro', 'Segoe UI', Arial, sans-serif;
+}
