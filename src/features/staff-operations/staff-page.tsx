@@ -5,7 +5,6 @@ import { OperationsShell } from '../identity-access/operations-shell';
 import {
   type ManagementIdentitySession,
   sharedManagementSession,
-  type ManagementSessionSnapshot,
 } from '../identity-access/session';
 import {
   staffService,
@@ -17,12 +16,14 @@ import { staffStyles } from './staff.styles';
 import { CheckinDeskSection } from './checkin-desk-section';
 import { StaffManagementSection } from './staff-management-section';
 
+import { useManagementSession } from '../identity-access/use-management-session';
+
 export function StaffOperationsPage({
   session = sharedManagementSession,
 }: Readonly<{
   session?: ManagementIdentitySession;
 }>) {
-  const [snapshot, setSnapshot] = useState<ManagementSessionSnapshot | null>(null);
+  const { snapshot, logout: handleLogout } = useManagementSession({ session });
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -42,16 +43,6 @@ export function StaffOperationsPage({
   const [staffAccountId, setStaffAccountId] = useState('');
 
   useEffect(() => {
-    let active = true;
-    void session.restore().then((snap) => {
-      if (active) setSnapshot(snap);
-    });
-    return () => {
-      active = false;
-    };
-  }, [session]);
-
-  useEffect(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const bId = params.get('bookingId');
@@ -62,12 +53,6 @@ export function StaffOperationsPage({
   }, []);
 
   const isManager = snapshot?.status === 'authenticated' && snapshot.presentation === 'manager';
-
-  const handleLogout = () => {
-    void session.logout().then(() => {
-      setSnapshot(session.snapshot());
-    });
-  };
 
   // Search guests for check-in
   const handleSearchGuests = async (event?: FormEvent) => {

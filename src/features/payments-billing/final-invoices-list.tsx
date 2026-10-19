@@ -1,10 +1,7 @@
 'use client';
 
 import type { FinalInvoicesResponse } from '../../services/billing.service';
-
-function formatVnd(amount: number): string {
-  return `${amount.toLocaleString('vi-VN')} đ`;
-}
+import { formatVnd } from '../../lib/formatters';
 
 export function FinalInvoicesList({
   finalInvoices,

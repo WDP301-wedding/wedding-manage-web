@@ -116,17 +116,45 @@ export function ManagerVenueWorkspace({
     return 'venue';
   });
 
+  const [visitedTabs, setVisitedTabs] = useState<Set<CatalogTab>>(() => new Set([activeTab]));
+
+  const handleTabChange = useCallback((tab: CatalogTab) => {
+    setActiveTab(tab);
+    setVisitedTabs((prev) => {
+      if (prev.has(tab)) return prev;
+      const next = new Set(prev);
+      next.add(tab);
+      return next;
+    });
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      if (tab === 'venue') {
+        url.searchParams.delete('tab');
+      } else {
+        url.searchParams.set('tab', tab);
+      }
+      window.history.replaceState(null, '', url.toString());
+    }
+  }, []);
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const tabParam = new URLSearchParams(window.location.search).get('tab');
-    if (
-      tabParam === 'food' ||
-      tabParam === 'timeline' ||
-      tabParam === 'layout' ||
-      tabParam === 'venue'
-    ) {
-      setActiveTab(tabParam);
-    }
+    const syncFromUrl = () => {
+      const tabParam = new URLSearchParams(window.location.search).get('tab');
+      const validTab: CatalogTab =
+        tabParam === 'food' || tabParam === 'timeline' || tabParam === 'layout'
+          ? tabParam
+          : 'venue';
+      setActiveTab(validTab);
+      setVisitedTabs((prev) => {
+        if (prev.has(validTab)) return prev;
+        const next = new Set(prev);
+        next.add(validTab);
+        return next;
+      });
+    };
+    window.addEventListener('popstate', syncFromUrl);
+    return () => window.removeEventListener('popstate', syncFromUrl);
   }, []);
   const [snapshot, setSnapshot] = useState<VenueCatalogSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
@@ -220,7 +248,7 @@ export function ManagerVenueWorkspace({
         )}
       </div>
 
-      <CatalogTabs active={activeTab} onChange={setActiveTab} />
+      <CatalogTabs active={activeTab} onChange={handleTabChange} />
       <div
         role="tabpanel"
         id="catalog-panel-venue"
@@ -303,7 +331,9 @@ export function ManagerVenueWorkspace({
             }
           }}
         />
-        {supportsMedia(gateway) ? <MediaPanel gateway={gateway} authorize={authorize} /> : null}
+        {supportsMedia(gateway) && visitedTabs.has('venue') ? (
+          <MediaPanel gateway={gateway} authorize={authorize} active={activeTab === 'venue'} />
+        ) : null}
       </div>
       <div
         role="tabpanel"
@@ -311,11 +341,13 @@ export function ManagerVenueWorkspace({
         aria-labelledby="catalog-tab-food"
         hidden={activeTab !== 'food'}
       >
-        {supportsFood(gateway) ? (
-          <DishMenuPanel gateway={gateway} authorize={authorize} />
-        ) : (
-          <p className="catalog-empty">Không hỗ trợ quản lý món ăn.</p>
-        )}
+        {visitedTabs.has('food') ? (
+          supportsFood(gateway) ? (
+            <DishMenuPanel gateway={gateway} authorize={authorize} />
+          ) : (
+            <p className="catalog-empty">Không hỗ trợ quản lý món ăn.</p>
+          )
+        ) : null}
       </div>
       <div
         role="tabpanel"
@@ -323,11 +355,13 @@ export function ManagerVenueWorkspace({
         aria-labelledby="catalog-tab-timeline"
         hidden={activeTab !== 'timeline'}
       >
-        {supportsTimeline(gateway) ? (
-          <TimelinePanel gateway={gateway} authorize={authorize} />
-        ) : (
-          <p className="catalog-empty">Không hỗ trợ quản lý kịch bản.</p>
-        )}
+        {visitedTabs.has('timeline') ? (
+          supportsTimeline(gateway) ? (
+            <TimelinePanel gateway={gateway} authorize={authorize} />
+          ) : (
+            <p className="catalog-empty">Không hỗ trợ quản lý kịch bản.</p>
+          )
+        ) : null}
       </div>
       <div
         role="tabpanel"
@@ -335,11 +369,13 @@ export function ManagerVenueWorkspace({
         aria-labelledby="catalog-tab-layout"
         hidden={activeTab !== 'layout'}
       >
-        {supportsLayout(gateway) ? (
-          <LayoutPanel gateway={gateway} authorize={authorize} />
-        ) : (
-          <p className="catalog-empty">Không hỗ trợ quản lý sơ đồ bàn.</p>
-        )}
+        {visitedTabs.has('layout') ? (
+          supportsLayout(gateway) ? (
+            <LayoutPanel gateway={gateway} authorize={authorize} />
+          ) : (
+            <p className="catalog-empty">Không hỗ trợ quản lý sơ đồ bàn.</p>
+          )
+        ) : null}
       </div>
     </main>
   );

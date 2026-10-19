@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { ApiClientError } from '../../lib/api/client';
 import type { CatalogGateway, CatalogMedia, CatalogMediaResource } from './catalog-api';
@@ -12,7 +12,8 @@ type Authorize = <T>(operation: (accessToken: string) => Promise<T>) => Promise<
 export function MediaPanel({
   authorize,
   gateway,
-}: Readonly<{ authorize: Authorize; gateway: CatalogGateway }>) {
+  active = true,
+}: Readonly<{ authorize: Authorize; gateway: CatalogGateway; active?: boolean }>) {
   const [resources, setResources] = useState<readonly CatalogMediaResource[]>([]);
   const [selectedKey, setSelectedKey] = useState('');
   const [assets, setAssets] = useState<readonly CatalogMedia[]>([]);
@@ -20,6 +21,7 @@ export function MediaPanel({
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const assetsLoadedAtRef = useRef<number>(0);
 
   const selected = useMemo(
     () => resources.find((resource) => mediaResourceKey(resource) === selectedKey) ?? resources[0],
@@ -31,6 +33,7 @@ export function MediaPanel({
       const next = await authorize((token) =>
         gateway.loadMedia(token, { path: resource.path, id: resource.id }),
       );
+      assetsLoadedAtRef.current = Date.now();
       setAssets([...next].sort((left, right) => left.displayOrder - right.displayOrder));
     },
     [authorize, gateway],
@@ -67,17 +70,28 @@ export function MediaPanel({
   }, [load]);
 
   useEffect(() => {
-    if (selected === undefined || assets.length === 0) return;
+    if (!active || selected === undefined || assets.length === 0) return;
     const minimumTtl = Math.min(
       ...assets.map(({ signedUrlExpiresInSeconds }) => signedUrlExpiresInSeconds),
     );
+    const elapsedSeconds =
+      assetsLoadedAtRef.current > 0
+        ? Math.max(0, Math.floor((Date.now() - assetsLoadedAtRef.current) / 1000))
+        : 0;
+    const remainingSeconds = minimumTtl - elapsedSeconds;
+
+    if (remainingSeconds <= 30) {
+      void loadAssets(selected).catch((caught: unknown) => setError(mediaErrorMessage(caught)));
+      return;
+    }
+
     const timeout = setTimeout(
       () =>
         void loadAssets(selected).catch((caught: unknown) => setError(mediaErrorMessage(caught))),
-      Math.max(1, minimumTtl - 30) * 1000,
+      Math.max(1, remainingSeconds - 30) * 1000,
     );
     return () => clearTimeout(timeout);
-  }, [assets, loadAssets, selected]);
+  }, [active, assets, loadAssets, selected]);
 
   const run = async (success: string, operation: (token: string) => Promise<void>) => {
     if (selected === undefined) return false;

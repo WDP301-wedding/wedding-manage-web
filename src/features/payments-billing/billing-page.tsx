@@ -2,10 +2,10 @@
 
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
+import { ApiClientError } from '../../lib/api/client';
 import {
   type ManagementIdentitySession,
   sharedManagementSession,
-  type ManagementSessionSnapshot,
 } from '../identity-access/session';
 import { OperationsShell } from '../identity-access/operations-shell';
 import {
@@ -30,6 +30,8 @@ import { AttemptLookupPanel } from './attempt-lookup-panel';
 import { BillingMutationsSection } from './billing-mutations-section';
 import { IncidentalsPanel } from './incidentals-panel';
 
+import { useManagementSession } from '../identity-access/use-management-session';
+
 type Authorize = <T>(operation: (token: string) => Promise<T>) => Promise<T>;
 type MutationResult =
   | Awaited<ReturnType<ManagementBillingGateway['recordManual']>>
@@ -43,33 +45,14 @@ export function ManagementBillingPage({
   session = identity,
   gateway = billing,
 }: Readonly<{ session?: ManagementIdentitySession; gateway?: ManagementBillingGateway }>) {
-  const [snapshot, setSnapshot] = useState<ManagementSessionSnapshot | null>(null);
-  const [loggingOut, setLoggingOut] = useState(false);
-  const [logoutError, setLogoutError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    void session.restore().then((value) => {
-      if (active) setSnapshot(value);
-    });
-    return () => {
-      active = false;
-    };
-  }, [session]);
-
-  const handleLogout = () => {
-    setLoggingOut(true);
-    setLogoutError(null);
-    void session
-      .logout()
-      .catch(() =>
-        setLogoutError('Không thể kết nối máy chủ để đăng xuất. Hãy tải lại trang rồi thử lại.'),
-      )
-      .finally(() => {
-        setSnapshot(session.snapshot());
-        setLoggingOut(false);
-      });
-  };
+  const {
+    snapshot,
+    loggingOut,
+    logoutError,
+    logout: handleLogout,
+  } = useManagementSession({
+    session,
+  });
 
   let content;
   if (snapshot === null) {
@@ -154,7 +137,16 @@ export function ManagementBillingWorkspace({
       setView(null);
       setAttempt(null);
     }
-    setError(billingMessage(caught));
+    const msg = billingMessage(caught);
+    if (caught instanceof ApiClientError && (caught.code || caught.requestId)) {
+      const parts = [
+        caught.code ? `Mã: ${caught.code}` : null,
+        caught.requestId ? `Request ID: ${caught.requestId}` : null,
+      ].filter(Boolean);
+      setError(parts.length > 0 ? `${msg} (${parts.join(', ')})` : msg);
+    } else {
+      setError(msg);
+    }
   };
 
   const run = async (operation: () => Promise<void>) => {
@@ -306,7 +298,7 @@ export function ManagementBillingWorkspace({
         {message !== null && <p role="status">{message}</p>}
         {error !== null && <p role="alert">{error}</p>}
       </div>
-      <div id="billing-content">
+      <div className="billing-workspace-body">
         {view !== null && (
           <>
             <div className="billing-section-heading">
@@ -349,22 +341,6 @@ export function ManagementBillingWorkspace({
                 });
               }}
             />
-            {error !== null && (
-              <div
-                style={{
-                  margin: '1.5rem 0 0.5rem',
-                  padding: '12px 16px',
-                  background: 'var(--hy-status-error-bg, #fdecea)',
-                  border: '1px solid var(--hy-status-error-border, #fecaca)',
-                  borderRadius: '6px',
-                  color: 'var(--hy-status-error, #c62828)',
-                  fontSize: '0.88rem',
-                  lineHeight: 1.5,
-                }}
-              >
-                <strong>⚠ Thao tác chưa hoàn tất:</strong> {error}
-              </div>
-            )}
             <BillingMutationsSection
               view={view}
               pending={pending}

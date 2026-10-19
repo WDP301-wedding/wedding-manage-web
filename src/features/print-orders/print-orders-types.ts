@@ -3,6 +3,8 @@
  * Derived from wedding-be print-orders.schemas.ts and print-policy.ts.
  */
 
+import { formatVndSymbol as formatVnd } from '../../lib/formatters';
+
 export const PRINT_ORDER_STATUSES = [
   'REQUESTED',
   'QUOTED',
@@ -216,9 +218,7 @@ export function isOrderApprovedOrBeyond(status: PrintOrderStatus): boolean {
 /**
  * Formats an integer VND currency value.
  */
-export function formatVnd(amount: number): string {
-  return new Intl.NumberFormat('vi-VN').format(Math.round(amount)) + ' ₫';
-}
+export { formatVnd };
 
 /**
  * Formats an ISO datetime into Vietnamese display format (Asia/Ho_Chi_Minh).

@@ -1,15 +1,15 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { AccountSettings } from './account-settings';
 import { OperationsShell } from './operations-shell';
 import {
   createIdentityApi,
   type ManagementIdentitySession,
   sharedManagementSession,
-  type ManagementSessionSnapshot,
 } from './session';
+import { useManagementSession } from './use-management-session';
 
 const browserSession = sharedManagementSession;
 
@@ -18,38 +18,20 @@ export function ManagementAccountPage() {
 }
 
 export function ManagementAccountExperience({ session }: { session: ManagementIdentitySession }) {
-  const [snapshot, setSnapshot] = useState<ManagementSessionSnapshot | null>(null);
-  const [pending, setPending] = useState(false);
+  const {
+    snapshot,
+    setSnapshot,
+    loggingOut: pending,
+    logoutError,
+    logout,
+  } = useManagementSession({ session });
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const sessionExpired = useCallback(() => {
     setSnapshot(session.snapshot());
     setError('Phiên làm việc đã hết hạn. Hãy đăng nhập lại.');
     setMessage(null);
-  }, [session]);
-  useEffect(() => {
-    let active = true;
-    void session.restore().then((next) => {
-      if (active) setSnapshot(next);
-    });
-    return () => {
-      active = false;
-    };
-  }, [session]);
-  const logout = () => {
-    setPending(true);
-    setError(null);
-    setMessage(null);
-    void session
-      .logout()
-      .catch(() =>
-        setError('Không thể kết nối máy chủ để đăng xuất. Hãy tải lại trang rồi thử lại.'),
-      )
-      .finally(() => {
-        setSnapshot(session.snapshot());
-        setPending(false);
-      });
-  };
+  }, [session, setSnapshot]);
   const authenticated = snapshot?.status === 'authenticated' && snapshot.presentation !== 'denied';
   return (
     <OperationsShell
@@ -71,9 +53,9 @@ export function ManagementAccountExperience({ session }: { session: ManagementId
             {message}
           </p>
         ) : null}
-        {error ? (
+        {error || logoutError ? (
           <p className="auth-message auth-error" role="alert">
-            {error}
+            {error || logoutError}
           </p>
         ) : null}
         {snapshot === null ? (

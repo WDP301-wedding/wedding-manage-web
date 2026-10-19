@@ -1,10 +1,7 @@
 'use client';
 
 import type { ContractRevisionItem } from '../../services/contract.service';
-
-function formatVnd(amount: number): string {
-  return `${amount.toLocaleString('vi-VN')} đ`;
-}
+import { formatVnd } from '../../lib/formatters';
 
 export interface ContractLinesTableProps {
   lines: ContractRevisionItem['document']['lines'];

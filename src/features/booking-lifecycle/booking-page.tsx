@@ -1,12 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
 import { OperationsShell } from '../identity-access/operations-shell';
-import {
-  sharedManagementSession,
-  type ManagementSessionSnapshot,
-} from '../identity-access/session';
+import { sharedManagementSession } from '../identity-access/session';
+import { useManagementSession } from '../identity-access/use-management-session';
 import { createManagementBookingGateway } from './booking-api';
 import { type BookingPrefill, type InviteLogEntry, PageState } from './booking-helpers';
 import { ManagementBookingWorkspace } from './booking-workspace';
@@ -23,43 +20,15 @@ export function ManagementBookingPage({
 }: {
   autoLoadCatalog?: boolean;
 } = {}) {
-  const [access, setAccess] = useState<'loading' | 'anonymous' | 'denied' | 'manager'>('loading');
-  const [snapshot, setSnapshot] = useState<ManagementSessionSnapshot | null>(null);
-  const [loggingOut, setLoggingOut] = useState(false);
-  const [logoutError, setLogoutError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    void session.restore().then((snap) => {
-      if (!active) return;
-      setSnapshot(snap);
-      setAccess(
-        snap.status === 'anonymous'
-          ? 'anonymous'
-          : snap.presentation === 'manager'
-            ? 'manager'
-            : 'denied',
-      );
-    });
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  const logout = () => {
-    setLoggingOut(true);
-    setLogoutError(null);
-    void session
-      .logout()
-      .catch(() =>
-        setLogoutError('Không thể kết nối máy chủ để đăng xuất. Hãy tải lại trang rồi thử lại.'),
-      )
-      .finally(() => {
-        setSnapshot(session.snapshot());
-        setAccess('anonymous');
-        setLoggingOut(false);
-      });
-  };
+  const { snapshot, loggingOut, logoutError, logout } = useManagementSession({ session });
+  const access =
+    snapshot === null
+      ? 'loading'
+      : snapshot.status === 'anonymous'
+        ? 'anonymous'
+        : snapshot.presentation === 'manager'
+          ? 'manager'
+          : 'denied';
 
   let content;
   if (access === 'loading') content = <PageState title="Đang xác minh quyền quản lý…" />;

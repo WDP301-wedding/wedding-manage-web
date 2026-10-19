@@ -1,5 +1,7 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+
 import { createVenueCatalogGateway } from '../venue-catalog/catalog-api';
 import { field, money } from './booking-helpers';
 import { ContractPanel } from './contract-panel';
@@ -25,12 +27,22 @@ export function ProposalPanel({
   refresh,
   run,
 }: Readonly<ProposalPanelProps>) {
+  const [isEditingTimeline, setIsEditingTimeline] = useState(false);
+
+  useEffect(() => {
+    setIsEditingTimeline(false);
+  }, [proposal.bookingId]);
+
   const command = async (
     label: string,
     success: string,
     operation: (token: string) => Promise<void>,
-  ) => {
-    if ((await run(label, () => authorize(operation))) !== null) await refresh(success);
+  ): Promise<boolean> => {
+    if ((await run(label, () => authorize(operation))) !== null) {
+      await refresh(success);
+      return true;
+    }
+    return false;
   };
 
   return (
@@ -77,75 +89,98 @@ export function ProposalPanel({
       </article>
       <article className="proposal-timeline">
         <h3>Kịch bản tiệc</h3>
-        {proposal.timeline === null ? (
-          <p>Chưa có mốc chương trình.</p>
-        ) : (
-          <ol>
-            {proposal.timeline.items.map((item) => (
-              <li key={item.itemId}>
-                <time>{item.startTime}</time>
-                <span>
-                  <strong>{item.title}</strong>
-                  {item.description ? <small>{item.description}</small> : null}
-                </span>
-              </li>
-            ))}
-          </ol>
-        )}
-        <p>
-          Giờ bắt đầu mỗi mốc phải từ {proposal.proposal.shift.startTime} đến trước{' '}
-          {proposal.proposal.shift.endTime} theo ca tiệc đã chọn.
-        </p>
-        <TimelineEditor
-          key={proposal.bookingId + ':' + (proposal.timeline?.revisionId ?? 'empty')}
-          disabled={disabled || !proposal.capabilities.canEditTimeline}
-          initialItems={proposal.timeline?.items ?? []}
-          templateSource={{
-            load: async () => {
-              const result = await run('templates', () =>
-                authorize((token) => catalogGateway.loadTimelines(token)),
+        {isEditingTimeline && proposal.capabilities.canEditTimeline ? (
+          <TimelineEditor
+            key={proposal.bookingId + ':' + (proposal.timeline?.revisionId ?? 'empty')}
+            disabled={disabled}
+            initialItems={proposal.timeline?.items ?? []}
+            templateSource={{
+              load: async () => {
+                const result = await run('templates', () =>
+                  authorize((token) => catalogGateway.loadTimelines(token)),
+                );
+                if (result === null) throw new Error('Timeline template loading failed.');
+                return result;
+              },
+              shift: proposal.proposal.shift,
+            }}
+            needsReason={proposal.phase === 'CONFIRMED'}
+            onCancel={() => setIsEditingTimeline(false)}
+            onSave={async (items, reason) => {
+              const succeeded = await command(
+                'timeline',
+                'Đã lưu revision kịch bản mới.',
+                (token) =>
+                  proposal.phase === 'CONFIRMED'
+                    ? gateway.requestChange(token, {
+                        bookingId: proposal.bookingId,
+                        expectedRevision: proposal.revision,
+                        items,
+                        reason,
+                      })
+                    : gateway.saveTimeline(token, {
+                        bookingId: proposal.bookingId,
+                        expectedRevision: proposal.revision,
+                        predecessorRevisionId: proposal.timeline?.revisionId ?? null,
+                        items,
+                      }),
               );
-              if (result === null) throw new Error('Timeline template loading failed.');
-              return result;
-            },
-            shift: proposal.proposal.shift,
-          }}
-          needsReason={proposal.phase === 'CONFIRMED'}
-          onSave={(items, reason) =>
-            command('timeline', 'Đã lưu revision kịch bản mới.', (token) =>
-              proposal.phase === 'CONFIRMED'
-                ? gateway.requestChange(token, {
-                    bookingId: proposal.bookingId,
-                    expectedRevision: proposal.revision,
-                    items,
-                    reason,
-                  })
-                : gateway.saveTimeline(token, {
-                    bookingId: proposal.bookingId,
-                    expectedRevision: proposal.revision,
-                    predecessorRevisionId: proposal.timeline?.revisionId ?? null,
-                    items,
-                  }),
-            )
-          }
-        />
-        {proposal.timeline === null ? null : (
-          <button
-            className="booking-secondary"
-            disabled={disabled || !proposal.capabilities.canApproveTimeline}
-            type="button"
-            onClick={() =>
-              void command('approval', 'Đã ghi nhận phê duyệt của Quản lý.', (token) =>
-                gateway.approveTimeline(token, {
-                  bookingId: proposal.bookingId,
-                  revisionId: proposal.timeline!.revisionId,
-                  expectedRevision: proposal.revision,
-                }),
-              )
-            }
-          >
-            Phê duyệt revision hiện tại
-          </button>
+              if (succeeded) {
+                setIsEditingTimeline(false);
+              }
+            }}
+          />
+        ) : (
+          <>
+            {proposal.timeline === null ? (
+              <p>Chưa có mốc chương trình.</p>
+            ) : (
+              <ol>
+                {proposal.timeline.items.map((item) => (
+                  <li key={item.itemId}>
+                    <time>{item.startTime}</time>
+                    <span>
+                      <strong>{item.title}</strong>
+                      {item.description ? <small>{item.description}</small> : null}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            )}
+            <p>
+              Giờ bắt đầu mỗi mốc phải từ {proposal.proposal.shift.startTime} đến trước{' '}
+              {proposal.proposal.shift.endTime} theo ca tiệc đã chọn.
+            </p>
+            <div className="timeline-editor-actions">
+              {proposal.capabilities.canEditTimeline ? (
+                <button
+                  type="button"
+                  disabled={disabled}
+                  onClick={() => setIsEditingTimeline(true)}
+                >
+                  {proposal.timeline === null ? 'Thiết lập kịch bản tiệc' : 'Chỉnh sửa kịch bản'}
+                </button>
+              ) : null}
+              {proposal.timeline === null ? null : (
+                <button
+                  className="booking-secondary"
+                  disabled={disabled || !proposal.capabilities.canApproveTimeline}
+                  type="button"
+                  onClick={() =>
+                    void command('approval', 'Đã ghi nhận phê duyệt của Quản lý.', (token) =>
+                      gateway.approveTimeline(token, {
+                        bookingId: proposal.bookingId,
+                        revisionId: proposal.timeline!.revisionId,
+                        expectedRevision: proposal.revision,
+                      }),
+                    )
+                  }
+                >
+                  Phê duyệt revision hiện tại
+                </button>
+              )}
+            </div>
+          </>
         )}
       </article>
       <ContractPanel

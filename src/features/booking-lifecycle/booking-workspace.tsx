@@ -435,7 +435,7 @@ export function ManagementBookingWorkspace({
           gateway={gateway}
           authorize={authorize}
           run={run}
-          autoLoadCatalog={autoLoadCatalog}
+          autoLoadCatalog={autoLoadCatalog && activeTab === 'booking'}
           onCreated={(result, consultationId) => {
             setBookingId(result.bookingId);
             setConsultation({ id: consultationId, revision: result.consultationRevision });
