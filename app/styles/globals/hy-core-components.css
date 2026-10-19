@@ -1,0 +1,309 @@
+/* ---------- Hỷ Yến Design System Core Components ---------- */
+
+/* Brand & Monogram */
+.hy-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--hy-ink);
+  text-decoration: none;
+}
+
+.hy-monogram {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: 1.5px solid var(--hy-champagne);
+  border-radius: 50%;
+  background: var(--hy-surface);
+  color: var(--hy-wine);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.hy-brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.hy-brand-text strong {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--hy-ink);
+}
+
+.hy-brand-text small {
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: var(--hy-ink-muted);
+}
+
+.hy-brand-compact .hy-monogram {
+  width: 32px;
+  height: 32px;
+  font-size: 13px;
+}
+
+.hy-brand-compact .hy-brand-text strong {
+  font-size: 16px;
+}
+
+/* Offline Banner */
+.hy-offline-banner {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  background: var(--hy-info-bg);
+  border-bottom: 1px solid var(--hy-outline);
+  color: var(--hy-info);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.hy-offline-icon {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* Skeleton Loading */
+.hy-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+  width: 100%;
+}
+
+.hy-skel {
+  position: relative;
+  overflow: hidden;
+  background: var(--hy-surface-container);
+  border-radius: var(--hy-radius-sm);
+  display: block;
+}
+
+.hy-skel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    rgba(255, 248, 241, 0) 0%,
+    rgba(255, 248, 241, 0.7) 50%,
+    rgba(255, 248, 241, 0) 100%
+  );
+  animation: hy-shimmer 1.5s infinite;
+}
+
+@keyframes hy-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.hy-skel-title {
+  height: 28px;
+  width: 35%;
+}
+
+.hy-skel-line {
+  height: 16px;
+  width: 65%;
+}
+
+.hy-skel-card {
+  height: 120px;
+  width: 100%;
+  border-radius: var(--hy-radius-md);
+}
+
+.hy-skel-row {
+  height: 48px;
+  width: 100%;
+}
+
+.hy-skel-header {
+  height: 36px;
+  width: 100%;
+}
+
+/* HyState Container */
+.hy-state-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 48px 24px;
+  background: var(--hy-surface);
+  border: 1px solid var(--hy-outline);
+  border-radius: var(--hy-radius-md);
+  margin: 1.5rem 0;
+  max-width: 640px;
+  margin-inline: auto;
+}
+
+.hy-state-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  margin-bottom: 14px;
+}
+
+.hy-state-empty .hy-state-icon-wrap {
+  background: var(--hy-wine-soft);
+  color: var(--hy-wine);
+}
+
+.hy-state-error .hy-state-icon-wrap {
+  background: var(--hy-error-bg);
+  color: var(--hy-error);
+}
+
+.hy-state-locked .hy-state-icon-wrap {
+  background: var(--hy-surface-container);
+  color: var(--hy-ink-muted);
+}
+
+.hy-state-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--hy-radius-sm);
+  background: var(--hy-surface-container);
+  color: var(--hy-ink-muted);
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.hy-state-title {
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--hy-ink);
+}
+
+.hy-state-body {
+  margin: 0 0 16px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--hy-ink-muted);
+  max-width: 440px;
+}
+
+.hy-state-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.hy-state-ref {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 14px;
+  font-size: 12px;
+  color: var(--hy-ink-muted);
+}
+
+.hy-state-ref code {
+  font-family: var(--font-code);
+  color: var(--hy-ink);
+  background: var(--hy-surface-warm);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* Hỷ Yến Buttons */
+.hy-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 8px 18px;
+  border-radius: var(--hy-radius-sm);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.3;
+  cursor: pointer;
+  text-decoration: none;
+  transition:
+    background-color var(--hy-dur-fast) var(--hy-ease-emphasized),
+    transform var(--hy-dur-fast) var(--hy-ease-emphasized),
+    border-color var(--hy-dur-fast) var(--hy-ease-emphasized);
+}
+
+.hy-btn:active {
+  transform: scale(0.98);
+}
+
+.hy-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.hy-btn-primary {
+  background: var(--hy-wine);
+  color: #ffffff;
+  border: 1px solid var(--hy-wine);
+}
+
+.hy-btn-primary:hover:not(:disabled) {
+  background: var(--hy-wine-pressed);
+  border-color: var(--hy-wine-pressed);
+}
+
+.hy-btn-secondary {
+  background: transparent;
+  color: var(--hy-wine);
+  border: 1px solid var(--hy-wine);
+}
+
+.hy-btn-secondary:hover:not(:disabled) {
+  background: var(--hy-wine-soft);
+}
+
+.hy-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--hy-radius-sm);
+  border: none;
+  background: transparent;
+  color: var(--hy-ink-muted);
+  cursor: pointer;
+  transition:
+    background-color var(--hy-dur-fast) var(--hy-ease-emphasized),
+    color var(--hy-dur-fast) var(--hy-ease-emphasized);
+}
+
+.hy-icon-btn:hover {
+  background: var(--hy-wine-soft);
+  color: var(--hy-wine);
+}

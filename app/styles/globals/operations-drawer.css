@@ -1,0 +1,129 @@
+/* ==========================================================================
+   Responsive layout for OperationsShell
+   ========================================================================== */
+.operations-mobile-header {
+  display: none;
+}
+
+.operations-drawer-backdrop {
+  display: none;
+}
+
+.operations-drawer-close {
+  display: none;
+}
+
+.nav-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+.nav-icon svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.operations-shell svg,
+.admin-shell svg {
+  flex-shrink: 0;
+}
+
+@media (max-width: 1024px) {
+  .operations-shell.admin-shell,
+  .admin-shell {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .operations-mobile-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 58px;
+    padding: 0 16px;
+    background-color: var(--navy-deep, #1b2820);
+    color: white;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    border-bottom: 1px solid var(--gold, #c5a880);
+  }
+
+  .operations-hamburger {
+    background: transparent;
+    border: 0;
+    color: white;
+    cursor: pointer;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    border-radius: 2px;
+  }
+
+  .operations-hamburger:focus-visible {
+    outline: 2px solid var(--gold, #c5a880);
+    outline-offset: 2px;
+  }
+
+  .admin-sidebar {
+    display: none;
+  }
+
+  .admin-sidebar.operations-drawer-open {
+    display: flex;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 280px;
+    z-index: 1000;
+    box-shadow: 10px 0 30px rgba(0, 0, 0, 0.4);
+    animation: drawerSlideIn 0.2s ease-out;
+  }
+
+  .operations-drawer-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    backdrop-filter: blur(2px);
+  }
+
+  .operations-drawer-close {
+    display: flex;
+    margin-left: auto;
+    background: transparent;
+    border: 0;
+    color: white;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 2px;
+    min-width: 44px;
+    min-height: 44px;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .operations-drawer-close:focus-visible {
+    outline: 2px solid var(--gold, #c5a880);
+    outline-offset: 2px;
+  }
+}
+
+@keyframes drawerSlideIn {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}

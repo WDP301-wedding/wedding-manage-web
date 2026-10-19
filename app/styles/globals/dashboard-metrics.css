@@ -1,0 +1,212 @@
+.admin-main {
+  min-width: 0;
+  padding: clamp(30px, 4vw, 58px);
+}
+
+.dashboard-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.preview-label {
+  display: inline-flex;
+  margin-bottom: 20px;
+  color: var(--burgundy);
+  font-family: var(--font-script);
+  font-size: 16px;
+}
+
+.dashboard-header p,
+.section-kicker {
+  margin: 0 0 8px;
+  color: var(--navy);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.dashboard-header h1 {
+  margin: 0;
+  color: var(--brown);
+  font-family: var(--font-display);
+  font-size: clamp(38px, 4vw, 56px);
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.create-event-action {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 10px;
+  padding: 0 20px;
+  color: white;
+  background: var(--navy);
+  font-family: var(--font-display);
+  font-size: 11px;
+  letter-spacing: normal;
+  text-decoration: none;
+  text-transform: none;
+}
+
+.create-event-action:hover,
+.create-event-action:focus-visible {
+  background: var(--navy-deep);
+  outline: 3px solid rgb(197 168 128 / 28%);
+  outline-offset: 3px;
+}
+
+.create-event-action span {
+  font-size: 20px;
+}
+
+.estate-showcase {
+  display: grid;
+  min-height: 214px;
+  margin-top: 40px;
+  grid-template-columns: minmax(280px, 0.7fr) minmax(0, 1.3fr);
+}
+
+.estate-showcase-copy {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  flex-direction: column;
+  padding: 34px 38px;
+  color: white;
+  background: var(--navy);
+}
+
+.estate-showcase-copy span {
+  color: var(--gold-soft);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.estate-showcase-copy strong {
+  margin-top: 13px;
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.estate-showcase-copy p {
+  margin: 12px 0 0;
+  color: #e3e9e3;
+  font-family: var(--font-display);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.estate-showcase-photo {
+  min-height: 214px;
+  background:
+    linear-gradient(rgb(36 59 42 / 5%), rgb(36 59 42 / 5%)),
+    url('https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1400&q=85')
+      center 58% / cover;
+}
+
+.metrics-strip {
+  display: grid;
+  margin-top: 28px;
+  background: var(--paper);
+  border: 1px solid var(--gold);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.metrics-strip article {
+  min-width: 0;
+  padding: 24px 26px;
+}
+
+.metrics-strip article + article {
+  border-left: 1px solid var(--gold);
+}
+
+.metric-label {
+  display: block;
+  color: var(--navy);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.metrics-strip strong {
+  display: block;
+  margin-top: 14px;
+  color: var(--brown);
+  font-family: var(--font-display);
+  font-size: 35px;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.metrics-strip small {
+  display: block;
+  overflow: hidden;
+  margin-top: 9px;
+  color: var(--muted);
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.metrics-strip .attention-value {
+  color: var(--burgundy);
+}
+
+.dashboard-grid {
+  display: grid;
+  margin-top: 28px;
+  gap: 28px;
+  grid-template-columns: minmax(0, 1.75fr) minmax(300px, 0.75fr);
+}
+
+.schedule-panel,
+.today-panel {
+  min-width: 0;
+  background: var(--paper);
+  border: 1px solid var(--line);
+}
+
+.today-panel {
+  background: var(--powder);
+}
+
+.section-heading {
+  display: flex;
+  min-height: 94px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 22px 26px;
+  background: var(--powder);
+  border-bottom: 1px solid #c3c8c1;
+}
+
+.section-heading h2 {
+  margin: 0;
+  color: var(--brown);
+  font-family: var(--font-display);
+  font-size: 21px;
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.section-heading > a {
+  color: var(--navy);
+  font-size: 10px;
+  font-weight: 700;
+  text-underline-offset: 4px;
+}
