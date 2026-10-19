@@ -1,4 +1,8 @@
-import { axiosApiClient, setAuthTokenProvider } from '../lib/api/axios-client';
+import {
+  axiosApiClient,
+  setAuthTokenProvider,
+  setAuthTokenConsumer,
+} from '../lib/api/axios-client';
 import type { components, operations } from '../lib/api/generated/schema';
 
 export type CurrentUser = components['schemas']['CurrentUserResponse']['data'];
@@ -8,6 +12,9 @@ export type Profile = components['schemas']['ProfileResponse']['data'];
 
 let memoryAccessToken: string | null = null;
 setAuthTokenProvider(() => memoryAccessToken);
+setAuthTokenConsumer((token) => {
+  memoryAccessToken = token;
+});
 
 export const authService = {
   setAccessToken(token: string | null): void {

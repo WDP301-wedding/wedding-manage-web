@@ -130,6 +130,34 @@ export class ManagementIdentitySession {
     }
   }
 
+  private renewOperation: Promise<string | null> | null = null;
+
+  private renewAccessToken(): Promise<string | null> {
+    this.renewOperation ??= this.api
+      .refreshSession()
+      .then((credential) => {
+        this.accessToken = credential.accessToken;
+        const persisted = this.readPersisted();
+        if (persisted) {
+          this.persist({
+            ...persisted,
+            accessToken: credential.accessToken,
+            accessExpiresAt: credential.accessExpiresAt,
+            sessionId: credential.sessionId,
+          });
+        }
+        return credential.accessToken;
+      })
+      .catch(() => {
+        this.clear();
+        return null;
+      })
+      .finally(() => {
+        this.renewOperation = null;
+      });
+    return this.renewOperation;
+  }
+
   async authorize<T>(operation: (accessToken: string) => Promise<T>): Promise<T> {
     if (this.accessToken === null) {
       const persisted = this.readPersisted();
@@ -149,18 +177,32 @@ export class ManagementIdentitySession {
       return await operation(this.accessToken);
     } catch (error) {
       if (error instanceof ApiClientError && error.status === 401) {
-        this.clear();
-      } else if (
-        this.state.status === 'authenticated' &&
-        error instanceof ApiClientError &&
-        (error.status === 403 || error.status === 404)
-      ) {
-        this.state = {
-          ...this.state,
-          denial: error.status === 403 ? 'forbidden' : 'not-found',
-        };
+        const renewed = await this.renewAccessToken();
+        if (renewed === null) throw error;
+        try {
+          return await operation(renewed);
+        } catch (retryError) {
+          this.handleDenial(retryError);
+          throw retryError;
+        }
       }
+      this.handleDenial(error);
       throw error;
+    }
+  }
+
+  private handleDenial(error: unknown): void {
+    if (error instanceof ApiClientError && error.status === 401) {
+      this.clear();
+    } else if (
+      this.state.status === 'authenticated' &&
+      error instanceof ApiClientError &&
+      (error.status === 403 || error.status === 404)
+    ) {
+      this.state = {
+        ...this.state,
+        denial: error.status === 403 ? 'forbidden' : 'not-found',
+      };
     }
   }
 
