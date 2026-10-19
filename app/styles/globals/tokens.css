@@ -1,0 +1,70 @@
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap&subset=vietnamese');
+
+:root {
+  /* Hỷ Yến Design System Palette - Legacy variables mapped for continuous compatibility */
+  --navy: #7a1f3d;
+  --navy-deep: #5c1430;
+  --brown: #2b1d22;
+  --burgundy: #87334f;
+  --gold: #c9a46a;
+  --gold-soft: #f4b9a7;
+  --powder: #f7ede4;
+  --paper: #fff8f1;
+  --canvas: #fff8f1;
+  --ink: #2b1d22;
+  --muted: #6e5d63;
+  --line: #eadfd6;
+  --green: #2f6b4f;
+  --green-soft: #e7f1ea;
+  --amber: #8a5300;
+  --amber-soft: #fcefd6;
+
+  /* Hỷ Yến Canonical Tokens */
+  --hy-wine: #7a1f3d;
+  --hy-wine-pressed: #5c1430;
+  --hy-wine-soft: #f5e4e9;
+  --hy-peach: #f4b9a7;
+  --hy-cream: #fff8f1;
+  --hy-champagne: #c9a46a;
+  --hy-ink: #2b1d22;
+  --hy-ink-muted: #6e5d63;
+  --hy-outline: #eadfd6;
+  --hy-outline-strong: #9a877f;
+  --hy-surface: #ffffff;
+  --hy-surface-warm: #fbf4ee;
+  --hy-surface-container: #f7ede4;
+  --hy-success: #2f6b4f;
+  --hy-success-bg: #e7f1ea;
+  --hy-warning: #8a5300;
+  --hy-warning-bg: #fcefd6;
+  --hy-error: #c62828;
+  --hy-error-bg: #fdecea;
+  --hy-info: #3f5b6b;
+  --hy-info-bg: #e6eef2;
+
+  /* Border Radii */
+  --hy-radius-sm: 12px;
+  --hy-radius-md: 16px;
+  --hy-radius-lg: 24px;
+  --hy-radius-full: 9999px;
+
+  /* Shadows */
+  --hy-shadow-1: 0 1px 3px rgba(43, 29, 34, 0.06);
+  --hy-shadow-2: 0 6px 24px rgba(43, 29, 34, 0.1);
+
+  /* Motion */
+  --hy-ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
+  --hy-ease-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --hy-ease-accelerate: cubic-bezier(0.3, 0, 0.8, 0.15);
+  --hy-dur-fast: 150ms;
+  --hy-dur-medium: 250ms;
+  --hy-dur-medium2: 300ms;
+  --hy-dur-long: 400ms;
+
+  --font-display: 'Be Vietnam Pro', 'Segoe UI', Arial, sans-serif;
+  --font-body: 'Be Vietnam Pro', 'Segoe UI', Arial, sans-serif;
+  --font-script: 'Be Vietnam Pro', 'Segoe UI', Arial, sans-serif;
+  --font-wordmark: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  --font-code: ui-monospace, SFMono-Regular, Consolas, monospace;
+  color-scheme: light;
+}
