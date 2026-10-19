@@ -8,10 +8,7 @@ import {
 } from '../../services/contract.service';
 import { ApiServiceError } from '../../lib/api/axios-client';
 import { ContractLinesTable } from './contract-lines-table';
-
-function formatVnd(amount: number): string {
-  return `${amount.toLocaleString('vi-VN')} đ`;
-}
+import { formatVnd } from '../../lib/formatters';
 
 export function ContractPanel({
   bookingId,

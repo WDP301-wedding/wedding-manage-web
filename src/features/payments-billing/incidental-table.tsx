@@ -1,10 +1,7 @@
 'use client';
 
 import type { IncidentalExpensesResponse } from '../../services/billing.service';
-
-function formatVnd(amount: number): string {
-  return `${amount.toLocaleString('vi-VN')} đ`;
-}
+import { formatVnd } from '../../lib/formatters';
 
 export function IncidentalTable({
   incidentals,

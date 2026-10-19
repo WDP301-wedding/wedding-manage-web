@@ -1,14 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
 import apiContractLock from '../../../api-contract.lock.json';
-import {
-  sharedManagementSession,
-  type ManagementSessionSnapshot,
-} from '../identity-access/session';
 import { OperationsShell } from '../identity-access/operations-shell';
+import { sharedManagementSession } from '../identity-access/session';
 import { createVenueCatalogGateway, type VenueCatalogGateway } from './catalog-api';
 import {
   CatalogAccessPanel,
@@ -62,43 +58,29 @@ export {
   type CatalogTab,
 };
 
+import { useManagementSession } from '../identity-access/use-management-session';
+
 const catalogSession = sharedManagementSession;
 const catalogGateway = createVenueCatalogGateway();
 const catalogContractDigest = apiContractLock.source.sha256.slice(0, 8);
 
 export function VenueCatalogPage() {
-  const [identity, setIdentity] = useState<ManagementSessionSnapshot | null>(null);
-  const [loggingOut, setLoggingOut] = useState(false);
-  const [logoutError, setLogoutError] = useState<string | null>(null);
-  const [state, setState] = useState<'loading' | 'manager' | 'staff' | 'anonymous'>('loading');
-
-  useEffect(() => {
-    let active = true;
-    void catalogSession.restore().then((snapshot) => {
-      if (!active) return;
-      setIdentity(snapshot);
-      if (snapshot.status === 'anonymous') setState('anonymous');
-      else setState(snapshot.presentation === 'manager' ? 'manager' : 'staff');
-    });
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  const logout = () => {
-    setLoggingOut(true);
-    setLogoutError(null);
-    void catalogSession
-      .logout()
-      .catch(() =>
-        setLogoutError('Không thể kết nối máy chủ để đăng xuất. Hãy tải lại trang rồi thử lại.'),
-      )
-      .finally(() => {
-        setIdentity(catalogSession.snapshot());
-        setState('anonymous');
-        setLoggingOut(false);
-      });
-  };
+  const {
+    snapshot: identity,
+    loggingOut,
+    logoutError,
+    logout,
+  } = useManagementSession({
+    session: catalogSession,
+  });
+  const state =
+    identity === null
+      ? 'loading'
+      : identity.status === 'anonymous'
+        ? 'anonymous'
+        : identity.presentation === 'manager'
+          ? 'manager'
+          : 'staff';
 
   const content =
     state === 'loading' ? (

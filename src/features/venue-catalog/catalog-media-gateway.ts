@@ -7,36 +7,69 @@ import type {
   MediaCatalogGateway,
 } from './catalog-types';
 
+export type SharedCatalogFetcher = <T>(
+  accessToken: string,
+  endpoint: string,
+  params: Record<string, unknown> | undefined,
+  fetcher: () => Promise<T>,
+) => Promise<T>;
+
+type CatalogAggregateItem = {
+  readonly id: string;
+  readonly versions: readonly {
+    readonly id: string;
+    readonly name: string;
+    readonly revision: number;
+    readonly state: 'DRAFT' | 'PUBLISHED' | 'SUPERSEDED';
+    readonly versionNumber: number | null;
+  }[];
+};
+
 export function createMediaCatalogGateway(
   api: () => ApiClient,
   authorization: (token: string) => { Authorization: string },
   required: <T>(value: T | undefined, operation: string) => T,
+  fetchShared?: SharedCatalogFetcher,
 ): MediaCatalogGateway {
   return {
     async loadMediaResources(accessToken) {
       const headers = authorization(accessToken);
+      const read = <T>(endpoint: string, params?: Record<string, unknown>): Promise<T> => {
+        const fetcher = () =>
+          api().GET(
+            endpoint as never,
+            { headers, ...(params ? { params: { query: params } } : {}) } as never,
+          ) as Promise<T>;
+        return fetchShared ? fetchShared(accessToken, endpoint, params, fetcher) : fetcher();
+      };
+
       const [restaurant, halls, dishes, menus, timelines, layouts] = await Promise.all([
-        api().GET('/management/catalog/restaurant', { headers }),
-        api().GET('/management/catalog/halls', {
-          headers,
-          params: { query: { limit: 100 } },
-        }),
-        api().GET('/management/catalog/dishes', {
-          headers,
-          params: { query: { limit: 100 } },
-        }),
-        api().GET('/management/catalog/menu-packages', {
-          headers,
-          params: { query: { limit: 100 } },
-        }),
-        api().GET('/management/catalog/timeline-templates', {
-          headers,
-          params: { query: { limit: 100 } },
-        }),
-        api().GET('/management/catalog/layout-templates', {
-          headers,
-          params: { query: { limit: 100 } },
-        }),
+        read<{ data?: { data: { id: string; displayName: string; revision: number } } }>(
+          '/management/catalog/restaurant',
+        ),
+        read<{
+          data?: {
+            data: {
+              items: readonly { id: string; name: string; revision: number; lifecycle: string }[];
+            };
+          };
+        }>('/management/catalog/halls', { limit: 100 }),
+        read<{ data?: { data: { items: readonly CatalogAggregateItem[] } } }>(
+          '/management/catalog/dishes',
+          { limit: 100 },
+        ),
+        read<{ data?: { data: { items: readonly CatalogAggregateItem[] } } }>(
+          '/management/catalog/menu-packages',
+          { limit: 100 },
+        ),
+        read<{ data?: { data: { items: readonly CatalogAggregateItem[] } } }>(
+          '/management/catalog/timeline-templates',
+          { limit: 100 },
+        ),
+        read<{ data?: { data: { items: readonly CatalogAggregateItem[] } } }>(
+          '/management/catalog/layout-templates',
+          { limit: 100 },
+        ),
       ]);
       const profile = required(restaurant.data, 'Media restaurant read').data;
       const resources: CatalogMediaResource[] = [

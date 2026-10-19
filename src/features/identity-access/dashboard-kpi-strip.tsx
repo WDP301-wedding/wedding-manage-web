@@ -3,11 +3,7 @@
 import type { AnalyticsOverviewData } from '../../services/analytics.service';
 import type { PublicHall, PublicRestaurant } from '../../services/catalog.service';
 import type { ConsultationRequestItem } from '../../services/consultation.service';
-
-function formatVnd(amount: number | null): string {
-  if (amount === null || Number.isNaN(amount)) return '—';
-  return `${new Intl.NumberFormat('vi-VN').format(amount)} đ`;
-}
+import { formatVndNullable as formatVnd } from '../../lib/formatters';
 
 export function MetricCard({
   attention = false,

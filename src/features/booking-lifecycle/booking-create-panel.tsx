@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { minimumEventDate, useMinimumEventDate } from '../../lib/event-date';
 import type { BookingPrefill } from './booking-helpers';
 import { field, formatDateTime, money } from './booking-helpers';
@@ -41,25 +41,55 @@ export function BookingCreatePanel({
 }: Readonly<BookingCreatePanelProps>) {
   const [selections, setSelections] = useState<BookingSelections | null>(null);
   const [loadingSelections, setLoadingSelections] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const inFlightRef = useRef<Promise<BookingSelections | null> | null>(null);
+  const autoLoadedRef = useRef(false);
   const minimumDate = useMinimumEventDate();
 
-  const loadCatalog = useCallback(() => {
-    if (loadingSelections) return;
+  const loadCatalog = useCallback((): Promise<BookingSelections | null> => {
+    if (inFlightRef.current !== null) {
+      return inFlightRef.current;
+    }
     setLoadingSelections(true);
-    void run('catalog', () => authorize((token) => gateway.loadSelections(token)))
+    setLoadError(null);
+    const promise = run('catalog', () => authorize((token) => gateway.loadSelections(token)))
       .then((result) => {
-        if (result !== null) setSelections(result);
+        if (result !== null) {
+          setSelections(result);
+          setLoadError(null);
+        } else {
+          setLoadError(
+            'Không thể tải danh mục đặt tiệc. Vui lòng bấm "Tải lại danh mục đặt tiệc" để thử lại.',
+          );
+        }
+        return result;
+      })
+      .catch(() => {
+        setLoadError(
+          'Không thể tải danh mục đặt tiệc. Vui lòng bấm "Tải lại danh mục đặt tiệc" để thử lại.',
+        );
+        return null;
       })
       .finally(() => {
+        inFlightRef.current = null;
         setLoadingSelections(false);
       });
-  }, [authorize, gateway, loadingSelections, run]);
+
+    inFlightRef.current = promise;
+    return promise;
+  }, [authorize, gateway, run]);
 
   useEffect(() => {
-    if (autoLoadCatalog && selections === null && !loadingSelections) {
-      loadCatalog();
+    if (
+      autoLoadCatalog &&
+      selections === null &&
+      !autoLoadedRef.current &&
+      inFlightRef.current === null
+    ) {
+      autoLoadedRef.current = true;
+      void loadCatalog();
     }
-  }, [autoLoadCatalog, selections, loadingSelections, loadCatalog]);
+  }, [autoLoadCatalog, selections, loadCatalog]);
 
   const validate = (form: HTMLFormElement, creating: boolean) => {
     if (disabled) return false;
@@ -125,6 +155,10 @@ export function BookingCreatePanel({
       </button>
       {loadingSelections ? (
         <p role="status">Đang tải danh mục sảnh, khung giờ và thực đơn đang phục vụ…</p>
+      ) : loadError !== null ? (
+        <p role="alert" style={{ color: 'var(--hy-status-error, #c62828)', fontSize: '0.875rem' }}>
+          {loadError}
+        </p>
       ) : selections === null ? (
         <p>Tải danh mục để chọn sảnh, khung giờ và thực đơn đang phục vụ.</p>
       ) : selections.halls.length === 0 ||
@@ -218,10 +252,12 @@ export function BookingCreatePanel({
             required
             defaultValue=""
             onFocus={() => {
-              if (selections === null) loadCatalog();
+              if (selections === null && !loadingSelections && loadError === null)
+                void loadCatalog();
             }}
             onClick={() => {
-              if (selections === null) loadCatalog();
+              if (selections === null && !loadingSelections && loadError === null)
+                void loadCatalog();
             }}
           >
             <option value="" disabled>
@@ -276,10 +312,12 @@ export function BookingCreatePanel({
             required
             defaultValue=""
             onFocus={() => {
-              if (selections === null) loadCatalog();
+              if (selections === null && !loadingSelections && loadError === null)
+                void loadCatalog();
             }}
             onClick={() => {
-              if (selections === null) loadCatalog();
+              if (selections === null && !loadingSelections && loadError === null)
+                void loadCatalog();
             }}
           >
             <option value="" disabled>

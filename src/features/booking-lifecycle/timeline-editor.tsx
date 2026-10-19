@@ -19,6 +19,7 @@ export function TimelineEditor({
   needsReason = false,
   templateSource,
   onSave,
+  onCancel,
 }: Readonly<{
   disabled: boolean;
   initialItems: readonly Readonly<{
@@ -30,6 +31,7 @@ export function TimelineEditor({
   needsReason?: boolean;
   templateSource?: TimelineTemplateSource;
   onSave: (items: readonly TimelineItemInput[], reason: string) => Promise<void>;
+  onCancel?: () => void;
 }>) {
   const [drafts, setDrafts] = useState<readonly Draft[]>(() =>
     initialItems.map((item) => ({
@@ -163,7 +165,19 @@ export function TimelineEditor({
             />
           </label>
         ) : null}
-        <button type="submit">{needsReason ? 'Gửi yêu cầu thay đổi' : 'Lưu kịch bản mới'}</button>
+        <div className="timeline-editor-submit-actions">
+          <button type="submit">{needsReason ? 'Gửi yêu cầu thay đổi' : 'Lưu kịch bản mới'}</button>
+          {onCancel ? (
+            <button
+              type="button"
+              className="booking-secondary"
+              disabled={disabled}
+              onClick={onCancel}
+            >
+              Hủy
+            </button>
+          ) : null}
+        </div>
       </fieldset>
     </form>
   );

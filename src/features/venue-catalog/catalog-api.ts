@@ -20,21 +20,111 @@ function required<T>(value: T | undefined, operation: string): T {
   return value;
 }
 
+interface ScopedCacheEntry<T> {
+  readonly data: T;
+  readonly cachedAt: number;
+}
+
+const inFlightRequests = new Map<string, Promise<unknown>>();
+const sharedCatalogCache = new Map<string, ScopedCacheEntry<unknown>>();
+
+function makeCacheKey(
+  accessToken: string,
+  endpoint: string,
+  params?: Record<string, unknown>,
+): string {
+  const tokenSig =
+    accessToken.length > 32
+      ? `${accessToken.slice(0, 16)}...${accessToken.slice(-16)}`
+      : accessToken;
+  const paramStr = params ? JSON.stringify(params) : '';
+  return `${tokenSig}::${endpoint}::${paramStr}`;
+}
+
+export function clearCatalogCache(tokenSig?: string): void {
+  if (tokenSig) {
+    for (const key of sharedCatalogCache.keys()) {
+      if (key.startsWith(`${tokenSig}::`)) sharedCatalogCache.delete(key);
+    }
+    for (const key of inFlightRequests.keys()) {
+      if (key.startsWith(`${tokenSig}::`)) inFlightRequests.delete(key);
+    }
+  } else {
+    sharedCatalogCache.clear();
+    inFlightRequests.clear();
+  }
+}
+
+export function invalidateCatalogResource(accessToken: string, endpoint: string): void {
+  const tokenSig =
+    accessToken.length > 32
+      ? `${accessToken.slice(0, 16)}...${accessToken.slice(-16)}`
+      : accessToken;
+  const prefix = `${tokenSig}::${endpoint}`;
+  for (const key of sharedCatalogCache.keys()) {
+    if (key.startsWith(prefix)) {
+      sharedCatalogCache.delete(key);
+    }
+  }
+}
+
+export async function fetchSharedCatalogResource<T>(
+  accessToken: string,
+  endpoint: string,
+  params: Record<string, unknown> | undefined,
+  fetcher: () => Promise<T>,
+): Promise<T> {
+  const cacheKey = makeCacheKey(accessToken, endpoint, params);
+
+  const existing = sharedCatalogCache.get(cacheKey);
+  if (existing !== undefined) {
+    return existing.data as T;
+  }
+
+  const inFlight = inFlightRequests.get(cacheKey);
+  if (inFlight !== undefined) {
+    return inFlight as Promise<T>;
+  }
+
+  const promise = fetcher()
+    .then((result) => {
+      sharedCatalogCache.set(cacheKey, { data: result, cachedAt: Date.now() });
+      return result;
+    })
+    .finally(() => {
+      inFlightRequests.delete(cacheKey);
+    });
+
+  inFlightRequests.set(cacheKey, promise);
+  return promise;
+}
+
 export function createVenueCatalogGateway(client?: ApiClient): CatalogGateway {
   let resolvedClient = client;
   const api = () => (resolvedClient ??= createApiClient());
-  const mediaGateway = createMediaCatalogGateway(api, authorization, required);
+  const mediaGateway = createMediaCatalogGateway(
+    api,
+    authorization,
+    required,
+    fetchSharedCatalogResource,
+  );
 
   return {
     async loadVenue(accessToken) {
       const headers = authorization(accessToken);
       const [restaurant, shifts, halls] = await Promise.all([
-        api().GET('/management/catalog/restaurant', { headers }),
-        api().GET('/management/catalog/shifts', { headers }),
-        api().GET('/management/catalog/halls', {
-          headers,
-          params: { query: { limit: 100 } },
-        }),
+        fetchSharedCatalogResource(accessToken, '/management/catalog/restaurant', undefined, () =>
+          api().GET('/management/catalog/restaurant', { headers }),
+        ),
+        fetchSharedCatalogResource(accessToken, '/management/catalog/shifts', undefined, () =>
+          api().GET('/management/catalog/shifts', { headers }),
+        ),
+        fetchSharedCatalogResource(accessToken, '/management/catalog/halls', { limit: 100 }, () =>
+          api().GET('/management/catalog/halls', {
+            headers,
+            params: { query: { limit: 100 } },
+          }),
+        ),
       ]);
       return {
         restaurant: required(restaurant.data, 'Restaurant read').data,
@@ -53,6 +143,7 @@ export function createVenueCatalogGateway(client?: ApiClient): CatalogGateway {
         headers: authorization(accessToken),
         body: input,
       });
+      invalidateCatalogResource(accessToken, '/management/catalog/restaurant');
     },
 
     async updateShift(accessToken, { code, ...body }) {
@@ -61,6 +152,7 @@ export function createVenueCatalogGateway(client?: ApiClient): CatalogGateway {
         params: { path: { shiftCode: code } },
         body,
       });
+      invalidateCatalogResource(accessToken, '/management/catalog/shifts');
     },
 
     async createHall(accessToken, input) {
@@ -70,6 +162,7 @@ export function createVenueCatalogGateway(client?: ApiClient): CatalogGateway {
         params: { header: { 'Idempotency-Key': idempotencyKey } },
         body: input,
       });
+      invalidateCatalogResource(accessToken, '/management/catalog/halls');
     },
 
     async updateHall(accessToken, { id, ...body }) {
@@ -78,6 +171,7 @@ export function createVenueCatalogGateway(client?: ApiClient): CatalogGateway {
         params: { path: { hallId: id } },
         body,
       });
+      invalidateCatalogResource(accessToken, '/management/catalog/halls');
     },
 
     async changeHallLifecycle(accessToken, input) {
@@ -95,19 +189,28 @@ export function createVenueCatalogGateway(client?: ApiClient): CatalogGateway {
       } else {
         await api().POST('/management/catalog/halls/{id}/restoration', options);
       }
+      invalidateCatalogResource(accessToken, '/management/catalog/halls');
     },
 
     async loadFood(accessToken) {
       const headers = authorization(accessToken);
       const [dishes, menus] = await Promise.all([
-        api().GET('/management/catalog/dishes', {
-          headers,
-          params: { query: { limit: 100 } },
-        }),
-        api().GET('/management/catalog/menu-packages', {
-          headers,
-          params: { query: { limit: 100 } },
-        }),
+        fetchSharedCatalogResource(accessToken, '/management/catalog/dishes', { limit: 100 }, () =>
+          api().GET('/management/catalog/dishes', {
+            headers,
+            params: { query: { limit: 100 } },
+          }),
+        ),
+        fetchSharedCatalogResource(
+          accessToken,
+          '/management/catalog/menu-packages',
+          { limit: 100 },
+          () =>
+            api().GET('/management/catalog/menu-packages', {
+              headers,
+              params: { query: { limit: 100 } },
+            }),
+        ),
       ]);
       return {
         dishes: Array.from(required(dishes.data, 'Dish read').data.items, (dish): CatalogDish => ({
@@ -131,6 +234,7 @@ export function createVenueCatalogGateway(client?: ApiClient): CatalogGateway {
         params: { header: { 'Idempotency-Key': idempotencyKey } },
         body: input,
       });
+      invalidateCatalogResource(accessToken, '/management/catalog/dishes');
     },
 
     async updateDishDraft(accessToken, { versionId, ...body }) {
@@ -139,6 +243,7 @@ export function createVenueCatalogGateway(client?: ApiClient): CatalogGateway {
         params: { path: { versionId } },
         body,
       });
+      invalidateCatalogResource(accessToken, '/management/catalog/dishes');
     },
 
     async publishDish(accessToken, { versionId, ...body }) {
@@ -151,6 +256,7 @@ export function createVenueCatalogGateway(client?: ApiClient): CatalogGateway {
         },
         body,
       });
+      invalidateCatalogResource(accessToken, '/management/catalog/dishes');
     },
 
     async cloneDish(accessToken, { dishId, ...body }) {
@@ -163,6 +269,7 @@ export function createVenueCatalogGateway(client?: ApiClient): CatalogGateway {
         },
         body,
       });
+      invalidateCatalogResource(accessToken, '/management/catalog/dishes');
     },
 
     async changeDishLifecycle(accessToken, input) {
@@ -180,6 +287,7 @@ export function createVenueCatalogGateway(client?: ApiClient): CatalogGateway {
       } else {
         await api().POST('/management/catalog/dishes/{id}/restoration', options);
       }
+      invalidateCatalogResource(accessToken, '/management/catalog/dishes');
     },
 
     async createMenu(accessToken, input) {
@@ -189,6 +297,7 @@ export function createVenueCatalogGateway(client?: ApiClient): CatalogGateway {
         params: { header: { 'Idempotency-Key': idempotencyKey } },
         body: { ...input, items: [...input.items] },
       });
+      invalidateCatalogResource(accessToken, '/management/catalog/menu-packages');
     },
 
     async updateMenuDraft(accessToken, { versionId, ...body }) {
@@ -197,6 +306,7 @@ export function createVenueCatalogGateway(client?: ApiClient): CatalogGateway {
         params: { path: { versionId } },
         body: { ...body, items: [...body.items] },
       });
+      invalidateCatalogResource(accessToken, '/management/catalog/menu-packages');
     },
 
     async publishMenu(accessToken, { versionId, ...body }) {
@@ -209,6 +319,7 @@ export function createVenueCatalogGateway(client?: ApiClient): CatalogGateway {
         },
         body,
       });
+      invalidateCatalogResource(accessToken, '/management/catalog/menu-packages');
     },
 
     async cloneMenu(accessToken, { packageId, ...body }) {
@@ -221,6 +332,7 @@ export function createVenueCatalogGateway(client?: ApiClient): CatalogGateway {
         },
         body,
       });
+      invalidateCatalogResource(accessToken, '/management/catalog/menu-packages');
     },
 
     async changeMenuLifecycle(accessToken, input) {
@@ -238,14 +350,21 @@ export function createVenueCatalogGateway(client?: ApiClient): CatalogGateway {
       } else {
         await api().POST('/management/catalog/menu-packages/{id}/restoration', options);
       }
+      invalidateCatalogResource(accessToken, '/management/catalog/menu-packages');
     },
 
     async loadTimelines(accessToken) {
       const headers = authorization(accessToken);
-      const timelines = await api().GET('/management/catalog/timeline-templates', {
-        headers,
-        params: { query: { limit: 100 } },
-      });
+      const timelines = await fetchSharedCatalogResource(
+        accessToken,
+        '/management/catalog/timeline-templates',
+        { limit: 100 },
+        () =>
+          api().GET('/management/catalog/timeline-templates', {
+            headers,
+            params: { query: { limit: 100 } },
+          }),
+      );
       return {
         timelines: Array.from(
           required(timelines.data, 'Timeline read').data.items,
@@ -267,6 +386,7 @@ export function createVenueCatalogGateway(client?: ApiClient): CatalogGateway {
         params: { header: { 'Idempotency-Key': idempotencyKey } },
         body: { ...input, items: [...input.items] },
       });
+      invalidateCatalogResource(accessToken, '/management/catalog/timeline-templates');
     },
 
     async updateTimelineDraft(accessToken, { versionId, ...body }) {
@@ -275,6 +395,7 @@ export function createVenueCatalogGateway(client?: ApiClient): CatalogGateway {
         params: { path: { versionId } },
         body: { ...body, items: [...body.items] },
       });
+      invalidateCatalogResource(accessToken, '/management/catalog/timeline-templates');
     },
 
     async publishTimeline(accessToken, { versionId, ...body }) {
@@ -287,6 +408,7 @@ export function createVenueCatalogGateway(client?: ApiClient): CatalogGateway {
         },
         body,
       });
+      invalidateCatalogResource(accessToken, '/management/catalog/timeline-templates');
     },
 
     async cloneTimeline(accessToken, { templateId, ...body }) {
@@ -299,6 +421,7 @@ export function createVenueCatalogGateway(client?: ApiClient): CatalogGateway {
         },
         body,
       });
+      invalidateCatalogResource(accessToken, '/management/catalog/timeline-templates');
     },
 
     async changeTimelineLifecycle(accessToken, input) {
@@ -316,19 +439,28 @@ export function createVenueCatalogGateway(client?: ApiClient): CatalogGateway {
       } else {
         await api().POST('/management/catalog/timeline-templates/{id}/restoration', options);
       }
+      invalidateCatalogResource(accessToken, '/management/catalog/timeline-templates');
     },
 
     async loadLayouts(accessToken) {
       const headers = authorization(accessToken);
       const [halls, layouts] = await Promise.all([
-        api().GET('/management/catalog/halls', {
-          headers,
-          params: { query: { limit: 100 } },
-        }),
-        api().GET('/management/catalog/layout-templates', {
-          headers,
-          params: { query: { limit: 100 } },
-        }),
+        fetchSharedCatalogResource(accessToken, '/management/catalog/halls', { limit: 100 }, () =>
+          api().GET('/management/catalog/halls', {
+            headers,
+            params: { query: { limit: 100 } },
+          }),
+        ),
+        fetchSharedCatalogResource(
+          accessToken,
+          '/management/catalog/layout-templates',
+          { limit: 100 },
+          () =>
+            api().GET('/management/catalog/layout-templates', {
+              headers,
+              params: { query: { limit: 100 } },
+            }),
+        ),
       ]);
       return {
         halls: Array.from(
@@ -358,6 +490,7 @@ export function createVenueCatalogGateway(client?: ApiClient): CatalogGateway {
         params: { header: { 'Idempotency-Key': idempotencyKey } },
         body: { ...input, tables: [...input.tables] },
       });
+      invalidateCatalogResource(accessToken, '/management/catalog/layout-templates');
     },
 
     async updateLayoutDraft(accessToken, { versionId, ...body }) {
@@ -366,6 +499,7 @@ export function createVenueCatalogGateway(client?: ApiClient): CatalogGateway {
         params: { path: { versionId } },
         body: { ...body, tables: [...body.tables] },
       });
+      invalidateCatalogResource(accessToken, '/management/catalog/layout-templates');
     },
 
     async publishLayout(accessToken, { versionId, ...body }) {
@@ -378,6 +512,7 @@ export function createVenueCatalogGateway(client?: ApiClient): CatalogGateway {
         },
         body,
       });
+      invalidateCatalogResource(accessToken, '/management/catalog/layout-templates');
     },
 
     async cloneLayout(accessToken, { templateId, ...body }) {
@@ -390,6 +525,7 @@ export function createVenueCatalogGateway(client?: ApiClient): CatalogGateway {
         },
         body,
       });
+      invalidateCatalogResource(accessToken, '/management/catalog/layout-templates');
     },
 
     async changeLayoutLifecycle(accessToken, input) {
@@ -407,6 +543,7 @@ export function createVenueCatalogGateway(client?: ApiClient): CatalogGateway {
       } else {
         await api().POST('/management/catalog/layout-templates/{id}/restoration', options);
       }
+      invalidateCatalogResource(accessToken, '/management/catalog/layout-templates');
     },
 
     async registerLayoutTable(accessToken, input) {
@@ -419,6 +556,7 @@ export function createVenueCatalogGateway(client?: ApiClient): CatalogGateway {
         },
         body: { tableId: input.tableId },
       });
+      invalidateCatalogResource(accessToken, '/management/catalog/layout-templates');
     },
 
     async retireLayoutTable(accessToken, input) {
@@ -434,6 +572,7 @@ export function createVenueCatalogGateway(client?: ApiClient): CatalogGateway {
           body: {},
         },
       );
+      invalidateCatalogResource(accessToken, '/management/catalog/layout-templates');
     },
 
     loadMediaResources: (token) => mediaGateway.loadMediaResources(token),

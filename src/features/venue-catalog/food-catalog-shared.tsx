@@ -2,6 +2,7 @@
 
 import type React from 'react';
 import { ApiClientError } from '../../lib/api/client';
+import { formatCurrencyVnd as formatVnd } from '../../lib/formatters';
 import type { CatalogDish, CatalogMenu } from './catalog-api';
 
 export type Authorize = <T>(operation: (accessToken: string) => Promise<T>) => Promise<T>;
@@ -126,13 +127,7 @@ export function move(items: readonly string[], from: number, to: number): string
   return next;
 }
 
-export function formatVnd(value: number): string {
-  return new Intl.NumberFormat('vi-VN', {
-    style: 'currency',
-    currency: 'VND',
-    maximumFractionDigits: 0,
-  }).format(value);
-}
+export { formatVnd };
 
 export function foodErrorMessage(error: unknown): string {
   if (error instanceof ApiClientError) {
