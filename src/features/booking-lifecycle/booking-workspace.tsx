@@ -303,17 +303,6 @@ export function ManagementBookingWorkspace({
         <button
           type="button"
           role="tab"
-          id="tab-manage"
-          aria-selected={activeTab === 'manage'}
-          onClick={() => switchTab('manage')}
-          style={bookingStyles.tabButton(activeTab === 'manage')}
-        >
-          <span>📋 Tiệc đang xử lý</span>
-          {proposal ? <span style={bookingStyles.badgeActive}>Đang mở</span> : null}
-        </button>
-        <button
-          type="button"
-          role="tab"
           id="tab-consultation"
           aria-selected={activeTab === 'consultation'}
           onClick={() => switchTab('consultation')}
@@ -332,6 +321,17 @@ export function ManagementBookingWorkspace({
         >
           <span>🏛️ 2. Khảo sát sảnh &amp; Đặt tiệc</span>
           {consultation ? <span style={bookingStyles.badgeDraft}>Đã liên kết tư vấn</span> : null}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          id="tab-manage"
+          aria-selected={activeTab === 'manage'}
+          onClick={() => switchTab('manage')}
+          style={bookingStyles.tabButton(activeTab === 'manage')}
+        >
+          <span>📋 3. Tiệc đang xử lý</span>
+          {proposal ? <span style={bookingStyles.badgeActive}>Đang mở</span> : null}
         </button>
       </div>
 
