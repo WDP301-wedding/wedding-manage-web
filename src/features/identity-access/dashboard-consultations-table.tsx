@@ -160,6 +160,7 @@ export function DashboardConsultationsTable({
                       <Link
                         className="booking-primary-link"
                         href={`/bookings?${params.toString()}`}
+                        prefetch={false}
                         style={{
                           padding: '4px 10px',
                           fontSize: '0.8rem',
@@ -175,6 +176,7 @@ export function DashboardConsultationsTable({
                 ) : item.status === 'NEW' ? (
                   <Link
                     href="/consultation-requests"
+                    prefetch={false}
                     style={{
                       fontSize: '0.8rem',
                       color: '#047857',

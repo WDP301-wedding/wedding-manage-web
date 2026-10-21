@@ -87,7 +87,7 @@ export function DashboardBookingsSection({
             {state === 'loading' ? '…' : bookingTab === 'mine' ? myBookingsCount : bookings.length})
           </h2>
         </div>
-        <Link className="text-button" href="/bookings">
+        <Link className="text-button" href="/bookings" prefetch={false}>
           + Tạo đặt tiệc mới
         </Link>
       </div>
