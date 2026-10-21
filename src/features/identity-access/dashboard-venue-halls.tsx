@@ -80,6 +80,7 @@ export function DashboardVenueHalls({
           <Link
             className="text-button"
             href="/catalog"
+            prefetch={false}
             style={{ color: 'var(--hy-wine, #7a1f3d)', fontWeight: 600 }}
           >
             Quản lý danh mục →

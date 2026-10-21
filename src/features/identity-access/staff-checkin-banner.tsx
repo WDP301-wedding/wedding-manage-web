@@ -36,6 +36,7 @@ export function StaffCheckinBanner() {
         </div>
         <Link
           href="/staff"
+          prefetch={false}
           className="text-button"
           style={{
             background: '#16a34a',

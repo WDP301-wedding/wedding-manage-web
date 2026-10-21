@@ -129,6 +129,7 @@ export function OperationsShell({
         id="ops-nav-overview"
         className={navClass('overview')}
         href="/"
+        prefetch={false}
         aria-current={activePage === 'overview' ? 'page' : undefined}
         aria-label="Tổng quan"
         title="Tổng quan"
@@ -145,6 +146,7 @@ export function OperationsShell({
             id="ops-nav-bookings"
             className={navClass('bookings')}
             href="/bookings"
+            prefetch={false}
             aria-current={activePage === 'bookings' ? 'page' : undefined}
             aria-label="Đặt tiệc"
             title="Đặt tiệc"
@@ -159,6 +161,7 @@ export function OperationsShell({
             id="ops-nav-billing"
             className={navClass('billing')}
             href="/billing"
+            prefetch={false}
             aria-current={activePage === 'billing' ? 'page' : undefined}
             aria-label="Quản lý thanh toán"
             title="Quản lý thanh toán"
@@ -173,6 +176,7 @@ export function OperationsShell({
             id="ops-nav-consultations"
             className={navClass('consultations')}
             href="/consultation-requests"
+            prefetch={false}
             aria-current={activePage === 'consultations' ? 'page' : undefined}
             aria-label="Yêu cầu tư vấn"
             title="Yêu cầu tư vấn"
@@ -187,6 +191,7 @@ export function OperationsShell({
             id="ops-nav-print-orders"
             className={navClass('print-orders')}
             href="/print-orders"
+            prefetch={false}
             aria-current={activePage === 'print-orders' ? 'page' : undefined}
             aria-label="Thiệp và in ấn"
             title="Thiệp và in ấn"
@@ -201,6 +206,7 @@ export function OperationsShell({
             id="ops-nav-staff"
             className={navClass('staff')}
             href="/staff"
+            prefetch={false}
             aria-current={activePage === 'staff' ? 'page' : undefined}
             aria-label="Nhân sự"
             title="Nhân sự"
@@ -215,6 +221,7 @@ export function OperationsShell({
             id="ops-nav-catalog"
             className={navClass('catalog')}
             href="/catalog"
+            prefetch={false}
             aria-current={activePage === 'catalog' ? 'page' : undefined}
             aria-label="Danh mục"
             title="Danh mục"
@@ -231,6 +238,7 @@ export function OperationsShell({
           id="ops-nav-staff-checkin"
           className={navClass('staff')}
           href="/staff"
+          prefetch={false}
           aria-current={activePage === 'staff' ? 'page' : undefined}
           aria-label="Bàn đón khách"
           title="Bàn đón khách"

@@ -198,6 +198,7 @@ export function DashboardBookingsTable({
                     <Link
                       className="booking-primary-link"
                       href={`/bookings?bookingId=${booking.bookingId}`}
+                      prefetch={false}
                       style={dashboardStyles.actionLink}
                     >
                       Xem hồ sơ →
@@ -205,6 +206,7 @@ export function DashboardBookingsTable({
                     <Link
                       className="booking-secondary"
                       href={`/billing?bookingId=${booking.bookingId}`}
+                      prefetch={false}
                       style={dashboardStyles.actionLink}
                     >
                       Thanh toán
@@ -212,6 +214,7 @@ export function DashboardBookingsTable({
                     <Link
                       className="booking-secondary"
                       href={`/staff?bookingId=${booking.bookingId}`}
+                      prefetch={false}
                       style={dashboardStyles.actionLink}
                     >
                       Nhân sự

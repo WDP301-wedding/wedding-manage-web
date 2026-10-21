@@ -52,7 +52,7 @@ export function DashboardConsultationsSection({
           <h2>Yêu cầu tư vấn gần đây</h2>
         </div>
         {isManager ? (
-          <Link className="text-button" href="/consultation-requests">
+          <Link className="text-button" href="/consultation-requests" prefetch={false}>
             Xem toàn bộ ({state === 'loading' ? '…' : consultations.length})
           </Link>
         ) : null}
