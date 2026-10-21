@@ -234,17 +234,12 @@ export function BookingCreatePanel({
             ? `✓ Đã kết nối hồ sơ tư vấn (Phiên bản ${consultation.revision})`
             : 'Mã này sẽ tự động điền khi bạn bấm "Tạo hồ sơ tư vấn" ở Bước 01'}
         </small>
-        <label>
-          Phiên bản hồ sơ tư vấn
-          <input
-            key={`${consultation?.id}:${consultation?.revision}`}
-            name="expectedRevision"
-            type="number"
-            min={1}
-            required
-            defaultValue={consultation?.revision ?? 1}
-          />
-        </label>
+        <input
+          key={`${consultation?.id}:${consultation?.revision}`}
+          name="expectedRevision"
+          type="hidden"
+          value={consultation?.revision ?? 1}
+        />
         <label>
           Sảnh tiệc
           <select

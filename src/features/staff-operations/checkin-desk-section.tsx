@@ -52,6 +52,7 @@ export function CheckinDeskSection({
               placeholder="VD: cd0b75ab-6256-427e-9b37-777f8b9c2822"
               value={bookingId}
               onChange={(e) => setBookingId(e.target.value)}
+              onBlur={() => setBookingId(bookingId.trim())}
               style={staffStyles.input}
             />
           </div>

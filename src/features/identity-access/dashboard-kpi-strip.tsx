@@ -3,7 +3,7 @@
 import type { AnalyticsOverviewData } from '../../services/analytics.service';
 import type { PublicHall, PublicRestaurant } from '../../services/catalog.service';
 import type { ConsultationRequestItem } from '../../services/consultation.service';
-import { formatVndNullable as formatVnd } from '../../lib/formatters';
+import { formatVndNullable } from '../../lib/formatters';
 
 export function MetricCard({
   attention = false,
@@ -106,12 +106,12 @@ export function DashboardKpiStrip({
         <>
           <MetricCard
             label="Tiền thực nhận tháng này"
-            value={isLoading || !analytics ? '—' : formatVnd(analytics.netCashRevenueVnd)}
+            value={isLoading || !analytics ? '—' : formatVndNullable(analytics.netCashRevenueVnd)}
             detail={isLoading ? 'Đang tổng hợp sổ cái…' : 'Thực thu tiền mặt/chuyển khoản (VND)'}
           />
           <MetricCard
             label="Tổng cọc đã thu"
-            value={isLoading || !analytics ? '—' : formatVnd(analytics.grossCashReceivedVnd)}
+            value={isLoading || !analytics ? '—' : formatVndNullable(analytics.grossCashReceivedVnd)}
             detail={
               isLoading
                 ? 'Đang tính toán…'

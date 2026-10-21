@@ -2,7 +2,7 @@
 
 import type React from 'react';
 import { ApiClientError } from '../../lib/api/client';
-import { formatCurrencyVnd as formatVnd } from '../../lib/formatters';
+import { formatVnd } from '../../lib/formatters';
 import type { CatalogDish, CatalogMenu } from './catalog-api';
 
 export type Authorize = <T>(operation: (accessToken: string) => Promise<T>) => Promise<T>;

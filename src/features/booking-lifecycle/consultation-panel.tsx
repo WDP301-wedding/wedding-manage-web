@@ -103,11 +103,11 @@ export function ConsultationPanel({
               lineHeight: 1.5,
             }}
           >
-            <strong>✓ Đã tạo mã hồ sơ tư vấn.</strong>
+            <strong>✓ Đã lưu hồ sơ tư vấn ban đầu.</strong>
             <p style={{ margin: '0.35rem 0 0', color: '#15803d' }}>
-              Vui lòng chuyển sang <strong>Bước 02: Khảo sát sảnh &amp; Đặt tiệc</strong> để chọn
-              sảnh, ngày và tạo booking nháp trước. Lời mời kích hoạt tài khoản sẽ xuất hiện để gửi
-              cho cặp đôi ngay sau khi tạo booking thành công.
+              Bạn có thể <strong>Gửi lời mời cộng tác</strong> ngay để cặp đôi cùng theo dõi thông tin
+              tư vấn, hoặc chuyển sang <strong>Bước 02: Khảo sát sảnh &amp; Đặt tiệc</strong> để chọn
+              sảnh và hoàn tất thủ tục đặt tiệc.
             </p>
           </div>
           <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem', flexWrap: 'wrap' }}>

@@ -3,7 +3,7 @@
  * Derived from wedding-be print-orders.schemas.ts and print-policy.ts.
  */
 
-import { formatVndSymbol as formatVnd } from '../../lib/formatters';
+import { formatVnd } from '../../lib/formatters';
 
 export const PRINT_ORDER_STATUSES = [
   'REQUESTED',

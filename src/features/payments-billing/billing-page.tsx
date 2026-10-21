@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { ApiClientError } from '../../lib/api/client';
+import { sanitizeSearchId } from '../../lib/input-sanitizers';
 import {
   type ManagementIdentitySession,
   sharedManagementSession,
@@ -125,8 +126,9 @@ export function ManagementBillingWorkspace({
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const id = params.get('bookingId');
-    if (id !== null && /^[a-f0-9-]{36}$/iu.test(id)) {
+    const rawId = params.get('bookingId');
+    const id = sanitizeSearchId(rawId);
+    if (id !== '' && /^[a-f0-9-]{36}$/iu.test(id)) {
       setBookingId(id);
       void run(() => load(id));
     }
