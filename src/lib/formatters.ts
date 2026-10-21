@@ -4,23 +4,28 @@
  * Rules:
  * - Integer VND only (no decimal VND values).
  * - Exact digit preservation; no arbitrary truncation or rounding drift.
- * - Standard Vietnamese locale conventions.
+ * - Standard Vietnamese locale conventions with official '₫' currency symbol.
+ * - Singleton formatter instances for high performance and low GC overhead.
  */
 
-/**
- * Formats an integer VND amount with Vietnamese locale thousand separators and 'đ' suffix.
- * Example: 1500000 -> "1.500.000 đ"
- */
-export function formatVnd(amount: number): string {
-  return `${amount.toLocaleString('vi-VN')} đ`;
-}
+const VI_NUMBER_FORMAT = new Intl.NumberFormat('vi-VN', {
+  maximumFractionDigits: 0,
+});
 
 /**
  * Formats an integer VND amount with Vietnamese locale thousand separators and '₫' symbol.
  * Example: 1500000 -> "1.500.000 ₫"
  */
+export function formatVnd(amount: number): string {
+  return `${VI_NUMBER_FORMAT.format(Math.round(amount))} ₫`;
+}
+
+/**
+ * Formats an integer VND amount with Vietnamese locale thousand separators and '₫' symbol.
+ * Retained for backward compatibility.
+ */
 export function formatVndSymbol(amount: number): string {
-  return `${new Intl.NumberFormat('vi-VN').format(Math.round(amount))} ₫`;
+  return formatVnd(amount);
 }
 
 /**
@@ -28,7 +33,7 @@ export function formatVndSymbol(amount: number): string {
  */
 export function formatVndNullable(amount: number | null | undefined): string {
   if (amount === null || amount === undefined || Number.isNaN(amount)) return '—';
-  return `${new Intl.NumberFormat('vi-VN').format(amount)} đ`;
+  return formatVnd(amount);
 }
 
 /**
@@ -36,14 +41,10 @@ export function formatVndNullable(amount: number | null | undefined): string {
  * Example: 1500000 -> "1.500.000 ₫"
  */
 export function formatCurrencyVnd(value: number): string {
-  return new Intl.NumberFormat('vi-VN', {
-    style: 'currency',
-    currency: 'VND',
-    maximumFractionDigits: 0,
-  }).format(value);
+  return formatVnd(value);
 }
 
 /**
  * Alias for formatCurrencyVnd matching existing booking/billing helpers.
  */
-export const money = formatCurrencyVnd;
+export const money = formatVnd;
