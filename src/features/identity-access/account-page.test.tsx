@@ -91,7 +91,7 @@ describe('Management account access', () => {
   });
 
   it('returns to the login prompt if loading the profile expires the session', async () => {
-    gateway.profile.mockRejectedValueOnce(
+    gateway.profile.mockRejectedValue(
       new ApiClientError({
         kind: 'api',
         code: 'UNAUTHORIZED',
