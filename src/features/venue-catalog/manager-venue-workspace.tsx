@@ -126,15 +126,6 @@ export function ManagerVenueWorkspace({
       next.add(tab);
       return next;
     });
-    if (typeof window !== 'undefined') {
-      const url = new URL(window.location.href);
-      if (tab === 'venue') {
-        url.searchParams.delete('tab');
-      } else {
-        url.searchParams.set('tab', tab);
-      }
-      window.history.replaceState(null, '', url.toString());
-    }
   }, []);
 
   useEffect(() => {

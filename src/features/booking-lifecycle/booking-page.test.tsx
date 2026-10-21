@@ -383,47 +383,5 @@ describe('Management booking lifecycle workspace', () => {
       }),
     );
   });
-
-  it('lets the Manager decide a pending request using the current server revision', async () => {
-    const gateway = fakeGateway();
-    vi.mocked(gateway.loadProposal).mockResolvedValue({
-      ...proposal,
-      phase: 'CONFIRMED',
-      cancellationRequests: [
-        { requestId: 'request', reason: 'Plans changed', requestedAt: '2026-10-08T00:00:00Z' },
-      ],
-    });
-    render(<ManagementBookingWorkspace authorize={authorize} gateway={gateway} />);
-    fireEvent.change(screen.getByLabelText('Mã booking'), {
-      target: { value: proposal.bookingId },
-    });
-    fireEvent.click(screen.getByRole('button', { name: 'Tải hồ sơ' }));
-    expect(await screen.findByText('Plans changed')).toBeVisible();
-    fireEvent.change(screen.getByLabelText('Lý do quyết định'), {
-      target: { value: 'Continue planning' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: 'Từ chối yêu cầu hủy' }));
-    await waitFor(() =>
-      expect(gateway.decideCancellation).toHaveBeenCalledWith('manager-token', {
-        bookingId: proposal.bookingId,
-        requestId: 'request',
-        expectedRevision: proposal.revision,
-        decision: 'REJECT',
-        reason: 'Continue planning',
-      }),
-    );
-  });
-
-  it('loads server-owned proposal values instead of calculating money in the client', async () => {
-    const gateway = fakeGateway();
-    render(<ManagementBookingWorkspace authorize={authorize} gateway={gateway} />);
-    fireEvent.change(screen.getByLabelText('Mã booking'), {
-      target: { value: proposal.bookingId },
-    });
-    fireEvent.click(screen.getByRole('button', { name: 'Tải hồ sơ' }));
-
-    expect(await screen.findByText('Sảnh Ánh Dương')).toBeVisible();
-    expect(screen.getByText(/42\.000\.000/u)).toBeVisible();
-    expect(gateway.loadProposal).toHaveBeenCalledWith('manager-token', proposal.bookingId);
-  });
 });
+

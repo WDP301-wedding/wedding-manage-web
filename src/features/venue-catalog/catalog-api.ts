@@ -1,15 +1,25 @@
 import { createApiClient, type ApiClient } from '../../lib/api/client';
+import {
+  clearCatalogCache,
+  fetchSharedCatalogResource,
+  invalidateCatalogResource,
+} from './catalog-cache';
+import { createFoodCatalogGateway } from './catalog-food-gateway';
+import { createLayoutCatalogGateway } from './catalog-layout-gateway';
 import { createMediaCatalogGateway } from './catalog-media-gateway';
-export * from './catalog-types';
+import { createTimelineCatalogGateway } from './catalog-timeline-gateway';
 import type {
-  CatalogDish,
   CatalogGateway,
   CatalogHall,
-  CatalogLayout,
-  CatalogMenu,
-  CatalogTimeline,
   ManagerShift,
 } from './catalog-types';
+
+export * from './catalog-types';
+export {
+  clearCatalogCache,
+  invalidateCatalogResource,
+  fetchSharedCatalogResource,
+};
 
 function authorization(accessToken: string) {
   return { Authorization: `Bearer ${accessToken}` };
@@ -20,20 +30,28 @@ function required<T>(value: T | undefined, operation: string): T {
   return value;
 }
 
-export {
-  clearCatalogCache,
-  invalidateCatalogResource,
-  fetchSharedCatalogResource,
-} from './catalog-cache';
-import {
-  clearCatalogCache,
-  invalidateCatalogResource,
-  fetchSharedCatalogResource,
-} from './catalog-cache';
-
 export function createVenueCatalogGateway(client?: ApiClient): CatalogGateway {
   let resolvedClient = client;
   const api = () => (resolvedClient ??= createApiClient());
+
+  const foodGateway = createFoodCatalogGateway(
+    api,
+    authorization,
+    required,
+    fetchSharedCatalogResource,
+  );
+  const timelineGateway = createTimelineCatalogGateway(
+    api,
+    authorization,
+    required,
+    fetchSharedCatalogResource,
+  );
+  const layoutGateway = createLayoutCatalogGateway(
+    api,
+    authorization,
+    required,
+    fetchSharedCatalogResource,
+  );
   const mediaGateway = createMediaCatalogGateway(
     api,
     authorization,
@@ -124,389 +142,38 @@ export function createVenueCatalogGateway(client?: ApiClient): CatalogGateway {
       invalidateCatalogResource(accessToken, '/management/catalog/halls');
     },
 
-    async loadFood(accessToken) {
-      const headers = authorization(accessToken);
-      const [dishes, menus] = await Promise.all([
-        fetchSharedCatalogResource(accessToken, '/management/catalog/dishes', { limit: 100 }, () =>
-          api().GET('/management/catalog/dishes', {
-            headers,
-            params: { query: { limit: 100 } },
-          }),
-        ),
-        fetchSharedCatalogResource(
-          accessToken,
-          '/management/catalog/menu-packages',
-          { limit: 100 },
-          () =>
-            api().GET('/management/catalog/menu-packages', {
-              headers,
-              params: { query: { limit: 100 } },
-            }),
-        ),
-      ]);
-      return {
-        dishes: Array.from(required(dishes.data, 'Dish read').data.items, (dish): CatalogDish => ({
-          ...dish,
-          versions: Array.from(dish.versions, (version) => ({ ...version })),
-        })),
-        menus: Array.from(required(menus.data, 'Menu read').data.items, (menu): CatalogMenu => ({
-          ...menu,
-          versions: Array.from(menu.versions, (version) => ({
-            ...version,
-            items: Array.from(version.items, (item) => ({ ...item })),
-          })),
-        })),
-      };
-    },
+    // Food domain methods delegated to FoodCatalogGateway
+    loadFood: (token) => foodGateway.loadFood(token),
+    createDish: (token, input) => foodGateway.createDish(token, input),
+    updateDishDraft: (token, input) => foodGateway.updateDishDraft(token, input),
+    publishDish: (token, input) => foodGateway.publishDish(token, input),
+    cloneDish: (token, input) => foodGateway.cloneDish(token, input),
+    changeDishLifecycle: (token, input) => foodGateway.changeDishLifecycle(token, input),
+    createMenu: (token, input) => foodGateway.createMenu(token, input),
+    updateMenuDraft: (token, input) => foodGateway.updateMenuDraft(token, input),
+    publishMenu: (token, input) => foodGateway.publishMenu(token, input),
+    cloneMenu: (token, input) => foodGateway.cloneMenu(token, input),
+    changeMenuLifecycle: (token, input) => foodGateway.changeMenuLifecycle(token, input),
 
-    async createDish(accessToken, input) {
-      const idempotencyKey = crypto.randomUUID();
-      await api().POST('/management/catalog/dishes', {
-        headers: authorization(accessToken),
-        params: { header: { 'Idempotency-Key': idempotencyKey } },
-        body: input,
-      });
-      invalidateCatalogResource(accessToken, '/management/catalog/dishes');
-    },
+    // Timeline domain methods delegated to TimelineCatalogGateway
+    loadTimelines: (token) => timelineGateway.loadTimelines(token),
+    createTimeline: (token, input) => timelineGateway.createTimeline(token, input),
+    updateTimelineDraft: (token, input) => timelineGateway.updateTimelineDraft(token, input),
+    publishTimeline: (token, input) => timelineGateway.publishTimeline(token, input),
+    cloneTimeline: (token, input) => timelineGateway.cloneTimeline(token, input),
+    changeTimelineLifecycle: (token, input) => timelineGateway.changeTimelineLifecycle(token, input),
 
-    async updateDishDraft(accessToken, { versionId, ...body }) {
-      await api().PATCH('/management/catalog/dish-versions/{versionId}', {
-        headers: authorization(accessToken),
-        params: { path: { versionId } },
-        body,
-      });
-      invalidateCatalogResource(accessToken, '/management/catalog/dishes');
-    },
+    // Layout domain methods delegated to LayoutCatalogGateway
+    loadLayouts: (token) => layoutGateway.loadLayouts(token),
+    createLayout: (token, input) => layoutGateway.createLayout(token, input),
+    updateLayoutDraft: (token, input) => layoutGateway.updateLayoutDraft(token, input),
+    publishLayout: (token, input) => layoutGateway.publishLayout(token, input),
+    cloneLayout: (token, input) => layoutGateway.cloneLayout(token, input),
+    changeLayoutLifecycle: (token, input) => layoutGateway.changeLayoutLifecycle(token, input),
+    registerLayoutTable: (token, input) => layoutGateway.registerLayoutTable(token, input),
+    retireLayoutTable: (token, input) => layoutGateway.retireLayoutTable(token, input),
 
-    async publishDish(accessToken, { versionId, ...body }) {
-      const idempotencyKey = crypto.randomUUID();
-      await api().POST('/management/catalog/dish-versions/{versionId}/publication', {
-        headers: authorization(accessToken),
-        params: {
-          header: { 'Idempotency-Key': idempotencyKey },
-          path: { versionId },
-        },
-        body,
-      });
-      invalidateCatalogResource(accessToken, '/management/catalog/dishes');
-    },
-
-    async cloneDish(accessToken, { dishId, ...body }) {
-      const idempotencyKey = crypto.randomUUID();
-      await api().POST('/management/catalog/dishes/{dishId}/versions', {
-        headers: authorization(accessToken),
-        params: {
-          header: { 'Idempotency-Key': idempotencyKey },
-          path: { dishId },
-        },
-        body,
-      });
-      invalidateCatalogResource(accessToken, '/management/catalog/dishes');
-    },
-
-    async changeDishLifecycle(accessToken, input) {
-      const idempotencyKey = crypto.randomUUID();
-      const options = {
-        headers: authorization(accessToken),
-        params: {
-          header: { 'Idempotency-Key': idempotencyKey },
-          path: { id: input.id },
-        },
-        body: { expectedRevision: input.expectedRevision },
-      } as const;
-      if (input.transition === 'RETIRE') {
-        await api().POST('/management/catalog/dishes/{id}/retirement', options);
-      } else {
-        await api().POST('/management/catalog/dishes/{id}/restoration', options);
-      }
-      invalidateCatalogResource(accessToken, '/management/catalog/dishes');
-    },
-
-    async createMenu(accessToken, input) {
-      const idempotencyKey = crypto.randomUUID();
-      await api().POST('/management/catalog/menu-packages', {
-        headers: authorization(accessToken),
-        params: { header: { 'Idempotency-Key': idempotencyKey } },
-        body: { ...input, items: [...input.items] },
-      });
-      invalidateCatalogResource(accessToken, '/management/catalog/menu-packages');
-    },
-
-    async updateMenuDraft(accessToken, { versionId, ...body }) {
-      await api().PATCH('/management/catalog/menu-package-versions/{versionId}', {
-        headers: authorization(accessToken),
-        params: { path: { versionId } },
-        body: { ...body, items: [...body.items] },
-      });
-      invalidateCatalogResource(accessToken, '/management/catalog/menu-packages');
-    },
-
-    async publishMenu(accessToken, { versionId, ...body }) {
-      const idempotencyKey = crypto.randomUUID();
-      await api().POST('/management/catalog/menu-package-versions/{versionId}/publication', {
-        headers: authorization(accessToken),
-        params: {
-          header: { 'Idempotency-Key': idempotencyKey },
-          path: { versionId },
-        },
-        body,
-      });
-      invalidateCatalogResource(accessToken, '/management/catalog/menu-packages');
-    },
-
-    async cloneMenu(accessToken, { packageId, ...body }) {
-      const idempotencyKey = crypto.randomUUID();
-      await api().POST('/management/catalog/menu-packages/{packageId}/versions', {
-        headers: authorization(accessToken),
-        params: {
-          header: { 'Idempotency-Key': idempotencyKey },
-          path: { packageId },
-        },
-        body,
-      });
-      invalidateCatalogResource(accessToken, '/management/catalog/menu-packages');
-    },
-
-    async changeMenuLifecycle(accessToken, input) {
-      const idempotencyKey = crypto.randomUUID();
-      const options = {
-        headers: authorization(accessToken),
-        params: {
-          header: { 'Idempotency-Key': idempotencyKey },
-          path: { id: input.id },
-        },
-        body: { expectedRevision: input.expectedRevision },
-      } as const;
-      if (input.transition === 'RETIRE') {
-        await api().POST('/management/catalog/menu-packages/{id}/retirement', options);
-      } else {
-        await api().POST('/management/catalog/menu-packages/{id}/restoration', options);
-      }
-      invalidateCatalogResource(accessToken, '/management/catalog/menu-packages');
-    },
-
-    async loadTimelines(accessToken) {
-      const headers = authorization(accessToken);
-      const timelines = await fetchSharedCatalogResource(
-        accessToken,
-        '/management/catalog/timeline-templates',
-        { limit: 100 },
-        () =>
-          api().GET('/management/catalog/timeline-templates', {
-            headers,
-            params: { query: { limit: 100 } },
-          }),
-      );
-      return {
-        timelines: Array.from(
-          required(timelines.data, 'Timeline read').data.items,
-          (timeline): CatalogTimeline => ({
-            ...timeline,
-            versions: Array.from(timeline.versions, (version) => ({
-              ...version,
-              items: Array.from(version.items, (item) => ({ ...item })),
-            })),
-          }),
-        ),
-      };
-    },
-
-    async createTimeline(accessToken, input) {
-      const idempotencyKey = crypto.randomUUID();
-      await api().POST('/management/catalog/timeline-templates', {
-        headers: authorization(accessToken),
-        params: { header: { 'Idempotency-Key': idempotencyKey } },
-        body: { ...input, items: [...input.items] },
-      });
-      invalidateCatalogResource(accessToken, '/management/catalog/timeline-templates');
-    },
-
-    async updateTimelineDraft(accessToken, { versionId, ...body }) {
-      await api().PATCH('/management/catalog/timeline-template-versions/{versionId}', {
-        headers: authorization(accessToken),
-        params: { path: { versionId } },
-        body: { ...body, items: [...body.items] },
-      });
-      invalidateCatalogResource(accessToken, '/management/catalog/timeline-templates');
-    },
-
-    async publishTimeline(accessToken, { versionId, ...body }) {
-      const idempotencyKey = crypto.randomUUID();
-      await api().POST('/management/catalog/timeline-template-versions/{versionId}/publication', {
-        headers: authorization(accessToken),
-        params: {
-          header: { 'Idempotency-Key': idempotencyKey },
-          path: { versionId },
-        },
-        body,
-      });
-      invalidateCatalogResource(accessToken, '/management/catalog/timeline-templates');
-    },
-
-    async cloneTimeline(accessToken, { templateId, ...body }) {
-      const idempotencyKey = crypto.randomUUID();
-      await api().POST('/management/catalog/timeline-templates/{templateId}/versions', {
-        headers: authorization(accessToken),
-        params: {
-          header: { 'Idempotency-Key': idempotencyKey },
-          path: { templateId },
-        },
-        body,
-      });
-      invalidateCatalogResource(accessToken, '/management/catalog/timeline-templates');
-    },
-
-    async changeTimelineLifecycle(accessToken, input) {
-      const idempotencyKey = crypto.randomUUID();
-      const options = {
-        headers: authorization(accessToken),
-        params: {
-          header: { 'Idempotency-Key': idempotencyKey },
-          path: { id: input.id },
-        },
-        body: { expectedRevision: input.expectedRevision },
-      } as const;
-      if (input.transition === 'RETIRE') {
-        await api().POST('/management/catalog/timeline-templates/{id}/retirement', options);
-      } else {
-        await api().POST('/management/catalog/timeline-templates/{id}/restoration', options);
-      }
-      invalidateCatalogResource(accessToken, '/management/catalog/timeline-templates');
-    },
-
-    async loadLayouts(accessToken) {
-      const headers = authorization(accessToken);
-      const [halls, layouts] = await Promise.all([
-        fetchSharedCatalogResource(accessToken, '/management/catalog/halls', { limit: 100 }, () =>
-          api().GET('/management/catalog/halls', {
-            headers,
-            params: { query: { limit: 100 } },
-          }),
-        ),
-        fetchSharedCatalogResource(
-          accessToken,
-          '/management/catalog/layout-templates',
-          { limit: 100 },
-          () =>
-            api().GET('/management/catalog/layout-templates', {
-              headers,
-              params: { query: { limit: 100 } },
-            }),
-        ),
-      ]);
-      return {
-        halls: Array.from(
-          required(halls.data, 'Layout halls read').data.items,
-          (hall): CatalogHall => ({
-            ...hall,
-          }),
-        ),
-        layouts: Array.from(
-          required(layouts.data, 'Layout read').data.items,
-          (layout): CatalogLayout => ({
-            ...layout,
-            tables: Array.from(layout.tables, (table) => ({ ...table })),
-            versions: Array.from(layout.versions, (version) => ({
-              ...version,
-              tables: Array.from(version.tables, (table) => ({ ...table })),
-            })),
-          }),
-        ),
-      };
-    },
-
-    async createLayout(accessToken, input) {
-      const idempotencyKey = crypto.randomUUID();
-      await api().POST('/management/catalog/layout-templates', {
-        headers: authorization(accessToken),
-        params: { header: { 'Idempotency-Key': idempotencyKey } },
-        body: { ...input, tables: [...input.tables] },
-      });
-      invalidateCatalogResource(accessToken, '/management/catalog/layout-templates');
-    },
-
-    async updateLayoutDraft(accessToken, { versionId, ...body }) {
-      await api().PATCH('/management/catalog/layout-template-versions/{versionId}', {
-        headers: authorization(accessToken),
-        params: { path: { versionId } },
-        body: { ...body, tables: [...body.tables] },
-      });
-      invalidateCatalogResource(accessToken, '/management/catalog/layout-templates');
-    },
-
-    async publishLayout(accessToken, { versionId, ...body }) {
-      const idempotencyKey = crypto.randomUUID();
-      await api().POST('/management/catalog/layout-template-versions/{versionId}/publication', {
-        headers: authorization(accessToken),
-        params: {
-          header: { 'Idempotency-Key': idempotencyKey },
-          path: { versionId },
-        },
-        body,
-      });
-      invalidateCatalogResource(accessToken, '/management/catalog/layout-templates');
-    },
-
-    async cloneLayout(accessToken, { templateId, ...body }) {
-      const idempotencyKey = crypto.randomUUID();
-      await api().POST('/management/catalog/layout-templates/{templateId}/versions', {
-        headers: authorization(accessToken),
-        params: {
-          header: { 'Idempotency-Key': idempotencyKey },
-          path: { templateId },
-        },
-        body,
-      });
-      invalidateCatalogResource(accessToken, '/management/catalog/layout-templates');
-    },
-
-    async changeLayoutLifecycle(accessToken, input) {
-      const idempotencyKey = crypto.randomUUID();
-      const options = {
-        headers: authorization(accessToken),
-        params: {
-          header: { 'Idempotency-Key': idempotencyKey },
-          path: { id: input.id },
-        },
-        body: { expectedRevision: input.expectedRevision },
-      } as const;
-      if (input.transition === 'RETIRE') {
-        await api().POST('/management/catalog/layout-templates/{id}/retirement', options);
-      } else {
-        await api().POST('/management/catalog/layout-templates/{id}/restoration', options);
-      }
-      invalidateCatalogResource(accessToken, '/management/catalog/layout-templates');
-    },
-
-    async registerLayoutTable(accessToken, input) {
-      const idempotencyKey = crypto.randomUUID();
-      await api().POST('/management/catalog/layout-templates/{templateId}/tables', {
-        headers: authorization(accessToken),
-        params: {
-          header: { 'Idempotency-Key': idempotencyKey },
-          path: { templateId: input.templateId },
-        },
-        body: { tableId: input.tableId },
-      });
-      invalidateCatalogResource(accessToken, '/management/catalog/layout-templates');
-    },
-
-    async retireLayoutTable(accessToken, input) {
-      const idempotencyKey = crypto.randomUUID();
-      await api().POST(
-        '/management/catalog/layout-templates/{templateId}/tables/{tableId}/retirement',
-        {
-          headers: authorization(accessToken),
-          params: {
-            header: { 'Idempotency-Key': idempotencyKey },
-            path: { templateId: input.templateId, tableId: input.tableId },
-          },
-          body: {},
-        },
-      );
-      invalidateCatalogResource(accessToken, '/management/catalog/layout-templates');
-    },
-
+    // Media domain methods delegated to MediaCatalogGateway
     loadMediaResources: (token) => mediaGateway.loadMediaResources(token),
     loadMedia: (token, input) => mediaGateway.loadMedia(token, input),
     uploadMedia: (token, input) => mediaGateway.uploadMedia(token, input),

@@ -15,9 +15,7 @@ export interface UseManagementSessionOptions {
 
 export function useManagementSession(options: UseManagementSessionOptions = {}) {
   const session = options.session ?? sharedManagementSession;
-  const [snapshot, setSnapshot] = useState<ManagementSessionSnapshot | null>(() =>
-    typeof window !== 'undefined' ? session.snapshot() : null,
-  );
+  const [snapshot, setSnapshot] = useState<ManagementSessionSnapshot | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
   const [logoutError, setLogoutError] = useState<string | null>(null);
 

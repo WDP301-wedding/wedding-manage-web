@@ -111,6 +111,11 @@ export function ConsultationPanel({
             </p>
           </div>
           <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem', flexWrap: 'wrap' }}>
+            {onInvite ? (
+              <button disabled={disabled} type="button" onClick={() => void onInvite()}>
+                Gửi lời mời cộng tác
+              </button>
+            ) : null}
             {onReset ? (
               <button
                 disabled={disabled}
@@ -122,6 +127,125 @@ export function ConsultationPanel({
               </button>
             ) : null}
           </div>
+          {logs && logs.length > 0 ? (
+            <div
+              style={{
+                marginTop: '1rem',
+                padding: '0.75rem',
+                backgroundColor: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                borderRadius: '6px',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: '0.5rem',
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                    color: '#475569',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                  }}
+                >
+                  📋 Nhật ký gửi lời mời
+                </span>
+                {onClearLogs ? (
+                  <button
+                    type="button"
+                    onClick={onClearLogs}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      fontSize: '0.72rem',
+                      color: '#94a3b8',
+                      cursor: 'pointer',
+                      padding: '2px 4px',
+                      textDecoration: 'underline',
+                    }}
+                  >
+                    Xóa log
+                  </button>
+                ) : null}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {logs.map((item) => (
+                  <div
+                    key={item.id}
+                    style={{
+                      padding: '0.5rem 0.65rem',
+                      borderRadius: '4px',
+                      fontSize: '0.8rem',
+                      lineHeight: '1.4',
+                      backgroundColor:
+                        item.type === 'success'
+                          ? '#f0fdf4'
+                          : item.type === 'error'
+                            ? '#fef2f2'
+                            : '#fffbeb',
+                      border: `1px solid ${
+                        item.type === 'success'
+                          ? '#bbf7d0'
+                          : item.type === 'error'
+                            ? '#fecaca'
+                            : '#fde68a'
+                      }`,
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: '4px',
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontWeight: 600,
+                          color:
+                            item.type === 'success'
+                              ? '#166534'
+                              : item.type === 'error'
+                                ? '#991b1b'
+                                : '#92400e',
+                        }}
+                      >
+                        {item.type === 'success'
+                          ? '✓ Đã gửi thành công'
+                          : item.type === 'error'
+                            ? '✕ Gửi thất bại'
+                            : '⏳ Đang xử lý...'}
+                      </span>
+                      <small style={{ color: '#64748b', fontSize: '0.75rem' }}>{item.time}</small>
+                    </div>
+                    <div style={{ marginTop: '3px', color: '#1e293b' }}>{item.message}</div>
+                    {item.invitationId ? (
+                      <div style={{ marginTop: '4px', fontSize: '0.75rem' }}>
+                        <span style={{ color: '#64748b' }}>Mã lời mời: </span>
+                        <code
+                          style={{
+                            background: 'rgba(0,0,0,0.06)',
+                            padding: '1px 5px',
+                            borderRadius: '3px',
+                            wordBreak: 'break-all',
+                          }}
+                        >
+                          {item.invitationId}
+                        </code>
+                      </div>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
         </div>
       )}
     </article>

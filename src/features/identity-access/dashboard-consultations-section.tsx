@@ -1,13 +1,17 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
 import type { ConsultationRequestItem } from '../../services/consultation.service';
-import { CopyButton, type DashboardState } from './dashboard-bookings-section';
+import type { DashboardState } from './dashboard-bookings-section';
+import { DashboardConsultationsTable } from './dashboard-consultations-table';
 import { dashboardStyles } from './dashboard.styles';
+import {
+  type ConsultationSortField,
+  type SortOrder,
+  useDashboardConsultations,
+} from './use-dashboard-consultations';
 
-export type ConsultationSortField = 'createdAt' | 'displayName' | 'preferredDate' | 'status';
-export type SortOrder = 'asc' | 'desc';
+export type { ConsultationSortField, SortOrder };
 
 export interface DashboardConsultationsSectionProps {
   isManager: boolean;
@@ -20,71 +24,25 @@ export function DashboardConsultationsSection({
   state,
   consultations,
 }: Readonly<DashboardConsultationsSectionProps>) {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('ALL');
-  const [sortField, setSortField] = useState<ConsultationSortField>('createdAt');
-  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(5);
-
-  const handleSortChange = (field: ConsultationSortField) => {
-    if (sortField === field) {
-      setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'));
-    } else {
-      setSortField(field);
-      setSortOrder(field === 'createdAt' ? 'desc' : 'asc');
-    }
-    setCurrentPage(1);
-  };
-
-  const handleQuickSortChange = (val: string) => {
-    const [f, o] = val.split('-') as [ConsultationSortField, SortOrder];
-    setSortField(f);
-    setSortOrder(o);
-    setCurrentPage(1);
-  };
-
-  const filteredConsultations = useMemo(() => {
-    return consultations.filter((item) => {
-      if (statusFilter !== 'ALL' && item.status !== statusFilter) return false;
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase().trim();
-        const nameMatch = (item.displayName || '').toLowerCase().includes(q);
-        const emailMatch = (item.email || '').toLowerCase().includes(q);
-        const phoneMatch = (item.phone || '').toLowerCase().includes(q);
-        const idMatch = (item.consultationId || '').toLowerCase().includes(q);
-        return nameMatch || emailMatch || phoneMatch || idMatch;
-      }
-      return true;
-    });
-  }, [consultations, statusFilter, searchQuery]);
-
-  const sortedConsultations = useMemo(() => {
-    return [...filteredConsultations].sort((a, b) => {
-      let cmp = 0;
-      if (sortField === 'createdAt') {
-        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        cmp = timeA - timeB;
-      } else if (sortField === 'displayName') {
-        cmp = (a.displayName || '').localeCompare(b.displayName || '', 'vi');
-      } else if (sortField === 'preferredDate') {
-        if (!a.preferredDate && !b.preferredDate) cmp = 0;
-        else if (!a.preferredDate) cmp = 1;
-        else if (!b.preferredDate) cmp = -1;
-        else cmp = new Date(a.preferredDate).getTime() - new Date(b.preferredDate).getTime();
-      } else if (sortField === 'status') {
-        cmp = a.status.localeCompare(b.status);
-      }
-      return sortOrder === 'asc' ? cmp : -cmp;
-    });
-  }, [filteredConsultations, sortField, sortOrder]);
-
-  const totalPages = Math.max(1, Math.ceil(sortedConsultations.length / pageSize));
-  const safeCurrentPage = Math.min(currentPage, totalPages);
-  const startIndex = (safeCurrentPage - 1) * pageSize;
-  const endIndex = Math.min(startIndex + pageSize, sortedConsultations.length);
-  const paginatedConsultations = sortedConsultations.slice(startIndex, endIndex);
+  const {
+    searchQuery,
+    setSearchQuery,
+    statusFilter,
+    setStatusFilter,
+    sortField,
+    sortOrder,
+    pageSize,
+    setPageSize,
+    handleSortChange,
+    handleQuickSortChange,
+    sortedConsultations,
+    paginatedConsultations,
+    totalPages,
+    safeCurrentPage,
+    startIndex,
+    endIndex,
+    setCurrentPage,
+  } = useDashboardConsultations(consultations);
 
   return (
     <section className="schedule-panel dashboard-schedule" id="upcoming-events">
@@ -173,166 +131,12 @@ export function DashboardConsultationsSection({
               </p>
             </div>
           ) : (
-            <div className="table-scroll">
-              <table aria-label="Danh sách yêu cầu tư vấn gần đây">
-                <thead>
-                  <tr>
-                    <th scope="col">
-                      <button
-                        type="button"
-                        onClick={() => handleSortChange('createdAt')}
-                        style={dashboardStyles.thSortButton}
-                        title="Sắp xếp theo ngày đăng ký"
-                      >
-                        <span>Ngày đăng ký</span>
-                        <span style={dashboardStyles.sortIcon(sortField === 'createdAt')}>
-                          {sortField === 'createdAt' ? (sortOrder === 'asc' ? '↑' : '↓') : '↕'}
-                        </span>
-                      </button>
-                    </th>
-                    <th scope="col">
-                      <button
-                        type="button"
-                        onClick={() => handleSortChange('displayName')}
-                        style={dashboardStyles.thSortButton}
-                        title="Sắp xếp theo khách hàng"
-                      >
-                        <span>Khách hàng</span>
-                        <span style={dashboardStyles.sortIcon(sortField === 'displayName')}>
-                          {sortField === 'displayName' ? (sortOrder === 'asc' ? '↑' : '↓') : '↕'}
-                        </span>
-                      </button>
-                    </th>
-                    <th scope="col">Mã hồ sơ</th>
-                    <th scope="col">Số điện thoại</th>
-                    <th scope="col">
-                      <button
-                        type="button"
-                        onClick={() => handleSortChange('preferredDate')}
-                        style={dashboardStyles.thSortButton}
-                        title="Sắp xếp theo ngày dự kiến"
-                      >
-                        <span>Ngày dự kiến</span>
-                        <span style={dashboardStyles.sortIcon(sortField === 'preferredDate')}>
-                          {sortField === 'preferredDate' ? (sortOrder === 'asc' ? '↑' : '↓') : '↕'}
-                        </span>
-                      </button>
-                    </th>
-                    <th scope="col">
-                      <button
-                        type="button"
-                        onClick={() => handleSortChange('status')}
-                        style={dashboardStyles.thSortButton}
-                        title="Sắp xếp theo trạng thái"
-                      >
-                        <span>Trạng thái</span>
-                        <span style={dashboardStyles.sortIcon(sortField === 'status')}>
-                          {sortField === 'status' ? (sortOrder === 'asc' ? '↑' : '↓') : '↕'}
-                        </span>
-                      </button>
-                    </th>
-                    <th scope="col">Thao tác</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {paginatedConsultations.map((item) => (
-                    <tr key={item.id}>
-                      <td>
-                        <strong>
-                          {item.createdAt
-                            ? new Date(item.createdAt).toLocaleDateString('vi-VN')
-                            : 'Hôm nay'}
-                        </strong>
-                      </td>
-                      <td>
-                        <strong>{item.displayName || 'Khách vãng lai'}</strong>
-                        <span style={{ display: 'block', fontSize: '0.8rem', color: '#64748b' }}>
-                          {item.email}
-                        </span>
-                      </td>
-                      <td>
-                        {item.consultationId ? (
-                          <div
-                            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
-                          >
-                            <code
-                              style={{
-                                fontSize: '0.75rem',
-                                fontFamily: 'monospace',
-                                background: '#f1f5f9',
-                                padding: '2px 6px',
-                                borderRadius: '4px',
-                                maxWidth: '170px',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap',
-                                display: 'inline-block',
-                              }}
-                              title={item.consultationId}
-                            >
-                              {item.consultationId}
-                            </code>
-                            <CopyButton text={item.consultationId} />
-                          </div>
-                        ) : (
-                          <span style={{ color: '#9ca3af', fontSize: '0.85rem' }}>Chưa cấp mã</span>
-                        )}
-                      </td>
-                      <td>{item.phone || '—'}</td>
-                      <td>{item.preferredDate || 'Chưa định ngày'}</td>
-                      <td>
-                        <span
-                          className={`status ${
-                            item.status === 'CONVERTED'
-                              ? 'status-ready'
-                              : item.status === 'CLOSED'
-                                ? 'status-closed'
-                                : 'status-review'
-                          }`}
-                        >
-                          {item.status === 'CONVERTED'
-                            ? 'Đã chuyển đổi'
-                            : item.status === 'CLOSED'
-                              ? 'Đã đóng'
-                              : 'Chờ xử lý'}
-                        </span>
-                      </td>
-                      <td>
-                        {item.status === 'CONVERTED' && item.consultationId ? (
-                          <Link
-                            className="booking-primary-link"
-                            href={`/bookings?consultationId=${item.consultationId}&consultationRevision=${item.consultationRevision ?? 1}`}
-                            style={{
-                              padding: '4px 10px',
-                              fontSize: '0.8rem',
-                              whiteSpace: 'nowrap',
-                              display: 'inline-block',
-                              textDecoration: 'none',
-                            }}
-                          >
-                            Đặt tiệc →
-                          </Link>
-                        ) : item.status === 'NEW' ? (
-                          <Link
-                            href="/consultation-requests"
-                            style={{
-                              fontSize: '0.8rem',
-                              color: '#047857',
-                              whiteSpace: 'nowrap',
-                              fontWeight: 600,
-                            }}
-                          >
-                            Xử lý →
-                          </Link>
-                        ) : (
-                          <span style={{ color: '#9ca3af' }}>—</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <DashboardConsultationsTable
+              items={paginatedConsultations}
+              sortField={sortField}
+              sortOrder={sortOrder}
+              onSortChange={handleSortChange}
+            />
           )}
 
           {sortedConsultations.length > 0 && (
