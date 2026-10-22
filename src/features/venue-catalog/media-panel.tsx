@@ -88,7 +88,6 @@ export function MediaPanel({
         setLoading(false);
       }
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [allowedTypesKey, authorize, gateway, loadAssets],
   );
 

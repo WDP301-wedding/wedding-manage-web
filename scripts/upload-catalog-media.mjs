@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { resolve, join } from 'node:path';
+import { join } from 'node:path';
 
 const BACKEND_URL = process.env.BACKEND_ORIGIN || 'https://wedding-be-render-trial.onrender.com';
 const CATALOG_DIR = process.env.CATALOG_DIR || 'c:\\Users\\phanp\\Downloads\\tai-len-catalog';
