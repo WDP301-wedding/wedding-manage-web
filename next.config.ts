@@ -1,7 +1,6 @@
 import type { NextConfig } from 'next';
 
-const backendOrigin =
-  process.env.BACKEND_ORIGIN || 'https://wedding-be-production-e1dc.up.railway.app';
+const backendOrigin = process.env.BACKEND_ORIGIN || 'https://wedding-be-render-trial.onrender.com';
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,

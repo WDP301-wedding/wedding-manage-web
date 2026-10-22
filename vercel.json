@@ -6,7 +6,7 @@
   "rewrites": [
     {
       "source": "/api/v1/:path*",
-      "destination": "https://wedding-be-production-e1dc.up.railway.app/api/v1/:path*"
+      "destination": "https://wedding-be-render-trial.onrender.com/api/v1/:path*"
     }
   ]
 }

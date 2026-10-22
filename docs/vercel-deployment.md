@@ -9,9 +9,10 @@ Set the Vercel **production** environment variable
 building. Public variables are embedded at build time; changing them requires a
 new deployment. Keep local `.env.local` for local development only.
 
-`vercel.json` proxies `/api/v1/*` to the Railway backend. Browser requests and
+Set server-only `BACKEND_ORIGIN=https://wedding-be-render-trial.onrender.com`.
+`vercel.json` proxies `/api/v1/*` to the Render backend. Browser requests and
 the backend's Secure, HttpOnly, SameSite=Lax host refresh cookie therefore use
-the web origin. Keep this exact origin in Railway `CORS_ALLOWED_ORIGINS`; the
+the web origin. Keep this exact origin in Render `CORS_ALLOWED_ORIGINS`; the
 customer web origin should remain its first entry for email credential links.
 Never add Supabase service credentials, Brevo credentials, or backend secrets
 to this web.
