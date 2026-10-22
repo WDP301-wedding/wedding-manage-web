@@ -1,10 +1,15 @@
 'use client';
 
 import Image from 'next/image';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 
 import { ApiClientError } from '../../lib/api/client';
-import type { CatalogGateway, CatalogMedia, CatalogMediaResource } from './catalog-api';
+import type {
+  CatalogGateway,
+  CatalogMedia,
+  CatalogMediaResource,
+  CatalogMediaResourceType,
+} from './catalog-api';
 import { MediaUploadForm } from './media-upload-form';
 
 type Authorize = <T>(operation: (accessToken: string) => Promise<T>) => Promise<T>;
@@ -13,7 +18,20 @@ export function MediaPanel({
   authorize,
   gateway,
   active = true,
-}: Readonly<{ authorize: Authorize; gateway: CatalogGateway; active?: boolean }>) {
+  allowedTypes,
+  sectionKicker = 'Thư viện dùng chung',
+  heading = 'Ảnh, lịch sử và vòng đời',
+  description = 'Ảnh chỉ hiển thị qua URL ký số ngắn hạn. Khóa lưu trữ nội bộ không bao giờ được đưa ra giao diện.',
+}: Readonly<{
+  authorize: Authorize;
+  gateway: CatalogGateway;
+  active?: boolean;
+  allowedTypes?: readonly CatalogMediaResourceType[];
+  sectionKicker?: string;
+  heading?: string;
+  description?: string;
+}>) {
+  const headingId = useId();
   const [resources, setResources] = useState<readonly CatalogMediaResource[]>([]);
   const [selectedKey, setSelectedKey] = useState('');
   const [assets, setAssets] = useState<readonly CatalogMedia[]>([]);
@@ -23,6 +41,7 @@ export function MediaPanel({
   const [error, setError] = useState<string | null>(null);
   const assetsLoadedAtRef = useRef<number>(0);
   const inFlightRenewRef = useRef<boolean>(false);
+  const allowedTypesKey = allowedTypes ? allowedTypes.join(',') : '';
 
   const selected = useMemo(
     () => resources.find((resource) => mediaResourceKey(resource) === selectedKey) ?? resources[0],
@@ -45,10 +64,16 @@ export function MediaPanel({
       setLoading(true);
       setError(null);
       try {
-        const nextResources = await authorize((token) => gateway.loadMediaResources(token));
+        const allResources = await authorize((token) => gateway.loadMediaResources(token));
+        const nextResources = allowedTypes
+          ? allResources.filter((resource) => allowedTypes.includes(resource.type))
+          : allResources;
         setResources(nextResources);
         const next =
           nextResources.find((resource) => mediaResourceKey(resource) === preferredKey) ??
+          nextResources.find((resource) => resource.type === 'HALL') ??
+          nextResources.find((resource) => resource.type === 'MENU_PACKAGE_VERSION') ??
+          nextResources.find((resource) => resource.type === 'DISH_VERSION') ??
           nextResources[0];
         if (next === undefined) {
           setSelectedKey('');
@@ -63,7 +88,8 @@ export function MediaPanel({
         setLoading(false);
       }
     },
-    [authorize, gateway, loadAssets],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [allowedTypesKey, authorize, gateway, loadAssets],
   );
 
   useEffect(() => {
@@ -155,14 +181,11 @@ export function MediaPanel({
   };
 
   return (
-    <section className="catalog-section media-section" aria-labelledby="media-heading">
+    <section className="catalog-section media-section" aria-labelledby={headingId}>
       <div className="catalog-section-heading">
-        <p className="section-kicker">Thư viện dùng chung</p>
-        <h2 id="media-heading">Ảnh, lịch sử và vòng đời</h2>
-        <p>
-          Ảnh chỉ hiển thị qua URL ký số ngắn hạn. Khóa lưu trữ nội bộ không bao giờ được đưa ra
-          giao diện.
-        </p>
+        <p className="section-kicker">{sectionKicker}</p>
+        <h2 id={headingId}>{heading}</h2>
+        <p>{description}</p>
       </div>
       <PanelMessages error={error} message={message} />
       <div className="media-toolbar">

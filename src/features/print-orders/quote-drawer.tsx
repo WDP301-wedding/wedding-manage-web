@@ -218,41 +218,56 @@ export function QuoteDrawer({
         <form onSubmit={handleSubmit} className="v0-drawer-body">
           <div className="v0-form-group">
             <label className="v0-label">Phiên bản đơn in dự kiến (Expected revision)</label>
-            <input
-              type="text"
-              readOnly
-              value={`Revision hiện tại: ${order.revision}`}
-              className="v0-input v0-input-readonly"
-            />
+            <div className="v0-revision-badge-card">
+              <div className="v0-revision-pill">
+                <span className="v0-revision-tag">Revision {order.revision}</span>
+                <span>Khóa phiên bản máy chủ hiện tại</span>
+              </div>
+              <span className="v0-revision-hint">Chống xung đột ghi đè đồng thời</span>
+            </div>
           </div>
 
           <div className="v0-lines-edit-list">
-            <label className="v0-label">Đơn giá từng dòng in (VND/bản)</label>
+            <div className="v0-lines-header">
+              <label className="v0-label">Đơn giá từng dòng in (VND/bản)</label>
+              <span className="v0-badge-count">{order.lines.length} dòng thiết kế</span>
+            </div>
             {order.lines.map((line, idx) => {
               const currentPrice = unitPrices[line.lineId] ?? 0;
               const rawVal = rawInputs[line.lineId] ?? '';
               const lineError = priceErrors[line.lineId];
+              const lineSubtotal = computeQuotedLineTotal(line.quantity, currentPrice);
               return (
-                <div key={line.lineId} className="v0-line-edit-item">
-                  <div className="v0-line-edit-title">
-                    <strong>
-                      #{idx + 1}: {line.displayVariant ?? line.designId}
-                    </strong>
-                    <span>{line.quantity} bản</span>
+                <div key={line.lineId} className="v0-line-edit-card">
+                  <div className="v0-line-edit-header">
+                    <div className="v0-line-title-group">
+                      <span className="v0-line-index-badge">#{idx + 1}</span>
+                      <strong className="v0-line-name">
+                        {line.displayVariant ?? line.designId}
+                      </strong>
+                    </div>
+                    <span className="v0-line-qty">{line.quantity} bản in</span>
                   </div>
+
                   <div className="v0-line-edit-input-row">
-                    <input
-                      type="text"
-                      className={`v0-input ${lineError ? 'v0-input-error' : ''}`}
-                      value={rawVal}
-                      onChange={(e) => handlePriceChange(line.lineId, e.target.value)}
-                      placeholder="Nhập đơn giá (VND)…"
-                      aria-label={`Đơn giá dòng ${idx + 1}`}
-                      required
-                    />
-                    <span className="v0-line-subtotal">
-                      = {formatVnd(computeQuotedLineTotal(line.quantity, currentPrice))}
-                    </span>
+                    <div className="v0-price-input-box">
+                      <span className="v0-price-currency">₫</span>
+                      <input
+                        type="text"
+                        className={`v0-input ${lineError ? 'v0-input-error' : ''}`}
+                        value={rawVal}
+                        onChange={(e) => handlePriceChange(line.lineId, e.target.value)}
+                        placeholder="Nhập đơn giá (VND)…"
+                        aria-label={`Đơn giá dòng ${idx + 1}`}
+                        required
+                      />
+                    </div>
+                    <div className="v0-line-subtotal-display">
+                      <span className="v0-subtotal-label">Thành tiền dòng:</span>
+                      <strong className="v0-subtotal-value">
+                        = {formatVnd(lineSubtotal)}
+                      </strong>
+                    </div>
                   </div>
                   {lineError ? <span className="v0-input-error-msg">{lineError}</span> : null}
                 </div>
@@ -264,20 +279,25 @@ export function QuoteDrawer({
             <label className="v0-label" htmlFor="handover-date-input">
               Ngày dự kiến bàn giao (giờ kinh doanh 17:00 VN)
             </label>
-            <input
-              id="handover-date-input"
-              type="date"
-              className={`v0-input ${dateError ? 'v0-input-error' : ''}`}
-              value={handoverDate}
-              onChange={(e) => handleDateChange(e.target.value)}
-              required
-            />
+            <div className="v0-date-wrapper">
+              <input
+                id="handover-date-input"
+                type="date"
+                className={`v0-input ${dateError ? 'v0-input-error' : ''}`}
+                value={handoverDate}
+                onChange={(e) => handleDateChange(e.target.value)}
+                required
+              />
+              <span className="v0-input-hint">Đảm bảo tối thiểu 5 ngày làm việc để xưởng in hoàn thiện</span>
+            </div>
             {dateError ? <span className="v0-input-error-msg">{dateError}</span> : null}
           </div>
 
           <div className="v0-drawer-summary-card">
-            <span>Tổng giá trị báo giá (Xem trước client):</span>
-            <strong>{formatVnd(calculatedTotal)}</strong>
+            <div className="v0-summary-main-row">
+              <span className="v0-summary-title">Tổng giá trị báo giá (Xem trước client):</span>
+              <strong className="v0-summary-amount">{formatVnd(calculatedTotal)}</strong>
+            </div>
             <small>Số liệu chính thức do máy chủ tính toán và lưu vết bất biến.</small>
           </div>
 
@@ -299,7 +319,7 @@ export function QuoteDrawer({
                 ? 'Đang gửi…'
                 : isReplacementProposal
                   ? 'Gửi đề xuất thay thế'
-                  : `Tạo revision ${(order.currentCommercialRevision?.revisionNumber ?? order.revision) + 1}`}
+                  : `Tạo revision ${(order.currentCommercialRevision?.revisionNumber ?? 0) + 1}`}
             </button>
           </div>
         </form>

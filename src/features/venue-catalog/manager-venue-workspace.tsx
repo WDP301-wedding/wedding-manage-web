@@ -323,7 +323,15 @@ export function ManagerVenueWorkspace({
           }}
         />
         {supportsMedia(gateway) && visitedTabs.has('venue') ? (
-          <MediaPanel gateway={gateway} authorize={authorize} active={activeTab === 'venue'} />
+          <MediaPanel
+            gateway={gateway}
+            authorize={authorize}
+            active={activeTab === 'venue'}
+            allowedTypes={['HALL', 'RESTAURANT_PROFILE']}
+            sectionKicker="Hình ảnh sảnh tiệc"
+            heading="Thư viện ảnh sảnh tiệc"
+            description="Quản lý hình ảnh thực tế và phối cảnh của từng sảnh tiệc. Ảnh sẽ hiển thị cho khách hàng khi chọn sảnh."
+          />
         ) : null}
       </div>
       <div
@@ -334,7 +342,20 @@ export function ManagerVenueWorkspace({
       >
         {visitedTabs.has('food') ? (
           supportsFood(gateway) ? (
-            <DishMenuPanel gateway={gateway} authorize={authorize} />
+            <>
+              <DishMenuPanel gateway={gateway} authorize={authorize} />
+              {supportsMedia(gateway) ? (
+                <MediaPanel
+                  gateway={gateway}
+                  authorize={authorize}
+                  active={activeTab === 'food'}
+                  allowedTypes={['MENU_PACKAGE_VERSION', 'DISH_VERSION']}
+                  sectionKicker="Hình ảnh món & thực đơn"
+                  heading="Thư viện ảnh món ăn & thực đơn"
+                  description="Quản lý hình ảnh của từng món ăn và ảnh bìa các gói thực đơn tiệc cưới."
+                />
+              ) : null}
+            </>
           ) : (
             <p className="catalog-empty">Không hỗ trợ quản lý món ăn.</p>
           )
@@ -348,7 +369,20 @@ export function ManagerVenueWorkspace({
       >
         {visitedTabs.has('timeline') ? (
           supportsTimeline(gateway) ? (
-            <TimelinePanel gateway={gateway} authorize={authorize} />
+            <>
+              <TimelinePanel gateway={gateway} authorize={authorize} />
+              {supportsMedia(gateway) ? (
+                <MediaPanel
+                  gateway={gateway}
+                  authorize={authorize}
+                  active={activeTab === 'timeline'}
+                  allowedTypes={['TIMELINE_TEMPLATE_VERSION']}
+                  sectionKicker="Hình ảnh kịch bản"
+                  heading="Thư viện ảnh kịch bản tiệc"
+                  description="Quản lý ảnh minh họa cho các mẫu kịch bản chương trình tiệc cưới."
+                />
+              ) : null}
+            </>
           ) : (
             <p className="catalog-empty">Không hỗ trợ quản lý kịch bản.</p>
           )
@@ -362,7 +396,20 @@ export function ManagerVenueWorkspace({
       >
         {visitedTabs.has('layout') ? (
           supportsLayout(gateway) ? (
-            <LayoutPanel gateway={gateway} authorize={authorize} />
+            <>
+              <LayoutPanel gateway={gateway} authorize={authorize} />
+              {supportsMedia(gateway) ? (
+                <MediaPanel
+                  gateway={gateway}
+                  authorize={authorize}
+                  active={activeTab === 'layout'}
+                  allowedTypes={['LAYOUT_TEMPLATE_VERSION']}
+                  sectionKicker="Hình ảnh sơ đồ bố trí"
+                  heading="Thư viện ảnh mẫu sơ đồ bàn"
+                  description="Quản lý ảnh chụp thực tế hoặc phối cảnh của các mẫu sơ đồ sắp xếp bàn tiệc."
+                />
+              ) : null}
+            </>
           ) : (
             <p className="catalog-empty">Không hỗ trợ quản lý sơ đồ bàn.</p>
           )

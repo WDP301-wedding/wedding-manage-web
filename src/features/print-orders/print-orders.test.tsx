@@ -4,6 +4,7 @@ import { ApiClientError } from '../../lib/api/client';
 import type { ManagementIdentitySession } from '../identity-access/session';
 import { DEMO_PRINT_ORDERS, createFixturePrintOrdersGateway } from './print-orders-fixtures';
 import { ManagementPrintOrdersPage, PrintOrdersWorkspace } from './print-orders-page';
+import type { PrintOrderView } from './print-orders-types';
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -281,6 +282,41 @@ describe('Management Print Orders Workspace (M09–M14)', () => {
     expect(quoteCall[3]).toContain('quote-IN-2408-015-1');
 
     expect(await screen.findByText(/Đã tạo báo giá Rev 2/)).toBeVisible();
+  });
+
+  it('displays "Tạo revision 1" for a newly requested order without existing quote', async () => {
+    const gateway = createFixturePrintOrdersGateway();
+    const quoteSpy = vi.spyOn(gateway, 'quote');
+
+    render(
+      <PrintOrdersWorkspace
+        actorName="manager@example.com"
+        actorRole="Manager"
+        gateway={gateway}
+        authorize={authorize}
+        isFixtureMode={false}
+        onLogout={vi.fn()}
+      />,
+    );
+
+    // Select order IN-2408-019 which is in REQUESTED state
+    const row19 = await screen.findByRole('button', { name: /Chọn đơn in IN-2408-019/ });
+    fireEvent.click(row19);
+
+    const quoteBtn = await screen.findByRole('button', { name: 'Lập báo giá' });
+    fireEvent.click(quoteBtn);
+
+    expect(screen.getByRole('dialog', { name: /Lập báo giá thương mại/ })).toBeVisible();
+
+    const submitBtn = screen.getByRole('button', { name: 'Tạo revision 1' });
+    expect(submitBtn).toBeVisible();
+    fireEvent.click(submitBtn);
+
+    await waitFor(() => {
+      expect(quoteSpy).toHaveBeenCalledTimes(1);
+    });
+
+    expect(await screen.findByText(/Đã tạo báo giá Rev 1/)).toBeVisible();
   });
 
   it('handles 409 stale revision conflict gracefully without breaking', async () => {

@@ -183,6 +183,28 @@
   margin: 0;
 }
 
+.media-toolbar select,
+.media-toolbar .catalog-field select {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 14px;
+  background-color: #ffffff;
+  border: 1px solid #aab8cc;
+  border-radius: 6px;
+  color: var(--ink);
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.media-toolbar select:focus,
+.media-toolbar .catalog-field select:focus {
+  border-color: #163a70;
+  outline: 0;
+  box-shadow: 0 0 0 3px rgba(22, 58, 112, 0.15);
+}
+
 .media-gallery {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

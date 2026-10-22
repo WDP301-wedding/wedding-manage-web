@@ -92,7 +92,8 @@ export function usePrintOrderQuoteMutations({
           );
           if (epoch !== requestEpochRef.current) return;
           const nextRev =
-            (selectedOrder.currentCommercialRevision?.revisionNumber ?? selectedOrder.revision) + 1;
+            updated.currentCommercialRevision?.revisionNumber ??
+            (selectedOrder.currentCommercialRevision?.revisionNumber ?? 0) + 1;
           showToast(`Đã tạo báo giá Rev ${nextRev}`);
         }
 

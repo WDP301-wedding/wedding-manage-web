@@ -252,6 +252,7 @@
 }
 
 .catalog-field input,
+.catalog-field select,
 .catalog-field textarea,
 .catalog-toolbar-actions select {
   width: 100%;
@@ -270,6 +271,7 @@
 }
 
 .catalog-field input:focus,
+.catalog-field select:focus,
 .catalog-field textarea:focus,
 .catalog-toolbar-actions select:focus,
 .catalog-row-actions button:focus-visible,
