@@ -56,10 +56,27 @@ function isErrorResponse(result: unknown): boolean {
   return false;
 }
 
+type CatalogInvalidationListener = () => void;
+const invalidationListeners = new Set<CatalogInvalidationListener>();
+
+export function addCatalogInvalidationListener(listener: CatalogInvalidationListener): () => void {
+  invalidationListeners.add(listener);
+  return () => {
+    invalidationListeners.delete(listener);
+  };
+}
+
 export function clearCatalogCache(): void {
   currentGeneration++;
   sharedCatalogCache.clear();
   inFlightRequests.clear();
+  for (const listener of Array.from(invalidationListeners)) {
+    try {
+      listener();
+    } catch {
+      // Listener error should not break cache clearing
+    }
+  }
 }
 
 export function invalidateCatalogResource(_accessTokenIgnored: string, endpoint: string): void {
@@ -129,4 +146,16 @@ export async function fetchSharedCatalogResource<T>(
   holder.promise = opPromise;
   inFlightRequests.set(cacheKey, { promise: opPromise, generation: requestGen });
   return opPromise;
+}
+
+if (typeof window !== 'undefined') {
+  import('../realtime/realtime-client').then(({ sharedManagementRealtime }) => {
+    sharedManagementRealtime.addEventListener((event) => {
+      if (event.type === 'catalog.updated') {
+        clearCatalogCache();
+      }
+    });
+  }).catch(() => {
+    // Ignore in non-browser/test environments
+  });
 }

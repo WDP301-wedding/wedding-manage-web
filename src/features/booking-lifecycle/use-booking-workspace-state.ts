@@ -5,6 +5,7 @@ import { ApiClientError } from '../../lib/api/client';
 import { addMyManagedBookingId, getMyManagedBookingIds } from '../identity-access/dashboard-live';
 import type { Authorize, ManagementBookingGateway, ProposalView } from './booking-api';
 import { type BookingPrefill, errorMessage, type InviteLogEntry } from './booking-helpers';
+import { useRealtimeSubscription } from '../realtime/use-realtime';
 
 export interface UseBookingWorkspaceStateOptions {
   authorize: Authorize;
@@ -161,6 +162,22 @@ export function useBookingWorkspaceState({
       }
     }
   };
+
+  const currentBookingId = proposal?.bookingId ?? (bookingId || undefined);
+
+  useRealtimeSubscription({
+    bookingId: currentBookingId,
+    onEvent: (event) => {
+      if (currentBookingId && (!event.scope.bookingId || event.scope.bookingId === currentBookingId)) {
+        void loadProposal(currentBookingId, false);
+      }
+    },
+    onResync: () => {
+      if (currentBookingId) {
+        void loadProposal(currentBookingId, false);
+      }
+    },
+  });
 
   const refresh = async (success: string) => {
     setMessage(success);

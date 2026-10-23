@@ -1,6 +1,7 @@
 import type { components } from '../../lib/api/generated/schema';
 import { ApiClientError, createApiClient, type ApiClient } from '../../lib/api/client';
 import { clearCatalogCache } from '../venue-catalog/catalog-cache';
+import { sharedManagementRealtime } from '../realtime/realtime-client';
 
 type Role = components['schemas']['CurrentUserResponse']['data']['roles'][number];
 
@@ -90,6 +91,7 @@ export class ManagementIdentitySession {
           denial: null,
           presentation: persisted.presentation,
         };
+        sharedManagementRealtime.connect(persisted.accessToken);
         return Promise.resolve(this.state);
       }
     } else if (
@@ -138,6 +140,7 @@ export class ManagementIdentitySession {
       .refreshSession()
       .then((credential) => {
         this.accessToken = credential.accessToken;
+        sharedManagementRealtime.updateToken(credential.accessToken);
         const persisted = this.readPersisted();
         if (persisted) {
           this.persist({
@@ -251,6 +254,7 @@ export class ManagementIdentitySession {
           ? 'staff'
           : 'denied';
       this.state = { status: 'authenticated', actor, denial: null, presentation };
+      sharedManagementRealtime.connect(credential.accessToken);
       this.persist({
         accessToken: credential.accessToken,
         accessExpiresAt: credential.accessExpiresAt,
@@ -270,6 +274,7 @@ export class ManagementIdentitySession {
     this.state = anonymousSnapshot;
     this.removePersisted();
     clearCatalogCache();
+    sharedManagementRealtime.disconnect();
   }
 }
 

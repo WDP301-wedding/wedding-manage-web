@@ -5,6 +5,7 @@ import {
   isCommercialRevisionExpired,
   type PrintOrderView,
 } from './print-orders-types';
+import { useRealtimeSubscription } from '../realtime/use-realtime';
 
 export interface UsePrintOrdersDataOptions {
   gateway: ManagementPrintOrdersGateway;
@@ -107,6 +108,17 @@ export function usePrintOrdersData({
       active = false;
     };
   }, [authorize, gateway]);
+
+  useRealtimeSubscription({
+    onEvent: (event) => {
+      if (event.type.startsWith('print.') || event.scope.entityType === 'print_order') {
+        void fetchOrders(currentCursor, true);
+      }
+    },
+    onResync: () => {
+      void fetchOrders(currentCursor, true);
+    },
+  });
 
   const resetDataState = useCallback(() => {
     requestEpochRef.current++;

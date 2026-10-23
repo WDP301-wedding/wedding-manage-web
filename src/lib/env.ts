@@ -18,11 +18,13 @@ function createPublicEnvSchema(runtimeEnvironment: string | undefined) {
         message: 'The public API URL must use HTTPS outside local development.',
       },
     ),
+    NEXT_PUBLIC_REALTIME_URL: z.url({ protocol: /^https?$/ }).optional(),
   });
 }
 
 export type PublicEnv = Readonly<{
   NEXT_PUBLIC_API_BASE_URL: string;
+  NEXT_PUBLIC_REALTIME_URL?: string | undefined;
 }>;
 
 export function parsePublicEnv(
@@ -31,11 +33,13 @@ export function parsePublicEnv(
 ): PublicEnv {
   return createPublicEnvSchema(runtimeEnvironment).parse({
     NEXT_PUBLIC_API_BASE_URL: source.NEXT_PUBLIC_API_BASE_URL,
+    ...(source.NEXT_PUBLIC_REALTIME_URL ? { NEXT_PUBLIC_REALTIME_URL: source.NEXT_PUBLIC_REALTIME_URL } : {}),
   });
 }
 
 export function readPublicEnv(): PublicEnv {
   return parsePublicEnv({
     NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL,
+    NEXT_PUBLIC_REALTIME_URL: process.env.NEXT_PUBLIC_REALTIME_URL,
   });
 }

@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useRealtimeSubscription, createCoalescedFetcher } from '../realtime/use-realtime';
 import {
   analyticsService,
   type AnalyticsBookingsData,
@@ -206,6 +207,17 @@ export function DashboardLiveView({
   useEffect(() => {
     void fetchData();
   }, [fetchData]);
+
+  const throttledFetch = useMemo(() => createCoalescedFetcher(fetchData, 500), [fetchData]);
+
+  useRealtimeSubscription({
+    onEvent: () => {
+      throttledFetch.trigger();
+    },
+    onResync: () => {
+      throttledFetch.trigger();
+    },
+  });
 
   return (
     <div className="dashboard-live-container">
