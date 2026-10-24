@@ -1,61 +1,120 @@
 'use client';
-
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { z } from 'zod';
 import { ApiClientError, createApiClient } from '../../lib/api/client';
 import type { components } from '../../lib/api/generated/schema';
-import { sharedManagementSession, type ManagementSessionSnapshot } from '../identity-access/session';
-
+import {
+  sharedManagementSession,
+  type ManagementSessionSnapshot,
+} from '../identity-access/session';
 const session = sharedManagementSession;
 let resolvedApi: ReturnType<typeof createApiClient> | undefined;
 const getApi = () => (resolvedApi ??= createApiClient());
-
-export type Queue = components['schemas']['ConsultationRequestList'];
+export type Queue = components['schemas']['ConsultationRequestList'] & {
+  totalMatches: number;
+  counts: { NEW: number; CONVERTED: number; CLOSED: number };
+};
 export type Item = Queue['data'][number];
 export type StatusFilter = 'ALL' | 'NEW' | 'CONVERTED' | 'CLOSED';
 export type SortOption = 'newest' | 'oldest' | 'date-asc' | 'guests-desc' | 'name-asc';
-
+const metadata = z.object({
+  totalMatches: z.number().int().nonnegative(),
+  counts: z.object({
+    NEW: z.number().int().nonnegative(),
+    CONVERTED: z.number().int().nonnegative(),
+    CLOSED: z.number().int().nonnegative(),
+  }),
+});
 export function useConsultationRequests() {
+  const actionInFlight = useRef(false),
+    invitationKeys = useRef(new Map<string, string>());
+  const sequence = useRef(0),
+    abort = useRef<AbortController | null>(null),
+    queueFilter = useRef('');
   const [snapshot, setSnapshot] = useState<ManagementSessionSnapshot | null>(null);
   const [access, setAccess] = useState<'loading' | 'manager' | 'denied'>('loading');
-  const [queue, setQueue] = useState<Queue | null>(null);
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
-
-  // Filter & sort state
+  const [resultKey, setResultKey] = useState('');
+  const [queue, setQueue] = useState<Queue | null>(null),
+    [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null),
+    [notice, setNotice] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(''),
+    [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('newest');
+  useEffect(() => {
+    const timer = setTimeout(() => setSearchTerm(searchQuery.trim().normalize('NFC')), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+  const filterKey = JSON.stringify([statusFilter, searchTerm, sortBy]);
+  const load = useCallback(
+    async (cursor?: string) => {
+      if (cursor && queueFilter.current !== filterKey) return;
+      const current = ++sequence.current;
+      abort.current?.abort();
+      const controller = new AbortController();
+      abort.current = controller;
+      setPending(true);
+      setError(null);
 
-  const load = useCallback(async (cursor?: string) => {
-    setPending(true);
-    setError(null);
-    try {
-      const result = await session.authorize((token) =>
-        getApi().GET('/management/consultation-requests', {
-          headers: { Authorization: `Bearer ${token}` },
-          params: { query: { limit: 20, ...(cursor ? { cursor } : {}) } },
-        }),
-      );
-      if (!result.data) throw new Error('Không tải được danh sách.');
-      const page: Queue = {
-        ...result.data,
-        data: Array.from(result.data.data, (item) => ({ ...item })),
-      };
-      setQueue((previous) =>
-        cursor && previous ? { ...page, data: [...previous.data, ...page.data] } : page,
-      );
-    } catch (caught) {
-      if (caught instanceof ApiClientError && [401, 403].includes(caught.status ?? 0)) {
-        setQueue(null);
-        setAccess('denied');
+      try {
+        const query = {
+          limit: 20,
+          status: statusFilter,
+          q: searchTerm,
+          sort: sortBy,
+          ...(cursor ? { cursor } : {}),
+        };
+        const result = await session.authorize((token) =>
+          getApi().GET('/management/consultation-requests', {
+            headers: { Authorization: 'Bearer ' + token },
+            params: { query },
+            signal: controller.signal,
+          }),
+        );
+        if (current !== sequence.current) return;
+        if (!result.data) throw Error('Missing list');
+        const meta = metadata.safeParse(result.data);
+        if (!meta.success) {
+          setError(
+            'Máy chủ chưa hỗ trợ bộ lọc toàn danh sách. Cần triển khai BE mới trước khi sử dụng.',
+          );
+          return;
+        }
+        const page: Queue = {
+          ...result.data,
+          ...meta.data,
+          data: Array.from(result.data.data, (item) => ({ ...item })),
+        };
+        queueFilter.current = filterKey;
+        setResultKey(filterKey);
+        setQueue((previous) => {
+          if (!cursor || !previous) return page;
+          const items = new Map(previous.data.map((item) => [item.id, item]));
+          for (const item of page.data) items.set(item.id, item);
+          return { ...page, data: [...items.values()] };
+        });
+      } catch (caught) {
+        if (current !== sequence.current || controller.signal.aborted) return;
+        if (caught instanceof ApiClientError && [401, 403].includes(caught.status ?? 0)) {
+          setQueue(null);
+          setAccess('denied');
+        }
+        setError(
+          caught instanceof ApiClientError && caught.code === 'CONSULTATION_LIST_CHANGED'
+            ? 'Danh sách vừa thay đổi. Bấm tải lại để nhận kết quả mới.'
+            : 'Không tải được yêu cầu tư vấn. Hãy thử lại.',
+        );
+      } finally {
+        if (current === sequence.current) setPending(false);
       }
-      setError('Không tải được yêu cầu tư vấn. Hãy thử lại.');
-    } finally {
-      setPending(false);
-    }
-  }, []);
-
+    },
+    [filterKey, statusFilter, searchTerm, sortBy],
+  );
+  const loadLatest = useRef(load);
+  useEffect(() => {
+    loadLatest.current = load;
+  }, [load]);
   useEffect(() => {
     let active = true;
     void session
@@ -63,12 +122,9 @@ export function useConsultationRequests() {
       .then((snap) => {
         if (!active) return;
         setSnapshot(snap);
-        if (snap.status !== 'authenticated' || snap.presentation !== 'manager') {
-          setAccess('denied');
-          return;
-        }
-        setAccess('manager');
-        void load();
+        setAccess(
+          snap.status === 'authenticated' && snap.presentation === 'manager' ? 'manager' : 'denied',
+        );
       })
       .catch(() => {
         if (active) setAccess('denied');
@@ -76,15 +132,22 @@ export function useConsultationRequests() {
     return () => {
       active = false;
     };
-  }, [load]);
-
+  }, []);
+  useEffect(() => {
+    if (access === 'manager') void load();
+    return () => {
+      sequence.current++;
+      abort.current?.abort();
+    };
+  }, [access, load]);
   async function act(item: Item, action: 'conversion' | 'closure') {
-    if (pending) return;
+    if (pending || actionInFlight.current) return;
+    actionInFlight.current = true;
     setPending(true);
     setError(null);
     setNotice(null);
     try {
-      await session.authorize((token) =>
+      const result = await session.authorize((token) =>
         action === 'conversion'
           ? getApi().POST('/management/consultation-requests/{id}/conversion', {
               headers: { Authorization: `Bearer ${token}` },
@@ -95,12 +158,51 @@ export function useConsultationRequests() {
               params: { path: { id: item.id } },
             }),
       );
+      if (action === 'conversion') {
+        const converted = z
+          .object({
+            data: z.object({
+              consultationId: z.uuid(),
+              consultationRevision: z.number().int().positive(),
+            }),
+          })
+          .safeParse(result.data);
+        if (!converted.success) {
+          await loadLatest.current();
+          setError(
+            'Đã mở hồ sơ. Máy chủ chưa hỗ trợ gửi kích hoạt tại bước duyệt; hãy mở hồ sơ để gửi lời mời.',
+          );
+          return;
+        }
+        const { consultationId, consultationRevision } = converted.data.data;
+        let key = invitationKeys.current.get(consultationId);
+        if (!key) {
+          key = crypto.randomUUID();
+          invitationKeys.current.set(consultationId, key);
+        }
+        try {
+          await session.authorize((token) =>
+            getApi().POST('/management/consultations/{consultationId}/workspace-invitations', {
+              headers: { Authorization: 'Bearer ' + token },
+              params: { path: { consultationId }, header: { 'Idempotency-Key': key } },
+              body: { expectedRevision: consultationRevision },
+            }),
+          );
+          invitationKeys.current.delete(consultationId);
+        } catch {
+          await loadLatest.current();
+          setError(
+            'Đã mở hồ sơ nhưng chưa xác nhận gửi lời mời. Mở hồ sơ để kiểm tra và gửi lại; không cần đặt cọc để kích hoạt tài khoản.',
+          );
+          return;
+        }
+      }
       setNotice(
         action === 'conversion'
-          ? 'Đã mở hồ sơ tư vấn. Chọn Tiếp tục đặt tiệc để gửi lời mời và chuẩn bị đề xuất.'
+          ? 'Đã mở hồ sơ và phát hành lời mời kích hoạt tài khoản. Khách tự đặt hoặc xác nhận mật khẩu để vào web/app, không cần chờ đặt cọc.'
           : 'Đã đóng yêu cầu tư vấn.',
       );
-      await load();
+      await loadLatest.current();
     } catch (caught) {
       if (caught instanceof ApiClientError && [401, 403].includes(caught.status ?? 0)) {
         setQueue(null);
@@ -108,79 +210,35 @@ export function useConsultationRequests() {
       }
       setError('Không hoàn tất được thao tác. Tải lại để kiểm tra trạng thái mới nhất.');
     } finally {
+      actionInFlight.current = false;
       setPending(false);
     }
   }
 
   const logout = () => {
+    sequence.current++;
+    abort.current?.abort();
     setPending(true);
     setError(null);
     setNotice(null);
+    setQueue(null);
+    setAccess('denied');
     void session
       .logout()
-      .catch(() =>
-        setError('Không thể kết nối máy chủ để đăng xuất. Hãy tải lại trang rồi thử lại.'),
-      )
+      .catch(() => setError('Không thể kết nối máy chủ để đăng xuất.'))
       .finally(() => {
         setSnapshot(session.snapshot());
-        setQueue(null);
-        setAccess('denied');
         setPending(false);
       });
   };
-
-  const stats = useMemo(() => {
-    const data = queue?.data ?? [];
-    return {
-      total: data.length,
-      newCount: data.filter((i) => i.status === 'NEW').length,
-      convertedCount: data.filter((i) => i.status === 'CONVERTED').length,
-      closedCount: data.filter((i) => i.status === 'CLOSED').length,
-    };
-  }, [queue?.data]);
-
-  const filteredItems = useMemo(() => {
-    if (!queue?.data) return [];
-    let list = [...queue.data];
-
-    if (statusFilter !== 'ALL') {
-      list = list.filter((item) => item.status === statusFilter);
-    }
-
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim();
-      list = list.filter(
-        (item) =>
-          (item.displayName ?? '').toLowerCase().includes(q) ||
-          (item.email ?? '').toLowerCase().includes(q) ||
-          (item.phone ?? '').toLowerCase().includes(q) ||
-          (item.message ?? '').toLowerCase().includes(q),
-      );
-    }
-
-    list.sort((a, b) => {
-      switch (sortBy) {
-        case 'oldest':
-          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-        case 'date-asc': {
-          if (!a.preferredDate && !b.preferredDate) return 0;
-          if (!a.preferredDate) return 1;
-          if (!b.preferredDate) return -1;
-          return new Date(a.preferredDate).getTime() - new Date(b.preferredDate).getTime();
-        }
-        case 'guests-desc':
-          return (b.expectedGuests ?? 0) - (a.expectedGuests ?? 0);
-        case 'name-asc':
-          return (a.displayName ?? '').localeCompare(b.displayName ?? '', 'vi');
-        case 'newest':
-        default:
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      }
-    });
-
-    return list;
-  }, [queue?.data, statusFilter, searchQuery, sortBy]);
-
+  const resultsCurrent = resultKey === filterKey;
+  const counts = (resultsCurrent ? queue?.counts : null) ?? { NEW: 0, CONVERTED: 0, CLOSED: 0 };
+  const stats = {
+    total: counts.NEW + counts.CONVERTED + counts.CLOSED,
+    newCount: counts.NEW,
+    convertedCount: counts.CONVERTED,
+    closedCount: counts.CLOSED,
+  };
   return {
     snapshot,
     access,
@@ -198,6 +256,7 @@ export function useConsultationRequests() {
     act,
     logout,
     stats,
-    filteredItems,
+    resultsCurrent,
+    filteredItems: resultsCurrent ? (queue?.data ?? []) : [],
   };
 }

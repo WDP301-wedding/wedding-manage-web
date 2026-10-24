@@ -140,6 +140,7 @@ export function ManagementBookingWorkspace({
         }
       >
         <ConsultationPanel
+          activationVisible={activeTab === 'consultation'}
           disabled={pending !== null}
           consultation={consultation}
           prefill={prefill}
@@ -292,7 +293,9 @@ export function ManagementBookingWorkspace({
             onDismiss={() => setCreatedBookingNotice(null)}
             onNavigateToAccount={() => {
               setCreatedBookingNotice(null);
-              document.getElementById('couple-account-card')?.scrollIntoView({ behavior: 'smooth' });
+              document
+                .getElementById('couple-account-card')
+                ?.scrollIntoView({ behavior: 'smooth' });
             }}
           />
         ) : null}
@@ -356,6 +359,7 @@ export function ManagementBookingWorkspace({
               hasContract={true}
             />
             <CoupleAccountCard
+              consultationId={activeTab === 'manage' ? proposal.consultationId : undefined}
               email={prefill.email}
               canInvite={consultation !== null || Boolean(proposal?.consultationId)}
               pending={pending !== null}

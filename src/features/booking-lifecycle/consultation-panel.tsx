@@ -1,11 +1,13 @@
 'use client';
 
+import { ActivationStatus } from './activation-status';
 import type { FormEvent } from 'react';
 import type { BookingPrefill, InviteLogEntry } from './booking-helpers';
 import { field } from './booking-helpers';
 import { bookingStyles } from './booking.styles';
 
 export interface ConsultationPanelProps {
+  activationVisible?: boolean;
   consultation: { id: string; revision: number } | null;
   disabled: boolean;
   logs?: readonly InviteLogEntry[] | undefined;
@@ -18,11 +20,11 @@ export interface ConsultationPanelProps {
 
 export function ConsultationPanel({
   consultation,
+  activationVisible = true,
   disabled,
   logs,
   onClearLogs,
   onCreate,
-  onInvite,
   onReset,
   prefill,
 }: Readonly<ConsultationPanelProps>) {
@@ -105,16 +107,19 @@ export function ConsultationPanel({
           >
             <strong>✓ Đã lưu hồ sơ tư vấn ban đầu.</strong>
             <p style={{ margin: '0.35rem 0 0', color: '#15803d' }}>
-              Bạn có thể <strong>Gửi lời mời cộng tác</strong> ngay để cặp đôi cùng theo dõi thông tin
-              tư vấn, hoặc chuyển sang <strong>Bước 02: Khảo sát sảnh &amp; Đặt tiệc</strong> để chọn
-              sảnh và hoàn tất thủ tục đặt tiệc.
+              Bạn có thể <strong>Gửi lời mời cộng tác</strong> ngay để cặp đôi cùng theo dõi thông
+              tin tư vấn, hoặc chuyển sang <strong>Bước 02: Khảo sát sảnh &amp; Đặt tiệc</strong> để
+              chọn sảnh và hoàn tất thủ tục đặt tiệc.
             </p>
           </div>
           <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem', flexWrap: 'wrap' }}>
-            {onInvite ? (
-              <button disabled={disabled} type="button" onClick={() => void onInvite()}>
-                Gửi lời mời cộng tác
-              </button>
+            {activationVisible ? (
+              <ActivationStatus
+                key={consultation.id}
+                consultationId={consultation.id}
+                disabled={disabled}
+                reloadSignal={logs?.length ?? 0}
+              />
             ) : null}
             {onReset ? (
               <button

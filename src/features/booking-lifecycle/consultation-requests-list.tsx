@@ -23,7 +23,11 @@ export function ConsultationRequestsList({
     <>
       <div className="intake-list">
         {items.map((item) => (
-          <article className="intake-item" key={item.id} style={intakeStyles.intakeItem(item.status)}>
+          <article
+            className="intake-item"
+            key={item.id}
+            style={intakeStyles.intakeItem(item.status)}
+          >
             <div style={intakeStyles.cardHeader}>
               <div>
                 <div
@@ -88,7 +92,7 @@ export function ConsultationRequestsList({
                   onClick={() => void onAction(item, 'conversion')}
                   style={intakeStyles.primaryActionBtn}
                 >
-                  Mở hồ sơ tư vấn
+                  Duyệt hồ sơ và gửi lời mời kích hoạt
                 </button>
                 <button
                   type="button"

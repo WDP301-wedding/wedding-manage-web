@@ -1,8 +1,10 @@
 'use client';
 
+import { ActivationStatus } from './activation-status';
 import type { InviteLogEntry } from './booking-helpers';
 
 export interface CoupleAccountCardProps {
+  consultationId?: string | undefined;
   email?: string | undefined;
   canInvite: boolean;
   pending: boolean;
@@ -12,6 +14,7 @@ export interface CoupleAccountCardProps {
 }
 
 export function CoupleAccountCard({
+  consultationId,
   email,
   canInvite,
   pending,
@@ -62,8 +65,9 @@ export function CoupleAccountCard({
               color: 'var(--hy-text-muted, #64748b)',
             }}
           >
-            Gửi email kích hoạt tài khoản để cặp đôi đăng nhập vào cổng thông tin duyệt kịch bản và xem
-            hợp đồng.
+            Gửi email kích hoạt tài khoản để cặp đôi đăng nhập vào cổng thông tin duyệt kịch bản và
+            xem hợp đồng. Khách có thể kích hoạt và đăng nhập app trước đặt cọc; các chức năng sau
+            cọc vẫn theo quyền của từng tiệc.
             {email ? (
               <>
                 {' '}
@@ -72,7 +76,7 @@ export function CoupleAccountCard({
             ) : null}
           </p>
         </div>
-        {canInvite ? (
+        {canInvite && !consultationId ? (
           <button
             type="button"
             disabled={pending}
@@ -101,6 +105,14 @@ export function CoupleAccountCard({
         ) : null}
       </div>
 
+      {consultationId ? (
+        <ActivationStatus
+          key={consultationId}
+          consultationId={consultationId}
+          disabled={pending}
+          reloadSignal={inviteLogs.length}
+        />
+      ) : null}
       {inviteLogs.length > 0 ? (
         <div
           style={{
@@ -179,9 +191,7 @@ export function CoupleAccountCard({
                 <span>[{item.time}] </span>
                 <span>{item.message}</span>
                 {item.invitationId && item.invitationId !== 'Đã phát hành (ISSUED)' ? (
-                  <span style={{ marginLeft: '6px', opacity: 0.8 }}>
-                    (ID: {item.invitationId})
-                  </span>
+                  <span style={{ marginLeft: '6px', opacity: 0.8 }}>(ID: {item.invitationId})</span>
                 ) : null}
               </div>
             ))}

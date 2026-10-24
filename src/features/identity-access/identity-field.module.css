@@ -1,0 +1,30 @@
+.inputWrap {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.5rem;
+}
+.inputWrap input {
+  min-width: 0;
+  width: 100%;
+}
+.toggle {
+  appearance: none;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--hy-wine, var(--ink));
+  font: inherit;
+  font-weight: 600;
+  padding: 0.625rem 0.5rem;
+  min-height: 2.75rem;
+  cursor: pointer;
+  border-radius: 0.5rem;
+  white-space: nowrap;
+}
+.toggle:hover {
+  text-decoration: underline;
+}
+.toggle:focus-visible {
+  outline: 2px solid var(--hy-wine, var(--ink));
+  outline-offset: 2px;
+}

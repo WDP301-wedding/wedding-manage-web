@@ -1,4 +1,5 @@
 'use client';
+import fieldStyles from './identity-field.module.css';
 
 import Link from 'next/link';
 import { type FormEvent, useEffect, useLayoutEffect, useState } from 'react';
@@ -278,11 +279,33 @@ function Field({
   label: string;
   name: string;
 }) {
+  const [visible, setVisible] = useState(false);
+  const password = input.type === 'password';
   const id = `operations-${name}`;
   return (
     <div className="auth-field">
       <label htmlFor={id}>{label}</label>
-      <input {...input} id={id} name={name} required />
+      <div className={fieldStyles.inputWrap}>
+        <input
+          {...input}
+          type={password && visible ? 'text' : input.type}
+          id={id}
+          name={name}
+          required
+        />
+        {password ? (
+          <button
+            className={fieldStyles.toggle}
+            type="button"
+            aria-label={visible ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+            aria-controls={id}
+            aria-pressed={visible}
+            onClick={() => setVisible((value) => !value)}
+          >
+            {visible ? 'Ẩn' : 'Hiện'}
+          </button>
+        ) : null}
+      </div>
     </div>
   );
 }

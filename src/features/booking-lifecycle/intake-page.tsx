@@ -1,6 +1,9 @@
 'use client';
 
 import Link from 'next/link';
+import { useState } from 'react';
+import { RequestClosureDialog } from './request-closure-dialog';
+import type { Item } from './use-consultation-requests';
 import { OperationsShell } from '../identity-access/operations-shell';
 import { intakeStyles } from './intake.styles';
 import { useConsultationRequests, type SortOption } from './use-consultation-requests';
@@ -8,6 +11,7 @@ import { ConsultationKpiBar } from './consultation-kpi-bar';
 import { ConsultationRequestsList } from './consultation-requests-list';
 
 export function ConsultationRequestsPage() {
+  const [closing, setClosing] = useState<Item | null>(null);
   const {
     snapshot,
     access,
@@ -26,6 +30,7 @@ export function ConsultationRequestsPage() {
     logout,
     stats,
     filteredItems,
+    resultsCurrent,
   } = useConsultationRequests();
 
   return (
@@ -67,14 +72,17 @@ export function ConsultationRequestsPage() {
         {access === 'manager' && (
           <>
             {pending && <p role="status">Đang xử lý…</p>}
-            {queue?.data.length === 0 && (
-              <section>
-                <h2>Chưa có yêu cầu tư vấn</h2>
-                <p>Yêu cầu được gửi từ trang công khai sẽ xuất hiện tại đây.</p>
-              </section>
-            )}
+            {queue?.data.length === 0 &&
+              !searchQuery.trim() &&
+              statusFilter === 'ALL' &&
+              !pending && (
+                <section>
+                  <h2>Chưa có yêu cầu tư vấn</h2>
+                  <p>Yêu cầu được gửi từ trang công khai sẽ xuất hiện tại đây.</p>
+                </section>
+              )}
 
-            {queue && queue.data.length > 0 && (
+            {queue && (
               <>
                 <ConsultationKpiBar
                   statusFilter={statusFilter}
@@ -141,6 +149,8 @@ export function ConsultationRequestsPage() {
                   >
                     <input
                       type="search"
+                      maxLength={120}
+                      aria-label="Tìm yêu cầu trong toàn bộ danh sách"
                       placeholder="Tìm theo tên, email, sđt…"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
@@ -184,6 +194,17 @@ export function ConsultationRequestsPage() {
                   </div>
                 </div>
 
+                <p role="status" aria-live="polite">
+                  {pending
+                    ? 'Đang tìm trên toàn bộ danh sách…'
+                    : 'Có ' +
+                      (resultsCurrent ? (queue?.totalMatches ?? 0) : 0) +
+                      ' kết quả; đã tải ' +
+                      (queue?.data.length ?? 0) +
+                      '.'}{' '}
+                  Các số đếm theo từ khóa tìm kiếm trên toàn bộ dữ liệu. Đóng yêu cầu là lưu trữ,
+                  không xóa lịch sử.
+                </p>
                 {filteredItems.length === 0 ? (
                   <div
                     style={{
@@ -197,7 +218,9 @@ export function ConsultationRequestsPage() {
                     }}
                   >
                     <p style={{ margin: '0 0 0.5rem', fontWeight: 600, fontSize: '0.95rem' }}>
-                      Không tìm thấy yêu cầu tư vấn nào phù hợp với bộ lọc hiện tại.
+                      {pending
+                        ? 'Đang tải kết quả mới…'
+                        : 'Không tìm thấy yêu cầu tư vấn nào phù hợp với bộ lọc hiện tại.'}
                     </p>
                     <button
                       type="button"
@@ -223,7 +246,10 @@ export function ConsultationRequestsPage() {
                   <ConsultationRequestsList
                     items={filteredItems}
                     pending={pending}
-                    onAction={act}
+                    onAction={(item, action) => {
+                      if (action === 'closure') setClosing(item);
+                      else void act(item, action);
+                    }}
                     nextCursor={queue.nextCursor}
                     onLoadMore={load}
                   />
@@ -232,6 +258,16 @@ export function ConsultationRequestsPage() {
             )}
           </>
         )}
+        {closing ? (
+          <RequestClosureDialog
+            name={closing.displayName}
+            onCancel={() => setClosing(null)}
+            onConfirm={() => {
+              setClosing(null);
+              void act(closing, 'closure');
+            }}
+          />
+        ) : null}
       </main>
     </OperationsShell>
   );
