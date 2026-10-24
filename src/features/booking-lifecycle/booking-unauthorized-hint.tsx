@@ -30,7 +30,7 @@ export function BookingUnauthorizedHint({ bookingId }: Readonly<BookingUnauthori
           marginBottom: '4px',
         }}
       >
-        💡 Gợi ý xử lý khi không có quyền xem hồ sơ đề xuất &amp; kịch bản:
+        Gợi ý xử lý khi không có quyền xem hồ sơ đề xuất &amp; kịch bản:
       </div>
       <p
         style={{
@@ -51,14 +51,14 @@ export function BookingUnauthorizedHint({ bookingId }: Readonly<BookingUnauthori
           href={`/billing?bookingId=${bookingId}`}
           style={{ textDecoration: 'none', padding: '5px 12px', fontSize: '0.8rem' }}
         >
-          💳 Xem thanh toán &amp; Tiền cọc →
+          Xem thanh toán &amp; Tiền cọc →
         </Link>
         <Link
           className="booking-secondary"
           href={`/staff?bookingId=${bookingId}`}
           style={{ textDecoration: 'none', padding: '5px 12px', fontSize: '0.8rem' }}
         >
-          👥 Phân công Staff tiệc này →
+          Phân công Staff tiệc này →
         </Link>
       </div>
     </div>

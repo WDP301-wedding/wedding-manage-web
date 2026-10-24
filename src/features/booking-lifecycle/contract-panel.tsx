@@ -132,7 +132,7 @@ export function ContractPanel({
               onClick={() => void handleDownloadPdf()}
               style={contractStyles.downloadButton(disabled || downloadingPdf)}
             >
-              {downloadingPdf ? 'Đang tải PDF…' : '📄 Tải PDF hợp đồng'}
+              {downloadingPdf ? 'Đang tải PDF…' : 'Tải PDF hợp đồng'}
             </button>
 
             {currentRevision.state === 'DRAFT' ? (

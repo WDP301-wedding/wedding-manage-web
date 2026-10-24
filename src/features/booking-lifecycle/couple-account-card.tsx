@@ -55,7 +55,6 @@ export function CoupleAccountCard({
               gap: '6px',
             }}
           >
-            <span>👥</span>
             <span>Tài khoản Cặp đôi &amp; Không gian cộng tác</span>
           </h3>
           <p
@@ -95,7 +94,6 @@ export function CoupleAccountCard({
               gap: '6px',
             }}
           >
-            <span>✉️</span>
             <span>
               {inviteLogs.some((l) => l.type === 'success')
                 ? 'Gửi lại email kích hoạt'
@@ -140,7 +138,7 @@ export function CoupleAccountCard({
                 letterSpacing: '0.05em',
               }}
             >
-              📋 Nhật ký gửi lời mời
+              Nhật ký gửi lời mời
             </span>
             <button
               type="button"

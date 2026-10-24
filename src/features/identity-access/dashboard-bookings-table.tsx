@@ -145,7 +145,7 @@ export function DashboardBookingsTable({
                         style={dashboardStyles.assignedBadge}
                         title={`Tiệc đã được tiếp nhận và khóa bởi: ${assignedEmail}`}
                       >
-                        🔒 {assignedEmail}
+                        {assignedEmail}
                       </span>
                     ) : null}
                   </div>
@@ -226,7 +226,7 @@ export function DashboardBookingsTable({
                         title={`Tiệc này đã được ${assignedEmail} tiếp nhận và đang khóa`}
                         style={dashboardStyles.lockedButton}
                       >
-                        🔒 Đã có người nhận
+                        Đã có người nhận
                       </button>
                     ) : (
                       <button

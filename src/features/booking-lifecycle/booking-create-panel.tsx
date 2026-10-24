@@ -195,9 +195,9 @@ export function BookingCreatePanel({
             lineHeight: 1.5,
           }}
         >
-          💡 <strong>Gợi ý nghiệp vụ:</strong> Cặp đôi chưa chọn ngày cưới dự kiến khi gửi yêu cầu
-          tư vấn. Quản lý vui lòng trao đổi, thống nhất ngày cưới &amp; quy mô cùng khách hàng rồi
-          chọn ngày phù hợp bên dưới để kiểm tra lịch sảnh.
+          <strong>Gợi ý nghiệp vụ:</strong> Cặp đôi chưa chọn ngày cưới dự kiến khi gửi yêu cầu tư
+          vấn. Quản lý vui lòng trao đổi, thống nhất ngày cưới &amp; quy mô cùng khách hàng rồi chọn
+          ngày phù hợp bên dưới để kiểm tra lịch sảnh.
         </div>
       )}
       <form

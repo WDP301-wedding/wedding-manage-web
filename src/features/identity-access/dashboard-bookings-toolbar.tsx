@@ -86,7 +86,6 @@ export function DashboardBookingsToolbar({
             onResetPage();
           }}
           aria-label="Lọc theo trạng thái tiệc"
-          style={dashboardStyles.selectFilter}
         >
           <option value="ALL">Tất cả trạng thái</option>
           <option value="CONFIRMED">Đã xác nhận</option>
@@ -100,15 +99,14 @@ export function DashboardBookingsToolbar({
           value={`${sortField}-${sortOrder}`}
           onChange={(e) => onQuickSortChange(e.target.value)}
           aria-label="Sắp xếp danh sách"
-          style={dashboardStyles.selectFilter}
         >
-          <option value="eventDate-asc">📅 Ngày tiệc: Gần nhất trước</option>
-          <option value="eventDate-desc">📅 Ngày tiệc: Xa nhất trước</option>
-          <option value="tableCount-desc">👥 Quy mô: Nhiều bàn nhất</option>
-          <option value="tableCount-asc">👥 Quy mô: Ít bàn nhất</option>
-          <option value="hallName-asc">🏛️ Sảnh: A → Z</option>
-          <option value="hallName-desc">🏛️ Sảnh: Z → A</option>
-          <option value="phase-asc">🏷️ Trạng thái: A → Z</option>
+          <option value="eventDate-asc">Ngày tiệc: Gần nhất trước</option>
+          <option value="eventDate-desc">Ngày tiệc: Xa nhất trước</option>
+          <option value="tableCount-desc">Quy mô: Nhiều bàn nhất</option>
+          <option value="tableCount-asc">Quy mô: Ít bàn nhất</option>
+          <option value="hallName-asc">Sảnh: A → Z</option>
+          <option value="hallName-desc">Sảnh: Z → A</option>
+          <option value="phase-asc">Trạng thái: A → Z</option>
         </select>
       </div>
     </div>

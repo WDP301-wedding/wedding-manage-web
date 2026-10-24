@@ -111,14 +111,7 @@ export function StaffManagementSection({
 
             <div style={staffStyles.formGroup}>
               <label style={staffStyles.fieldLabel}>Vai trò phân công</label>
-              <select
-                name="roleCode"
-                defaultValue="CHECK_IN"
-                style={{
-                  ...staffStyles.input,
-                  background: '#fff',
-                }}
-              >
+              <select name="roleCode" defaultValue="CHECK_IN" style={{ width: '100%' }}>
                 <option value="CHECK_IN">Đón khách &amp; Check-in (CHECK_IN)</option>
                 <option value="COORDINATOR">Điều phối chương trình (COORDINATOR)</option>
                 <option value="GENERAL_SUPPORT">Hỗ trợ chung (GENERAL_SUPPORT)</option>

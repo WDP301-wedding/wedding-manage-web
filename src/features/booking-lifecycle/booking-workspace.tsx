@@ -103,7 +103,7 @@ export function ManagementBookingWorkspace({
           onClick={() => switchTab('consultation')}
           style={bookingStyles.tabButton(activeTab === 'consultation')}
         >
-          <span>📝 1. Hồ sơ tư vấn</span>
+          <span>1. Hồ sơ tư vấn</span>
           {consultation ? <span style={bookingStyles.badgeActive}>Đã có mã</span> : null}
         </button>
         <button
@@ -114,7 +114,7 @@ export function ManagementBookingWorkspace({
           onClick={() => switchTab('booking')}
           style={bookingStyles.tabButton(activeTab === 'booking')}
         >
-          <span>🏛️ 2. Khảo sát sảnh &amp; Đặt tiệc</span>
+          <span>2. Khảo sát sảnh &amp; Đặt tiệc</span>
           {consultation ? <span style={bookingStyles.badgeDraft}>Đã liên kết tư vấn</span> : null}
         </button>
         <button
@@ -125,7 +125,7 @@ export function ManagementBookingWorkspace({
           onClick={() => switchTab('manage')}
           style={bookingStyles.tabButton(activeTab === 'manage')}
         >
-          <span>📋 3. Tiệc đang xử lý</span>
+          <span>3. Tiệc đang xử lý</span>
           {proposal ? <span style={bookingStyles.badgeActive}>Đang mở</span> : null}
         </button>
       </div>
@@ -302,7 +302,6 @@ export function ManagementBookingWorkspace({
 
         {proposal === null ? (
           <div className="booking-empty" style={{ textAlign: 'center', padding: '3rem 1.5rem' }}>
-            <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>📋</div>
             <strong
               style={{
                 fontSize: '1.15rem',
@@ -338,7 +337,7 @@ export function ManagementBookingWorkspace({
                 onClick={() => switchTab('consultation')}
                 style={{ padding: '8px 18px', fontSize: '0.9rem' }}
               >
-                📝 1. Tạo hồ sơ tư vấn mới →
+                1. Tạo hồ sơ tư vấn mới →
               </button>
               <button
                 type="button"
@@ -346,7 +345,7 @@ export function ManagementBookingWorkspace({
                 onClick={() => switchTab('booking')}
                 style={{ padding: '8px 18px', fontSize: '0.9rem' }}
               >
-                🏛️ 2. Khảo sát sảnh &amp; Đặt tiệc →
+                2. Khảo sát sảnh &amp; Đặt tiệc →
               </button>
             </div>
             {error && bookingId ? <BookingUnauthorizedHint bookingId={bookingId} /> : null}

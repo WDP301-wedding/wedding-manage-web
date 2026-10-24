@@ -6,10 +6,7 @@ import { dashboardStyles } from './dashboard.styles';
 import { DashboardBookingsTable } from './dashboard-bookings-table';
 import { StaffCheckinBanner } from './staff-checkin-banner';
 import { CopyButton } from './copy-button';
-import {
-  useDashboardBookings,
-  type DashboardBookingItem,
-} from './use-dashboard-bookings';
+import { useDashboardBookings, type DashboardBookingItem } from './use-dashboard-bookings';
 import { DashboardBookingsToolbar } from './dashboard-bookings-toolbar';
 
 export type { DashboardBookingItem };
@@ -144,7 +141,6 @@ export function DashboardBookingsSection({
       ) : currentTabBookings.length === 0 ? (
         bookingTab === 'mine' ? (
           <div className="booking-empty" style={dashboardStyles.emptyCard}>
-            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📋</div>
             <strong
               style={{
                 fontSize: '1.05rem',
@@ -250,7 +246,7 @@ export function DashboardBookingsSection({
                     setPageSize(Number(e.target.value));
                     setCurrentPage(1);
                   }}
-                  style={dashboardStyles.pageSizeSelect}
+
                   aria-label="Số dòng hiển thị mỗi trang"
                 >
                   <option value={5}>5 / trang</option>

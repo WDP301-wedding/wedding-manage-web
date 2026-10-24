@@ -160,7 +160,7 @@ export function ConsultationRequestsPage() {
                     <select
                       value={sortBy}
                       onChange={(e) => setSortBy(e.target.value as SortOption)}
-                      style={intakeStyles.sortSelect}
+
                       aria-label="Sắp xếp danh sách"
                     >
                       <option value="newest">Mới nhận nhất</option>

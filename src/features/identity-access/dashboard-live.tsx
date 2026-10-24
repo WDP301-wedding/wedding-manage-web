@@ -129,7 +129,7 @@ export function DashboardLiveView({
     } else {
       setLockNotice({
         type: 'warning',
-        message: `🔒 Tiệc này đã được ${result.existingAssignment?.assignedEmail || 'quản lý khác'} tiếp nhận và khóa. Bạn không thể nhận trùng tiệc.`,
+        message: `Tiệc này đã được ${result.existingAssignment?.assignedEmail || 'quản lý khác'} tiếp nhận và khóa. Bạn không thể nhận trùng tiệc.`,
       });
       setAssignments(getBookingAssignments());
     }

@@ -159,7 +159,7 @@ export function ConsultationPanel({
                     letterSpacing: '0.05em',
                   }}
                 >
-                  📋 Nhật ký gửi lời mời
+                  Nhật ký gửi lời mời
                 </span>
                 {onClearLogs ? (
                   <button

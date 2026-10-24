@@ -96,16 +96,6 @@ export const intakeStyles = {
     color: 'var(--hy-text, #2b1d22)',
   } satisfies CSSProperties,
 
-  sortSelect: {
-    padding: '6px 10px',
-    fontSize: '0.85rem',
-    border: '1px solid var(--hy-outline, #eadfd6)',
-    borderRadius: '8px',
-    background: '#ffffff',
-    color: 'var(--hy-text, #2b1d22)',
-    cursor: 'pointer',
-  } satisfies CSSProperties,
-
   intakeItem: (status: string): CSSProperties => {
     let borderColor = 'var(--hy-wine, #7a1f3d)';
     if (status === 'CONVERTED') borderColor = 'var(--hy-status-success, #2f6b4f)';

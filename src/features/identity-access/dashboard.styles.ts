@@ -100,16 +100,6 @@ export const dashboardStyles = {
     color: 'var(--hy-text, #2b1d22)',
   } satisfies CSSProperties,
 
-  selectFilter: {
-    padding: '6px 10px',
-    fontSize: '0.85rem',
-    border: '1px solid var(--hy-outline, #eadfd6)',
-    borderRadius: '6px',
-    background: '#ffffff',
-    color: 'var(--hy-text, #2b1d22)',
-    cursor: 'pointer',
-  } satisfies CSSProperties,
-
   emptyCard: {
     padding: '2.5rem 1rem',
     textAlign: 'center',
@@ -281,16 +271,6 @@ export const dashboardStyles = {
     alignItems: 'center',
     gap: '8px',
     flexWrap: 'wrap',
-  } satisfies CSSProperties,
-
-  pageSizeSelect: {
-    padding: '4px 8px',
-    fontSize: '0.82rem',
-    border: '1px solid var(--hy-outline, #eadfd6)',
-    borderRadius: '6px',
-    background: '#ffffff',
-    color: 'var(--hy-text, #2b1d22)',
-    cursor: 'pointer',
   } satisfies CSSProperties,
 
   paginationButtonGroup: {

@@ -90,7 +90,6 @@ export function DashboardConsultationsSection({
                   setCurrentPage(1);
                 }}
                 aria-label="Lọc theo trạng thái yêu cầu"
-                style={dashboardStyles.selectFilter}
               >
                 <option value="ALL">Tất cả trạng thái</option>
                 <option value="NEW">Chờ xử lý</option>
@@ -102,14 +101,13 @@ export function DashboardConsultationsSection({
                 value={`${sortField}-${sortOrder}`}
                 onChange={(e) => handleQuickSortChange(e.target.value)}
                 aria-label="Sắp xếp yêu cầu tư vấn"
-                style={dashboardStyles.selectFilter}
               >
-                <option value="createdAt-desc">📅 Ngày đăng ký: Mới nhất</option>
-                <option value="createdAt-asc">📅 Ngày đăng ký: Cũ nhất</option>
-                <option value="displayName-asc">👤 Khách hàng: A → Z</option>
-                <option value="displayName-desc">👤 Khách hàng: Z → A</option>
-                <option value="preferredDate-asc">🎉 Ngày dự kiến: Gần nhất</option>
-                <option value="status-asc">🏷️ Trạng thái: A → Z</option>
+                <option value="createdAt-desc">Ngày đăng ký: Mới nhất</option>
+                <option value="createdAt-asc">Ngày đăng ký: Cũ nhất</option>
+                <option value="displayName-asc">Khách hàng: A → Z</option>
+                <option value="displayName-desc">Khách hàng: Z → A</option>
+                <option value="preferredDate-asc">Ngày dự kiến: Gần nhất</option>
+                <option value="status-asc">Trạng thái: A → Z</option>
               </select>
             </div>
           </div>
@@ -163,7 +161,7 @@ export function DashboardConsultationsSection({
                       setPageSize(Number(e.target.value));
                       setCurrentPage(1);
                     }}
-                    style={dashboardStyles.pageSizeSelect}
+
                     aria-label="Số dòng hiển thị mỗi trang"
                   >
                     <option value={5}>5 / trang</option>

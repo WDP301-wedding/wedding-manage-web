@@ -113,7 +113,6 @@ export function CreatedBookingNoticeBanner({
             boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
           }}
         >
-          <span>👥</span>
           <span>Xem mục quản lý tài khoản cặp đôi bên dưới ↓</span>
         </button>
         <button

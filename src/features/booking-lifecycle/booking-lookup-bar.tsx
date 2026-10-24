@@ -57,16 +57,7 @@ export function BookingLookupBar({
                 void onLoadProposal(selected);
               }
             }}
-            style={{
-              padding: '2px 8px',
-              borderRadius: '4px',
-              border: '1px solid var(--hy-outline, #eadfd6)',
-              background: '#ffffff',
-              fontSize: '0.78rem',
-              color: 'var(--hy-text, #2b1d22)',
-              maxWidth: '280px',
-              fontFamily: 'monospace',
-            }}
+            style={{ maxWidth: '280px' }}
           >
             <option value="">-- Chọn nhanh mã tiệc ({recentBookingIds.length}) --</option>
             {recentBookingIds.map((id) => (

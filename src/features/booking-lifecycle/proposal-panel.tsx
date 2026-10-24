@@ -27,7 +27,6 @@ export function ProposalPanel({
   refresh,
   run,
 }: Readonly<ProposalPanelProps>) {
-
   const command = async (
     label: string,
     success: string,
@@ -70,7 +69,15 @@ export function ProposalPanel({
             <dd>{money(proposal.proposal.depositAmountVnd)}</dd>
           </div>
         </dl>
-        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center', marginTop: '0.75rem' }}>
+        <div
+          style={{
+            display: 'flex',
+            gap: '0.75rem',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            marginTop: '0.75rem',
+          }}
+        >
           <button
             disabled={disabled || ['CONFIRMED', 'CANCELLED', 'COMPLETED'].includes(proposal.phase)}
             type="button"
@@ -98,7 +105,6 @@ export function ProposalPanel({
               gap: '6px',
             }}
           >
-            <span>💳</span>
             <span>Mở thanh toán &amp; Thu cọc tiệc này →</span>
           </a>
         </div>

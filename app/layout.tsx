@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 
 import './globals.css';
+import './select.css';
 import { SessionRevocationBoundary } from '../src/features/identity-access/session-revocation-boundary';
 
 export const metadata: Metadata = {
@@ -16,7 +17,9 @@ type RootLayoutProps = Readonly<{
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="vi">
-      <body><SessionRevocationBoundary>{children}</SessionRevocationBoundary></body>
+      <body>
+        <SessionRevocationBoundary>{children}</SessionRevocationBoundary>
+      </body>
     </html>
   );
 }

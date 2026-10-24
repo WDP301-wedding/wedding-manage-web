@@ -123,12 +123,11 @@ export function DashboardVenueHalls({
                 value={`${sortField}-${sortOrder}`}
                 onChange={(e) => handleQuickSortChange(e.target.value)}
                 aria-label="Sắp xếp danh mục sảnh"
-                style={dashboardStyles.selectFilter}
               >
-                <option value="name-asc">🏛️ Tên sảnh: A → Z</option>
-                <option value="name-desc">🏛️ Tên sảnh: Z → A</option>
-                <option value="maxGuests-desc">👥 Sức chứa: Nhiều nhất trước</option>
-                <option value="maxGuests-asc">👥 Sức chứa: Ít nhất trước</option>
+                <option value="name-asc">Tên sảnh: A → Z</option>
+                <option value="name-desc">Tên sảnh: Z → A</option>
+                <option value="maxGuests-desc">Sức chứa: Nhiều nhất trước</option>
+                <option value="maxGuests-asc">Sức chứa: Ít nhất trước</option>
               </select>
             </div>
           </div>
@@ -299,7 +298,7 @@ export function DashboardVenueHalls({
                       setPageSize(Number(e.target.value));
                       setCurrentPage(1);
                     }}
-                    style={dashboardStyles.pageSizeSelect}
+
                     aria-label="Số dòng hiển thị mỗi trang"
                   >
                     <option value={5}>5 / trang</option>
