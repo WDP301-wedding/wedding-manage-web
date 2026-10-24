@@ -1,5 +1,7 @@
 'use client';
 
+import { hasDirtyCatalogForms, useCatalogLiveRefresh } from './use-catalog-live-refresh';
+
 import { type FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { ApiClientError } from '../../lib/api/client';
@@ -44,11 +46,12 @@ export function LayoutPanel({
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (background = false) => {
     setLoading(true);
     setError(null);
     try {
-      setSnapshot(await authorize((token) => gateway.loadLayouts(token)));
+      const next = await authorize((token) => gateway.loadLayouts(token));
+      if (!background || !hasDirtyCatalogForms()) setSnapshot(next);
     } catch (caught) {
       setError(layoutErrorMessage(caught));
     } finally {
@@ -59,6 +62,8 @@ export function LayoutPanel({
   useEffect(() => {
     queueMicrotask(() => void load());
   }, [load]);
+
+  useCatalogLiveRefresh(load);
 
   const run = async (
     successMessage: string,

@@ -1,5 +1,7 @@
 'use client';
 
+import { hasDirtyCatalogForms, useCatalogLiveRefresh } from './use-catalog-live-refresh';
+
 import { useCallback, useEffect, useState } from 'react';
 
 import type { CatalogGateway, FoodCatalogSnapshot } from './catalog-api';
@@ -62,9 +64,10 @@ export function DishMenuPanel({
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (background = false) => {
     try {
-      setSnapshot(await authorize((token) => gateway.loadFood(token)));
+      const next = await authorize((token) => gateway.loadFood(token));
+      if (!background || !hasDirtyCatalogForms()) setSnapshot(next);
       setError(null);
     } catch (caught) {
       setError(foodErrorMessage(caught));
@@ -74,6 +77,8 @@ export function DishMenuPanel({
   useEffect(() => {
     queueMicrotask(() => void load());
   }, [load]);
+
+  useCatalogLiveRefresh(load);
 
   const run = async (success: string, operation: (token: string) => Promise<void>) => {
     setPending(true);

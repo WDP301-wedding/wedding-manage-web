@@ -1,5 +1,7 @@
 'use client';
 
+import { hasDirtyCatalogForms, useCatalogLiveRefresh } from './use-catalog-live-refresh';
+
 import Image from 'next/image';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 
@@ -49,18 +51,19 @@ export function MediaPanel({
   );
 
   const loadAssets = useCallback(
-    async (resource: CatalogMediaResource) => {
+    async (resource: CatalogMediaResource, background = false) => {
       const next = await authorize((token) =>
         gateway.loadMedia(token, { path: resource.path, id: resource.id }),
       );
       assetsLoadedAtRef.current = Date.now();
+      if (background && hasDirtyCatalogForms()) return;
       setAssets([...next].sort((left, right) => left.displayOrder - right.displayOrder));
     },
     [authorize, gateway],
   );
 
   const load = useCallback(
-    async (preferredKey?: string) => {
+    async (preferredKey?: string, background = false) => {
       setLoading(true);
       setError(null);
       try {
@@ -68,6 +71,7 @@ export function MediaPanel({
         const nextResources = allowedTypes
           ? allResources.filter((resource) => allowedTypes.includes(resource.type))
           : allResources;
+        if (background && hasDirtyCatalogForms()) return;
         setResources(nextResources);
         const next =
           nextResources.find((resource) => mediaResourceKey(resource) === preferredKey) ??
@@ -80,7 +84,7 @@ export function MediaPanel({
           setAssets([]);
         } else {
           setSelectedKey(mediaResourceKey(next));
-          await loadAssets(next);
+          await loadAssets(next, background);
         }
       } catch (caught) {
         setError(mediaErrorMessage(caught));
@@ -94,6 +98,9 @@ export function MediaPanel({
   useEffect(() => {
     queueMicrotask(() => void load());
   }, [load]);
+
+  const refreshSelected = useCallback((background = false) => load(selectedKey, background), [load, selectedKey]);
+  useCatalogLiveRefresh(refreshSelected);
 
   useEffect(() => {
     if (!active || selected === undefined || assets.length === 0) return;

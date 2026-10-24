@@ -51,6 +51,7 @@ export function consumeResetFragment(
 }
 
 const STORAGE_KEY = 'wedding_ops_session';
+export const managementSessionRevokedEvent = 'wedding:management-session-revoked';
 
 interface PersistedSessionData {
   accessToken: string;
@@ -62,10 +63,19 @@ interface PersistedSessionData {
 
 export class ManagementIdentitySession {
   private accessToken: string | null = null;
+  private authGeneration = 0;
   private restoreOperation: Promise<ManagementSessionSnapshot> | null = null;
   private state: ManagementSessionSnapshot = anonymousSnapshot;
 
-  constructor(private readonly api: IdentityApi) {}
+  constructor(private readonly api: IdentityApi) {
+    sharedManagementRealtime.setTokenRefreshHandler(() => this.renewAccessToken());
+    sharedManagementRealtime.setSessionRevokedHandler(() => {
+      this.clear();
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event(managementSessionRevokedEvent));
+      }
+    });
+  }
 
   snapshot(): ManagementSessionSnapshot {
     return this.state;
@@ -136,9 +146,11 @@ export class ManagementIdentitySession {
   private renewOperation: Promise<string | null> | null = null;
 
   private renewAccessToken(): Promise<string | null> {
+    const generation = this.authGeneration;
     this.renewOperation ??= this.api
       .refreshSession()
       .then((credential) => {
+        if (generation !== this.authGeneration) return null;
         this.accessToken = credential.accessToken;
         sharedManagementRealtime.updateToken(credential.accessToken);
         const persisted = this.readPersisted();
@@ -153,7 +165,7 @@ export class ManagementIdentitySession {
         return credential.accessToken;
       })
       .catch(() => {
-        this.clear();
+        if (generation === this.authGeneration) this.clear();
         return null;
       })
       .finally(() => {
@@ -236,18 +248,23 @@ export class ManagementIdentitySession {
   }
 
   private async restoreFromCookie(): Promise<ManagementSessionSnapshot> {
+    const generation = this.authGeneration;
     try {
-      return await this.finishSignIn(await this.api.refreshSession());
+      const credential = await this.api.refreshSession();
+      if (generation !== this.authGeneration) return this.state;
+      return await this.finishSignIn(credential);
     } catch {
-      this.clear();
+      if (generation === this.authGeneration) this.clear();
       return this.state;
     }
   }
 
   private async finishSignIn(credential: SessionCredential): Promise<ManagementSessionSnapshot> {
+    const generation = this.authGeneration;
     this.accessToken = credential.accessToken;
     try {
       const actor = await this.api.getCurrentUser(credential.accessToken);
+      if (generation !== this.authGeneration) return this.state;
       const presentation = actor.roles.includes('MANAGER')
         ? 'manager'
         : actor.roles.includes('STAFF')
@@ -264,12 +281,13 @@ export class ManagementIdentitySession {
       });
       return this.state;
     } catch (error) {
-      this.clear();
+      if (generation === this.authGeneration) this.clear();
       throw error;
     }
   }
 
   private clear(): void {
+    this.authGeneration++;
     this.accessToken = null;
     this.state = anonymousSnapshot;
     this.removePersisted();

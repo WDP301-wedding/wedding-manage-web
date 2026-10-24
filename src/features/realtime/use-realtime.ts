@@ -5,6 +5,7 @@ import { sharedManagementRealtime, type RealtimeEvent } from './realtime-client'
 
 export interface UseRealtimeOptions {
   readonly bookingId?: string | null | undefined;
+  readonly filterBooking?: boolean | undefined;
   readonly onEvent?: ((event: RealtimeEvent) => void) | undefined;
   readonly onResync?: (() => void) | undefined;
   readonly enabled?: boolean | undefined;
@@ -12,6 +13,7 @@ export interface UseRealtimeOptions {
 
 export function useRealtimeSubscription({
   bookingId,
+  filterBooking = false,
   onEvent,
   onResync,
   enabled = true,
@@ -28,8 +30,13 @@ export function useRealtimeSubscription({
     if (!enabled) return;
 
     const unsubEvent = sharedManagementRealtime.addEventListener((event) => {
-      if (bookingId && event.scope.bookingId && event.scope.bookingId !== bookingId) {
-        return; // Ignore other bookings
+      if (
+        filterBooking &&
+        bookingId &&
+        event.scope.bookingId &&
+        event.scope.bookingId !== bookingId
+      ) {
+        return; // Ignore other bookings only when explicitly opted in
       }
       onEventRef.current?.(event);
     });
@@ -48,7 +55,7 @@ export function useRealtimeSubscription({
       unsubResync();
       unsubBooking?.();
     };
-  }, [bookingId, enabled]);
+  }, [bookingId, enabled, filterBooking]);
 }
 
 /**

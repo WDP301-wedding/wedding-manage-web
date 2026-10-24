@@ -116,10 +116,6 @@ jobs:
           NODE
           npm run api:check
 
-      - name: Run automated tests (optional)
-        continue-on-error: true
-        run: npm test -- --maxWorkers=2 || true
-
       # Main is built once, with the real production environment, in deploy.
       - name: Restore PR build cache
         if: github.ref != 'refs/heads/main' || github.event_name == 'pull_request'

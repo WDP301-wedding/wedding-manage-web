@@ -1,5 +1,7 @@
 'use client';
 
+import { hasDirtyCatalogForms, useCatalogLiveRefresh } from './use-catalog-live-refresh';
+
 import { type FormEvent, useCallback, useEffect, useState } from 'react';
 
 import { ApiClientError } from '../../lib/api/client';
@@ -43,9 +45,10 @@ export function TimelinePanel({
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (background = false) => {
     try {
-      setSnapshot(await authorize((token) => gateway.loadTimelines(token)));
+      const next = await authorize((token) => gateway.loadTimelines(token));
+      if (!background || !hasDirtyCatalogForms()) setSnapshot(next);
       setError(null);
     } catch (caught) {
       setError(timelineError(caught));
@@ -55,6 +58,8 @@ export function TimelinePanel({
   useEffect(() => {
     queueMicrotask(() => void load());
   }, [load]);
+
+  useCatalogLiveRefresh(load);
 
   const run = async (success: string, operation: (token: string) => Promise<void>) => {
     setPending(true);

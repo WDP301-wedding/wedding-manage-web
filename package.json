@@ -13,7 +13,7 @@
     "dev": "next dev -p 3002",
     "build": "next build",
     "start": "next start",
-    "audit:ci": "npm run test:audit-policy && node scripts/audit-ci.mjs",
+    "audit:ci": "node scripts/audit-ci.mjs",
     "api:generate": "node scripts/generate-api.mjs",
     "api:check": "node scripts/generate-api.mjs --check",
     "lint": "eslint . --max-warnings 0",

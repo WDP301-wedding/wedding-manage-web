@@ -1,5 +1,7 @@
 'use client';
 
+import { hasDirtyCatalogForms, useCatalogLiveRefresh } from './use-catalog-live-refresh';
+
 import { useCallback, useEffect, useState } from 'react';
 import type {
   CatalogGateway,
@@ -156,11 +158,12 @@ export function ManagerVenueWorkspace({
   const [editingHall, setEditingHall] = useState<CatalogHall | null>(null);
   const [creatingHall, setCreatingHall] = useState(false);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (background = false) => {
     setLoading(true);
     setError(null);
     try {
-      setSnapshot(await authorize((token) => gateway.loadVenue(token)));
+      const next = await authorize((token) => gateway.loadVenue(token));
+      if (!background || !hasDirtyCatalogForms()) setSnapshot(next);
     } catch (caught) {
       setError(catalogErrorMessage(caught));
     } finally {
@@ -171,6 +174,8 @@ export function ManagerVenueWorkspace({
   useEffect(() => {
     queueMicrotask(() => void load());
   }, [load]);
+
+  useCatalogLiveRefresh(load);
 
   const run = async (successMessage: string, operation: (token: string) => Promise<void>) => {
     setPending(true);

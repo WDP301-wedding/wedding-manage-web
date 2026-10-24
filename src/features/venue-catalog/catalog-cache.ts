@@ -150,6 +150,7 @@ export async function fetchSharedCatalogResource<T>(
 
 if (typeof window !== 'undefined') {
   import('../realtime/realtime-client').then(({ sharedManagementRealtime }) => {
+    sharedManagementRealtime.addResyncListener(clearCatalogCache);
     sharedManagementRealtime.addEventListener((event) => {
       if (event.type === 'catalog.updated') {
         clearCatalogCache();

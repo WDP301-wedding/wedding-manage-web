@@ -61,6 +61,17 @@ export function resolveRealtimeSocketUrl(): string {
 export class ManagementRealtimeManager {
   private socket: Socket | null = null;
   private token: string | null = null;
+  private tokenRefreshHandler: (() => Promise<string | null>) | null = null;
+
+  setTokenRefreshHandler(handler: () => Promise<string | null>): void {
+    this.tokenRefreshHandler = handler;
+  }
+
+  private sessionRevokedHandler: (() => void) | null = null;
+
+  setSessionRevokedHandler(handler: () => void): void {
+    this.sessionRevokedHandler = handler;
+  }
   private status: RealtimeStatus = 'disconnected';
   private readonly eventListeners = new Set<RealtimeEventListener>();
   private readonly resyncListeners = new Set<RealtimeResyncListener>();
@@ -71,14 +82,14 @@ export class ManagementRealtimeManager {
   connect(token: string): void {
     if (typeof window === 'undefined') return;
 
+    const tokenChanged = this.token !== token;
     this.token = token;
 
     if (this.socket) {
       this.socket.auth = { token };
-      if (this.socket.connected) {
-        return;
-      }
-      this.socket.disconnect();
+      if (this.socket.connected && !tokenChanged) return;
+      this.socket.disconnect().connect();
+      return;
     }
 
     this.setStatus('connecting');
@@ -105,6 +116,16 @@ export class ManagementRealtimeManager {
     });
 
     socket.on('disconnect', (reason) => {
+      if (reason === 'io server disconnect' && this.token !== null && this.tokenRefreshHandler) {
+        void this.tokenRefreshHandler().then(renewed => {
+          if (renewed && this.socket === socket && this.token !== null) {
+            this.token = renewed;
+            socket.auth = { token: renewed };
+            socket.connect();
+          }
+        }).catch(() => { /* Session layer handles refresh denial. */ });
+      }
+
       if (reason === 'io server disconnect') {
         this.setStatus('disconnected');
       } else {
@@ -112,12 +133,26 @@ export class ManagementRealtimeManager {
       }
     });
 
-    socket.on('connect_error', (_error) => {
+    socket.on('connect_error', (error: Error) => {
       this.setStatus('reconnecting');
+      if (this.token !== null && this.tokenRefreshHandler && /AUTHENTICATION|TOKEN|REVOKED|UNAUTHORIZED/u.test(error.message)) {
+        void this.tokenRefreshHandler().then(renewed => {
+          if (renewed && this.socket === socket && this.token !== null) {
+            this.token = renewed;
+            socket.auth = { token: renewed };
+            socket.connect();
+          }
+        }).catch(() => { /* Session layer handles refresh denial. */ });
+      }
     });
 
     socket.on('realtime:event', (payload: unknown) => {
       if (!this.isValidEvent(payload)) return;
+      if (payload.type === 'session.revoked') {
+        this.disconnect();
+        this.sessionRevokedHandler?.();
+        return;
+      }
       if (this.seenEventIds.has(payload.eventId)) {
         return;
       }
@@ -164,12 +199,12 @@ export class ManagementRealtimeManager {
   }
 
   updateToken(token: string): void {
+    const changed = this.token !== token;
     this.token = token;
     if (this.socket) {
       this.socket.auth = { token };
-      if (this.socket.disconnected) {
-        this.socket.connect();
-      }
+      if (changed && this.socket.connected) this.socket.disconnect().connect();
+      else if (this.socket.disconnected) this.socket.connect();
     }
   }
 
