@@ -20,7 +20,7 @@
   border-radius: var(--hy-radius-sm, 12px);
   background: var(--hy-surface, #ffffff);
   color: var(--hy-ink, #2b1d22);
-  font-family: var(--font-body, inherit);
+  font-family: var(--font-body);
   font-size: 16px;
   font-variant-numeric: tabular-nums;
   outline: none;
@@ -105,7 +105,7 @@
 }
 
 .monthTitle {
-  font-family: var(--font-display, inherit);
+  font-family: var(--font-display);
   font-size: 16px;
   font-weight: 600;
   color: var(--hy-ink, #2b1d22);
@@ -174,7 +174,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  font-family: var(--font-body, inherit);
+  font-family: var(--font-body);
   font-size: 14px;
   font-variant-numeric: tabular-nums;
   border: none;
@@ -251,7 +251,7 @@
   border-radius: 8px;
   background: transparent;
   color: var(--hy-wine, #7a1f3d);
-  font-family: var(--font-body, inherit);
+  font-family: var(--font-body);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -268,7 +268,7 @@
   border-radius: 8px;
   background: var(--hy-wine, #7a1f3d);
   color: #ffffff;
-  font-family: var(--font-body, inherit);
+  font-family: var(--font-body);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;

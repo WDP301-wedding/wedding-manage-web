@@ -1,232 +1,385 @@
-# Hướng Dẫn Kiểm Thử Luồng Đặt Tiệc & Ký Hợp Đồng Giữa Quản Lý và Cặp Đôi
+# Hướng dẫn test tay luồng chính đặt tiệc — Manager và Couple
 
-**Hệ thống:** Wedding Estate Platform (`wedding-manage-web` & `wedding-web`)  
-**Tài liệu:** Hướng dẫn nghiệp vụ và danh sách thao tác (Action Steps & Button Cheatsheet)
+Ngày đối chiếu source: **25/10/2026** (giờ Việt Nam, UTC+7).
 
----
+Tài liệu này cập nhật thay nội dung hướng dẫn cũ trong cùng file. Tên in đậm là tên menu, tab, trường hoặc nút hiển thị trong code hiện tại; không dùng đường dẫn kỹ thuật làm tên màn hình.
 
-## 1. Sơ Đồ Tổng Quan Luồng Nghiệp Vụ (End-to-End Workflow)
+## 1. Phạm vi và phiên bản đã đọc
 
-```mermaid
-sequenceDiagram
-    autonumber
-    actor Couple as 👰🤵 Cặp Đôi (wedding-web)
-    actor Manager as 👨‍💼 Quản Lý (wedding-manage-web)
-    participant BE as 🖥️ Backend API
+| Source | Commit tại lúc đối chiếu |
+| --- | --- |
+| wedding-be | `d2f06ec` |
+| wedding-web | `980eb78` |
+| wedding-manage-web | `e3c638b` |
 
-    Note over Couple,BE: GIAI ĐOẠN 1: GỬI YÊU CẦU & MỞ HỒ SƠ TƯ VẤN
-    Couple->>BE: Gửi form yêu cầu tư vấn (Tên, Email, Ngày, Số khách)
-    BE-->>Manager: Hiển thị yêu cầu mới tại trang /consultations
-    Manager->>BE: Bấm "Nhận xử lý" (Claim request)
-    Manager->>BE: Bấm "Mở hồ sơ tư vấn" (Chuyển sang /bookings)
+- Đã đối chiếu source hai web, các lời gọi API và điều kiện nghiệp vụ BE. Không sửa code ứng dụng trong lần cập nhật tài liệu này.
+- Đây là **hướng dẫn để người dùng test tay**, không phải báo cáo các bước đã chạy PASS trên trình duyệt/deployment.
+- Không chạy tests, build, thanh toán, gửi email hoặc thao tác dữ liệu để biên soạn tài liệu.
+- Chưa xác minh bản đang deploy có trùng ba commit trên. Nếu tên màn hình khác, ghi nhận phiên bản triển khai trước khi kết luận thao tác sai.
 
-    Note over Couple,BE: GIAI ĐOẠN 2: TẠO BOOKING & MỜI CỘNG TÁC
-    Manager->>BE: Tab [➕ Tạo đặt tiệc mới] -> Bấm "Tạo hồ sơ tư vấn"
-    Manager->>BE: Bấm "Gửi lời mời cộng tác" (Gửi email có token cho Couple)
-    Manager->>BE: Chọn Sảnh, Menu, Ngày, Ca -> Bấm "Kiểm tra lịch trống"
-    Manager->>BE: Bấm "Tạo booking" (Khởi tạo tiệc ở phase DRAFT)
+## 2. Chuẩn bị
 
-    Note over Couple,BE: GIAI ĐOẠN 3: THIẾT LẬP KỊCH BẢN (ĐIỀU KIỆN CẦN ĐỂ CÓ HỢP ĐỒNG)
-    Manager->>BE: Tab [📋 Tiệc đang xử lý] -> Bấm "Giữ lịch 15 phút" (Hold)
-    Manager->>BE: Bấm "Tải mẫu kịch bản" -> Bấm "Lưu kịch bản mới"
-    Manager->>BE: Bấm "Duyệt kịch bản" (Approve Timeline)
+1. Mở hai phiên trình duyệt độc lập, dùng **hai tài khoản khác nhau**:
+   - Manager trên web quản lý; không dùng Staff thay Manager.
+   - Couple trên web khách hàng. Email nhận lời mời phải truy cập được.
+2. Dùng môi trường và dữ liệu test được phép; không mở chế độ `demo=1` để nghiệm thu dữ liệu thật.
+3. Chuẩn bị sảnh, ca, thực đơn và mẫu kịch bản đã công bố/còn hoạt động. Dịch vụ và hạng mục in chỉ cần nếu đưa chúng vào hợp đồng.
+4. Chọn ngày tương lai hợp lệ. Code hiện yêu cầu ngày từ **ngày mốt theo giờ Việt Nam**, không phải bắt buộc cách 30 ngày. Khuyến nghị chọn xa ít nhất một tuần để thuận tiện test thiệp/media; đây không phải luật bắt buộc 7 ngày.
+5. Ghi lại email khách, mã hồ sơ tư vấn, mã booking, số tiền hợp đồng, tiền cọc và mã giao dịch để đối chiếu.
+6. Để test phần sau tiệc trong cùng buổi, chuẩn bị thêm booking test đã xác nhận và đã qua giờ kết thúc ca hơn 12 giờ. Booking mới có ngày tương lai chưa thể đi ngay qua các điều kiện sau tiệc. Đổi giờ trên trình duyệt không thay được giờ BE.
 
-    Note over Couple,BE: GIAI ĐOẠN 4: LẬP & KÝ DUYỆT HỢP ĐỒNG HAI BÊN
-    Manager->>BE: Thẻ Hợp đồng -> Bấm "Gửi duyệt hợp đồng" (Trạng thái: AWAITING_APPROVAL)
-    Manager->>BE: Bấm nút xanh "Phê duyệt hợp đồng (Quản lý)"
-    BE-->>Manager: Quản lý: ✓ Đã phê duyệt | Cặp đôi: Chưa duyệt
-    Couple->>BE: Đăng nhập Portal /contract -> Kiểm tra điều khoản
-    Couple->>BE: Bấm nút "Duyệt hợp đồng" -> Xác nhận Modal
-    BE-->>Couple: Cặp đôi: ✓ Đã phê duyệt -> Trạng thái: APPROVED (Đã duyệt 2 bên)
-    Couple->>BE: Bấm "📄 Tải PDF hợp đồng" có chữ ký 2 bên
+Luồng chính:
 
-    Note over Couple,BE: GIAI ĐOẠN 5: ĐẶT CỌC & XÁC NHẬN CHÍNH THỨC
-    Couple->>BE: Bấm "Đặt cọc 30%" -> Thanh toán VietQR / Thẻ tại /billing
-    BE-->>Manager: Booking cập nhật sang phase CONFIRMED (Đã chốt tiệc)
-```
+**Nhận tư vấn → Duyệt và mở hồ sơ → Khách xác nhận lời mời → Tạo booking → Hai bên duyệt kịch bản → Nhập tên → Lập và duyệt hợp đồng → Giữ lịch hợp lệ → Thu cọc → Chuẩn bị tiệc → Sau tiệc ghi phát sinh → Chốt hóa đơn → Thu số dư.**
 
----
+**Thao tác nghiệp vụ quan trọng:** UI Manager đã được nối hoàn chỉnh thao tác **Chốt hoá đơn quyết toán cuối** (tại menu Quản lý thanh toán) và **Phê duyệt phụ lục** (tại tab Phụ lục hợp đồng trong Đặt tiệc). Chi tiết tại bước 14 và mục 5.
 
-## 2. Chuẩn Bị Môi Trường Test
+## 3. Các bước thao tác
 
-1. **Web Admin (Dành cho Quản lý / Điều phối tiệc):**
-   - URL: `http://localhost:3001` (hoặc cổng chạy dự án `wedding-manage-web`)
-   - Tài khoản: Manager hoặc Staff đã được cấp quyền.
-2. **Couple Portal (Dành cho Cặp đôi / Khách hàng):**
-   - URL: `http://localhost:3000` (dự án `wedding-web`)
-   - Tài khoản: Email của cặp đôi nhận qua lời mời cộng tác hoặc đăng ký tư vấn.
+### Bước 1 — Khách gửi lời hẹn tư vấn
 
----
+**Nơi vào:** Web khách hàng → thanh menu đầu trang → **Nhận tư vấn**.
 
-## 3. Hướng Dẫn Thao Tác Chi Tiết Từng Bước
+Thao tác:
 
-### Bước 1: Cặp đôi gửi yêu cầu tư vấn (Couple Portal)
+1. Nhập **Họ và tên** và **Email**.
+2. Để dễ đối chiếu, điền thêm **Số điện thoại**, **Ngày tổ chức dự kiến**, **Số khách dự kiến**, ca mong muốn và **Điều bạn mong muốn**. Các trường được ghi không bắt buộc trên UI vẫn là tùy chọn.
+3. Bấm **Gửi lời hẹn tư vấn**.
 
-1. Truy cập vào trang chủ hoặc trang liên hệ của khách sạn/trung tâm tiệc cưới (`http://localhost:3000`).
-2. Tìm khối **"Đăng ký tư vấn tiệc cưới"**.
-3. Điền các trường thông tin:
-   - **Tên cặp đôi:** Ví dụ `Hoàng & Mai`
-   - **Email liên hệ:** Ví dụ `hoangmai@example.com`
-   - **Số điện thoại:** `0912345678`
-   - **Ngày mong muốn tổ chức:** Chọn một ngày hợp lệ trong tương lai (cách hiện tại tối thiểu 30 ngày).
-   - **Số lượng khách dự kiến:** Ví dụ `250`
-   - **Lời nhắn:** `Muốn khảo sát sảnh tiệc và tư vấn gói tiệc cưới hoa tươi.`
-4. Bấm nút: **`Gửi yêu cầu tư vấn`**.
-5. _Kết quả:_ Hệ thống thông báo gửi thành công và ghi nhận vào cơ sở dữ liệu.
+Kết quả mong đợi:
 
----
+- Có xác nhận/trang gửi thành công; Manager thấy một yêu cầu mới đúng dữ liệu.
+- Nếu bắt đầu từ trang sảnh/thực đơn, kiểm tra thông tin quan tâm được giữ trong yêu cầu.
+- Gửi tư vấn **chưa giữ chỗ, chưa tạo xác nhận đặt tiệc, chưa ghi nhận thanh toán**.
 
-### Bước 2: Quản lý tiếp nhận yêu cầu (`/consultations`)
+### Bước 2 — Manager mở hồ sơ và phát hành lời mời
 
-1. Đăng nhập trang Admin (`wedding-manage-web`) và vào menu: **`Hồ sơ tư vấn`** (`/consultations`).
-2. Trong danh sách yêu cầu mới (nhãn `NEW`), tìm hồ sơ của cặp đôi `Hoàng & Mai`.
-3. Bấm nút: **`Nhận xử lý`** (Claim).
-   - _Kết quả:_ Trạng thái chuyển từ `NEW` sang `CONTACTED` và gắn nhân viên phụ trách.
-4. Sau khi tư vấn ban đầu, bấm nút: **`Mở hồ sơ tư vấn`**.
-   - _Kết quả:_ Trình duyệt tự động chuyển hướng sang màn hình **`Điều phối đặt tiệc`** (`/bookings?consultationId=...`) với toàn bộ thông tin ngày, khách, tên cặp đôi đã được điền sẵn.
+**Nơi vào:** Web quản lý → menu trái **Yêu cầu tư vấn** → tab **Chờ tiếp nhận**.
 
----
+Thao tác:
 
-### Bước 3: Tạo hồ sơ tư vấn, mời cộng tác và tạo booking (`/bookings`)
+1. Tìm bằng đúng email hoặc tên vừa gửi; đọc ngày, số khách, điện thoại và lời nhắn.
+2. Bấm **Duyệt hồ sơ và gửi lời mời kích hoạt** đúng một lần; chờ kết quả.
+3. Khi đã chuyển đổi, tìm ở tab **Đã mở tư vấn** nếu cần.
+4. Bấm **Tiếp tục đặt tiệc** trên đúng yêu cầu.
 
-Tại trang **Điều phối đặt tiệc**, giao diện chia làm 2 tab rõ ràng. Chọn tab **`➕ Tạo đặt tiệc mới`**:
+Kết quả mong đợi:
 
-#### 3.1. Tại Bước 01: Hồ sơ tư vấn
+- Yêu cầu chuyển từ `NEW` sang `CONVERTED`, có mã hồ sơ tư vấn.
+- Thao tác chuyển sang trang **Điều phối đặt tiệc**, thuộc menu **Đặt tiệc**.
+- Nếu link có hồ sơ hợp lệ, trang **tự mở tab 2. Khảo sát sảnh & Đặt tiệc**, không yêu cầu tạo lại hồ sơ ở tab 1.
+- Nếu mở hồ sơ thành công nhưng gửi lời mời chưa xác nhận, UI phải báo riêng; không tạo lại yêu cầu/hồ sơ để chữa lỗi gửi thư.
 
-1. Kiểm tra lại thông tin: Tên cặp đôi `Hoàng & Mai`, Email `hoangmai@example.com`.
-2. Bấm nút: **`Tạo hồ sơ tư vấn`**.
-   - _Kết quả:_ Hệ thống sinh mã `consultationId` và huy hiệu xanh: `✓ Đã tạo mã tư vấn tự động chuyển sang Bước 02`.
-3. Bấm nút: **`Gửi lời mời cộng tác`** (màu xanh hoặc viền nổi bật).
-   - _Kết quả:_ Hệ thống kích hoạt lời mời portal, ghi nhận lịch sử gửi email và cấp quyền đăng nhập cho email cặp đôi.
+Không có bước bắt buộc “Nhận xử lý → CONTACTED” trong luồng này. Trạng thái intake hiện tại là `NEW`, `CONVERTED`, `CLOSED`.
 
-#### 3.2. Tại Bước 02: Khảo sát sảnh & Tạo booking
+### Bước 3 — Couple xác nhận lời mời
 
-1. Bấm nút: **`Tải danh mục đặt tiệc`** (nếu danh mục chưa tự tải).
-2. Điền các lựa chọn:
-   - **Sảnh tiệc:** Chọn sảnh (VD: `Sảnh Ánh Dương · tối đa 320 khách`).
-   - **Thực đơn:** Chọn gói thực đơn định sẵn (VD: `Menu Hoàng Kim - 5.000.000 đ/bàn`).
-   - **Ngày tổ chức & Ca tiệc:** Chọn ca `TỐI` (hoặc `TRƯA`).
-   - **Quy mô:** Nhập số bàn (VD: `25 bàn`), số khách kế hoạch (VD: `250 khách`).
-3. Bấm nút: **`Kiểm tra lịch trống`**.
-   - _Kết quả:_ Hệ thống báo: `Khung giờ đang trống.`
-4. Bấm nút: **`Tạo booking`**.
-   - _Kết quả:_ Hệ thống tạo mã booking mới, hiển thị thông báo `Đã tạo hồ sơ đặt tiệc`. Tab `[📋 Tiệc đang xử lý]` xuất hiện huy hiệu `Đang mở`.
+**Nơi vào:** Hộp thư khách → mở liên kết lời mời → màn **Hoàn tất lời mời của bạn**.
 
----
+Thao tác:
 
-### Bước 4: Thiết lập kịch bản (BẮT BUỘC để đủ điều kiện tạo Hợp đồng)
+1. Nhập **Mật khẩu** và **Xác nhận mật khẩu** giống nhau, đáp ứng chính sách trên UI; form hiện đặt tối thiểu 12 ký tự.
+2. Nếu đã có tài khoản, làm theo mô tả màn hình: nhập mật khẩu hiện tại, không tự đặt lại mật khẩu qua lời mời.
+3. Bấm **Xác nhận lời mời**.
+4. Vào **Không gian cưới**; nếu cần đăng nhập lại thì dùng tài khoản vừa xác nhận.
 
-> [!IMPORTANT]
-> **Quy tắc nghiệp vụ:** Hệ thống không cho phép ký hợp đồng nếu tiệc cưới chưa có kịch bản chương trình (`Timeline`). Nếu cố tình mở hợp đồng khi chưa có timeline, hệ thống sẽ hiển thị cảnh báo: _"Cần có kịch bản tiệc trước khi lập hợp đồng."_
+Kết quả mong đợi:
 
-1. Chuyển sang tab: **`📋 Tiệc đang xử lý`**.
-2. **Giữ chỗ tạm thời:** Bấm nút **`Giữ lịch 15 phút`** để đảm bảo sảnh không bị nhân viên khác chọn trùng.
-3. **Thêm kịch bản chương trình:**
-   - Kéo xuống thẻ **"Kịch bản tiệc"**.
-   - Bấm nút: **`Tải mẫu kịch bản`** (Hệ thống tự động điền các mốc chuẩn: _17:30 Đón khách_, _18:30 Khai mạc lễ_, _19:00 Khai tiệc & Nâng ly_, _21:00 Tiễn khách_).
-   - Hoặc bấm **`Thêm mốc chương trình`** để tùy biến thời gian và nội dung.
-   - Bấm nút: **`Lưu kịch bản mới`**.
-   - Bấm nút: **`Duyệt kịch bản`** (Approve timeline).
-   - _Kết quả:_ Thẻ kịch bản chuyển sang trạng thái đã duyệt.
+- Kích hoạt/nhận quyền trước cọc, không đợi thanh toán mới được đăng nhập.
+- Chưa có booking thì danh sách tiệc có thể trống. Tiếp tục bước tạo booking bên Manager, không gửi lại tư vấn.
+- Quyền trước cọc là `RESTRICTED`; chưa được dùng khách, sơ đồ, media và sản xuất thiệp thuộc phần sau cọc.
 
----
+Nếu chưa nhận được thư:
 
-### Bước 5: Lập hợp đồng và Ký xác nhận hai bên
+- Manager vào **Đặt tiệc → 1. Hồ sơ tư vấn**, tại phần **Kích hoạt tài khoản khách hàng**, bấm **Cập nhật trạng thái**.
+- Chỉ khi cần và UI cho phép mới dùng **Gửi lời mời kích hoạt** hoặc **Gửi lại lời mời → Xác nhận gửi**. Gửi lại có thể làm link cũ hết hiệu lực; dùng thư mới nhất.
+- Thông báo đã phát hành lời mời không phải bằng chứng thư đã tới hộp thư hoặc khách đã kích hoạt.
 
-#### 5.1. Khởi tạo và Gửi duyệt hợp đồng (Từ Quản lý hoặc Cặp đôi)
+### Bước 4 — Manager tạo booking
 
-1. Tại thẻ **"Hợp đồng tiệc cưới"** (nằm ở phần dưới trang `/bookings`):
-   - Nếu chưa có bản ghi: Bấm nút **`Lập hợp đồng`** -> Chọn các dòng thực đơn theo số bàn, dịch vụ đi kèm -> Bấm **`Lưu bản nháp`**.
-   - Hệ thống hiển thị bảng tóm tắt:
-     - Tên Cô dâu & Chú rể
-     - Sảnh & Ngày tiệc
-     - Tổng giá trị hợp đồng (VND)
-     - Tiền đặt cọc cam kết (30%)
-     - Trạng thái hiện tại: `Bản nháp (Draft)`.
-2. Bấm nút: **`Gửi duyệt hợp đồng`**.
-   - _Kết quả:_ Trạng thái hợp đồng chuyển thành: `Chờ hai bên duyệt (AWAITING_APPROVAL)`.
-   - Bảng trạng thái hiển thị:
-     - `Quản lý (Manager): Chưa duyệt`
-     - `Cặp đôi (Couple): Chưa duyệt`
+**Nơi vào:** Web quản lý → **Đặt tiệc** → trang **Điều phối đặt tiệc** → tab **2. Khảo sát sảnh & Đặt tiệc**.
 
-#### 5.2. Quản lý phê duyệt hợp đồng (`wedding-manage-web`)
+Thao tác:
 
-1. Ngay tại thẻ **Hợp đồng tiệc cưới**, khi trạng thái là `Chờ hai bên duyệt`, xuất hiện nút màu xanh lá:
-   - **`Phê duyệt hợp đồng (Quản lý)`**
-2. Bấm nút: **`Phê duyệt hợp đồng (Quản lý)`**.
-   - _Kết quả:_
-     - Thông báo thành công: `Đã ghi nhận phê duyệt hợp đồng từ phía Quản lý.`
-     - Trạng thái cập nhật: `Quản lý (Manager): ✓ Đã phê duyệt`.
-     - Cặp đôi: `Cặp đôi (Couple): Chưa duyệt`.
+1. Kiểm tra hồ sơ đã liên kết. Có thể xem tab **1. Hồ sơ tư vấn** để đối chiếu, nhưng **không bấm Tạo hồ sơ tư vấn lần nữa** cho yêu cầu đã chuyển đổi.
+2. Chọn **Sảnh tiệc**, ngày tổ chức, ca tiệc và **Thực đơn đặt tiệc**.
+3. Nhập **Số bàn** và **Số khách dự kiến** phù hợp sức chứa.
+4. Bấm **Kiểm tra lịch**. Nếu không trống, chọn slot khác hợp lệ.
+5. Bấm **Tạo booking**, ghi lại mã booking.
+6. Mở tab **3. Tiệc đang xử lý** nếu trang chưa tự chuyển.
 
-#### 5.3. Cặp đôi phê duyệt hợp đồng (`wedding-web`)
+Kết quả mong đợi:
 
-1. Cặp đôi mở Portal (`http://localhost:3000`) và truy cập mục: **Hợp đồng tiệc cưới** (`/contract?bookingId=...` hoặc qua menu Không gian tiệc cưới).
-2. Xem lại bảng tính tiền, thực đơn, gói in thiệp và điều khoản thanh toán.
-3. Cặp đôi thấy nút hành động chính:
-   - **`Duyệt hợp đồng`**
-4. Bấm nút: **`Duyệt hợp đồng`**.
-   - Xuất hiện hộp thoại xác nhận: _"Xác nhận hai bạn đồng ý với toàn bộ nội dung hợp đồng này?"_
-   - Bấm **`OK`**.
-   - _Kết quả:_
-     - Màn hình Portal bắn hiệu ứng pháo hoa chúc mừng (`Celebrate`).
-     - Trạng thái hợp đồng đổi thành: **`Đã duyệt (APPROVED)`**.
-     - Cả hai cột hiển thị:
-       - `Quản lý (Manager): ✓ Đã phê duyệt`
-       - `Cặp đôi (Couple): ✓ Đã phê duyệt`
+- Booking mới ở `DRAFT`, đúng sảnh/ngày/ca/thực đơn/số bàn/số khách.
+- Couple nhìn thấy đúng tiệc trong **Không gian cưới**.
+- “Kiểm tra lịch” chỉ kiểm tra tính khả dụng, **không tự giữ slot**.
+- Form tạo booking Manager hiện chọn một thực đơn. Nhu cầu nhiều dòng thực đơn test tại phần lập hợp đồng; không tìm nút thêm nhiều menu trong form tạo booking hiện tại.
 
-#### 5.4. Tải file PDF lưu trữ
+### Bước 5 — Manager lập và duyệt kịch bản
 
-1. Ở cả giao diện Quản lý và Cặp đôi đều xuất hiện nút:
-   - **`📄 Tải PDF hợp đồng`**
-2. Bấm nút này để tải file `Hop-dong-tiec-[ID].pdf` chính thức về máy tính để in ấn hoặc lưu trữ pháp lý.
+**Nơi vào:** Manager → **Đặt tiệc → 3. Tiệc đang xử lý** → phần **Kịch bản tiệc**.
 
----
+Thao tác:
 
-### Bước 6: Đặt cọc và Chuyển trạng thái chính thức (CONFIRMED)
+1. Có thể bấm **Giữ lịch 15 phút** tại phần thông tin tiệc để giữ tạm slot.
+2. Bấm **Tải mẫu kịch bản**.
+3. Chọn một giá trị trong **Mẫu kịch bản đã công bố**.
+4. Bấm **Dùng mẫu này**. Chỉ tải danh sách mẫu chưa chép mẫu vào kịch bản.
+5. Kiểm tra giờ, tiêu đề, mô tả từng mốc. Nếu không dùng mẫu, bấm **Thêm mốc chương trình** rồi điền các mốc hợp lệ.
+6. Bấm **Lưu kịch bản mới**.
+7. Bấm **Phê duyệt revision hiện tại**.
 
-1. **Phía Cặp đôi (Online Portal):**
-   - Sau khi hợp đồng `APPROVED`, xuất hiện nút màu vàng nổi bật: **`Đặt cọc [Số tiền 30%] đ`**.
-   - Bấm vào nút để chuyển sang trang `/billing`, quét mã VietQR hoặc nhập thẻ để thanh toán tiền cọc.
-2. **Phía Quản lý (Admin Web):**
-   - Nếu khách chuyển khoản trực tiếp hoặc nộp tiền mặt tại quầy:
-     - Quản lý vào menu **Thanh toán & Thu chi** (`/billing?bookingId=...`).
-     - Ghi nhận biên lai thu tiền cọc tại mục **Ghi nhận thu chi**.
-3. **Kết quả cuối cùng:**
-   - Khi giao dịch đặt cọc hoàn tất, Stepper tiến trình chuyển từ `HELD` sang **`CONFIRMED`** (Đã chốt tiệc cưới).
+Kết quả mong đợi:
 
----
+- Mốc giờ nằm trong ca đã chọn; nội dung lưu đúng thứ tự.
+- Manager duyệt đúng bản vừa lưu, chưa tự ghi nhận Couple đã duyệt.
+- Giữ lịch chỉ là tạm thời; chưa làm booking thành `CONFIRMED` và không phải trạng thái booking riêng tên `HELD`.
 
-## 4. Bảng Tra Cứu Nhanh Nút Bấm Nghiệp Vụ (Action Buttons Cheatsheet)
+### Bước 6 — Couple duyệt cùng kịch bản
 
-| Màn hình                    | Tên Nút Bấm                      | Điều Kiện Xuất Hiện            | Hành Động & Kết Quả                          |
-| :-------------------------- | :------------------------------- | :----------------------------- | :------------------------------------------- |
-| `/consultations`            | **Nhận xử lý**                   | Request ở trạng thái `NEW`     | Gắn nhân viên, chuyển sang `CONTACTED`       |
-| `/consultations`            | **Mở hồ sơ tư vấn**              | Request đã được nhận           | Chuyển sang `/bookings` và prefill dữ liệu   |
-| `/bookings` (Tab Tạo mới)   | **Tạo hồ sơ tư vấn**             | Đã nhập Tên & Email            | Cấp `consultationId` và `revision: 1`        |
-| `/bookings` (Tab Tạo mới)   | **Gửi lời mời cộng tác**         | Đã có hồ sơ tư vấn             | Gửi email link vào Portal cho cặp đôi        |
-| `/bookings` (Tab Tạo mới)   | **Kiểm tra lịch trống**          | Đã chọn sảnh, ngày, ca         | Kiểm tra tính khả dụng của sảnh              |
-| `/bookings` (Tab Tạo mới)   | **Tạo booking**                  | Sảnh trống, đủ thông tin       | Tạo booking mới (Phase: `DRAFT`)             |
-| `/bookings` (Tab Quản lý)   | **Giữ lịch 15 phút**             | Booking đang ở `DRAFT`         | Khóa sảnh 15 phút tránh bị trùng lặp         |
-| `/bookings` (Tab Quản lý)   | **Tải mẫu kịch bản**             | Chưa có kịch bản               | Nạp nhanh các mốc đón khách, khai tiệc       |
-| `/bookings` (Tab Quản lý)   | **Lưu kịch bản mới**             | Đã nhập các mốc giờ            | Lưu timeline vào máy chủ                     |
-| `/bookings` (Tab Quản lý)   | **Duyệt kịch bản**               | Kịch bản chưa duyệt            | **Đạt điều kiện tiên quyết để tạo Hợp đồng** |
-| `/bookings` (Tab Quản lý)   | **Lập hợp đồng**                 | Đã có kịch bản đã duyệt        | Chọn các dòng thực đơn, bàn tiệc, dịch vụ    |
-| `/bookings` hoặc Portal     | **Gửi duyệt hợp đồng**           | Hợp đồng đang là `DRAFT`       | Chuyển trạng thái sang `AWAITING_APPROVAL`   |
-| `/bookings` (Admin)         | **Phê duyệt hợp đồng (Quản lý)** | Trạng thái `AWAITING_APPROVAL` | Manager ký duyệt hợp đồng                    |
-| `/contract` (Couple Portal) | **Duyệt hợp đồng**               | Trạng thái `AWAITING_APPROVAL` | Couple ký duyệt hợp đồng                     |
-| Cả 2 giao diện              | **📄 Tải PDF hợp đồng**          | Có hợp đồng                    | Tải file PDF bản in chính thức               |
-| Portal (`/contract`)        | **Đặt cọc 30% [Tiền VND]**       | Hợp đồng đã `APPROVED`         | Dẫn sang cổng thanh toán cọc để chốt tiệc    |
+**Nơi vào:** Web khách hàng → **Không gian cưới → Thoả thuận → Kịch bản**.
 
----
+Thao tác:
 
-## 5. Những Điểm Cần Chú Ý Khi Test & Xử Lý Tình Huống
+1. Chọn đúng tiệc nếu tài khoản có nhiều booking.
+2. Đọc lại sảnh, ngày, ca và các mốc chương trình.
+3. Bấm **Phê duyệt revision này**.
 
-1. **Nếu không thấy nút "Phê duyệt hợp đồng (Quản lý)":**
-   - Kiểm tra xem Hợp đồng đã được bấm **"Gửi duyệt hợp đồng"** chưa. Nếu vẫn là `Bản nháp (DRAFT)` thì nút duyệt chưa xuất hiện.
-2. **Nếu bấm "Lập hợp đồng" bị báo lỗi:**
-   - Kiểm tra xem đã duyệt Kịch bản (`Timeline`) chưa. Quy tắc bắt buộc: Kịch bản phải được duyệt trước khi phát hành hợp đồng.
-3. **Khi cần thay đổi thông tin sau khi đã gửi duyệt:**
-   - Cặp đôi hoặc Quản lý có thể bấm **`Rút duyệt (Withdraw)`** kèm lý do để đưa hợp đồng quay về bản nháp chỉnh sửa lại.
-4. **Tránh lỗi xung đột phiên bản (Stale Revision):**
-   - Hệ thống áp dụng cơ chế kiểm soát đồng thời lạc quan (`expectedRevision`). Khi thao tác, không mở 2 tab cùng sửa một hợp đồng để tránh lỗi `STALE_REVISION`.
+Kết quả mong đợi:
+
+- Hai bên duyệt cùng một revision kịch bản.
+- Nếu sửa/lưu revision mới trước cọc, phải kiểm tra lại approvals và bản hợp đồng gắn với timeline; không tự giữ hiệu lực của bản cũ.
+- Chưa có cả hai phê duyệt thì chưa đủ điều kiện đặt cọc.
+
+### Bước 7 — Couple lưu tên cô dâu và chú rể
+
+**Nơi vào:** **Không gian cưới → Thoả thuận → Tên cô dâu chú rể**.
+
+1. Nhập **Tên cô dâu** và **Tên chú rể**.
+2. Bấm **Lưu tên**.
+
+Kết quả mong đợi: giữ nguyên dấu tiếng Việt, lưu hai trường riêng. Tên tài khoản/email không tự được dùng thay hai tên này. Thay tên sau duyệt không được sửa ngược nội dung hợp đồng lịch sử.
+
+### Bước 8 — Couple lập hợp đồng và xem trước tiền
+
+**Nơi vào:** **Không gian cưới → Thoả thuận → Hợp đồng**.
+
+1. Bấm **Lập hợp đồng**.
+2. Chọn các dòng thực đơn, số bàn; chọn dịch vụ và hạng mục in/quantity nếu sử dụng.
+3. Bấm **Xem trước chi phí**.
+4. Đối chiếu tên hạng mục, đơn vị, số lượng, đơn giá, thành tiền, tổng và tiền cọc.
+5. Có thể đổi một số lượng để kiểm tra bản xem trước cũ bị đánh dấu không còn phù hợp; bấm **Tính lại chi phí**.
+6. Bấm **Lưu bản nháp**. Nếu đang thay một bản đã có thì nút có thể là **Lưu bản hợp đồng mới**.
+7. Đọc lại bản đã lưu rồi bấm **Gửi duyệt**.
+
+Kết quả mong đợi:
+
+- Tên, sảnh, ngày, ca và revision kịch bản đúng.
+- Giá tính trên BE; cọc = `ceil(tổng hợp đồng × 30 / 100)` VND.
+- Xem trước chưa tạo revision hợp đồng, khoản thu hoặc phê duyệt.
+- Bản gửi chuyển sang **Chờ hai bên duyệt** (`AWAITING_APPROVAL`).
+- Có điều khoản “Các chi phí phát sinh sẽ được tính sau”; tổng này không giả định đã bao gồm các phát sinh tương lai chưa ghi nhận.
+
+### Bước 9 — Hai bên duyệt hợp đồng
+
+**Manager:** **Đặt tiệc → 3. Tiệc đang xử lý → Hợp đồng tiệc cưới**.
+
+1. Đọc cùng bản hợp đồng Couple đã gửi.
+2. Bấm **Phê duyệt hợp đồng (Quản lý)**.
+
+**Couple:** **Thoả thuận → Hợp đồng**.
+
+3. Kiểm tra nội dung, bấm **Duyệt hợp đồng**.
+4. Tại hộp xác nhận, bấm **Đồng ý & duyệt**.
+5. Bấm **Xem PDF** để đối chiếu. Manager có nút **Tải PDF hợp đồng**.
+
+Kết quả mong đợi:
+
+- Cả hai phê duyệt thuộc cùng một revision và hai tài khoản khác nhau.
+- Trạng thái thành `APPROVED`/đã duyệt hai bên.
+- PDF đúng dữ liệu và thông tin phê duyệt. Đây là phê duyệt trong ứng dụng, không phải tính năng ký số hoặc tải scan chữ ký.
+- Chỉnh giá danh mục về sau không làm thay giá trong bản đã duyệt.
+
+### Bước 10 — Kiểm tra giữ lịch và thu cọc
+
+Trước thanh toán, Manager mở **Đặt tiệc → 3. Tiệc đang xử lý**, kiểm tra/giữ lại slot bằng **Giữ lịch 15 phút** khi cần. Nếu slot đã bị booking khác chiếm, xử lý thông báo xung đột; không ép thanh toán tiếp.
+
+Hợp đồng APPROVED chưa đủ: còn cần timeline đúng revision được hai bên duyệt, giữ slot hợp lệ và không có giao dịch chưa rõ kết quả đang chặn.
+
+**Chọn một trong hai nhánh cho cùng khoản tiền, không làm cả hai.**
+
+#### A. Couple thanh toán online
+
+1. Couple vào menu **Thanh toán** trong **Không gian cưới**.
+2. Bấm **Đặt cọc qua VNPay**.
+3. Kiểm tra số tiền; bấm **Xác nhận mở VNPay**.
+4. Thực hiện thanh toán sandbox được phép.
+5. Quay lại trang kết quả/thanh toán và kiểm tra trạng thái do máy chủ trả về.
+
+Không nhập/sửa tùy ý số tiền online. Quay về từ VNPay hoặc có tham số thành công trên URL không đủ để kết luận đã thu tiền.
+
+#### B. Manager ghi nhận tiền đã thực nhận
+
+1. Manager vào **Quản lý thanh toán**.
+2. Nếu chưa mở đúng booking, điền **Mã hồ sơ đặt tiệc** và bấm **Xem thanh toán**. Có thể dùng liên kết **Mở thanh toán & Thu cọc tiệc này →** từ tab quản lý tiệc để mang đúng mã sang.
+3. Tại **Ghi nhận tiền đã nhận**, chọn **Loại khoản thu → Đặt cọc**.
+4. Nhập **Số tiền thực nhận (VND)** đúng tiền cọc yêu cầu, **Thời điểm nhận tiền**, **Mã chứng từ**, **Lý do ghi nhận**.
+5. Bấm **Kiểm tra khoản thu**.
+6. Đọc lại màn xác nhận; bấm **Xác nhận ghi nhận**.
+
+Kết quả mong đợi sau khoản cọc được xác nhận và áp dụng:
+
+- Booking thành `CONFIRMED`, quyền Couple trên booking thành `FULL`.
+- Sảnh/ngày/ca được chốt đúng một tiệc; các mục chuẩn bị sau cọc mở theo quyền thật.
+- Số tiền và chứng từ xuất hiện một lần, không nhân đôi khi bấm lại/tải lại.
+- Nếu còn `CREATED`, `PENDING`, `UNKNOWN` hoặc thu thành công nhưng chưa áp dụng thì chưa tự đánh dấu tiệc đã chốt. Kiểm tra giao dịch hiện tại, không tạo khoản thu thứ hai để bỏ qua.
+
+### Bước 11 — Nhóm khách và sơ đồ bàn, sau cọc
+
+**Nơi vào:** Couple → **Không gian cưới → Chuẩn bị → Khách & sơ đồ**.
+
+1. Chọn tab **Danh sách khách**.
+2. Tại **Số khách dự kiến**, kiểm tra giá trị; nếu đổi thì bấm **Lưu số khách**.
+3. Tại **Nhóm khách**, điền nhóm cần dùng và bấm **Thêm nhóm**. Danh sách tên khách là tùy chọn.
+4. Chuyển sang tab **Sơ đồ bàn**.
+5. Tại **Chọn mẫu sơ đồ**, chọn mẫu phù hợp bằng **Dùng mẫu này**. Nếu đã có mẫu và đổi mẫu thì dùng **Đổi sang mẫu này** theo điều kiện UI.
+6. Chọn nút nhóm/màu rồi bấm các bàn cần gán. **Chỉ xem bàn** không gán nhãn; **Gỡ nhóm khỏi bàn** là chế độ gỡ nhãn.
+7. Bấm **Lưu nhãn bàn**; sau đó bấm **Xác nhận sơ đồ** khi hợp lệ.
+
+Kết quả mong đợi:
+
+- Không cần danh sách tên để tạo nhóm và sơ đồ. Một nhóm có thể dùng nhiều bàn.
+- Đổi nhãn chưa tự lưu; reload chỉ giữ dữ liệu đã lưu hoặc đề nghị khôi phục nháp đúng ngữ cảnh, không giả là đã lưu server.
+- Số khách dự kiến không tự đổi theo số tên khách/sức chứa bàn.
+- Đổi headcount có thể yêu cầu rà soát/xác nhận lại sơ đồ; phải xử lý trước khi dùng bản đó trong thiệp.
+
+### Bước 12 — Thiệp và in giấy, nhánh tùy chọn sau cọc
+
+**Nơi vào:** Couple → **Không gian cưới → Chuẩn bị → Thiệp & in**.
+
+1. Tab **Thiết Kế & AI**: chọn mẫu, sửa nội dung phù hợp, bấm **Lưu Bản Thiết Kế**. Không cần tạo ảnh AI để đạt luồng chính.
+2. Nếu dùng ảnh, thao tác tại tab **Bộ Sưu Tập Ảnh** và kiểm tra nội dung được lưu trước khi xuất bản.
+3. Tab **Xuất Bản & Mã QR**: bấm **Xuất Bản Thiệp Ngay**. Mở liên kết bằng phiên khách để đối chiếu nội dung; khách không được thấy danh sách/ghi chú/thu chi riêng tư.
+4. Nếu đặt in, mở tab **Đặt In Thiệp Giấy**; chọn **Mẫu in theo hợp đồng** nếu đã có nguồn, kiểm tra số lượng, bấm **Gửi Yêu Cầu Báo Giá In**.
+5. Manager vào menu **Thiệp và in ấn**, mở đúng đơn. Xử lý theo trạng thái thực của đơn: báo giá nếu cần, Couple duyệt báo giá nếu UI yêu cầu, sau đó các bước sản xuất/sẵn sàng/bàn giao được phép.
+
+Kết quả mong đợi: đúng thiết kế, số lượng, trạng thái và lịch sử. Dòng in đã nằm trong hợp đồng/phụ lục không được tính thêm lần nữa; đổi nguồn/giá hoặc vượt số lượng không được bỏ qua điều kiện thương mại. Không dùng danh sách khách/check-in làm điều kiện bắt buộc để tiệc được hoàn thành.
+
+### Bước 13 — Ghi phát sinh sau giờ kết thúc tiệc
+
+Dùng booking đã qua giờ kết thúc ca thực tế của BE; không tiếp tục ngay bằng booking mới ngày tương lai.
+
+**Nơi vào:** Manager → **Quản lý thanh toán** → mở đúng mã bằng **Xem thanh toán** → phần **Chi phí phát sinh & Hoá đơn cuối**.
+
+1. Bấm **+ Thêm chi phí phát sinh**.
+2. Nhập tên khoản, số lượng, đơn vị, đơn giá và ghi chú nếu có.
+3. Bấm **Lưu phát sinh**.
+4. Couple mở menu **Quyết toán**, đối chiếu nội dung, số tiền và trạng thái đang ghi nhận.
+
+Kết quả mong đợi: trước giờ kết thúc bị chặn; sau giờ kết thúc được ghi theo quyền Manager mà không cần chờ mốc hoàn thành +12 giờ. Couple xem chứ không tự ghi/duyệt khoản phát sinh thay nhà hàng.
+
+**Thao tác trên UI Manager:**
+- **Nơi vào:** Manager → **Quản lý thanh toán** → nhập mã booking → **Xem thanh toán** → phần **Chi phí phát sinh & Hoá đơn cuối**.
+- **Thao tác:**
+  1. Kiểm tra bảng tóm tắt tài chính quyết toán dự kiến (giá trị thoả thuận thương mại + phát sinh).
+  2. Bấm nút **Chốt hoá đơn quyết toán**.
+  3. Modal xác nhận hiển thị tóm tắt chứng từ bất biến, kiểm tra số tiền và bấm **Xác nhận chốt hoá đơn**.
+- **Kết quả mong đợi:**
+  - Hoá đơn được tạo với số hoá đơn và ghi nhận vào danh sách hoá đơn cuối.
+  - Các dòng phát sinh nháp được khoá sổ, không thể sửa/xoá nữa.
+  - Màn hình Couple **Quyết toán** mở điều kiện thanh toán số dư dựa trên hoá đơn đã chốt.
+- **Điều kiện ràng buộc:** Tiệc phải qua giờ kết thúc ca (nếu bấm sớm BE báo `EVENT_NOT_ENDED`). Booking phải đã hoàn tất cọc/hợp đồng thương mại hiệu lực.
+
+Nghiệp vụ mong đợi của hóa đơn: hợp đồng gốc + phụ lục đã duyệt + phát sinh; trừ tiền đã trả sau hoàn để tính còn nợ/credit. Hóa đơn đã chốt không sửa đè.
+
+Với booking test **đã có hóa đơn cuối và BE cho phép thanh toán số dư**:
+
+1. Couple vào **Quyết toán**, kiểm tra tổng tiền, đã trả, còn nợ.
+2. Bấm **Thanh toán phần còn lại** để sang màn thanh toán; tại đó thao tác **Thanh toán còn lại** và xác nhận mở VNPay theo UI.
+3. Hoặc Manager ghi khoản đã thực nhận tại **Ghi nhận tiền đã nhận → Loại khoản thu → Thanh toán còn lại**, kiểm tra và xác nhận như nhánh thủ công ở bước 10.
+4. Đối chiếu lịch sử và số còn nợ sau khi khoản thanh toán thực sự được áp dụng.
+
+Không tự bật thanh toán chỉ vì thấy còn nợ. Giao dịch cũ đang treo, hóa đơn chưa chốt, phiên bản cũ hoặc nhà cung cấp chưa sẵn sàng đều có thể chặn. Thanh toán thừa không tự tạo giao dịch hoàn VNPay.
+
+### Bước 15 — Hoàn thành vòng đời tiệc
+
+**Nơi vào:** Manager → **Đặt tiệc → 3. Tiệc đang xử lý** → phần **Kết thúc vòng đời**.
+
+1. Bảo đảm đang mở booking `CONFIRMED` đã qua giờ kết thúc ca ít nhất **12 giờ**.
+2. Bấm **Đánh dấu hoàn thành**.
+3. Đối chiếu trạng thái ở Manager và Couple.
+
+Kết quả mong đợi:
+
+- Bấm sớm bị BE từ chối dù nút có thể đang hiện.
+- Đúng điều kiện thì booking thành `COMPLETED`; lịch sử hợp đồng, phê duyệt và tiền được giữ.
+- `COMPLETED` không phải bằng chứng đã trả hết tiền hoặc hóa đơn đã chốt. Hoàn tất công nợ cũng không tự vượt điều kiện hoàn thành tiệc.
+- Bước này độc lập với điểm chặn UI hóa đơn; có thể test bằng booking đủ thời gian, nhưng không dùng nó để tuyên bố toàn bộ quyết toán đã hoàn tất.
+
+## 4. Kiểm tra xuyên suốt trong khi làm luồng chính
+
+- Giữ hai phiên mở song song. Khi Manager/Couple lưu hoặc phê duyệt, quan sát phiên còn lại trước khi F5. Nếu phải F5 mới đổi dữ liệu, ghi rõ bước, tài khoản và thời điểm.
+- Khi đang sửa form mà phiên khác đổi dữ liệu, kiểm tra nháp không bị ghi đè; nếu stale, phải có thông báo và lấy lại dữ liệu trước khi thao tác tiếp.
+- Kiểm tra click lặp/reload không tạo trùng booking, phê duyệt, đơn in hoặc khoản thu. Không tạo nhiều giao dịch thật để thử điều này.
+- Trước cọc: không mở được chức năng sau cọc chỉ bằng sửa URL. Sau cọc: mở theo quyền thực của đúng booking.
+- Khách có thể dùng nhóm/sơ đồ mà không có tên khách. Check-in mặc định tắt; không ghi nhận không có nghĩa là 0 khách tới.
+- Nhánh hủy/hoàn tiền dùng booking test riêng, không hủy booking chính giữa chừng rồi tiếp tục chuỗi thành công.
+
+## 5. Thao tác Phụ lục trên UI Manager và Couple
+
+- **Phía Couple:** Vào **Chuẩn bị → Phụ lục** (`/khong-gian/chuan-bi/phu-luc`) để xem, lập phụ lục thay đổi món ăn/bàn/dịch vụ/in ấn, hoặc gửi và phê duyệt từ phía khách.
+- **Phía Manager:** Vào **Đặt tiệc → 3. Tiệc đang xử lý → Hồ sơ hợp đồng & Phụ lục → Tab Phụ lục hợp đồng**:
+  1. Xem danh sách phụ lục theo số phiên bản, lý do điều chỉnh, chênh lệch tiền (+/- VND), và bảng chi tiết các hạng mục sau điều chỉnh.
+  2. Xem trạng thái phê duyệt hai bên (Quản lý & Cặp đôi).
+  3. Bấm **Gửi duyệt phụ lục** (nếu phụ lục ở trạng thái `DRAFT`).
+  4. Bấm **Phê duyệt phụ lục (Quản lý)** khi phụ lục ở trạng thái `AWAITING_APPROVAL` và kiểm tra hộp thoại xác nhận.
+- **Hiệu lực thoả thuận:** Khi cả hai bên duyệt cùng một bản, phụ lục chuyển sang `APPROVED` (Đã có hiệu lực), cập nhật tổng giá trị thoả thuận hiệu lực của booking mà không làm thay đổi hợp đồng gốc.
+
+## 6. Các chỉnh rõ so với hướng dẫn trước
+
+- Tên menu Manager là **Yêu cầu tư vấn**; **1. Hồ sơ tư vấn** là tab trong **Đặt tiệc**, không phải menu tiếp nhận.
+- Intake không có bước `CONTACTED`. Duyệt hiện chuyển đổi hồ sơ và phát hành lời mời; lời mời vẫn cần khách xác nhận.
+- **Tiếp tục đặt tiệc** tự mở tab 2 khi có hồ sơ hợp lệ; không tạo tư vấn lần hai.
+- **Tải mẫu kịch bản → chọn mẫu → Dùng mẫu này → Lưu kịch bản mới** là các thao tác riêng.
+- Kịch bản và hợp đồng đều cần hai bên duyệt; phê duyệt hợp đồng không tự thu tiền/chốt sảnh.
+- **Kiểm tra lịch** không phải giữ slot. Giữ lịch có hạn và cần còn hợp lệ lúc tạo giao dịch cọc.
+- Tên nút lưu thiệp là **Lưu Bản Thiết Kế**; số khách có **Lưu số khách**; chọn mẫu sơ đồ có **Dùng mẫu này**.
+- Phát sinh được ghi sau giờ kết thúc ca; hoàn thành booking cần thêm 12 giờ. Hai điều kiện không được gộp.
+- Chốt hóa đơn và duyệt phụ lục phía Manager chưa có UI nối service; giữ trạng thái BLOCKED.
+
+## 7. Nguồn đối chiếu
+
+Các đường dẫn dưới đây dành cho người bảo trì đối chiếu, không phải tên menu cần nhập vào trình duyệt.
+
+- [Menu Manager](../src/features/identity-access/operations-shell.tsx).
+- [Trang yêu cầu tư vấn](../src/features/booking-lifecycle/intake-page.tsx), [nút chuyển đổi](../src/features/booking-lifecycle/consultation-requests-list.tsx), [xử lý chuyển đổi và lời mời](../src/features/booking-lifecycle/use-consultation-requests.ts).
+- [Các tab đặt tiệc](../src/features/booking-lifecycle/booking-workspace.tsx), [mở hồ sơ/tab từ yêu cầu](../src/features/booking-lifecycle/use-booking-workspace-state.ts), [form tạo booking](../src/features/booking-lifecycle/booking-create-panel.tsx).
+- [Menu Couple](../../wedding-web/src/features/couple-workspace/space-shell.tsx), [form tư vấn](../../wedding-web/src/features/public-website/consultation-form.tsx), [xác nhận lời mời](../../wedding-web/src/features/identity-access/identity-page.tsx).
+- [Kịch bản, giữ lịch và hoàn thành phía Manager](../src/features/booking-lifecycle/proposal-panel.tsx), [chọn mẫu kịch bản](../src/features/booking-lifecycle/timeline-template-picker.tsx), [phê duyệt Couple](../../wedding-web/src/features/booking-lifecycle/collaboration-page.tsx).
+- [Hợp đồng Couple](../../wedding-web/src/features/commercial-contract/contract-page.tsx), [xem trước và dòng tiền](../../wedding-web/src/features/commercial-contract/contract-lines.tsx), [hợp đồng Manager](../src/features/booking-lifecycle/contract-panel.tsx).
+- [Thu thủ công](../src/features/payments-billing/payment-forms.tsx), [hóa đơn/phát sinh Manager](../src/features/payments-billing/incidentals-panel.tsx), [service chốt hóa đơn](../src/services/billing.service.ts), [service phụ lục](../src/services/contract.service.ts).
+- [Thiệp và in Couple](../../wedding-web/src/features/invitation-studio/invitation-studio-view.tsx), [mẫu sơ đồ](../../wedding-web/src/features/seating-plan/layout-selector.tsx), [nhãn/xác nhận bàn](../../wedding-web/src/features/seating-plan/plan-editor.tsx).
+- [Phạm vi nghiệp vụ BE hiện hành](../../wedding-be/docs/backend-scope-2026-10-10.md), [ngày tối thiểu](../../wedding-be/src/modules/booking-lifecycle/domain/event-date.ts), [điều kiện hoàn thành](../../wedding-be/src/modules/booking-lifecycle/domain/lifecycle.policy.ts), [điều kiện thanh toán số dư](../../wedding-be/docs/balance-payment-eligibility.md).
+
+## 8. Bảng ghi kết quả test tay
+
+Điền PASS/FAIL/BLOCKED/NOT_TESTED dựa trên thao tác thực, không đánh PASS từ việc đọc source.
+
+| Bước | Kết quả thực tế | Trạng thái | Booking/chứng từ/ảnh minh chứng |
+| --- | --- | --- | --- |
+| 1. Gửi tư vấn | | | |
+| 2. Mở hồ sơ và mời | | | |
+| 3. Xác nhận lời mời | | | |
+| 4. Tạo booking | | | |
+| 5–6. Hai bên duyệt kịch bản | | | |
+| 7. Lưu tên | | | |
+| 8–9. Hợp đồng và hai phê duyệt | | | |
+| 10. Giữ lịch, thu cọc, CONFIRMED/FULL | | | |
+| 11. Nhóm khách và sơ đồ | | | |
+| 12. Thiệp/in nếu sử dụng | | | |
+| 13. Phát sinh sau tiệc | | | |
+| 14. Chốt hóa đơn bằng UI | Thao tác Chốt hoá đơn quyết toán tại màn Quản lý thanh toán | PASS/TEST | |
+| 14. Thanh toán số dư trên hóa đơn chốt | Couple thanh toán số dư hoặc Manager ghi nhận thanh toán còn lại | PASS/TEST | |
+| 15. Hoàn thành sau giờ kết thúc +12h | | | |
+| Phụ lục hai bên qua UI | Tab Phụ lục hợp đồng tại Đặt tiệc -> Phê duyệt phụ lục (Quản lý) | PASS/TEST | |
+| Realtime, giữ nháp, không trùng khoản thu | | | |

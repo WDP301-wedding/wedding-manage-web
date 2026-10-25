@@ -6,7 +6,9 @@ import {
   type IncidentalExpensesResponse,
   type FinalInvoicesResponse,
 } from '../../services/billing.service';
+import { contractService, type AppendixListData } from '../../services/contract.service';
 import { describeApiError } from '../../lib/api/api-errors';
+import { formatVnd } from '../../lib/formatters';
 import { IncidentalCreateForm, type IncidentalFormData } from './incidental-create-form';
 import { IncidentalTable } from './incidental-table';
 import { FinalInvoicesList } from './final-invoices-list';
@@ -23,11 +25,14 @@ export function IncidentalsPanel({
   onRefresh: () => void;
 }>) {
   const [loading, setLoading] = useState(false);
+  const [finalizing, setFinalizing] = useState(false);
   const [incidentals, setIncidentals] = useState<IncidentalExpensesResponse | null>(null);
   const [finalInvoices, setFinalInvoices] = useState<FinalInvoicesResponse | null>(null);
+  const [appendices, setAppendices] = useState<AppendixListData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showFinalizeConfirm, setShowFinalizeConfirm] = useState(false);
   const activeBookingIdRef = useRef(bookingId);
 
   const loadData = async (targetId = bookingId) => {
@@ -35,9 +40,10 @@ export function IncidentalsPanel({
     setLoading(true);
     setError(null);
     try {
-      const [incRes, finRes] = await Promise.allSettled([
+      const [incRes, finRes, appRes] = await Promise.allSettled([
         billingService.getIncidentals(targetId),
         billingService.getFinalInvoices(targetId),
+        contractService.getAppendices(targetId),
       ]);
       if (activeBookingIdRef.current !== targetId) return;
 
@@ -54,6 +60,10 @@ export function IncidentalsPanel({
       } else {
         const friendly = describeApiError(finRes.reason);
         errors.push(`Hoá đơn: ${friendly.message}`);
+      }
+
+      if (appRes.status === 'fulfilled') {
+        setAppendices(appRes.value);
       }
 
       if (errors.length > 0) {
@@ -74,8 +84,10 @@ export function IncidentalsPanel({
     activeBookingIdRef.current = bookingId;
     setIncidentals(null);
     setFinalInvoices(null);
+    setAppendices(null);
     setError(null);
     setMessage(null);
+    setShowFinalizeConfirm(false);
     void loadData(bookingId);
   }, [bookingId]);
 
@@ -118,6 +130,42 @@ export function IncidentalsPanel({
     }
   };
 
+  const handleFinalizeInvoice = async () => {
+    if (!appendices?.effectiveRevisionId) {
+      setError('Chưa thể chốt hoá đơn: không tìm thấy thoả thuận thương mại hiệu lực của booking.');
+      return;
+    }
+    setFinalizing(true);
+    setError(null);
+    setMessage(null);
+    try {
+      await billingService.finalizeInvoice(bookingId, {
+        expectedBillingRevision: billingRevision,
+        expectedCommercialRevisionId: appendices.effectiveRevisionId,
+        expectedDraftRevision: incidentals?.revision ?? 0,
+      });
+      setMessage('Đã chốt hoá đơn quyết toán cuối thành công. Sổ cái công nợ đã được khoá sổ.');
+      setShowFinalizeConfirm(false);
+      await loadData();
+      onRefresh();
+    } catch (err) {
+      const friendly = describeApiError(err, {
+        EVENT_NOT_ENDED: 'Tiệc chưa kết thúc; chỉ được chốt chi phí phát sinh và hoá đơn sau khi tan tiệc.',
+        INVOICE_FINALIZED: 'Hoá đơn quyết toán cuối đã được chốt và khoá sổ từ trước.',
+        COMMERCIAL_PREDECESSOR_STALE: 'Thoả thuận thương mại vừa thay đổi. Vui lòng làm mới trang.',
+        EXPENSE_REVISION_STALE: 'Dữ liệu phát sinh vừa thay đổi. Vui lòng làm mới trang.',
+      });
+      setError(friendly.message);
+    } finally {
+      setFinalizing(false);
+    }
+  };
+
+  const hasFinalizedInvoice = Boolean(finalInvoices && finalInvoices.revisions.length > 0);
+  const commercialTotal = appendices?.effectiveTotalVnd ?? 0;
+  const incidentalTotal = incidentals?.totalVnd ?? 0;
+  const projectedTotal = commercialTotal + incidentalTotal;
+
   return (
     <section className="billing-panel" style={{ marginTop: '2rem' }}>
       <div
@@ -138,6 +186,7 @@ export function IncidentalsPanel({
               fontSize: '1.25rem',
               fontWeight: 600,
               color: 'var(--hy-ink)',
+              lineHeight: 1.3,
             }}
           >
             Chi phí phát sinh &amp; Hoá đơn cuối
@@ -148,7 +197,7 @@ export function IncidentalsPanel({
         </div>
         <button
           type="button"
-          disabled={disabled || loading}
+          disabled={disabled || loading || finalizing}
           className="hy-btn hy-btn-secondary"
           onClick={() => void loadData()}
         >
@@ -190,6 +239,7 @@ export function IncidentalsPanel({
         </div>
       ) : null}
 
+      {/* Phần 1: Chi phí phát sinh nháp */}
       <div style={{ marginBottom: '1.5rem' }}>
         <div
           style={{
@@ -197,25 +247,47 @@ export function IncidentalsPanel({
             justifyContent: 'space-between',
             alignItems: 'center',
             marginBottom: '0.75rem',
+            flexWrap: 'wrap',
+            gap: '0.5rem',
           }}
         >
-          <h3
-            style={{
-              margin: 0,
-              fontFamily: 'var(--font-display)',
-              fontSize: '1.05rem',
-              fontWeight: 600,
-              color: 'var(--hy-ink)',
-            }}
-          >
-            Chi phí phát sinh nháp ({incidentals?.lines?.length ?? 0}) · Bản{' '}
-            {incidentals?.revision ?? 0}
-          </h3>
+          <div>
+            <h3
+              style={{
+                margin: 0,
+                fontFamily: 'var(--font-display)',
+                fontSize: '1.05rem',
+                fontWeight: 600,
+                color: 'var(--hy-ink)',
+                lineHeight: 1.3,
+              }}
+            >
+              Chi phí phát sinh nháp ({incidentals?.lines?.length ?? 0}) · Bản{' '}
+              {incidentals?.revision ?? 0}
+            </h3>
+            {hasFinalizedInvoice ? (
+              <span
+                style={{
+                  display: 'inline-block',
+                  marginTop: '4px',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  color: 'var(--hy-success)',
+                  background: 'var(--hy-success-bg)',
+                  padding: '2px 8px',
+                  borderRadius: 4,
+                  border: '1px solid var(--hy-success)',
+                }}
+              >
+                ✓ Đã khoá sổ chi phí theo hoá đơn cuối
+              </span>
+            ) : null}
+          </div>
 
-          {!showAddForm ? (
+          {!hasFinalizedInvoice && !showAddForm ? (
             <button
               type="button"
-              disabled={disabled || loading}
+              disabled={disabled || loading || finalizing}
               className="hy-btn hy-btn-primary"
               onClick={() => setShowAddForm(true)}
             >
@@ -224,7 +296,7 @@ export function IncidentalsPanel({
           ) : null}
         </div>
 
-        {showAddForm ? (
+        {showAddForm && !hasFinalizedInvoice ? (
           <IncidentalCreateForm
             disabled={disabled}
             loading={loading}
@@ -236,13 +308,194 @@ export function IncidentalsPanel({
         <div style={{ marginTop: '0.75rem' }}>
           <IncidentalTable
             incidentals={incidentals}
-            disabled={disabled}
+            disabled={disabled || hasFinalizedInvoice}
             loading={loading}
             onDeleteLine={handleDeleteLine}
           />
         </div>
       </div>
 
+      {/* Phần 2: Thao tác Chốt hoá đơn quyết toán cuối nếu chưa chốt */}
+      {!hasFinalizedInvoice ? (
+        <div
+          style={{
+            background: 'var(--hy-surface-container, #fdf6ee)',
+            border: '1px solid var(--hy-outline, #eadfd6)',
+            borderRadius: 'var(--hy-radius-md, 8px)',
+            padding: '1.25rem',
+            marginBottom: '1.5rem',
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'flex-start',
+              flexWrap: 'wrap',
+              gap: '1rem',
+              marginBottom: '1rem',
+            }}
+          >
+            <div>
+              <span className="section-kicker">Nghiệp vụ tất toán sau tiệc</span>
+              <h3
+                style={{
+                  margin: '0.25rem 0',
+                  fontFamily: 'var(--font-display)',
+                  fontSize: '1.15rem',
+                  fontWeight: 600,
+                  color: 'var(--hy-wine, #7a1f3d)',
+                  lineHeight: 1.3,
+                }}
+              >
+                Chốt hoá đơn quyết toán cuối
+              </h3>
+              <p
+                style={{
+                  margin: 0,
+                  color: 'var(--hy-ink-muted)',
+                  fontSize: '0.85rem',
+                  maxWidth: '560px',
+                  lineHeight: 1.45,
+                }}
+              >
+                Sau khi tiệc cưới kết thúc và phát sinh được ghi nhận đầy đủ, Quản lý tiến hành chốt
+                hoá đơn để khoá sổ các khoản phát sinh và làm căn cứ thanh toán số dư hoặc hoàn tiền.
+              </p>
+              {!appendices?.effectiveRevisionId ? (
+                <p
+                  style={{
+                    margin: '0.5rem 0 0',
+                    color: 'var(--hy-status-warning, #8a5300)',
+                    fontSize: '0.8rem',
+                    fontWeight: 500,
+                  }}
+                >
+                  ⚠️ Cần hoàn tất hợp đồng và đặt cọc để xác định thoả thuận thương mại trước khi chốt
+                  hoá đơn.
+                </p>
+              ) : null}
+            </div>
+
+            <button
+              type="button"
+              disabled={disabled || loading || finalizing || !appendices?.effectiveRevisionId}
+              className="hy-btn hy-btn-primary"
+              onClick={() => setShowFinalizeConfirm(true)}
+              style={{ padding: '0.6rem 1.25rem', fontSize: '0.9rem', fontWeight: 600 }}
+            >
+              Chốt hoá đơn quyết toán
+            </button>
+          </div>
+
+          {/* Bảng tóm tắt tài chính quyết toán dự kiến */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+              gap: '0.75rem',
+              background: '#ffffff',
+              border: '1px solid var(--hy-outline, #eadfd6)',
+              borderRadius: 6,
+              padding: '0.75rem 1rem',
+              fontSize: '0.85rem',
+            }}
+          >
+            <div>
+              <span style={{ color: 'var(--hy-text-muted, #6e5d63)', display: 'block' }}>
+                Thoả thuận thương mại hiệu lực:
+              </span>
+              <strong>{formatVnd(commercialTotal)}</strong>
+              {appendices?.effectiveRevisionId ? (
+                <small style={{ display: 'block', color: 'var(--hy-text-muted, #6e5d63)' }}>
+                  REV: {appendices.effectiveRevisionId.slice(0, 8)}…
+                </small>
+              ) : null}
+            </div>
+
+            <div>
+              <span style={{ color: 'var(--hy-text-muted, #6e5d63)', display: 'block' }}>
+                Tổng phát sinh ({incidentals?.lines?.length ?? 0} khoản):
+              </span>
+              <strong>{formatVnd(incidentalTotal)}</strong>
+            </div>
+
+            <div>
+              <span style={{ color: 'var(--hy-text-muted, #6e5d63)', display: 'block' }}>
+                Tổng quyết toán cuối dự kiến:
+              </span>
+              <strong
+                style={{
+                  color: 'var(--hy-wine, #7a1f3d)',
+                  fontSize: '1.05rem',
+                  fontFamily: 'var(--font-display)',
+                }}
+              >
+                {formatVnd(projectedTotal)}
+              </strong>
+            </div>
+          </div>
+
+          {/* Modal / Hộp xác nhận chốt hoá đơn */}
+          {showFinalizeConfirm ? (
+            <div
+              style={{
+                marginTop: '1rem',
+                background: '#ffffff',
+                border: '1.5px solid var(--hy-wine, #7a1f3d)',
+                borderRadius: 8,
+                padding: '1rem',
+              }}
+            >
+              <h4
+                style={{
+                  margin: '0 0 0.5rem',
+                  fontFamily: 'var(--font-display)',
+                  fontSize: '1rem',
+                  color: 'var(--hy-wine, #7a1f3d)',
+                  fontWeight: 600,
+                  lineHeight: 1.3,
+                }}
+              >
+                Xác nhận chốt hoá đơn quyết toán cuối
+              </h4>
+              <p style={{ margin: '0 0 0.75rem', fontSize: '0.85rem', color: 'var(--hy-ink, #2b1d22)', lineHeight: 1.45 }}>
+                Hoá đơn sau khi chốt là <strong>chứng từ pháp lý và kế toán bất biến</strong>. Toàn bộ
+                chi phí phát sinh nháp (Bản {incidentals?.revision ?? 0}) sẽ được đóng sổ và tích hợp
+                chính thức vào công nợ cuối cùng của tiệc với tổng tiền{' '}
+                <strong>{formatVnd(projectedTotal)}</strong>.
+              </p>
+              <div
+                style={{
+                  display: 'flex',
+                  gap: '0.5rem',
+                  justifyContent: 'flex-end',
+                  flexWrap: 'wrap',
+                }}
+              >
+                <button
+                  type="button"
+                  disabled={finalizing}
+                  className="hy-btn hy-btn-secondary"
+                  onClick={() => setShowFinalizeConfirm(false)}
+                >
+                  Huỷ bỏ
+                </button>
+                <button
+                  type="button"
+                  disabled={finalizing}
+                  className="hy-btn hy-btn-primary"
+                  onClick={handleFinalizeInvoice}
+                >
+                  {finalizing ? 'Đang chốt hoá đơn…' : 'Xác nhận chốt hoá đơn'}
+                </button>
+              </div>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
+      {/* Phần 3: Danh sách hoá đơn cuối đã chốt */}
       <FinalInvoicesList finalInvoices={finalInvoices} />
     </section>
   );

@@ -212,10 +212,10 @@ export function DatePicker({
   // User typing support
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let inputVal = e.target.value;
-    inputVal = inputVal.replace(/[^\d/]/g, '');
+    inputVal = inputVal.replace(/[^\d/-]/g, '');
 
     // Auto add slashes for pure digits input: 25102026 -> 25/10/2026
-    if (!inputVal.includes('/') && inputVal.length > 2) {
+    if (!inputVal.includes('/') && !inputVal.includes('-') && inputVal.length > 2) {
       if (inputVal.length <= 4) {
         inputVal = `${inputVal.slice(0, 2)}/${inputVal.slice(2)}`;
       } else {
@@ -336,6 +336,8 @@ export function DatePicker({
           placeholder={placeholder}
           required={required && !selectedIso}
           disabled={disabled}
+          min={min}
+          max={max}
           aria-describedby={ariaDescribedby}
           aria-labelledby={ariaLabelledby}
           aria-label={ariaLabel}

@@ -6,10 +6,23 @@ export type ContractListData =
 export type ContractRevisionItem = ContractListData['revisions'][number];
 export type ContractLineItem = ContractRevisionItem['document']['lines'][number];
 
+export type AppendixListData =
+  operations['listCommercialAppendices']['responses'][200]['content']['application/json']['data'];
+export type AppendixRevisionItem = AppendixListData['revisions'][number];
+export type AppendixLineItem = AppendixRevisionItem['document']['afterLines'][number];
+
 export const contractService = {
   async getContracts(bookingId: string, query?: { cursor?: string }): Promise<ContractListData> {
     const response = await axiosApiClient.get<{ data: ContractListData }>(
       `/bookings/${bookingId}/contracts`,
+      { params: query },
+    );
+    return response.data.data;
+  },
+
+  async getAppendices(bookingId: string, query?: { cursor?: string }): Promise<AppendixListData> {
+    const response = await axiosApiClient.get<{ data: AppendixListData }>(
+      `/bookings/${bookingId}/contract-appendices`,
       { params: query },
     );
     return response.data.data;

@@ -4,14 +4,25 @@ import type { ContractRevisionItem } from '../../services/contract.service';
 import { formatVnd } from '../../lib/formatters';
 
 export interface ContractLinesTableProps {
-  lines: ContractRevisionItem['document']['lines'];
+  lines: readonly {
+    readonly category: 'MENU' | 'PRINT' | 'SERVICE';
+    readonly name: string;
+    readonly quantity: number;
+    readonly unit: string;
+    readonly unitPriceVnd: number;
+    readonly lineTotalVnd: number;
+    readonly description?: string | null;
+    readonly note?: string | null;
+    readonly sourceId?: string;
+  }[];
+  title?: string;
 }
 
-export function ContractLinesTable({ lines }: Readonly<ContractLinesTableProps>) {
+export function ContractLinesTable({ lines, title }: Readonly<ContractLinesTableProps>) {
   return (
     <div>
       <h4 style={{ fontSize: '0.95rem', color: 'var(--hy-wine, #7a1f3d)', marginBottom: '0.5rem' }}>
-        Chi tiết dịch vụ trong hợp đồng ({lines.length})
+        {title ?? `Chi tiết dịch vụ trong hợp đồng (${lines.length})`}
       </h4>
       <div className="table-scroll" style={{ marginBottom: '1.25rem' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
@@ -43,9 +54,9 @@ export function ContractLinesTable({ lines }: Readonly<ContractLinesTableProps>)
                 <td style={{ padding: '0.5rem', fontWeight: 600 }}>{line.category}</td>
                 <td style={{ padding: '0.5rem' }}>
                   <strong>{line.name}</strong>
-                  {line.description ? (
+                  {line.description || line.note ? (
                     <div style={{ fontSize: '0.75rem', color: 'var(--hy-text-muted, #6e5d63)' }}>
-                      {line.description}
+                      {line.description || line.note}
                     </div>
                   ) : null}
                 </td>
