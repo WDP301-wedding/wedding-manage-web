@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 
 import { createVenueCatalogGateway } from '../venue-catalog/catalog-api';
-import { field, money } from './booking-helpers';
+import { field, formatDate, money } from './booking-helpers';
 import { ContractPanel } from './contract-panel';
 import type { Authorize, ManagementBookingGateway, ProposalView } from './booking-api';
 import { TimelineEditor } from './timeline-editor';
@@ -48,7 +48,7 @@ export function ProposalPanel({
         </div>
         <h3>{proposal.proposal.hall.name}</h3>
         <p>
-          {proposal.eventDate} · {proposal.proposal.shift.startTime}–
+          {formatDate(proposal.eventDate)} · {proposal.proposal.shift.startTime}–
           {proposal.proposal.shift.endTime}
         </p>
         <dl>

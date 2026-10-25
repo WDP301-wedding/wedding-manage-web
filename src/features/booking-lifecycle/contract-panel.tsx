@@ -1,6 +1,7 @@
 'use client';
 
 import { formatVnd } from '../../lib/formatters';
+import { formatDate } from './booking-helpers';
 import { ContractLinesTable } from './contract-lines-table';
 import { contractStyles } from './contract.styles';
 import { useContractPanel } from './use-contract-panel';
@@ -89,7 +90,7 @@ export function ContractPanel({
             <div>
               <small style={contractStyles.metaSmall}>Sảnh &amp; Ngày tiệc</small>
               <strong>
-                {currentRevision.document.hallName} ({currentRevision.document.eventDate})
+                {currentRevision.document.hallName} ({formatDate(currentRevision.document.eventDate)})
               </strong>
             </div>
             <div>

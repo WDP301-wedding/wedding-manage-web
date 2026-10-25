@@ -5,6 +5,7 @@ import { minimumEventDate, useMinimumEventDate } from '../../lib/event-date';
 import type { BookingPrefill } from './booking-helpers';
 import { field, formatDateTime, money } from './booking-helpers';
 import { bookingStyles } from './booking.styles';
+import { DatePicker } from '../../design-system/date-picker';
 import type { Authorize, BookingSelections, ManagementBookingGateway } from './booking-api';
 
 export interface BookingCreatePanelProps {
@@ -110,7 +111,11 @@ export function BookingCreatePanel({
       return false;
     }
     const date = field(new FormData(form), 'eventDate');
-    if (date !== '' && date < minimumEventDate()) {
+    if (!date) {
+      onValidationError('Vui lòng chọn ngày tổ chức.');
+      return false;
+    }
+    if (date < minimumEventDate()) {
       onValidationError(
         'Ngày tổ chức phải từ ngày mốt trở đi (theo giờ Việt Nam). Hãy chọn lại ngày.',
       );
@@ -268,14 +273,13 @@ export function BookingCreatePanel({
         <div className="booking-fields-inline">
           <label>
             <span id="booking-date-label">Ngày tổ chức</span>
-            <input
+            <DatePicker
               key={`eventDate-${prefill?.eventDate ?? ''}`}
               name="eventDate"
-              type="date"
               min={minimumDate}
               defaultValue={prefill?.eventDate ?? ''}
-              aria-labelledby="booking-date-label"
-              aria-describedby="booking-date-help"
+              ariaLabelledby="booking-date-label"
+              ariaDescribedby="booking-date-help"
               required
             />
             <small id="booking-date-help">Chọn ngày mốt hoặc muộn hơn (theo giờ Việt Nam).</small>

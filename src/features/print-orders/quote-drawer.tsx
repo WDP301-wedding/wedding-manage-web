@@ -5,6 +5,7 @@ import { useMemo, useRef, useState } from 'react';
 import { useFocusTrap } from './focus-trap';
 import { XIcon } from './icons';
 import { printOrderStyles } from './print-orders.styles';
+import { DatePicker } from '../../design-system/date-picker';
 import {
   computeQuotedLineTotal,
   formatVnd,
@@ -280,12 +281,11 @@ export function QuoteDrawer({
               Ngày dự kiến bàn giao (giờ kinh doanh 17:00 VN)
             </label>
             <div className="v0-date-wrapper">
-              <input
+              <DatePicker
                 id="handover-date-input"
-                type="date"
-                className={`v0-input ${dateError ? 'v0-input-error' : ''}`}
                 value={handoverDate}
-                onChange={(e) => handleDateChange(e.target.value)}
+                onChange={handleDateChange}
+                hasError={Boolean(dateError)}
                 required
               />
               <span className="v0-input-hint">Đảm bảo tối thiểu 5 ngày làm việc để xưởng in hoàn thiện</span>

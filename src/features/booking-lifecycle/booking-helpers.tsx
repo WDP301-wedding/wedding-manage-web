@@ -47,6 +47,22 @@ export function formatDateTime(value: string): string {
   );
 }
 
+export function formatDate(value: string): string {
+  if (!value) return '';
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (match) {
+    const [, y, m, d] = match;
+    return `${d}/${m}/${y}`;
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(date);
+}
+
 export function field(data: FormData, name: string): string {
   const value = data.get(name);
   return typeof value === 'string' ? value : '';
