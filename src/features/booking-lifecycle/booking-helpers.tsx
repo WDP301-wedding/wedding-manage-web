@@ -19,7 +19,52 @@ export type BookingPrefill = Readonly<{
   eventDate?: string | undefined;
   expectedGuests?: number | undefined;
   tableCount?: number | undefined;
+  preferredHallName?: string | undefined;
+  preferredMenuName?: string | undefined;
+  preferredShift?: 'LUNCH' | 'DINNER' | undefined;
 }>;
+
+export function normalizeSearch(str: string): string {
+  return str
+    .toLowerCase()
+    .normalize('NFC')
+    .replace(/^sảnh\s+/iu, '')
+    .replace(/^thực đơn\s+/iu, '')
+    .trim();
+}
+
+export function parseConsultationChoices(text: string | null | undefined): {
+  hallName?: string;
+  menuName?: string;
+  shift?: 'LUNCH' | 'DINNER';
+} {
+  if (!text) return {};
+  const result: { hallName?: string; menuName?: string; shift?: 'LUNCH' | 'DINNER' } = {};
+
+  const hallMatch = text.match(/Sảnh\s*(?:quan tâm|mong muốn)?:\s*([^\n\r]+)/iu);
+  const hallVal = hallMatch?.[1]?.trim();
+  if (hallVal) {
+    result.hallName = hallVal;
+  }
+
+  const menuMatch = text.match(/Thực đơn\s*(?:quan tâm|mong muốn|đặt tiệc)?:\s*([^\n\r]+)/iu);
+  const menuVal = menuMatch?.[1]?.trim();
+  if (menuVal) {
+    result.menuName = menuVal;
+  }
+
+  const shiftMatch = text.match(/Ca\s*(?:mong muốn)?:\s*([^\n\r]+)/iu);
+  const shiftVal = shiftMatch?.[1]?.trim().toLowerCase();
+  if (shiftVal) {
+    if (shiftVal.includes('trưa') || shiftVal.includes('lunch')) {
+      result.shift = 'LUNCH';
+    } else if (shiftVal.includes('tối') || shiftVal.includes('dinner')) {
+      result.shift = 'DINNER';
+    }
+  }
+
+  return result;
+}
 
 export function PageState({
   children,

@@ -8,8 +8,14 @@ export function RequestClosureDialog({
   const dialog = useRef<HTMLDialogElement>(null);
   useEffect(() => {
     const element = dialog.current;
-    element?.showModal();
-    return () => element?.close();
+    if (typeof element?.showModal === 'function') {
+      element.showModal();
+    }
+    return () => {
+      if (typeof element?.close === 'function') {
+        element.close();
+      }
+    };
   }, []);
   return (
     <dialog

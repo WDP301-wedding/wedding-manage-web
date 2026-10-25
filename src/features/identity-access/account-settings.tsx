@@ -229,7 +229,6 @@ export function AccountSettings({
                 name="newPassword"
                 required
                 type="password"
-                minLength={12}
                 maxLength={128}
                 autoComplete="new-password"
               />
@@ -240,7 +239,6 @@ export function AccountSettings({
                 name="confirmation"
                 required
                 type="password"
-                minLength={12}
                 maxLength={128}
                 autoComplete="new-password"
               />
@@ -262,7 +260,7 @@ export function AccountSettings({
               </label>
             )}
             <p className="operations-account-help">
-              Dùng 12–128 ký tự. Sau khi đổi, bạn cần đăng nhập lại trên các thiết bị.
+              Mật khẩu tối đa 128 ký tự. Sau khi đổi, bạn cần đăng nhập lại trên các thiết bị.
             </p>
             <button
               className="primary-button"

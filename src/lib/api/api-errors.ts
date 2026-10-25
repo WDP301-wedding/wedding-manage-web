@@ -54,6 +54,9 @@ const codeMessages: Record<string, string> = {
   CONTRACT_PRINT_SOURCE_ALLOCATED:
     'Mẫu in này đã được gửi vào xưởng in nên không thể đổi hoặc huỷ.',
   CONTRACT_PRINT_QUANTITY_ALLOCATED: 'Không thể giảm số lượng in đã đưa vào quy trình sản xuất.',
+  SETTLED_CONTRACT_REQUIRED:
+    'Tiệc này chưa có hợp đồng thương mại gốc. Vui lòng lập và duyệt hợp đồng chính thức trước khi thao tác phụ lục.',
+  APPENDIX_APPROVAL_REQUIRED: 'Phụ lục hợp đồng cần sự phê duyệt đồng thuận từ cả hai bên.',
 
   // Thanh toán, Sổ cái & Hoá đơn
   EVENT_NOT_ENDED:

@@ -325,61 +325,102 @@
 .intake-item:hover {
   box-shadow: 0 6px 24px rgba(122, 31, 61, 0.08);
 }
+.intake-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 0.75rem;
+}
+.intake-header-main {
+  flex: 1 1 320px;
+}
+.intake-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-self: flex-start;
+}
 .intake-item h2 {
   font-size: 1.35rem;
   color: var(--hy-text, #2b1d22);
   margin-top: 0.25rem;
   margin-bottom: 0.35rem;
   font-weight: 700;
+  line-height: 1.3;
 }
 .intake-item dl {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 12px;
-  margin: 1.25rem 0;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+  margin: 1rem 0;
+  background: var(--hy-surface-container, #fdf6ee);
+  padding: 12px 18px;
+  border-radius: 12px;
+  border: 1px solid var(--hy-outline, #eadfd6);
 }
 .intake-item dl > div {
-  background: var(--hy-surface-container, #fdf6ee);
-  padding: 10px 14px;
-  border-radius: 10px;
-  border: 1px solid var(--hy-outline, #eadfd6);
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 .intake-item dt {
   color: var(--hy-text-muted, #6e5d63);
   font-size: 0.75rem;
   font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 .intake-item dd {
-  margin: 4px 0 0;
+  margin: 0;
   color: var(--hy-text, #2b1d22);
   font-size: 0.95rem;
   font-weight: 700;
-}
-.intake-message {
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  background: #faf7f2;
-  border-left: 3px solid var(--hy-wine-gold, #c5a880);
-  border-radius: 0 8px 8px 0;
-  padding: 12px 16px;
-  font-size: 0.9rem;
-  line-height: 1.6;
-  color: var(--hy-text, #2b1d22);
-  margin-top: 1rem;
-}
-.intake-actions {
   display: flex;
   align-items: center;
+  gap: 8px;
   flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 1.25rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--hy-outline, #eadfd6);
 }
+.intake-message-callout {
+  background: #faf7f2;
+  border-left: 3px solid var(--hy-wine-gold, #c5a880);
+  border-radius: 0 10px 10px 0;
+  padding: 12px 18px;
+  margin-top: 1rem;
+  max-width: 920px;
+}
+.intake-message-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.intake-message-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--hy-wine, #7a1f3d);
+}
+.intake-message {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 0.92rem;
+  line-height: 1.6;
+  color: var(--hy-text, #2b1d22);
+}
+.intake-header-actions button,
+.intake-header-actions .booking-primary-link,
 .intake-actions button,
 .intake-actions .booking-primary-link {
-  min-height: 2.5rem;
-  padding: 0.55rem 1.25rem;
+  min-height: 2.35rem;
+  padding: 0.5rem 1.15rem;
   font-size: 0.88rem;
   font-weight: 600;
   border-radius: 10px;

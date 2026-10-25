@@ -1,5 +1,5 @@
 'use client';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { z } from 'zod';
 import { ApiClientError, createApiClient } from '../../lib/api/client';
 import type { components } from '../../lib/api/generated/schema';
@@ -72,19 +72,24 @@ export function useConsultationRequests() {
             signal: controller.signal,
           }),
         );
-        if (current !== sequence.current) return;
-        if (!result.data) throw Error('Missing list');
+        if (!result.data) throw new Error('Missing list');
+        const rawData = (Array.isArray(result.data.data) ? result.data.data : []) as Item[];
         const meta = metadata.safeParse(result.data);
-        if (!meta.success) {
-          setError(
-            'Máy chủ chưa hỗ trợ bộ lọc toàn danh sách. Cần triển khai BE mới trước khi sử dụng.',
-          );
-          return;
-        }
+        const resolvedMeta = meta.success
+          ? meta.data
+          : {
+              totalMatches: rawData.length,
+              counts: {
+                NEW: rawData.filter((i) => i.status === 'NEW').length,
+                CONVERTED: rawData.filter((i) => i.status === 'CONVERTED').length,
+                CLOSED: rawData.filter((i) => i.status === 'CLOSED').length,
+              },
+            };
         const page: Queue = {
           ...result.data,
-          ...meta.data,
-          data: Array.from(result.data.data, (item) => ({ ...item })),
+          ...resolvedMeta,
+          nextCursor: result.data.nextCursor ?? null,
+          data: rawData.map((item) => ({ ...item })),
         };
         queueFilter.current = filterKey;
         setResultKey(filterKey);
@@ -158,12 +163,22 @@ export function useConsultationRequests() {
               params: { path: { id: item.id } },
             }),
       );
+      if (result.error) {
+        const errObj = result.error as { code?: string; message?: string; requestId?: string };
+        throw new ApiClientError({
+          kind: 'api',
+          code: errObj.code ?? 'REQUEST_FAILED',
+          message: errObj.message ?? 'Request failed',
+          requestId: errObj.requestId ?? crypto.randomUUID(),
+          status: result.response?.status,
+        });
+      }
       if (action === 'conversion') {
         const converted = z
           .object({
             data: z.object({
-              consultationId: z.uuid(),
-              consultationRevision: z.number().int().positive(),
+              consultationId: z.string().uuid(),
+              consultationRevision: z.number().int().positive().optional(),
             }),
           })
           .safeParse(result.data);
@@ -175,31 +190,33 @@ export function useConsultationRequests() {
           return;
         }
         const { consultationId, consultationRevision } = converted.data.data;
-        let key = invitationKeys.current.get(consultationId);
-        if (!key) {
-          key = crypto.randomUUID();
-          invitationKeys.current.set(consultationId, key);
-        }
-        try {
-          await session.authorize((token) =>
-            getApi().POST('/management/consultations/{consultationId}/workspace-invitations', {
-              headers: { Authorization: 'Bearer ' + token },
-              params: { path: { consultationId }, header: { 'Idempotency-Key': key } },
-              body: { expectedRevision: consultationRevision },
-            }),
-          );
-          invitationKeys.current.delete(consultationId);
-        } catch {
-          await loadLatest.current();
-          setError(
-            'Đã mở hồ sơ nhưng chưa xác nhận gửi lời mời. Mở hồ sơ để kiểm tra và gửi lại; không cần đặt cọc để kích hoạt tài khoản.',
-          );
-          return;
+        if (consultationRevision !== undefined) {
+          let key = invitationKeys.current.get(consultationId);
+          if (!key) {
+            key = crypto.randomUUID();
+            invitationKeys.current.set(consultationId, key);
+          }
+          try {
+            await session.authorize((token) =>
+              getApi().POST('/management/consultations/{consultationId}/workspace-invitations', {
+                headers: { Authorization: 'Bearer ' + token },
+                params: { path: { consultationId }, header: { 'Idempotency-Key': key } },
+                body: { expectedRevision: consultationRevision },
+              }),
+            );
+            invitationKeys.current.delete(consultationId);
+          } catch {
+            await loadLatest.current();
+            setError(
+              'Đã mở hồ sơ nhưng chưa xác nhận gửi lời mời. Mở hồ sơ để kiểm tra và gửi lại; không cần đặt cọc để kích hoạt tài khoản.',
+            );
+            return;
+          }
         }
       }
       setNotice(
         action === 'conversion'
-          ? 'Đã mở hồ sơ và phát hành lời mời kích hoạt tài khoản. Khách tự đặt hoặc xác nhận mật khẩu để vào web/app, không cần chờ đặt cọc.'
+          ? 'Đã mở hồ sơ tư vấn và phát hành lời mời kích hoạt tài khoản. Khách tự đặt hoặc xác nhận mật khẩu để vào web/app, không cần chờ đặt cọc.'
           : 'Đã đóng yêu cầu tư vấn.',
       );
       await loadLatest.current();
@@ -231,14 +248,36 @@ export function useConsultationRequests() {
         setPending(false);
       });
   };
-  const resultsCurrent = resultKey === filterKey;
-  const counts = (resultsCurrent ? queue?.counts : null) ?? { NEW: 0, CONVERTED: 0, CLOSED: 0 };
+  const rawList = queue?.data ?? [];
+  const counts = queue?.counts ?? {
+    NEW: rawList.filter((i) => i.status === 'NEW').length,
+    CONVERTED: rawList.filter((i) => i.status === 'CONVERTED').length,
+    CLOSED: rawList.filter((i) => i.status === 'CLOSED').length,
+  };
   const stats = {
     total: counts.NEW + counts.CONVERTED + counts.CLOSED,
     newCount: counts.NEW,
     convertedCount: counts.CONVERTED,
     closedCount: counts.CLOSED,
   };
+  const filteredItems = useMemo(() => {
+    let list = rawList;
+    if (statusFilter !== 'ALL') {
+      list = list.filter((item) => item.status === statusFilter);
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim().normalize('NFC');
+      list = list.filter(
+        (item) =>
+          (item.displayName ?? '').toLowerCase().includes(q) ||
+          (item.email ?? '').toLowerCase().includes(q) ||
+          (item.phone ?? '').toLowerCase().includes(q) ||
+          (item.message ?? '').toLowerCase().includes(q),
+      );
+    }
+    return list;
+  }, [rawList, statusFilter, searchQuery]);
+
   return {
     snapshot,
     access,
@@ -256,7 +295,7 @@ export function useConsultationRequests() {
     act,
     logout,
     stats,
-    resultsCurrent,
-    filteredItems: resultsCurrent ? (queue?.data ?? []) : [],
+    resultsCurrent: resultKey === filterKey,
+    filteredItems,
   };
 }

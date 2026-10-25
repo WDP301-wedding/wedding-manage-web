@@ -105,7 +105,6 @@ export function PasswordResetOtpForm({ onCompleted }: { onCompleted: () => void 
               name="password"
               type="password"
               autoComplete="new-password"
-              minLength={12}
               maxLength={128}
               required
             />
@@ -117,12 +116,11 @@ export function PasswordResetOtpForm({ onCompleted }: { onCompleted: () => void 
               name="passwordConfirmation"
               type="password"
               autoComplete="new-password"
-              minLength={12}
               maxLength={128}
               required
             />
           </div>
-          <p>Dùng 12–128 ký tự. Sau khi cập nhật, hãy đăng nhập lại trên các thiết bị.</p>
+          <p>Mật khẩu tối đa 128 ký tự. Sau khi cập nhật, hãy đăng nhập lại trên các thiết bị.</p>
         </>
       )}
       {error && (

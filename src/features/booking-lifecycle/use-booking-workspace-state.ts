@@ -4,7 +4,12 @@ import { useCallback, useEffect, useState } from 'react';
 import { ApiClientError } from '../../lib/api/client';
 import { addMyManagedBookingId, getMyManagedBookingIds } from '../identity-access/dashboard-live';
 import type { Authorize, ManagementBookingGateway, ProposalView } from './booking-api';
-import { type BookingPrefill, errorMessage, type InviteLogEntry } from './booking-helpers';
+import {
+  type BookingPrefill,
+  errorMessage,
+  type InviteLogEntry,
+  parseConsultationChoices,
+} from './booking-helpers';
 import { useRealtimeSubscription } from '../realtime/use-realtime';
 
 export interface UseBookingWorkspaceStateOptions {
@@ -207,6 +212,15 @@ export function useBookingWorkspaceState({
       expGuestsParam && !Number.isNaN(Number(expGuestsParam)) ? Number(expGuestsParam) : undefined;
     const tCount = expG && expG > 0 ? Math.max(1, Math.ceil(expG / 10)) : undefined;
 
+    const parsedChoices = parseConsultationChoices(nt);
+    const prefHall = params.get('preferredHall') || parsedChoices.hallName;
+    const prefMenu = params.get('preferredMenu') || parsedChoices.menuName;
+    const paramShift = params.get('preferredShift');
+    const prefShift =
+      paramShift === 'LUNCH' || paramShift === 'DINNER'
+        ? paramShift
+        : parsedChoices.shift;
+
     // Ưu tiên 1: Có bookingId -> Chuyển sang Tab 3 (Quản lý tiệc)
     if (bId !== null && /^[a-f0-9-]{36}$/iu.test(bId)) {
       setBookingId(bId);
@@ -227,7 +241,7 @@ export function useBookingWorkspaceState({
       revision > 0
     ) {
       setConsultation({ id, revision });
-      if (dName || em || nt || pDate || expG) {
+      if (dName || em || nt || pDate || expG || prefHall || prefMenu || prefShift) {
         setPrefill({
           displayName: dName,
           email: em,
@@ -235,6 +249,9 @@ export function useBookingWorkspaceState({
           eventDate: pDate,
           expectedGuests: expG,
           tableCount: tCount,
+          preferredHallName: prefHall,
+          preferredMenuName: prefMenu,
+          preferredShift: prefShift,
         });
       }
       switchTab('booking');
@@ -242,7 +259,7 @@ export function useBookingWorkspaceState({
     }
 
     // Ưu tiên 3: Chưa có consultationId nhưng có thông tin khách (tạo mới/vãng lai) -> Tab 1
-    if (dName || em || nt || pDate || expG) {
+    if (dName || em || nt || pDate || expG || prefHall || prefMenu || prefShift) {
       switchTab('consultation');
       setPrefill({
         displayName: dName,
@@ -251,6 +268,9 @@ export function useBookingWorkspaceState({
         eventDate: pDate,
         expectedGuests: expG,
         tableCount: tCount,
+        preferredHallName: prefHall,
+        preferredMenuName: prefMenu,
+        preferredShift: prefShift,
       });
     }
   }, []);

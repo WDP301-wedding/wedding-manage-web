@@ -7,6 +7,7 @@ import { BookingUnauthorizedHint } from './booking-unauthorized-hint';
 import { bookingStyles } from './booking.styles';
 import { ConsultationPanel } from './consultation-panel';
 import type { Authorize, ManagementBookingGateway } from './booking-api';
+import { parseConsultationChoices } from './booking-helpers';
 import { ProposalPanel } from './proposal-panel';
 import { useBookingWorkspaceState } from './use-booking-workspace-state';
 import { CoupleAccountCard } from './couple-account-card';
@@ -153,12 +154,16 @@ export function ManagementBookingWorkspace({
               authorize((token) => gateway.createConsultation(token, input)),
             );
             if (result !== null) {
+              const choices = parseConsultationChoices(input.note);
               setConsultation({ id: result.consultationId, revision: result.revision });
               setPrefill((prev) => ({
                 ...prev,
                 displayName: input.displayName,
                 email: input.intendedEmail,
                 note: input.note,
+                preferredHallName: prev.preferredHallName || choices.hallName,
+                preferredMenuName: prev.preferredMenuName || choices.menuName,
+                preferredShift: prev.preferredShift || choices.shift,
               }));
               setMessage('Đã tạo hồ sơ tư vấn.');
               switchTab('booking');

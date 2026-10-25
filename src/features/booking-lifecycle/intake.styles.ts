@@ -120,8 +120,125 @@ export const intakeStyles = {
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     flexWrap: 'wrap',
-    gap: '12px',
+    gap: '16px',
     marginBottom: '1rem',
+  } satisfies CSSProperties,
+
+  headerActions: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    flexWrap: 'wrap',
+    alignSelf: 'flex-start',
+  } satisfies CSSProperties,
+
+  kickerRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    marginBottom: '4px',
+  } satisfies CSSProperties,
+
+  dataRibbon: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+    gap: '14px',
+    margin: '1rem 0',
+    background: 'var(--hy-surface-container, #fdf6ee)',
+    padding: '12px 18px',
+    borderRadius: '12px',
+    border: '1px solid var(--hy-outline, #eadfd6)',
+  } satisfies CSSProperties,
+
+  ribbonItem: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '4px',
+  } satisfies CSSProperties,
+
+  ribbonDt: {
+    fontSize: '0.75rem',
+    color: 'var(--hy-text-muted, #6e5d63)',
+    fontWeight: 600,
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+  } satisfies CSSProperties,
+
+  ribbonDd: {
+    fontSize: '0.95rem',
+    fontWeight: 700,
+    color: 'var(--hy-text, #2b1d22)',
+    margin: 0,
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    flexWrap: 'wrap',
+  } satisfies CSSProperties,
+
+  subDetail: {
+    fontSize: '0.8rem',
+    fontWeight: 500,
+    color: 'var(--hy-text-muted, #6e5d63)',
+  } satisfies CSSProperties,
+
+  contextTag: (dateStr: string): CSSProperties => {
+    const target = new Date(dateStr);
+    let isUrgent = false;
+    if (!isNaN(target.getTime())) {
+      const diffDays = Math.ceil((target.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+      if (diffDays >= 0 && diffDays <= 7) isUrgent = true;
+    }
+    return {
+      fontSize: '0.72rem',
+      fontWeight: 700,
+      padding: '2px 8px',
+      borderRadius: '6px',
+      background: isUrgent ? 'var(--hy-status-error-bg, #fdecea)' : '#ffffff',
+      color: isUrgent ? 'var(--hy-status-error, #c62828)' : 'var(--hy-text-muted, #6e5d63)',
+      border: `1px solid ${isUrgent ? 'var(--hy-status-error-border, #fca5a5)' : 'var(--hy-outline, #eadfd6)'}`,
+    };
+  },
+
+  messageCallout: {
+    background: '#faf7f2',
+    borderLeft: '3px solid var(--hy-wine-gold, #c5a880)',
+    borderRadius: '0 10px 10px 0',
+    padding: '12px 18px',
+    marginTop: '1rem',
+    maxWidth: '920px',
+  } satisfies CSSProperties,
+
+  messageHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    marginBottom: '4px',
+  } satisfies CSSProperties,
+
+  messageLabel: {
+    fontSize: '0.78rem',
+    fontWeight: 700,
+    color: 'var(--hy-wine, #7a1f3d)',
+  } satisfies CSSProperties,
+
+  messageText: {
+    margin: 0,
+    whiteSpace: 'pre-wrap',
+    overflowWrap: 'anywhere',
+    fontSize: '0.92rem',
+    lineHeight: 1.6,
+    color: 'var(--hy-text, #2b1d22)',
+  } satisfies CSSProperties,
+
+  consultationCode: {
+    fontSize: '0.82rem',
+    background: '#ffffff',
+    border: '1px solid var(--hy-status-success-border, #bbf7d0)',
+    color: 'var(--hy-status-success, #2f6b4f)',
+    fontWeight: 700,
+    padding: '2px 8px',
+    borderRadius: '6px',
   } satisfies CSSProperties,
 
   statusBadge: (status: string): CSSProperties => {
