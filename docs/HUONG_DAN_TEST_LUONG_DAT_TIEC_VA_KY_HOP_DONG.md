@@ -78,7 +78,7 @@ Không có bước bắt buộc “Nhận xử lý → CONTACTED” trong luồn
 
 Thao tác:
 
-1. Nhập **Mật khẩu** và **Xác nhận mật khẩu** giống nhau, đáp ứng chính sách trên UI; form hiện đặt tối thiểu 12 ký tự.
+1. Nhập **Mật khẩu** và **Xác nhận mật khẩu** giống nhau (hệ thống không bắt buộc tối thiểu 12 ký tự).
 2. Nếu đã có tài khoản, làm theo mô tả màn hình: nhập mật khẩu hiện tại, không tự đặt lại mật khẩu qua lời mời.
 3. Bấm **Xác nhận lời mời**.
 4. Vào **Không gian cưới**; nếu cần đăng nhập lại thì dùng tài khoản vừa xác nhận.
