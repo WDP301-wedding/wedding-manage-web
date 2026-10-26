@@ -55,7 +55,7 @@ export function CoupleAccountCard({
               gap: '6px',
             }}
           >
-            <span>Tài khoản Cặp đôi &amp; Không gian cộng tác</span>
+            <span>Tài khoản &amp; Quyền truy cập hồ sơ tiệc</span>
           </h3>
           <p
             style={{
@@ -66,7 +66,8 @@ export function CoupleAccountCard({
           >
             Gửi email kích hoạt tài khoản để cặp đôi đăng nhập vào cổng thông tin duyệt kịch bản và
             xem hợp đồng. Khách có thể kích hoạt và đăng nhập app trước đặt cọc; các chức năng sau
-            cọc vẫn theo quyền của từng tiệc.
+            cọc vẫn theo quyền của từng tiệc. Khách đã có tài khoản dùng tài khoản hiện có để nhận
+            lời mời vào tiệc mới, không cần tạo lại tài khoản.
             {email ? (
               <>
                 {' '}

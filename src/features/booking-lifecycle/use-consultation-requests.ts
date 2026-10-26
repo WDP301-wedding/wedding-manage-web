@@ -10,11 +10,15 @@ import {
 const session = sharedManagementSession;
 let resolvedApi: ReturnType<typeof createApiClient> | undefined;
 const getApi = () => (resolvedApi ??= createApiClient());
-export type Queue = components['schemas']['ConsultationRequestList'] & {
+export type Item = components['schemas']['ConsultationRequestList']['data'][number] & {
+  bookingId?: string | null;
+  bookingPhase?: string | null;
+};
+export type Queue = Omit<components['schemas']['ConsultationRequestList'], 'data'> & {
+  data: readonly Item[];
   totalMatches: number;
   counts: { NEW: number; CONVERTED: number; CLOSED: number };
 };
-export type Item = Queue['data'][number];
 export type StatusFilter = 'ALL' | 'NEW' | 'CONVERTED' | 'CLOSED';
 export type SortOption = 'newest' | 'oldest' | 'date-asc' | 'guests-desc' | 'name-asc';
 const metadata = z.object({

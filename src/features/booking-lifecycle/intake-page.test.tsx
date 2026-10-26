@@ -116,9 +116,9 @@ describe('Consultation navigation', () => {
     expect(within(fresh).getByText(newRequest.preferredDate!)).toBeVisible();
     expect(within(fresh).getByText('200')).toBeVisible();
     expect(within(fresh).getByText(newRequest.message)).toBeVisible();
-    expect(screen.getByRole('link', { name: 'Tiếp tục đặt tiệc' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Tiếp tục tư vấn & lập tiệc' })).toHaveAttribute(
       'href',
-      expect.stringContaining(`/bookings?consultationId=${consultationId}&consultationRevision=3`),
+      expect.stringContaining(`/bookings?consultationId=${consultationId}`),
     );
     const closedArticle = screen
       .getByRole('heading', { name: closed.displayName })
@@ -128,7 +128,7 @@ describe('Consultation navigation', () => {
     expect(within(closedArticle).getByText('Chưa cung cấp')).toBeVisible();
     expect(within(closedArticle).queryByRole('button')).not.toBeInTheDocument();
     expect(
-      within(closedArticle).queryByRole('link', { name: 'Tiếp tục đặt tiệc' }),
+      within(closedArticle).queryByRole('link', { name: 'Tiếp tục tư vấn & lập tiệc' }),
     ).not.toBeInTheDocument();
     const request = requestAt(0);
     expect(request.method).toBe('GET');
@@ -167,9 +167,9 @@ describe('Consultation navigation', () => {
       );
     render(<ConsultationRequestsPage />);
     fireEvent.click(await screen.findByRole('button', { name: 'Mở hồ sơ tư vấn' }));
-    expect(await screen.findByRole('link', { name: 'Tiếp tục đặt tiệc' })).toHaveAttribute(
+    expect(await screen.findByRole('link', { name: 'Tiếp tục tư vấn & lập tiệc' })).toHaveAttribute(
       'href',
-      expect.stringContaining(`/bookings?consultationId=${consultationId}&consultationRevision=1`),
+      expect.stringContaining(`/bookings?consultationId=${consultationId}`),
     );
     expect(screen.getByRole('status')).toHaveTextContent('Đã mở hồ sơ tư vấn');
     expect(screen.queryByRole('button', { name: 'Mở hồ sơ tư vấn' })).not.toBeInTheDocument();
@@ -375,4 +375,3 @@ describe('Consultation navigation', () => {
     expect(screen.queryByRole('button', { name: 'Đăng xuất' })).not.toBeInTheDocument();
   });
 });
-

@@ -4,6 +4,15 @@ import { installCommandRetries } from './command-retries';
 
 export type Authorize = <T>(operation: (accessToken: string) => Promise<T>) => Promise<T>;
 export type ProposalView = components['schemas']['BookingProposalResponse']['data'];
+export type { ConsultationWorkspace, ConsultationCustomer } from './consultation-workspace-api';
+import {
+  consultationWorkspaceSchema,
+  consultationCustomerSchema,
+  type ConsultationWorkspace,
+  type ConsultationCustomer,
+  type ConsultationWorkspacePaths,
+} from './consultation-workspace-api';
+import type { Client } from 'openapi-fetch';
 export type TimelineItemInput = components['schemas']['TimelineRevisionBody']['items'][number];
 export type BookingSelections = Readonly<{
   halls: readonly Pick<components['schemas']['CatalogPublicHall'], 'id' | 'name' | 'maxGuests'>[];
@@ -22,6 +31,17 @@ export type WorkspaceInvitationResult = Readonly<{
 }>;
 
 export interface ManagementBookingGateway {
+  loadWorkspace(
+    this: void,
+    accessToken: string,
+    consultationId: string,
+  ): Promise<ConsultationWorkspace>;
+  searchCustomers(
+    this: void,
+    accessToken: string,
+    q: string,
+    signal?: AbortSignal,
+  ): Promise<readonly ConsultationCustomer[]>;
   loadSelections(this: void, accessToken: string): Promise<BookingSelections>;
   createConsultation(
     this: void,
@@ -118,10 +138,33 @@ function intent(scope: string): string {
 
 export function createManagementBookingGateway(client?: ApiClient): ManagementBookingGateway {
   let resolved = client === undefined ? undefined : installCommandRetries(client);
-  const api = () => (resolved ??= installCommandRetries(createApiClient()));
+  const api = () =>
+    (resolved ??= installCommandRetries(createApiClient())) as ApiClient &
+      Client<ConsultationWorkspacePaths>;
   const auth = (accessToken: string) => ({ Authorization: `Bearer ${accessToken}` });
 
   return {
+    async loadWorkspace(accessToken, consultationId) {
+      const { data } = await api().GET('/management/consultations/{consultationId}/workspace', {
+        headers: auth(accessToken),
+        params: { path: { consultationId } },
+        cache: 'no-store',
+      });
+      return consultationWorkspaceSchema.parse(
+        required(data, 'Không tải được ngữ cảnh hồ sơ.').data,
+      );
+    },
+    async searchCustomers(accessToken, q, signal) {
+      const { data } = await api().GET('/management/consultation-customers', {
+        headers: auth(accessToken),
+        params: { query: { q } },
+        ...(signal ? { signal } : {}),
+        cache: 'no-store',
+      });
+      return consultationCustomerSchema
+        .array()
+        .parse(required(data, 'Không tìm được khách hàng.').data);
+    },
     async loadSelections(accessToken) {
       const headers = auth(accessToken);
       const halls: BookingSelections['halls'][number][] = [];
@@ -229,6 +272,7 @@ export function createManagementBookingGateway(client?: ApiClient): ManagementBo
       const { cancellationRequests, ...proposalValue } = value;
       return {
         ...proposalValue,
+        proposal: { ...value.proposal, menus: Array.from(value.proposal.menus) },
         ...(cancellationRequests === undefined
           ? {}
           : { cancellationRequests: Array.from(cancellationRequests) }),

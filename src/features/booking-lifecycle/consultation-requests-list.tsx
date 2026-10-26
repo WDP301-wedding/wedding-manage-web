@@ -1,9 +1,9 @@
 'use client';
 
 import Link from 'next/link';
+import { bookingPhaseLabel } from './booking-helpers';
 import { intakeStyles } from './intake.styles';
 import type { Item } from './use-consultation-requests';
-import { parseConsultationChoices } from './booking-helpers';
 
 export interface ConsultationRequestsListProps {
   items: readonly Item[];
@@ -56,7 +56,10 @@ export function ConsultationRequestsList({
                   </p>
                   <span style={intakeStyles.statusBadge(item.status)}>
                     {item.status === 'NEW' && 'Mới'}
-                    {item.status === 'CONVERTED' && 'Đang tư vấn'}
+                    {item.status === 'CONVERTED' &&
+                      (item.bookingId
+                        ? bookingPhaseLabel(item.bookingPhase ?? '')
+                        : 'Đang tư vấn · Chưa lập tiệc')}
                     {item.status === 'CLOSED' && 'Lưu trữ'}
                   </span>
                 </div>
@@ -145,35 +148,17 @@ export function ConsultationRequestsList({
                     >
                       Mã hồ sơ tư vấn:
                     </small>
-                    <code style={intakeStyles.consultationCode}>
-                      {item.consultationId}
-                    </code>
+                    <code style={intakeStyles.consultationCode}>{item.consultationId}</code>
                   </div>
                   {(() => {
-                    const params = new URLSearchParams({
-                      consultationId: item.consultationId,
-                      consultationRevision: String(item.consultationRevision ?? 1),
-                    });
-                    if (item.displayName) params.set('displayName', item.displayName);
-                    if (item.email) params.set('email', item.email);
-                    if (item.preferredDate) params.set('preferredDate', item.preferredDate);
-                    if (item.expectedGuests !== undefined && item.expectedGuests !== null) {
-                      params.set('expectedGuests', String(item.expectedGuests));
-                    }
-                    if (item.message) {
-                      params.set('note', item.message);
-                      const parsed = parseConsultationChoices(item.message);
-                      if (parsed.hallName) params.set('preferredHall', parsed.hallName);
-                      if (parsed.menuName) params.set('preferredMenu', parsed.menuName);
-                      if (parsed.shift) params.set('preferredShift', parsed.shift);
-                    }
+                    const params = new URLSearchParams({ consultationId: item.consultationId });
                     return (
                       <Link
                         className="booking-primary-link"
                         href={`/bookings?${params.toString()}`}
                         style={intakeStyles.primaryActionBtn}
                       >
-                        Tiếp tục đặt tiệc
+                        {item.bookingId ? 'Mở hồ sơ đặt tiệc' : 'Tiếp tục tư vấn & lập tiệc'}
                       </Link>
                     );
                   })()}

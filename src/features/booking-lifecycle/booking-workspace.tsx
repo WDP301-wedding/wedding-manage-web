@@ -1,5 +1,6 @@
 'use client';
 
+import { ExistingCustomerPicker } from './existing-customer-picker';
 import { BookingCreatePanel } from './booking-create-panel';
 import { BookingLifecycleStepper } from './booking-lifecycle-stepper';
 import { BookingLookupBar } from './booking-lookup-bar';
@@ -7,7 +8,7 @@ import { BookingUnauthorizedHint } from './booking-unauthorized-hint';
 import { bookingStyles } from './booking.styles';
 import { ConsultationPanel } from './consultation-panel';
 import type { Authorize, ManagementBookingGateway } from './booking-api';
-import { parseConsultationChoices } from './booking-helpers';
+import { bookingPhaseLabel, parseConsultationChoices } from './booking-helpers';
 import { ProposalPanel } from './proposal-panel';
 import { useBookingWorkspaceState } from './use-booking-workspace-state';
 import { CoupleAccountCard } from './couple-account-card';
@@ -30,6 +31,9 @@ export function ManagementBookingWorkspace({
 }: Readonly<ManagementBookingWorkspaceProps>) {
   const {
     activeTab,
+    contextStatus,
+    prepareBooking,
+    retryContext,
     switchTab,
     consultation,
     setConsultation,
@@ -76,7 +80,7 @@ export function ManagementBookingWorkspace({
           <div>
             <p className="section-kicker">Wedding Estate · Operations</p>
             <h1>Điều phối đặt tiệc</h1>
-            <p>Tạo hồ sơ tư vấn, giữ lịch và kiểm soát vòng đời bằng revision từ máy chủ.</p>
+            <p>Mỗi hồ sơ tư vấn gắn với một tiệc. Mở lại hồ sơ để tiếp tục đúng tiến trình.</p>
           </div>
           <BookingLookupBar
             bookingId={bookingId}
@@ -88,10 +92,29 @@ export function ManagementBookingWorkspace({
         </div>
       </header>
 
+      {consultation ? (
+        <p role="status">
+          <strong>{prefill.displayName}</strong> · {prefill.email} · Hồ sơ tư vấn: {consultation.id}
+          {proposal ? (
+            <>
+              {' '}
+              · Tiệc: {proposal.bookingId} · Ngày: {proposal.eventDate} ·{' '}
+              {bookingPhaseLabel(proposal.phase)}
+            </>
+          ) : (
+            ' · Chưa tạo tiệc'
+          )}
+        </p>
+      ) : null}
       <div className="booking-live" aria-live="polite">
         {pending === null ? null : <span role="status">Đang xử lý yêu cầu…</span>}
         {message === null ? null : <span role="status">{message}</span>}
         {error === null ? null : <span role="alert">{error}</span>}
+        {contextStatus === 'error' ? (
+          <button type="button" onClick={retryContext}>
+            Tải lại hồ sơ
+          </button>
+        ) : null}
       </div>
 
       {/* 3 Phân hệ tách biệt hoàn toàn theo tiêu chuẩn Hỷ Yến */}
@@ -140,9 +163,21 @@ export function ManagementBookingWorkspace({
             : bookingStyles.stepContainerHidden
         }
       >
+        <ExistingCustomerPicker
+          authorize={authorize}
+          gateway={gateway}
+          disabled={pending !== null || contextStatus !== 'ready'}
+          onChoose={(customer) => {
+            resetConsultation();
+            setPrefill({ displayName: customer.displayName, email: customer.email });
+            setMessage(
+              'Đã chọn khách cũ. Kiểm tra thông tin và tạo hồ sơ tư vấn mới cho tiệc mới; hồ sơ cũ được giữ nguyên.',
+            );
+          }}
+        />
         <ConsultationPanel
           activationVisible={activeTab === 'consultation'}
-          disabled={pending !== null}
+          disabled={pending !== null || contextStatus !== 'ready'}
           consultation={consultation}
           prefill={prefill}
           logs={inviteLogs}
@@ -156,6 +191,11 @@ export function ManagementBookingWorkspace({
             if (result !== null) {
               const choices = parseConsultationChoices(input.note);
               setConsultation({ id: result.consultationId, revision: result.revision });
+              window.history.replaceState(
+                null,
+                '',
+                '/bookings?consultationId=' + result.consultationId,
+              );
               setPrefill((prev) => ({
                 ...prev,
                 displayName: input.displayName,
@@ -250,29 +290,51 @@ export function ManagementBookingWorkspace({
             </span>
           ) : null}
         </div>
-        <BookingCreatePanel
-          disabled={pending !== null}
-          consultation={consultation}
-          prefill={prefill}
-          gateway={gateway}
-          authorize={authorize}
-          run={run}
-          autoLoadCatalog={autoLoadCatalog}
-          onCreated={(result, consultationId) => {
-            setBookingId(result.bookingId);
-            setConsultation({ id: consultationId, revision: result.consultationRevision });
-            setCreatedBookingNotice({
-              bookingId: result.bookingId,
-              consultationId,
-              email: prefill.email,
-            });
-            setMessage('Đã tạo hồ sơ đặt tiệc.');
-            void loadProposal(result.bookingId, true);
-            recordMyBooking(result.bookingId);
-          }}
-          setMessage={setMessage}
-          onValidationError={setError}
-        />
+        {activeTab === 'booking' && consultation && !proposal ? (
+          <CoupleAccountCard
+            consultationId={consultation.id}
+            email={prefill.email}
+            canInvite
+            pending={pending !== null || contextStatus !== 'ready'}
+            inviteLogs={inviteLogs}
+            onInvite={() => void sendWorkspaceInvite()}
+            onClearLogs={() => setInviteLogs([])}
+          />
+        ) : null}
+        {proposal ? (
+          <article className="booking-card">
+            <h2>Hồ sơ tư vấn này đã có tiệc</h2>
+            <p>Tiếp tục trong hồ sơ đã lưu để xem và chỉnh sửa theo trạng thái hiện tại.</p>
+            <button type="button" onClick={() => switchTab('manage')}>
+              Mở tiệc đang xử lý
+            </button>
+          </article>
+        ) : (
+          <BookingCreatePanel
+            disabled={pending !== null || contextStatus !== 'ready'}
+            beforeCreate={prepareBooking}
+            consultation={consultation}
+            prefill={prefill}
+            gateway={gateway}
+            authorize={authorize}
+            run={run}
+            autoLoadCatalog={autoLoadCatalog}
+            onCreated={(result, consultationId) => {
+              setBookingId(result.bookingId);
+              setConsultation({ id: consultationId, revision: result.consultationRevision });
+              setCreatedBookingNotice({
+                bookingId: result.bookingId,
+                consultationId,
+                email: prefill.email,
+              });
+              setMessage('Đã tạo hồ sơ đặt tiệc.');
+              void loadProposal(result.bookingId, true);
+              recordMyBooking(result.bookingId);
+            }}
+            setMessage={setMessage}
+            onValidationError={setError}
+          />
+        )}
       </section>
 
       {/* Phân hệ 3: Tiệc đang xử lý (Đề xuất & Vòng đời) */}
@@ -372,7 +434,7 @@ export function ManagementBookingWorkspace({
               onClearLogs={() => setInviteLogs([])}
             />
             <ProposalPanel
-              disabled={pending !== null}
+              disabled={pending !== null || contextStatus !== 'ready'}
               proposal={proposal}
               run={run}
               authorize={authorize}

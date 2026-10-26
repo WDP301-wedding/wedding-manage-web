@@ -37,6 +37,12 @@ describe('manager monetary confirmations', () => {
       <RefundForm
         disabled={false}
         booking={{
+          balancePaymentEligibility: {
+            billingRevision: 7,
+            canPay: false,
+            nextAction: 'NONE',
+            reasonCode: 'BALANCE_NOT_ELIGIBLE',
+          },
           bookingId: 'booking',
           billingRevision: 7,
           history: [

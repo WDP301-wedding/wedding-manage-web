@@ -65,7 +65,13 @@ export function createManagementBillingGateway(client?: ApiClient): ManagementBi
         cache: 'no-store',
       });
       const value = required(data);
-      return { ...value, history: Array.from(value.history) };
+      return {
+        ...value,
+        history: Array.from(value.history),
+        balancePaymentEligibility: value.balancePaymentEligibility.canPay
+          ? { ...value.balancePaymentEligibility, reasonCode: null }
+          : value.balancePaymentEligibility,
+      };
     },
     async loadAttempt(token, bookingId, attemptId) {
       const { data } = await api().GET('/bookings/{bookingId}/payments/{attemptId}', {

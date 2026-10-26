@@ -6,6 +6,12 @@ import { ManagementBillingPage, ManagementBillingWorkspace } from './billing-pag
 import { createIdentityApi, ManagementIdentitySession } from '../identity-access/session';
 
 const view: BillingView = {
+  balancePaymentEligibility: {
+    billingRevision: 4,
+    canPay: false,
+    nextAction: 'NONE',
+    reasonCode: 'BALANCE_NOT_ELIGIBLE',
+  },
   bookingId: 'booking',
   billingRevision: 4,
   totals: {

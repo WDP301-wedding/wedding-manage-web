@@ -6,6 +6,8 @@ import { ManagementIdentitySession } from '../identity-access/session';
 import type { ManagementBookingGateway, ProposalView } from './booking-api';
 import { ManagementBookingPage, ManagementBookingWorkspace } from './booking-page';
 
+vi.mock('./activation-status', () => ({ ActivationStatus: () => null }));
+
 const proposal: ProposalView = {
   bookingId: '00000000-0000-4000-8000-000000000101',
   consultationId: '00000000-0000-4000-8000-000000000102',
@@ -14,6 +16,18 @@ const proposal: ProposalView = {
   eventDate: '2026-11-15',
   planningHeadcount: 280,
   proposal: {
+    menus: [
+      {
+        versionId: 'menu-v1',
+        packageId: 'menu',
+        versionNumber: 1,
+        name: 'Thực đơn Mùa Thu',
+        description: 'Theo mùa',
+        priceVndPerTable: 5000000,
+        tableCount: 28,
+        lineTotalVnd: 140000000,
+      },
+    ],
     hall: {
       id: '00000000-0000-4000-8000-000000000103',
       name: 'Sảnh Ánh Dương',
@@ -46,6 +60,21 @@ const proposal: ProposalView = {
 
 function fakeGateway(): ManagementBookingGateway {
   return {
+    searchCustomers: vi.fn().mockResolvedValue([]),
+    loadWorkspace: vi.fn().mockResolvedValue({
+      consultationId: proposal.consultationId,
+      revision: 1,
+      displayName: 'Khách thử',
+      email: 'couple@example.test',
+      note: null,
+      bookingId: proposal.bookingId,
+      bookingPhase: proposal.phase,
+      preferredDate: null,
+      expectedGuests: null,
+      preferredHallId: null,
+      preferredMenuVersionId: null,
+      preferredShift: null,
+    }),
     loadSelections: vi.fn().mockResolvedValue({
       halls: [{ id: proposal.proposal.hall.id, name: proposal.proposal.hall.name, maxGuests: 320 }],
       menus: [
@@ -80,6 +109,7 @@ function fakeGateway(): ManagementBookingGateway {
 const authorize = <T,>(operation: (token: string) => Promise<T>) => operation('manager-token');
 
 beforeEach(() => {
+  window.history.replaceState(null, '', '/bookings');
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(new Date('2026-10-09T00:00:00Z'));
 });

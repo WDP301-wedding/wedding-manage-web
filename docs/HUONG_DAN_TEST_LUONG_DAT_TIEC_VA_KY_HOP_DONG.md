@@ -1,16 +1,28 @@
 # Hướng dẫn test tay luồng chính đặt tiệc — Manager và Couple
 
-Ngày đối chiếu source: **25/10/2026** (giờ Việt Nam, UTC+7).
+Ngày đối chiếu toàn bộ luồng gốc: **25/10/2026** (giờ Việt Nam, UTC+7).
+
+**Cập nhật nhánh tư vấn và mở lại tiệc ngày 26/10/2026:** các bước dưới đây đã được điều chỉnh theo thay đổi đang nằm trong working tree của hai web và BE. Chưa phải bằng chứng bản deploy đã cập nhật hoặc email đã được giao. Triển khai migration **20261026090000_consultation_choices** cùng BE trước khi triển khai hai web.
+
+Các tình huống cần test thêm trên môi trường cho phép:
+
+1. Gửi yêu cầu không chọn sảnh/thực đơn; manager mở bước 2 và tự điền phần còn thiếu.
+2. Gửi chỉ sảnh, chỉ thực đơn, rồi cả hai; manager phải thấy đúng từng lựa chọn, kể cả lựa chọn nằm ngoài trang danh mục đầu tiên.
+3. Tạo booking, quay về **Yêu cầu tư vấn**, bấm **Mở hồ sơ đặt tiệc**: phải mở bước 3 của đúng tiệc, không cần chọn dropdown và không có form tạo lại tiệc ấy.
+4. Ở bước 3, quay sang bước 2: chỉ có thông báo đã có tiệc và nút mở hồ sơ hiện có.
+5. Hai cửa sổ manager cùng mở một tư vấn: sau khi cửa sổ thứ nhất tạo booking, cửa sổ thứ hai bấm tạo phải mở lại tiệc đã có, không tạo tiệc trùng.
+6. Ở bước 1, tìm khách cũ theo tên/email/điện thoại, chọn **Dùng thông tin cho tiệc mới**: tên và email được điền, mã tư vấn/booking cũ không bị tái sử dụng. Tạo hồ sơ tư vấn riêng cho tiệc mới.
+7. Kiểm tra trạng thái lời mời riêng với tiến trình tiệc. Khách đã có tài khoản dùng tài khoản hiện có để nhận quyền vào hồ sơ mới; việc dùng lại liên hệ không tự cấp quyền truy cập.
 
 Tài liệu này cập nhật thay nội dung hướng dẫn cũ trong cùng file. Tên in đậm là tên menu, tab, trường hoặc nút hiển thị trong code hiện tại; không dùng đường dẫn kỹ thuật làm tên màn hình.
 
 ## 1. Phạm vi và phiên bản đã đọc
 
-| Source | Commit tại lúc đối chiếu |
-| --- | --- |
-| wedding-be | `d2f06ec` |
-| wedding-web | `980eb78` |
-| wedding-manage-web | `e3c638b` |
+| Source             | Commit tại lúc đối chiếu |
+| ------------------ | ------------------------ |
+| wedding-be         | `d2f06ec`                |
+| wedding-web        | `980eb78`                |
+| wedding-manage-web | `e3c638b`                |
 
 - Đã đối chiếu source hai web, các lời gọi API và điều kiện nghiệp vụ BE. Không sửa code ứng dụng trong lần cập nhật tài liệu này.
 - Đây là **hướng dẫn để người dùng test tay**, không phải báo cáo các bước đã chạy PASS trên trình duyệt/deployment.
@@ -61,13 +73,13 @@ Thao tác:
 1. Tìm bằng đúng email hoặc tên vừa gửi; đọc ngày, số khách, điện thoại và lời nhắn.
 2. Bấm **Duyệt hồ sơ và gửi lời mời kích hoạt** đúng một lần; chờ kết quả.
 3. Khi đã chuyển đổi, tìm ở tab **Đã mở tư vấn** nếu cần.
-4. Bấm **Tiếp tục đặt tiệc** trên đúng yêu cầu.
+4. Nếu chưa có booking, bấm **Tiếp tục tư vấn & lập tiệc**. Nếu đã có booking, bấm **Mở hồ sơ đặt tiệc** trên đúng yêu cầu.
 
 Kết quả mong đợi:
 
 - Yêu cầu chuyển từ `NEW` sang `CONVERTED`, có mã hồ sơ tư vấn.
 - Thao tác chuyển sang trang **Điều phối đặt tiệc**, thuộc menu **Đặt tiệc**.
-- Nếu link có hồ sơ hợp lệ, trang **tự mở tab 2. Khảo sát sảnh & Đặt tiệc**, không yêu cầu tạo lại hồ sơ ở tab 1.
+- BE xác định tình trạng hiện tại: chưa có booking thì **tự mở tab 2. Khảo sát sảnh & Đặt tiệc** và điền dữ liệu yêu cầu; đã có booking thì **tự mở tab 3. Tiệc đang xử lý**, tải bản đã lưu mới nhất. Không tạo lại hồ sơ ở tab 1 hoặc booking ở tab 2 để khôi phục công việc.
 - Nếu mở hồ sơ thành công nhưng gửi lời mời chưa xác nhận, UI phải báo riêng; không tạo lại yêu cầu/hồ sơ để chữa lỗi gửi thư.
 
 Không có bước bắt buộc “Nhận xử lý → CONTACTED” trong luồng này. Trạng thái intake hiện tại là `NEW`, `CONVERTED`, `CLOSED`.
@@ -279,6 +291,7 @@ Dùng booking đã qua giờ kết thúc ca thực tế của BE; không tiếp 
 Kết quả mong đợi: trước giờ kết thúc bị chặn; sau giờ kết thúc được ghi theo quyền Manager mà không cần chờ mốc hoàn thành +12 giờ. Couple xem chứ không tự ghi/duyệt khoản phát sinh thay nhà hàng.
 
 **Thao tác trên UI Manager:**
+
 - **Nơi vào:** Manager → **Quản lý thanh toán** → nhập mã booking → **Xem thanh toán** → phần **Chi phí phát sinh & Hoá đơn cuối**.
 - **Thao tác:**
   1. Kiểm tra bảng tóm tắt tài chính quyết toán dự kiến (giá trị thoả thuận thương mại + phát sinh).
@@ -365,21 +378,21 @@ Các đường dẫn dưới đây dành cho người bảo trì đối chiếu,
 
 Điền PASS/FAIL/BLOCKED/NOT_TESTED dựa trên thao tác thực, không đánh PASS từ việc đọc source.
 
-| Bước | Kết quả thực tế | Trạng thái | Booking/chứng từ/ảnh minh chứng |
-| --- | --- | --- | --- |
-| 1. Gửi tư vấn | | | |
-| 2. Mở hồ sơ và mời | | | |
-| 3. Xác nhận lời mời | | | |
-| 4. Tạo booking | | | |
-| 5–6. Hai bên duyệt kịch bản | | | |
-| 7. Lưu tên | | | |
-| 8–9. Hợp đồng và hai phê duyệt | | | |
-| 10. Giữ lịch, thu cọc, CONFIRMED/FULL | | | |
-| 11. Nhóm khách và sơ đồ | | | |
-| 12. Thiệp/in nếu sử dụng | | | |
-| 13. Phát sinh sau tiệc | | | |
-| 14. Chốt hóa đơn bằng UI | Thao tác Chốt hoá đơn quyết toán tại màn Quản lý thanh toán | PASS/TEST | |
-| 14. Thanh toán số dư trên hóa đơn chốt | Couple thanh toán số dư hoặc Manager ghi nhận thanh toán còn lại | PASS/TEST | |
-| 15. Hoàn thành sau giờ kết thúc +12h | | | |
-| Phụ lục hai bên qua UI | Tab Phụ lục hợp đồng tại Đặt tiệc -> Phê duyệt phụ lục (Quản lý) | PASS/TEST | |
-| Realtime, giữ nháp, không trùng khoản thu | | | |
+| Bước                                      | Kết quả thực tế                                                  | Trạng thái | Booking/chứng từ/ảnh minh chứng |
+| ----------------------------------------- | ---------------------------------------------------------------- | ---------- | ------------------------------- |
+| 1. Gửi tư vấn                             |                                                                  |            |                                 |
+| 2. Mở hồ sơ và mời                        |                                                                  |            |                                 |
+| 3. Xác nhận lời mời                       |                                                                  |            |                                 |
+| 4. Tạo booking                            |                                                                  |            |                                 |
+| 5–6. Hai bên duyệt kịch bản               |                                                                  |            |                                 |
+| 7. Lưu tên                                |                                                                  |            |                                 |
+| 8–9. Hợp đồng và hai phê duyệt            |                                                                  |            |                                 |
+| 10. Giữ lịch, thu cọc, CONFIRMED/FULL     |                                                                  |            |                                 |
+| 11. Nhóm khách và sơ đồ                   |                                                                  |            |                                 |
+| 12. Thiệp/in nếu sử dụng                  |                                                                  |            |                                 |
+| 13. Phát sinh sau tiệc                    |                                                                  |            |                                 |
+| 14. Chốt hóa đơn bằng UI                  | Thao tác Chốt hoá đơn quyết toán tại màn Quản lý thanh toán      | PASS/TEST  |                                 |
+| 14. Thanh toán số dư trên hóa đơn chốt    | Couple thanh toán số dư hoặc Manager ghi nhận thanh toán còn lại | PASS/TEST  |                                 |
+| 15. Hoàn thành sau giờ kết thúc +12h      |                                                                  |            |                                 |
+| Phụ lục hai bên qua UI                    | Tab Phụ lục hợp đồng tại Đặt tiệc -> Phê duyệt phụ lục (Quản lý) | PASS/TEST  |                                 |
+| Realtime, giữ nháp, không trùng khoản thu |                                                                  |            |                                 |

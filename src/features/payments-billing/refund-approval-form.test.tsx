@@ -4,6 +4,12 @@ import type { BillingView } from './billing-api';
 import { RefundApprovalForm } from './refund-approval-form';
 
 const booking: BillingView = {
+  balancePaymentEligibility: {
+    billingRevision: 7,
+    canPay: false,
+    nextAction: 'NONE',
+    reasonCode: 'BALANCE_NOT_ELIGIBLE',
+  },
   bookingId: 'booking',
   billingRevision: 7,
   nextCursor: null,

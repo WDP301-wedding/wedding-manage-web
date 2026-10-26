@@ -44,8 +44,14 @@ export function ConsultationPanel({
       <span className="booking-step">01</span>
       <h2>Hồ sơ tư vấn</h2>
       <p style={bookingStyles.stepKicker}>
-        Nhập thông tin cặp đôi và bấm <strong>&quot;Tạo hồ sơ tư vấn&quot;</strong> để cấp mã tự
-        động sang Bước 02.
+        {consultation ? (
+          'Hồ sơ tư vấn đã được lưu. Tiếp tục xử lý hồ sơ này hoặc chọn khách cũ để lập hồ sơ riêng cho một tiệc khác.'
+        ) : (
+          <>
+            Nhập thông tin cặp đôi và bấm <strong>&quot;Tạo hồ sơ tư vấn&quot;</strong> để cấp mã tự
+            động sang Bước 02.
+          </>
+        )}
       </p>
       {prefill?.displayName || prefill?.email ? (
         <div style={bookingStyles.prefillBox}>
@@ -59,6 +65,7 @@ export function ConsultationPanel({
           <input
             key={`displayName-${prefill?.displayName ?? ''}`}
             name="displayName"
+            readOnly={consultation !== null}
             required
             minLength={1}
             maxLength={120}
@@ -70,6 +77,7 @@ export function ConsultationPanel({
           <input
             key={`email-${prefill?.email ?? ''}`}
             name="email"
+            readOnly={consultation !== null}
             type="email"
             required
             defaultValue={prefill?.email ?? ''}
@@ -80,13 +88,14 @@ export function ConsultationPanel({
           <textarea
             key={`note-${prefill?.note ?? ''}`}
             name="note"
+            readOnly={consultation !== null}
             maxLength={2000}
             rows={3}
             defaultValue={prefill?.note ?? ''}
           />
         </label>
-        <button disabled={disabled} type="submit">
-          Tạo hồ sơ tư vấn
+        <button disabled={disabled || consultation !== null} type="submit">
+          {consultation ? 'Đã tạo hồ sơ tư vấn' : 'Tạo hồ sơ tư vấn'}
         </button>
       </form>
       {consultation === null ? null : (
@@ -128,7 +137,7 @@ export function ConsultationPanel({
                 className="booking-secondary"
                 onClick={onReset}
               >
-                + Đặt cho cặp đôi mới
+                + Lập hồ sơ tư vấn cho tiệc khác
               </button>
             ) : null}
           </div>

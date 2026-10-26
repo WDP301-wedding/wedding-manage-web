@@ -46,7 +46,7 @@ export function BookingLookupBar({
       </form>
       {recentBookingIds.length > 0 ? (
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem' }}>
-          <span style={{ color: 'var(--hy-text-muted, #6e5d63)' }}>Tiệc của bạn:</span>
+          <span style={{ color: 'var(--hy-text-muted, #6e5d63)' }}>Chuyển sang tiệc khác:</span>
           <select
             aria-label="Chọn nhanh mã tiệc gần đây"
             value={recentBookingIds.includes(bookingId) ? bookingId : ''}
@@ -59,7 +59,7 @@ export function BookingLookupBar({
             }}
             style={{ maxWidth: '280px' }}
           >
-            <option value="">-- Chọn nhanh mã tiệc ({recentBookingIds.length}) --</option>
+            <option value="">-- Tiệc đã mở gần đây ({recentBookingIds.length}) --</option>
             {recentBookingIds.map((id) => (
               <option key={id} value={id}>
                 {id}

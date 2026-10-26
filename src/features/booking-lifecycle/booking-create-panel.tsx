@@ -13,6 +13,7 @@ export interface BookingCreatePanelProps {
   consultation: { id: string; revision: number } | null;
   disabled: boolean;
   gateway: ManagementBookingGateway;
+  beforeCreate: () => Promise<{ id: string; revision: number } | null>;
   onCreated: (
     result: {
       bookingId: string;
@@ -34,6 +35,7 @@ export function BookingCreatePanel({
   disabled,
   gateway,
   onCreated,
+  beforeCreate,
   run,
   setMessage,
   onValidationError,
@@ -45,6 +47,7 @@ export function BookingCreatePanel({
   const [loadError, setLoadError] = useState<string | null>(null);
   const inFlightRef = useRef<Promise<BookingSelections | null> | null>(null);
   const autoLoadedRef = useRef(false);
+  const creatingRef = useRef(false);
   const minimumDate = useMinimumEventDate();
 
   const loadCatalog = useCallback((): Promise<BookingSelections | null> => {
@@ -142,19 +145,24 @@ export function BookingCreatePanel({
     };
   };
 
-  const matchedHall = selections?.halls.find((h) => {
+  const matchingHalls = selections?.halls.filter((h) => {
+    if (prefill?.preferredHallId) return h.id === prefill.preferredHallId;
     if (!prefill?.preferredHallName) return false;
     const target = normalizeSearch(prefill.preferredHallName);
     const name = normalizeSearch(h.name);
-    return name === target || name.includes(target) || target.includes(name);
+    return name === target;
   });
 
-  const matchedMenu = selections?.menus.find((m) => {
+  const matchingMenus = selections?.menus.filter((m) => {
+    if (prefill?.preferredMenuVersionId) return m.versionId === prefill.preferredMenuVersionId;
     if (!prefill?.preferredMenuName) return false;
     const target = normalizeSearch(prefill.preferredMenuName);
     const name = normalizeSearch(m.name);
-    return name === target || name.includes(target) || target.includes(name);
+    return name === target;
   });
+
+  const matchedHall = matchingHalls?.length === 1 ? matchingHalls[0] : undefined;
+  const matchedMenu = matchingMenus?.length === 1 ? matchingMenus[0] : undefined;
 
   return (
     <article className="booking-card">
@@ -196,19 +204,20 @@ export function BookingCreatePanel({
       prefill?.expectedGuests ||
       prefill?.preferredHallName ||
       prefill?.preferredMenuName ||
-      prefill?.preferredShift ? (
+      prefill?.preferredShift ||
+      prefill?.preferredHallId ||
+      prefill?.preferredMenuVersionId ? (
         <div style={bookingStyles.prefillBox}>
           <span>✓</span>
           <span>
-            Đã điền sẵn
+            Thông tin khách đã gửi (chỉ tự chọn khi còn trong danh mục):
             {prefill.preferredHallName ? ` Sảnh (${prefill.preferredHallName}),` : ''}
-            {prefill.preferredShift ? ` Ca (${prefill.preferredShift === 'LUNCH' ? 'Trưa' : 'Tối'}),` : ''}
+            {prefill.preferredShift
+              ? ` Ca (${prefill.preferredShift === 'LUNCH' ? 'Trưa' : 'Tối'}),`
+              : ''}
             {prefill.preferredMenuName ? ` Thực đơn (${prefill.preferredMenuName}),` : ''}
             {prefill.eventDate ? ` ngày tổ chức (${prefill.eventDate})` : ''}
-            {prefill.expectedGuests
-              ? ` và ${prefill.expectedGuests} khách (~${prefill.tableCount ?? Math.max(1, Math.ceil(prefill.expectedGuests / 10))} bàn)`
-              : ''}{' '}
-            từ yêu cầu tư vấn.
+            {prefill.expectedGuests ? ` và ${prefill.expectedGuests} khách` : ''} từ yêu cầu tư vấn.
           </span>
         </div>
       ) : (
@@ -226,159 +235,183 @@ export function BookingCreatePanel({
           ngày phù hợp bên dưới để kiểm tra lịch sảnh.
         </div>
       )}
+      {selections &&
+      ((prefill?.preferredHallId && !matchedHall) ||
+        (prefill?.preferredMenuVersionId && !matchedMenu)) ? (
+        <p role="status">
+          Sảnh hoặc phiên bản thực đơn khách chọn không còn trong danh mục phục vụ. Hãy trao đổi với
+          khách và chọn phương án thay thế; hệ thống không tự đổi lựa chọn.
+        </p>
+      ) : null}
       <form
-            noValidate
-            onSubmit={(event) => {
-              event.preventDefault();
-              if (!validate(event.currentTarget, true)) return;
-              const value = input(event.currentTarget);
-              void run('booking', () => authorize((token) => gateway.createBooking(token, value))).then(
-                (result) => result && onCreated(result, value.consultationId),
+        noValidate
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (creatingRef.current || !validate(event.currentTarget, true)) return;
+          creatingRef.current = true;
+          const value = input(event.currentTarget);
+          void beforeCreate()
+            .then(async (current) => {
+              if (!current) return;
+              const result = await run('booking', () =>
+                authorize((token) =>
+                  gateway.createBooking(token, {
+                    ...value,
+                    consultationId: current.id,
+                    expectedRevision: current.revision,
+                  }),
+                ),
               );
+              if (result) onCreated(result, current.id);
+            })
+            .finally(() => {
+              creatingRef.current = false;
+            });
+        }}
+      >
+        <label>
+          Mã hồ sơ tư vấn
+          <input
+            key={consultation?.id ?? 'new'}
+            name="consultationId"
+            readOnly
+            required
+            defaultValue={consultation?.id ?? ''}
+            placeholder="Tự động điền sau khi hoàn thành Bước 01"
+          />
+        </label>
+        <small
+          style={{
+            color: '#5d665f',
+            fontSize: '0.75rem',
+            marginTop: '-0.5rem',
+            marginBottom: '0.75rem',
+            display: 'block',
+          }}
+        >
+          {consultation
+            ? `✓ Đã kết nối hồ sơ tư vấn (Phiên bản ${consultation.revision})`
+            : 'Mã này sẽ tự động điền khi bạn bấm "Tạo hồ sơ tư vấn" ở Bước 01'}
+        </small>
+        <input
+          key={`${consultation?.id}:${consultation?.revision}`}
+          name="expectedRevision"
+          type="hidden"
+          value={consultation?.revision ?? 1}
+        />
+        <label>
+          Sảnh tiệc
+          <select
+            key={`hallId-${matchedHall?.id ?? 'none'}`}
+            name="hallId"
+            required
+            defaultValue={matchedHall?.id ?? ''}
+            onFocus={() => {
+              if (selections === null && !loadingSelections && loadError === null)
+                void loadCatalog();
+            }}
+            onClick={() => {
+              if (selections === null && !loadingSelections && loadError === null)
+                void loadCatalog();
             }}
           >
-            <label>
-              Mã hồ sơ tư vấn
-              <input
-                key={consultation?.id ?? 'new'}
-                name="consultationId"
-                required
-                defaultValue={consultation?.id ?? ''}
-                placeholder="Tự động điền sau khi hoàn thành Bước 01"
-              />
-            </label>
-            <small
-              style={{
-                color: '#5d665f',
-                fontSize: '0.75rem',
-                marginTop: '-0.5rem',
-                marginBottom: '0.75rem',
-                display: 'block',
-              }}
-            >
-              {consultation
-                ? `✓ Đã kết nối hồ sơ tư vấn (Phiên bản ${consultation.revision})`
-                : 'Mã này sẽ tự động điền khi bạn bấm "Tạo hồ sơ tư vấn" ở Bước 01'}
-            </small>
-            <input
-              key={`${consultation?.id}:${consultation?.revision}`}
-              name="expectedRevision"
-              type="hidden"
-              value={consultation?.revision ?? 1}
+            <option value="" disabled>
+              {loadingSelections ? 'Đang tải sảnh…' : 'Chọn sảnh'}
+            </option>
+            {selections?.halls.map((hall) => (
+              <option key={hall.id} value={hall.id}>
+                {hall.name} · tối đa {hall.maxGuests} khách
+              </option>
+            ))}
+          </select>
+        </label>
+        <div className="booking-fields-inline">
+          <label>
+            <span id="booking-date-label">Ngày tổ chức</span>
+            <DatePicker
+              key={`eventDate-${prefill?.eventDate ?? ''}`}
+              name="eventDate"
+              min={minimumDate}
+              defaultValue={prefill?.eventDate ?? ''}
+              ariaLabelledby="booking-date-label"
+              ariaDescribedby="booking-date-help"
+              required
             />
-            <label>
-              Sảnh tiệc
-              <select
-                key={`hallId-${matchedHall?.id ?? 'none'}`}
-                name="hallId"
-                required
-                defaultValue={matchedHall?.id ?? ''}
-                onFocus={() => {
-                  if (selections === null && !loadingSelections && loadError === null)
-                    void loadCatalog();
-                }}
-                onClick={() => {
-                  if (selections === null && !loadingSelections && loadError === null)
-                    void loadCatalog();
-                }}
-              >
-                <option value="" disabled>
-                  {loadingSelections ? 'Đang tải sảnh…' : 'Chọn sảnh'}
+            <small id="booking-date-help">Chọn ngày mốt hoặc muộn hơn (theo giờ Việt Nam).</small>
+          </label>
+          <label>
+            Ca
+            <select
+              key={`shiftCode-${prefill?.preferredShift ?? ''}`}
+              name="shiftCode"
+              defaultValue={prefill?.preferredShift ?? ''}
+              required
+            >
+              <option value="" disabled>
+                Chọn ca
+              </option>
+              {selections === null ? (
+                <>
+                  <option value="LUNCH">Trưa</option>
+                  <option value="DINNER">Tối</option>
+                </>
+              ) : null}
+              {selections?.shifts.map((shift) => (
+                <option key={shift.code} value={shift.code}>
+                  {shift.code === 'LUNCH' ? 'Trưa' : 'Tối'} · {shift.startTime}–{shift.endTime}
                 </option>
-                {selections?.halls.map((hall) => (
-                  <option key={hall.id} value={hall.id}>
-                    {hall.name} · tối đa {hall.maxGuests} khách
-                  </option>
-                ))}
-              </select>
-            </label>
-            <div className="booking-fields-inline">
-              <label>
-                <span id="booking-date-label">Ngày tổ chức</span>
-                <DatePicker
-                  key={`eventDate-${prefill?.eventDate ?? ''}`}
-                  name="eventDate"
-                  min={minimumDate}
-                  defaultValue={prefill?.eventDate ?? ''}
-                  ariaLabelledby="booking-date-label"
-                  ariaDescribedby="booking-date-help"
-                  required
-                />
-                <small id="booking-date-help">Chọn ngày mốt hoặc muộn hơn (theo giờ Việt Nam).</small>
-              </label>
-              <label>
-                Ca
-                <select
-                  key={`shiftCode-${prefill?.preferredShift ?? 'DINNER'}`}
-                  name="shiftCode"
-                  defaultValue={prefill?.preferredShift ?? 'DINNER'}
-                  required
-                >
-                  <option value="" disabled>
-                    Chọn ca
-                  </option>
-                  {selections === null ? (
-                    <>
-                      <option value="LUNCH">Trưa</option>
-                      <option value="DINNER">Tối</option>
-                    </>
-                  ) : null}
-                  {selections?.shifts.map((shift) => (
-                    <option key={shift.code} value={shift.code}>
-                      {shift.code === 'LUNCH' ? 'Trưa' : 'Tối'} · {shift.startTime}–{shift.endTime}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-            <label>
-              Thực đơn đặt tiệc
-              <select
-                key={`menuId-${matchedMenu?.versionId ?? 'none'}`}
-                name="menuPackageVersionId"
-                required
-                defaultValue={matchedMenu?.versionId ?? ''}
-                onFocus={() => {
-                  if (selections === null && !loadingSelections && loadError === null)
-                    void loadCatalog();
-                }}
-                onClick={() => {
-                  if (selections === null && !loadingSelections && loadError === null)
-                    void loadCatalog();
-                }}
-              >
-                <option value="" disabled>
-                  {loadingSelections ? 'Đang tải thực đơn…' : 'Chọn thực đơn'}
-                </option>
-                {selections?.menus.map((menu) => (
-                  <option key={menu.versionId} value={menu.versionId}>
-                    {menu.name} · bản {menu.versionNumber} · {money(menu.priceVndPerTable)}/bàn
-                  </option>
-                ))}
-              </select>
-            </label>
+              ))}
+            </select>
+          </label>
+        </div>
+        <label>
+          Thực đơn đặt tiệc
+          <select
+            key={`menuId-${matchedMenu?.versionId ?? 'none'}`}
+            name="menuPackageVersionId"
+            required
+            defaultValue={matchedMenu?.versionId ?? ''}
+            onFocus={() => {
+              if (selections === null && !loadingSelections && loadError === null)
+                void loadCatalog();
+            }}
+            onClick={() => {
+              if (selections === null && !loadingSelections && loadError === null)
+                void loadCatalog();
+            }}
+          >
+            <option value="" disabled>
+              {loadingSelections ? 'Đang tải thực đơn…' : 'Chọn thực đơn'}
+            </option>
+            {selections?.menus.map((menu) => (
+              <option key={menu.versionId} value={menu.versionId}>
+                {menu.name} · bản {menu.versionNumber} · {money(menu.priceVndPerTable)}/bàn
+              </option>
+            ))}
+          </select>
+        </label>
         <div className="booking-fields-inline">
           <label>
             Số bàn
             <input
-              key={`tableCount-${prefill?.tableCount ?? 20}`}
+              key={`tableCount-${prefill?.tableCount ?? ''}`}
               name="tableCount"
               type="number"
               min={1}
               max={500}
-              defaultValue={prefill?.tableCount ?? 20}
+              defaultValue={prefill?.tableCount ?? ''}
               required
             />
           </label>
           <label>
             Số khách dự kiến
             <input
-              key={`planningHeadcount-${prefill?.expectedGuests ?? 200}`}
+              key={`planningHeadcount-${prefill?.expectedGuests ?? ''}`}
               name="planningHeadcount"
               type="number"
               min={0}
               max={10000}
-              defaultValue={prefill?.expectedGuests ?? 200}
+              defaultValue={prefill?.expectedGuests ?? ''}
               required
             />
           </label>
@@ -406,7 +439,7 @@ export function BookingCreatePanel({
           >
             Kiểm tra lịch
           </button>
-          <button disabled={disabled} type="submit">
+          <button disabled={disabled || consultation === null} type="submit">
             Tạo booking
           </button>
         </div>

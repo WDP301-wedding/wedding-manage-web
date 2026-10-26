@@ -19,6 +19,8 @@ export type BookingPrefill = Readonly<{
   eventDate?: string | undefined;
   expectedGuests?: number | undefined;
   tableCount?: number | undefined;
+  preferredHallId?: string | undefined;
+  preferredMenuVersionId?: string | undefined;
   preferredHallName?: string | undefined;
   preferredMenuName?: string | undefined;
   preferredShift?: 'LUNCH' | 'DINNER' | undefined;
@@ -127,7 +129,7 @@ export function errorMessage(error: unknown, shift?: ProposalView['proposal']['s
       : 'Giờ bắt đầu mốc chương trình phải nằm trong ca tiệc đã chọn. Hãy sửa giờ rồi lưu lại.';
   const messages: Record<string, string> = {
     STALE_BOOKING_REVISION:
-      'Hồ sơ đã thay đổi ở nơi khác hoặc mã hồ sơ tư vấn này đã được dùng để tạo tiệc rồi. Hãy bấm "Tạo hồ sơ tư vấn" ở Bước 01 để tạo mã mới cho cặp đôi.',
+      'Hồ sơ đã thay đổi. Tải lại hồ sơ hiện có để tiếp tục; không tạo lại tiệc từ cùng hồ sơ tư vấn.',
     SLOT_NOT_AVAILABLE: 'Khung giờ vừa được giữ bởi hồ sơ khác. Hãy chọn lịch khác.',
     DEPOSIT_INTENT_ACTIVE: 'Đang có giao dịch tiền cọc chưa kết thúc nên chưa thể thay đổi hồ sơ.',
     BOOKING_NOT_FOUND: 'Không tìm thấy hồ sơ hoặc tài khoản không có quyền xem.',
@@ -143,4 +145,15 @@ export function errorMessage(error: unknown, shift?: ProposalView['proposal']['s
       'Kịch bản đã có phiên bản mới. Hãy tải lại hồ sơ trước khi tiếp tục.',
   };
   return messages[error.code] ?? 'Yêu cầu chưa hoàn tất. Hãy kiểm tra dữ liệu và thử lại.';
+}
+
+export function bookingPhaseLabel(phase: string): string {
+  const labels: Record<string, string> = {
+    DRAFT: 'Đang chuẩn bị nội dung tiệc',
+    AWAITING_DEPOSIT: 'Chờ đặt cọc',
+    CONFIRMED: 'Đã xác nhận tiệc',
+    CANCELLED: 'Đã hủy tiệc',
+    COMPLETED: 'Đã hoàn tất tiệc',
+  };
+  return labels[phase] ?? 'Đã có hồ sơ đặt tiệc';
 }

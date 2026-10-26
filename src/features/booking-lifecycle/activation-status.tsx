@@ -48,7 +48,7 @@ const client = () => (api ??= createApiClient() as ApiClient & Client<Activation
 const labels: Record<Activation['state'], string> = {
   NOT_ISSUED: 'Chưa phát hành lời mời',
   DELIVERY_PENDING: 'Chưa xác nhận phát hành',
-  AWAITING_ACCEPTANCE: 'Đã phát hành · Chờ khách kích hoạt',
+  AWAITING_ACCEPTANCE: 'Đã phát hành · Chờ khách nhận lời mời vào hồ sơ',
   EXPIRED: 'Lời mời đã hết hạn',
   REVOKED: 'Lời mời đã bị thu hồi',
   ACTIVATED: 'Tài khoản đã kích hoạt',

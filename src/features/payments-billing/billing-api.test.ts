@@ -2,7 +2,19 @@ import { describe, expect, it } from 'vitest';
 import { createApiClient } from '../../lib/api/client';
 import { createManagementBillingGateway } from './billing-api';
 
-function harness(data: unknown = { bookingId: 'booking', billingRevision: 4, history: [] }) {
+function harness(
+  data: unknown = {
+    bookingId: 'booking',
+    billingRevision: 4,
+    history: [],
+    balancePaymentEligibility: {
+      billingRevision: 4,
+      canPay: false,
+      nextAction: 'NONE',
+      reasonCode: 'BALANCE_NOT_ELIGIBLE',
+    },
+  },
+) {
   const requests: Request[] = [];
   const client = createApiClient({
     baseUrl: 'http://localhost:4000/api/v1',
@@ -116,5 +128,21 @@ describe('generated management billing adapter', () => {
         'key',
       ),
     ).rejects.toThrow('dữ liệu');
+  });
+});
+
+describe('billing contract compatibility', () => {
+  it.each([
+    { billingRevision: 4, canPay: true, nextAction: 'PAY_BALANCE', reasonCode: null },
+    { billingRevision: 4, canPay: false, nextAction: 'NONE', reasonCode: 'BALANCE_NOT_ELIGIBLE' },
+  ])('preserves the server payment decision without recalculation: %j', async (eligibility) => {
+    const { gateway } = harness({
+      bookingId: 'booking',
+      billingRevision: 4,
+      history: [],
+      balancePaymentEligibility: eligibility,
+    });
+    const result = await gateway.load('token', 'booking');
+    expect(result.balancePaymentEligibility).toEqual(eligibility);
   });
 });
