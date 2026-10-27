@@ -49,3 +49,10 @@ Run `api:check` for normal verification. Run `api:generate` only after the backe
 - If browser requests fail, confirm the backend is on port 3001 and includes `http://localhost:3002` in `CORS_ALLOWED_ORIGINS`.
 - A digest mismatch means the local OpenAPI file is not the artifact recorded in `api-contract.lock.json`; do not bypass it. Update the lock only after the backend contract commit exists.
 - Production builds reject a cleartext non-loopback API URL. Use HTTPS outside local development.
+
+### Realtime khi triển khai
+
+- Đặt `NEXT_PUBLIC_REALTIME_URL` thành origin HTTPS công khai của BE (không có `/api/v1`), ví dụ `https://wedding-be-render-trial.onrender.com`. Nếu không đặt, Next.js lấy origin từ `BACKEND_ORIGIN` khi build.
+- HTTP API vẫn đi qua proxy cùng site để giữ cookie; Socket.IO kết nối trực tiếp tới BE qua đường dẫn `/realtime`, transport WebSocket. HTTP rewrite `/api/v1` không chuyển tiếp socket.
+- Sau khi thay biến môi trường, build/deploy lại frontend vì cấu hình public được chốt khi build. BE phải cho phép đúng origin của cả hai web trong cấu hình CORS và bật realtime.
+- Khi kiểm tra thủ công, kết nối `/realtime/?EIO=4&transport=websocket` phải nâng cấp thành WebSocket (101). Lưu/phê duyệt kịch bản ở manager rồi quan sát khách cập nhật mà không F5; thử lại sau khi phiên được làm mới. Health HTTP 200 chưa chứng minh realtime hoạt động.

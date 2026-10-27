@@ -18,7 +18,24 @@ function createPublicEnvSchema(runtimeEnvironment: string | undefined) {
         message: 'The public API URL must use HTTPS outside local development.',
       },
     ),
-    NEXT_PUBLIC_REALTIME_URL: z.url({ protocol: /^https?$/ }).optional(),
+    NEXT_PUBLIC_REALTIME_URL: z
+      .url({ protocol: /^https?$/ })
+      .refine(
+        (value) => {
+          const url = new URL(value);
+          return (
+            url.username === '' &&
+            url.password === '' &&
+            (url.protocol === 'https:' ||
+              (runtimeEnvironment !== 'production' && loopbackHosts.has(url.hostname)))
+          );
+        },
+        {
+          message:
+            'Realtime must use a public HTTPS backend URL without credentials outside local development.',
+        },
+      )
+      .optional(),
   });
 }
 

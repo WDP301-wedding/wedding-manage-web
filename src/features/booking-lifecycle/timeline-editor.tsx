@@ -72,10 +72,11 @@ export function TimelineEditor({
     >
       <fieldset disabled={disabled}>
         <legend>Chỉnh sửa các mốc chương trình</legend>
-        {templateSource !== undefined && drafts.length === 0 ? (
+        {templateSource !== undefined ? (
           <TimelineTemplatePicker
             disabled={disabled}
             source={templateSource}
+            replaceExisting={drafts.length > 0}
             onCopy={(items) =>
               setDrafts(
                 items.map((item) => ({

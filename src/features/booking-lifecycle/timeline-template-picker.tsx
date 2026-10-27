@@ -16,17 +16,22 @@ type Version = CatalogTimeline['versions'][number];
 export function TimelineTemplatePicker({
   disabled,
   source,
+  replaceExisting = false,
   onCopy,
 }: Readonly<{
   disabled: boolean;
   source: TimelineTemplateSource;
+  replaceExisting?: boolean;
   onCopy: (items: readonly TimelineItemInput[]) => void;
 }>) {
   const [versions, setVersions] = useState<readonly Version[] | null>(null);
   const [selectedId, setSelectedId] = useState('');
   const [loading, setLoading] = useState(false);
+  const [replacement, setReplacement] = useState<readonly TimelineItemInput[] | null>(null);
 
   const load = async () => {
+    if (disabled || loading) return;
+    setReplacement(null);
     setLoading(true);
     setVersions(null);
     setSelectedId('');
@@ -50,7 +55,15 @@ export function TimelineTemplatePicker({
     }
   };
 
+  const apply = (items: readonly TimelineItemInput[]) => {
+    if (disabled) return;
+    onCopy(items);
+    setReplacement(null);
+    notify.success('Đã nạp mẫu vào bản đang soạn. Lưu kịch bản để ghi nhận thay đổi.');
+  };
+
   const copy = () => {
+    if (disabled || loading) return;
     const version = versions?.find((candidate) => candidate.id === selectedId);
     if (version === undefined) return;
     const start = minutes(source.shift.startTime);
@@ -60,25 +73,27 @@ export function TimelineTemplatePicker({
       return;
     }
     const items = [...version.items].sort((left, right) => left.displayOrder - right.displayOrder);
-    onCopy(
-      items.map((item, order) => {
-        const at = start + item.offsetMinutes;
-        return {
-          order,
-          startTime: `${String(Math.floor(at / 60)).padStart(2, '0')}:${String(at % 60).padStart(2, '0')}`,
-          title: item.title,
-          ...(item.description === null ? {} : { description: item.description }),
-        };
-      }),
-    );
-    notify.success('Đã nạp mốc kịch bản từ mẫu.');
+    const copied = items.map((item, order) => {
+      const at = start + item.offsetMinutes;
+      return {
+        order,
+        startTime: `${String(Math.floor(at / 60)).padStart(2, '0')}:${String(at % 60).padStart(2, '0')}`,
+        title: item.title,
+        ...(item.description === null ? {} : { description: item.description }),
+      };
+    });
+    if (replaceExisting) setReplacement(copied);
+    else apply(copied);
   };
 
   return (
     <div className="timeline-template-picker">
-      <p>Bắt đầu từ mẫu đã công bố hoặc tự thêm các mốc bên dưới.</p>
+      <p>
+        Chọn mẫu đã công bố hoặc tự chỉnh các mốc bên dưới. Đổi mẫu chỉ thay bản đang soạn, chưa lưu
+        hay phê duyệt kịch bản.
+      </p>
       <button type="button" disabled={disabled || loading} onClick={() => void load()}>
-        Tải mẫu kịch bản
+        {replaceExisting ? 'Đổi mẫu kịch bản' : 'Tải mẫu kịch bản'}
       </button>
       {loading ? <p role="status">Đang tải mẫu kịch bản…</p> : null}
       {versions === null ? null : versions.length === 0 ? (
@@ -90,7 +105,10 @@ export function TimelineTemplatePicker({
             <select
               disabled={disabled || loading}
               value={selectedId}
-              onChange={(event) => setSelectedId(event.target.value)}
+              onChange={(event) => {
+                setSelectedId(event.target.value);
+                setReplacement(null);
+              }}
             >
               <option value="">Chọn mẫu kịch bản</option>
               {versions.map((version) => (
@@ -105,6 +123,30 @@ export function TimelineTemplatePicker({
           </button>
         </>
       )}
+      {replacement !== null ? (
+        <div
+          className="timeline-template-confirmation"
+          role="group"
+          aria-label="Xác nhận đổi mẫu kịch bản"
+        >
+          <p role="alert">
+            Thay toàn bộ mốc đang soạn bằng mẫu đã chọn? Các chỉnh sửa chưa lưu sẽ được thay thế.
+            Kịch bản đã lưu vẫn được giữ cho đến khi bạn lưu bản mới.
+          </p>
+          <div className="timeline-editor-actions">
+            <button
+              type="button"
+              disabled={disabled || loading}
+              onClick={() => setReplacement(null)}
+            >
+              Giữ bản đang soạn
+            </button>
+            <button type="button" disabled={disabled || loading} onClick={() => apply(replacement)}>
+              Xác nhận thay các mốc
+            </button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -185,6 +185,7 @@ export class ManagementIdentitySession {
           denial: null,
           presentation: persisted.presentation,
         };
+        sharedManagementRealtime.connect(persisted.accessToken);
       }
     }
     if (this.accessToken === null) throw new Error('Authentication is required.');

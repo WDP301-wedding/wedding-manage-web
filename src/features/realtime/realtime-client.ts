@@ -41,21 +41,23 @@ export type RealtimeResyncListener = () => void;
 export type RealtimeStatusListener = (status: RealtimeStatus) => void;
 
 export function resolveRealtimeSocketUrl(): string {
-  try {
-    if (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_REALTIME_URL) {
-      return new URL(process.env.NEXT_PUBLIC_REALTIME_URL).origin;
-    }
-    const apiBase = readPublicEnv().NEXT_PUBLIC_API_BASE_URL;
-    const parsed = new URL(apiBase);
-    // In local dev, if NEXT_PUBLIC_API_BASE_URL points to Next.js Manager/Couple BFF (port 3000 or 3002),
-    // backend WebSocket is running on port 3001.
-    if (parsed.port === '3000' || parsed.port === '3002') {
-      return `${parsed.protocol}//${parsed.hostname}:3001`;
-    }
-    return parsed.origin;
-  } catch {
-    return 'http://127.0.0.1:3001';
+  const env = readPublicEnv();
+  if (env.NEXT_PUBLIC_REALTIME_URL) return new URL(env.NEXT_PUBLIC_REALTIME_URL).origin;
+  const api = new URL(env.NEXT_PUBLIC_API_BASE_URL);
+  const isLoopback = ['localhost', '127.0.0.1', '[::1]'].includes(api.hostname);
+  if (
+    process.env.NODE_ENV !== 'production' &&
+    isLoopback &&
+    (api.port === '3000' || api.port === '3002')
+  ) {
+    api.port = '3001';
   }
+  if (typeof window !== 'undefined' && api.origin === window.location.origin && !isLoopback) {
+    throw new Error(
+      'Configure NEXT_PUBLIC_REALTIME_URL with the backend origin; the HTTP API proxy does not forward WebSocket connections.',
+    );
+  }
+  return api.origin;
 }
 
 export class ManagementRealtimeManager {
@@ -92,9 +94,17 @@ export class ManagementRealtimeManager {
       return;
     }
 
+    let socketUrl: string;
+    try {
+      socketUrl = resolveRealtimeSocketUrl();
+    } catch (error) {
+      this.setStatus('disconnected');
+      console.error('Realtime configuration is invalid.', error);
+      return;
+    }
     this.setStatus('connecting');
 
-    const socket = io(resolveRealtimeSocketUrl(), {
+    const socket = io(socketUrl, {
       path: '/realtime',
       transports: ['websocket'],
       auth: { token },

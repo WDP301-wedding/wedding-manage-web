@@ -4,6 +4,11 @@ const backendOrigin = process.env.BACKEND_ORIGIN || 'https://wedding-be-render-t
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // Socket.IO connects directly to the backend, independently of HTTP rewrites.
+  env: {
+    NEXT_PUBLIC_REALTIME_URL:
+      process.env.NEXT_PUBLIC_REALTIME_URL || (backendOrigin ? new URL(backendOrigin).origin : ''),
+  },
   async rewrites() {
     return [
       {
