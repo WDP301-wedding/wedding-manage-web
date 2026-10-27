@@ -13,6 +13,7 @@ interface InFlightEntry<T> {
 }
 
 const DEFAULT_TTL_MS = 60_000;
+export const catalogCacheTtlMs = DEFAULT_TTL_MS;
 const MAX_CACHE_ENTRIES = 200;
 
 let currentGeneration = 1;

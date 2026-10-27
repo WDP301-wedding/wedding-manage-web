@@ -21,14 +21,26 @@ const appendixStateLabels: Record<string, string> = {
   SUPERSEDED: 'Đã thay thế',
 };
 
-export function AppendixPanel({
-  bookingId,
-  bookingRevision,
+export function AppendixPanel(props: Readonly<AppendixPanelProps>) {
+  return props.panelState ? (
+    <AppendixPanelView disabled={props.disabled} panelState={props.panelState} />
+  ) : (
+    <ConnectedAppendixPanel {...props} />
+  );
+}
+
+function ConnectedAppendixPanel(props: Readonly<AppendixPanelProps>) {
+  const panelState = useAppendixPanel(props);
+  return <AppendixPanelView disabled={props.disabled} panelState={panelState} />;
+}
+
+function AppendixPanelView({
   disabled,
-  onRefresh,
   panelState,
-}: Readonly<AppendixPanelProps>) {
-  const fallbackState = useAppendixPanel({ bookingId, bookingRevision, onRefresh });
+}: Readonly<{
+  disabled: boolean;
+  panelState: AppendixPanelState;
+}>) {
   const {
     loading,
     data,
@@ -42,7 +54,7 @@ export function AppendixPanel({
     handleApproveAppendix,
     handleSubmitAppendix,
     refreshAppendices,
-  } = panelState ?? fallbackState;
+  } = panelState;
 
   const [confirmingApproval, setConfirmingApproval] = useState(false);
 

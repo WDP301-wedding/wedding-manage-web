@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { addCatalogInvalidationListener } from './catalog-cache';
 
 /** Coalesces event bursts and defers background refresh while a form is dirty.
@@ -12,7 +12,16 @@ export function hasDirtyCatalogForms(): boolean {
   return dirtyForms.size > 0;
 }
 
-export function useCatalogLiveRefresh(refresh: (background?: boolean) => Promise<void>): void {
+export function useCatalogLiveRefresh(
+  refresh: (background?: boolean) => Promise<void>,
+  enabled = true,
+): void {
+  const enabledRef = useRef(enabled);
+  const resume = useRef<(() => void) | null>(null);
+  useEffect(() => {
+    enabledRef.current = enabled;
+    if (enabled) resume.current?.();
+  }, [enabled]);
   useEffect(() => {
     let disposed = false;
     let pending = false;
@@ -27,14 +36,14 @@ export function useCatalogLiveRefresh(refresh: (background?: boolean) => Promise
       if (pending) schedule();
     };
     const schedule = () => {
-      if (!disposed && timer === null)
+      if (!disposed && enabledRef.current && timer === null)
         timer = setTimeout(() => {
           timer = null;
           void flush();
         }, 400);
     };
     const flush = async () => {
-      if (disposed || inFlight || !pending) return;
+      if (disposed || inFlight || !pending || !enabledRef.current) return;
       if (hasDirtyCatalogForms()) return;
       pending = false;
       inFlight = true;
@@ -45,6 +54,9 @@ export function useCatalogLiveRefresh(refresh: (background?: boolean) => Promise
         inFlight = false;
         if (pending && !hasDirtyCatalogForms()) schedule();
       }
+    };
+    resume.current = () => {
+      if (pending) schedule();
     };
     const observer = new MutationObserver(() => {
       if (pending && !hasDirtyCatalogForms()) schedule();
@@ -59,6 +71,7 @@ export function useCatalogLiveRefresh(refresh: (background?: boolean) => Promise
     });
     return () => {
       disposed = true;
+      resume.current = null;
       unsubscribe();
       observer.disconnect();
       hasDirtyCatalogForms();

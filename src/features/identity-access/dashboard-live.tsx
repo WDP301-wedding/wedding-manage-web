@@ -1,7 +1,9 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useRealtimeSubscription, createCoalescedFetcher } from '../realtime/use-realtime';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useRealtimeSubscription } from '../realtime/use-realtime';
+import { useRefreshQueue } from '../realtime/refresh-queue';
+import { catalogCacheTtlMs } from '../venue-catalog/catalog-cache';
 import {
   analyticsService,
   type AnalyticsBookingsData,
@@ -156,11 +158,25 @@ export function DashboardLiveView({
     }
   };
 
+  const catalogData = useRef<{
+    value: Pick<DashboardData, 'restaurant' | 'halls'>;
+    expiresAt: number;
+  } | null>(null);
+  const catalogGeneration = useRef(0);
+  const dataSequence = useRef(0);
+  const invalidateRead = useCallback(() => {
+    dataSequence.current++;
+  }, []);
   const fetchData = useCallback(async () => {
+    const sequence = ++dataSequence.current;
     setState('loading');
     setErrorMessage(null);
 
     try {
+      const generation = catalogGeneration.current;
+      const currentCatalog = catalogData.current;
+      const cachedCatalog =
+        currentCatalog && currentCatalog.expiresAt > Date.now() ? currentCatalog.value : null;
       const now = new Date();
       const currentYear = now.getFullYear();
       const currentMonth = String(now.getMonth() + 1).padStart(2, '0');
@@ -176,8 +192,10 @@ export function DashboardLiveView({
 
       const [restaurantRes, hallsRes, consultationsRes, analyticsRes, bookingsRes] =
         await Promise.allSettled([
-          catalogService.getRestaurant(),
-          catalogService.getPublicHalls(),
+          cachedCatalog
+            ? Promise.resolve(cachedCatalog.restaurant)
+            : catalogService.getRestaurant(),
+          cachedCatalog ? Promise.resolve(cachedCatalog.halls) : catalogService.getPublicHalls(),
           isManager
             ? consultationService.getConsultationRequests({ limit: 10 })
             : Promise.resolve(null),
@@ -191,6 +209,7 @@ export function DashboardLiveView({
             : Promise.resolve(null),
         ]);
 
+      if (sequence !== dataSequence.current) return;
       const restaurant = restaurantRes.status === 'fulfilled' ? restaurantRes.value : null;
       const halls = hallsRes.status === 'fulfilled' ? hallsRes.value : [];
       const consultations =
@@ -202,9 +221,20 @@ export function DashboardLiveView({
       const bookings =
         bookingsRes.status === 'fulfilled' && bookingsRes.value ? bookingsRes.value.items : [];
 
+      if (
+        generation === catalogGeneration.current &&
+        restaurantRes.status === 'fulfilled' &&
+        hallsRes.status === 'fulfilled'
+      ) {
+        catalogData.current = {
+          value: { restaurant, halls },
+          expiresAt: Date.now() + catalogCacheTtlMs,
+        };
+      }
       setData({ restaurant, halls, consultations, bookings, analytics });
       setState('success');
     } catch (error) {
+      if (sequence !== dataSequence.current) return;
       const friendly = describeApiError(error);
       const msg = friendly.message || 'Không thể tải dữ liệu tổng quan. Vui lòng thử lại.';
       setErrorMessage(msg);
@@ -213,18 +243,25 @@ export function DashboardLiveView({
     }
   }, [isManager]);
 
+  const refresh = useRefreshQueue(fetchData, isManager ? 'manager-dashboard' : 'staff-dashboard');
   useEffect(() => {
-    void fetchData();
-  }, [fetchData]);
-
-  const throttledFetch = useMemo(() => createCoalescedFetcher(fetchData, 500), [fetchData]);
+    void refresh.run();
+    return invalidateRead;
+  }, [refresh, invalidateRead]);
 
   useRealtimeSubscription({
-    onEvent: () => {
-      throttledFetch.trigger();
+    onEvent: (event) => {
+      if (event.type === 'notification.received') return;
+      if (event.type === 'catalog.updated') {
+        catalogGeneration.current++;
+        catalogData.current = null;
+      }
+      refresh.schedule();
     },
     onResync: () => {
-      throttledFetch.trigger();
+      catalogGeneration.current++;
+      catalogData.current = null;
+      refresh.schedule();
     },
   });
 
@@ -235,7 +272,15 @@ export function DashboardLiveView({
         <div className="booking-error" style={{ margin: '1rem 0' }}>
           <strong>Lỗi kết nối máy chủ</strong>
           <p>{errorMessage}</p>
-          <button type="button" onClick={() => void fetchData()} className="text-button">
+          <button
+            type="button"
+            onClick={() => {
+              catalogGeneration.current++;
+              catalogData.current = null;
+              void refresh.refresh();
+            }}
+            className="text-button"
+          >
             Thử tải lại
           </button>
         </div>

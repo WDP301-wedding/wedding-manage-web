@@ -43,6 +43,7 @@ export function MediaPanel({
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const assetsLoadedAtRef = useRef<number>(0);
+  const initialLoadStarted = useRef(false);
   const inFlightRenewRef = useRef<boolean>(false);
   const allowedTypesKey = allowedTypes ? allowedTypes.join(',') : '';
 
@@ -97,14 +98,16 @@ export function MediaPanel({
   );
 
   useEffect(() => {
+    if (!active || initialLoadStarted.current) return;
+    initialLoadStarted.current = true;
     queueMicrotask(() => void load());
-  }, [load]);
+  }, [active, load]);
 
   const refreshSelected = useCallback(
     (background = false) => load(selectedKey, background),
     [load, selectedKey],
   );
-  useCatalogLiveRefresh(refreshSelected);
+  useCatalogLiveRefresh(refreshSelected, active);
 
   useEffect(() => {
     if (!active || selected === undefined || assets.length === 0) return;

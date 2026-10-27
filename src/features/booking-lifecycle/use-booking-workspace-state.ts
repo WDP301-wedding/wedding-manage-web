@@ -16,6 +16,7 @@ import {
   parseConsultationChoices,
 } from './booking-helpers';
 import { useRealtimeSubscription } from '../realtime/use-realtime';
+import { useRefreshQueue } from '../realtime/refresh-queue';
 import { notify } from '../../design-system/notifications';
 
 export interface UseBookingWorkspaceStateOptions {
@@ -311,6 +312,10 @@ export function useBookingWorkspaceState({
 
   const currentBookingId = proposal?.bookingId ?? (bookingId || undefined);
 
+  const proposalRefresh = useRefreshQueue(async () => {
+    if (currentBookingId) await loadProposal(currentBookingId, false);
+  }, currentBookingId ?? 'no-booking');
+
   useRealtimeSubscription({
     bookingId: currentBookingId,
     onEvent: (event) => {
@@ -318,19 +323,19 @@ export function useBookingWorkspaceState({
         currentBookingId &&
         (!event.scope.bookingId || event.scope.bookingId === currentBookingId)
       ) {
-        void loadProposal(currentBookingId, false);
+        proposalRefresh.schedule();
       }
     },
     onResync: () => {
       if (currentBookingId) {
-        void loadProposal(currentBookingId, false);
+        proposalRefresh.schedule();
       }
     },
   });
 
   const refresh = async (success: string) => {
     setMessage(success);
-    if (proposal !== null) await loadProposal(proposal.bookingId, false);
+    if (proposal !== null) await proposalRefresh.refresh();
   };
 
   const resetConsultation = () => {

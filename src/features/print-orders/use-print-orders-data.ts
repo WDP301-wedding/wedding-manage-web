@@ -6,6 +6,7 @@ import {
   type PrintOrderView,
 } from './print-orders-types';
 import { useRealtimeSubscription } from '../realtime/use-realtime';
+import { useRefreshQueue } from '../realtime/refresh-queue';
 
 export interface UsePrintOrdersDataOptions {
   gateway: ManagementPrintOrdersGateway;
@@ -25,6 +26,7 @@ export function usePrintOrdersData({
   const [orders, setOrders] = useState<readonly PrintOrderView[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const initiallyLoaded = useRef(false);
   const [lastRefreshed, setLastRefreshed] = useState<string>('Vừa xong');
 
   // Real cursor pagination state
@@ -77,46 +79,26 @@ export function usePrintOrdersData({
     [authorize, gateway, showError],
   );
 
-  // Initial load
-  useEffect(() => {
-    let active = true;
-    const epoch = ++requestEpochRef.current;
-    void authorize((token) => gateway.list(token, { limit: 10 }))
-      .then((res) => {
-        if (!active || epoch !== requestEpochRef.current) return;
-        setOrders(res.items);
-        setNextCursor(res.nextCursor);
-        setLastRefreshed(formatVietnameseDateTime(new Date().toISOString()));
-        if (res.items.length > 0) {
-          setSelectedOrder((prev) => prev ?? res.items[0] ?? null);
-        } else {
-          setSelectedOrder(null);
-        }
-      })
-      .catch((err: unknown) => {
-        if (!active || epoch !== requestEpochRef.current) return;
-        const msg = err instanceof Error ? err.message : 'Lỗi tải danh sách đơn in.';
-        setLoadError(msg);
-      })
-      .finally(() => {
-        if (active && epoch === requestEpochRef.current) {
-          setLoading(false);
-        }
-      });
+  const refresh = useRefreshQueue(async () => {
+    await fetchOrders(currentCursor, initiallyLoaded.current);
+    initiallyLoaded.current = true;
+  }, fetchOrders);
 
+  useEffect(() => {
+    void refresh.run();
     return () => {
-      active = false;
+      requestEpochRef.current++;
     };
-  }, [authorize, gateway]);
+  }, [refresh]);
 
   useRealtimeSubscription({
     onEvent: (event) => {
       if (event.type.startsWith('print.') || event.scope.entityType === 'print_order') {
-        void fetchOrders(currentCursor, true);
+        refresh.schedule();
       }
     },
     onResync: () => {
-      void fetchOrders(currentCursor, true);
+      refresh.schedule();
     },
   });
 
