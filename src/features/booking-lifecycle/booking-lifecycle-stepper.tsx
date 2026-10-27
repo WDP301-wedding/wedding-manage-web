@@ -40,6 +40,16 @@ export function BookingLifecycleStepper({
     }
     // DRAFT
     if (index === 0) return 'done';
+    if (hasTimeline && hasContract) {
+      if (index <= 2) return 'done';
+      if (index === 3) return 'active';
+      return 'pending';
+    }
+    if (hasTimeline) {
+      if (index === 1) return 'done';
+      if (index === 2) return 'active';
+      return 'pending';
+    }
     if (index === 1) return 'active';
     return 'pending';
   };
@@ -109,9 +119,11 @@ export function BookingLifecycleStepper({
               ? 'Đã xác nhận & Cọc'
               : phase === 'COMPLETED'
                 ? 'Hoàn thành tiệc'
-                : phase === 'AWAITING_DEPOSIT'
+                : phase === 'AWAITING_DEPOSIT' || (hasTimeline && hasContract)
                   ? 'Chờ cọc giữ chỗ'
-                  : 'Bản nháp đề xuất'}
+                  : hasTimeline
+                    ? 'Kịch bản & Hợp đồng'
+                    : 'Bản nháp đề xuất'}
         </span>
       </div>
 

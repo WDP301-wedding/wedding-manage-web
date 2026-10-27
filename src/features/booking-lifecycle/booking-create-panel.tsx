@@ -334,27 +334,27 @@ export function BookingCreatePanel({
           <div className="booking-prefill-chips">
             {prefill.preferredHallName ? (
               <span className="booking-chip">
-                🏛️ Sảnh: <strong>{prefill.preferredHallName}</strong>
+                Sảnh: <strong>{prefill.preferredHallName}</strong>
               </span>
             ) : null}
             {prefill.preferredShift ? (
               <span className="booking-chip">
-                {prefill.preferredShift === 'LUNCH' ? '☀️ Ca Trưa' : '🌙 Ca Tối'}
+                {prefill.preferredShift === 'LUNCH' ? 'Ca trưa' : 'Ca tối'}
               </span>
             ) : null}
             {prefill.eventDate ? (
               <span className="booking-chip">
-                📅 Ngày: <strong>{prefill.eventDate}</strong>
+                Ngày: <strong>{prefill.eventDate}</strong>
               </span>
             ) : null}
             {prefill.expectedGuests ? (
               <span className="booking-chip">
-                👥 Quy mô: <strong>{prefill.expectedGuests} khách</strong>
+                Quy mô: <strong>{prefill.expectedGuests} khách</strong>
               </span>
             ) : null}
             {prefill.preferredMenuName ? (
               <span className="booking-chip">
-                🍲 Thực đơn: <strong>{prefill.preferredMenuName}</strong>
+                Thực đơn: <strong>{prefill.preferredMenuName}</strong>
               </span>
             ) : null}
           </div>
@@ -555,7 +555,6 @@ export function BookingCreatePanel({
                   <div
                     className={`booking-avail-tag ${localAvailability.available ? 'is-available' : 'is-busy'}`}
                   >
-                    <span>{localAvailability.available ? '🟢' : '🟡'}</span>
                     <span>
                       {localAvailability.available
                         ? 'Sảnh đang trống (Sẵn sàng giữ chỗ)'
@@ -648,13 +647,13 @@ export function BookingCreatePanel({
               <div className="booking-summary-body">
                 <div className="booking-summary-meta">
                   <div className="booking-meta-item">
-                    <span className="booking-meta-label">📅 Ngày tổ chức</span>
+                    <span className="booking-meta-label">Ngày tổ chức</span>
                     <span className="booking-meta-val">
                       {formValues.eventDate || 'Chưa chọn ngày'}
                     </span>
                   </div>
                   <div className="booking-meta-item">
-                    <span className="booking-meta-label">⏰ Ca tiệc</span>
+                    <span className="booking-meta-label">Ca tiệc</span>
                     <span className="booking-meta-val">
                       {formValues.shiftCode === 'LUNCH'
                         ? 'Trưa (10:00–14:00)'
@@ -683,11 +682,11 @@ export function BookingCreatePanel({
                   </div>
                   {isOverCapacity ? (
                     <p className="booking-capacity-alert">
-                      ⚠️ Vượt quá sức chứa tối đa của sảnh ({currentHall?.maxGuests} khách)
+                      Vượt quá sức chứa tối đa của sảnh ({currentHall?.maxGuests} khách)
                     </p>
                   ) : currentHall && currentHeadcount > 0 ? (
                     <p className="booking-capacity-ok">
-                      ✓ Sức chứa sảnh phù hợp ({capacityPercent}%)
+                      Sức chứa sảnh phù hợp ({capacityPercent}%)
                     </p>
                   ) : null}
                 </div>
@@ -732,7 +731,7 @@ export function BookingCreatePanel({
                   </span>
                 </button>
                 <p className="booking-action-hint">
-                  🔒 Khung giờ sẽ được tự động bảo lưu sau khi tạo đề xuất
+                  Khung giờ sẽ được tự động bảo lưu sau khi tạo đề xuất
                 </p>
               </div>
             </div>

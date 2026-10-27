@@ -166,7 +166,7 @@ export function ContractPanel({
                   fontWeight: 500,
                 }}
               >
-                🔔 Đang có {appendixState.pendingApprovalsCount} phụ lục hợp đồng chờ Quản lý phê
+                Đang có {appendixState.pendingApprovalsCount} phụ lục hợp đồng chờ Quản lý phê
                 duyệt.
               </span>
               <button

@@ -352,7 +352,7 @@ export function IncidentalsPanel({
                     fontWeight: 500,
                   }}
                 >
-                  ⚠️ Cần hoàn tất hợp đồng và đặt cọc để xác định thoả thuận thương mại trước khi
+                  Cần hoàn tất hợp đồng và đặt cọc để xác định thoả thuận thương mại trước khi
                   chốt hoá đơn.
                 </p>
               ) : null}
