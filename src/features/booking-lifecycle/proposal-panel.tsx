@@ -27,6 +27,7 @@ export function ProposalPanel({
   refresh,
   run,
 }: Readonly<ProposalPanelProps>) {
+
   const command = async (
     label: string,
     success: string,
@@ -38,6 +39,9 @@ export function ProposalPanel({
     }
     return false;
   };
+
+  const isConfirmedOrLater =
+    proposal.phase === 'CONFIRMED' || proposal.phase === 'COMPLETED';
 
   return (
     <div className="proposal-layout">
@@ -61,11 +65,19 @@ export function ProposalPanel({
             <dd>{proposal.proposal.tableCount}</dd>
           </div>
           <div>
-            <dt>Tạm tính</dt>
+            <dt>
+              {isConfirmedOrLater || proposal.phase === 'AWAITING_DEPOSIT'
+                ? 'Tổng giá trị'
+                : 'Tạm tính'}
+            </dt>
             <dd>{money(proposal.proposal.baseChargeVnd)}</dd>
           </div>
           <div>
-            <dt>Tiền cọc</dt>
+            <dt>
+              {isConfirmedOrLater || proposal.phase === 'AWAITING_DEPOSIT'
+                ? 'Tiền cọc cam kết'
+                : 'Tiền cọc'}
+            </dt>
             <dd>{money(proposal.proposal.depositAmountVnd)}</dd>
           </div>
         </dl>
@@ -78,6 +90,25 @@ export function ProposalPanel({
             marginTop: '0.75rem',
           }}
         >
+          {proposal.phase === 'CONFIRMED' && (
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                fontSize: '0.8rem',
+                fontWeight: 600,
+                color: 'var(--hy-status-success, #2f6b4f)',
+                background: 'var(--hy-status-success-bg, #e7f1ea)',
+                border: '1px solid var(--hy-status-success-border, #bbf7d0)',
+                borderRadius: 4,
+                padding: '3px 8px',
+                width: 'fit-content',
+              }}
+            >
+              ✓ Đã xác nhận &amp; hoàn tất cọc
+            </span>
+          )}
           <a
             href={`/billing?bookingId=${proposal.bookingId}`}
             style={{
@@ -92,6 +123,7 @@ export function ProposalPanel({
               display: 'inline-flex',
               alignItems: 'center',
               gap: '6px',
+              width: 'fit-content',
             }}
           >
             <span>Mở thanh toán &amp; Thu cọc tiệc này →</span>
@@ -115,7 +147,7 @@ export function ProposalPanel({
             ))}
           </ol>
         )}
-        <p>
+        <p style={{ fontSize: '0.82rem', color: 'var(--hy-text-muted, #6e5d63)' }}>
           Giờ bắt đầu mỗi mốc phải từ {proposal.proposal.shift.startTime} đến trước{' '}
           {proposal.proposal.shift.endTime} theo ca tiệc đã chọn.
         </p>
@@ -177,7 +209,7 @@ export function ProposalPanel({
         disabled={disabled}
         onRefresh={() => void refresh('Đã làm mới dữ liệu hợp đồng.')}
       />
-      <article className="proposal-danger">
+      <article className="proposal-danger" style={{ gridColumn: '1 / -1' }}>
         <h3>Kết thúc vòng đời</h3>
         {(proposal.cancellationRequests ?? []).map((request) => (
           <form

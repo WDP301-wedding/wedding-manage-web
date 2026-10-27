@@ -2,7 +2,8 @@ import type { CSSProperties } from 'react';
 
 export const contractStyles = {
   panelArticle: {
-    marginTop: '2rem',
+    gridColumn: '1 / -1',
+    marginTop: 0,
     background: '#ffffff',
     border: '1px solid var(--hy-outline, #eadfd6)',
     borderRadius: 8,

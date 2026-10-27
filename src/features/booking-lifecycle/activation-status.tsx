@@ -159,7 +159,7 @@ export function ActivationStatus({
             <p>Khách nhận lời mời lúc {new Date(value.acceptedAt).toLocaleString('vi-VN')}</p>
           ) : null}
           <p>
-            Không cần đặt cọc để kích hoạt. Quyền sau đặt cọc vẫn do BE kiểm tra theo từng tiệc.
+            Không bắt buộc đặt cọc để kích hoạt tài khoản. Hệ thống tự động phân quyền truy cập theo từng giai đoạn của tiệc.
           </p>
           {value.canSend ? (
             <button
