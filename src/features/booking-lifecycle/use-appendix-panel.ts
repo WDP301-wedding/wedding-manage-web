@@ -1,3 +1,4 @@
+import { useLiveRefresh } from '../realtime/use-live-refresh';
 import { useEffect, useRef, useState } from 'react';
 import { describeApiError } from '../../lib/api/api-errors';
 import {
@@ -24,27 +25,35 @@ export function useAppendixPanel({
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [selectedRevisionId, setSelectedRevisionId] = useState<string | null>(null);
   const activeBookingIdRef = useRef(bookingId);
+  const readEpoch = useRef(0);
+  const previousHead = useRef<string | null>(null);
 
   const loadAppendices = async (targetId = bookingId) => {
     if (!targetId) return;
+    const epoch = ++readEpoch.current;
     setLoading(true);
     setError(null);
     try {
       const res = await contractService.getAppendices(targetId);
-      if (activeBookingIdRef.current !== targetId) return;
+      if (activeBookingIdRef.current !== targetId || epoch !== readEpoch.current) return;
       setData(res);
-      // Auto-select current active appendix revision or newest
-      if (res.currentRevisionId) {
-        setSelectedRevisionId(res.currentRevisionId);
-      } else if (res.revisions.length > 0) {
-        setSelectedRevisionId(res.revisions[0]!.revisionId);
-      }
+      // Follow a new head when viewing the previous head; preserve an explicitly selected history row.
+      const nextHead = res.currentRevisionId ?? res.revisions[0]?.revisionId ?? null;
+      const oldHead = previousHead.current;
+      previousHead.current = nextHead;
+      setSelectedRevisionId((previous) =>
+        previous === null || previous === oldHead
+          ? nextHead
+          : res.revisions.some((row) => row.revisionId === previous)
+            ? previous
+            : nextHead,
+      );
     } catch (err) {
-      if (activeBookingIdRef.current !== targetId) return;
+      if (activeBookingIdRef.current !== targetId || epoch !== readEpoch.current) return;
       const friendly = describeApiError(err);
       setError(friendly.message);
     } finally {
-      if (activeBookingIdRef.current === targetId) {
+      if (activeBookingIdRef.current === targetId && epoch === readEpoch.current) {
         setLoading(false);
       }
     }
@@ -56,8 +65,21 @@ export function useAppendixPanel({
     setError(null);
     setActionMessage(null);
     setSelectedRevisionId(null);
+    previousHead.current = null;
     void loadAppendices(bookingId);
   }, [bookingId]);
+
+  useLiveRefresh(
+    async () => {
+      await loadAppendices(bookingId);
+    },
+    {
+      scope: bookingId,
+      bookingId,
+      types: ['contract.updated', 'booking.updated'],
+      blocked: loading,
+    },
+  );
 
   const activeAppendix: AppendixRevisionItem | null =
     data?.revisions.find((r) => r.revisionId === selectedRevisionId) ??

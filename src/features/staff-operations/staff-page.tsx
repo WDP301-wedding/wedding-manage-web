@@ -1,4 +1,5 @@
 'use client';
+import { useLiveRefresh } from '../realtime/use-live-refresh';
 
 import { type FormEvent, useEffect, useState } from 'react';
 import { OperationsShell } from '../identity-access/operations-shell';
@@ -35,6 +36,7 @@ export function StaffOperationsPage({
   const [searchQuery, setSearchQuery] = useState('');
   const [guests, setGuests] = useState<readonly GuestSearchResultItem[]>([]);
   const [searching, setSearching] = useState(false);
+  const [searched, setSearched] = useState(false);
 
   // Manager: Assignments & Provision
   const [assignments, setAssignments] = useState<readonly EventAssignmentItem[]>([]);
@@ -64,6 +66,7 @@ export function StaffOperationsPage({
     try {
       const res = await staffService.searchGuests(bookingId.trim(), searchQuery.trim());
       setGuests(res.items);
+      setSearched(true);
       if (res.items.length === 0) {
         notify.info('Không tìm thấy khách mời nào phù hợp.');
       }
@@ -117,6 +120,29 @@ export function StaffOperationsPage({
       setLoadingAssignments(false);
     }
   };
+
+  useLiveRefresh(
+    async (isCurrent) => {
+      try {
+        if (activeTab === 'checkin' && searched) {
+          const res = await staffService.searchGuests(bookingId.trim(), searchQuery.trim());
+          if (isCurrent()) setGuests(res.items);
+        } else if (activeTab === 'management' && isManager) {
+          const res = await staffService.getEventAssignments(bookingId.trim());
+          if (isCurrent()) setAssignments(res);
+        }
+      } catch (err) {
+        if (isCurrent()) notify.error(err);
+      }
+    },
+    {
+      scope: bookingId + ':' + activeTab + ':' + searchQuery,
+      bookingId: bookingId.trim(),
+      enabled: Boolean(bookingId.trim()) && snapshot?.status === 'authenticated',
+      blocked: pending || searching || loadingAssignments,
+      types: ['guest.updated', 'booking.updated'],
+    },
+  );
 
   // Provision Staff
   const handleProvisionStaff = async (event: FormEvent<HTMLFormElement>) => {

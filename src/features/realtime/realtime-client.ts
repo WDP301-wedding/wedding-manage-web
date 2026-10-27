@@ -203,10 +203,13 @@ export class ManagementRealtimeManager {
 
     socket.on('subscription:confirmed', () => {
       this.setStatus('connected');
+      this.triggerResync();
     });
 
-    socket.on('subscription:denied', () => {
-      this.setStatus('connected');
+    socket.on('subscription:denied', (detail: unknown) => {
+      this.setStatus('disconnected');
+      console.error('Realtime booking subscription was denied.', detail);
+      this.triggerResync();
     });
   }
 

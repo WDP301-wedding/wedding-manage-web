@@ -1,3 +1,4 @@
+import { useLiveRefresh } from '../realtime/use-live-refresh';
 import { useEffect, useRef, useState } from 'react';
 import { ApiServiceError } from '../../lib/api/axios-client';
 import {
@@ -24,24 +25,26 @@ export function useContractPanel({
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const activeBookingIdRef = useRef(bookingId);
+  const readEpoch = useRef(0);
 
   const loadContracts = async (targetId = bookingId) => {
     if (!targetId) return;
+    const epoch = ++readEpoch.current;
     setLoading(true);
     setError(null);
     try {
       const res = await contractService.getContracts(targetId);
-      if (activeBookingIdRef.current !== targetId) return;
+      if (activeBookingIdRef.current !== targetId || epoch !== readEpoch.current) return;
       setData(res);
     } catch (err) {
-      if (activeBookingIdRef.current !== targetId) return;
+      if (activeBookingIdRef.current !== targetId || epoch !== readEpoch.current) return;
       if (err instanceof ApiServiceError) {
         setError(err.message);
       } else {
         setError('Không thể tải thông tin hợp đồng tiệc.');
       }
     } finally {
-      if (activeBookingIdRef.current === targetId) {
+      if (activeBookingIdRef.current === targetId && epoch === readEpoch.current) {
         setLoading(false);
       }
     }
@@ -54,6 +57,18 @@ export function useContractPanel({
     setActionMessage(null);
     void loadContracts(bookingId);
   }, [bookingId]);
+
+  useLiveRefresh(
+    async () => {
+      await loadContracts(bookingId);
+    },
+    {
+      scope: bookingId,
+      bookingId,
+      types: ['contract.updated', 'booking.updated'],
+      blocked: loading,
+    },
+  );
 
   const currentRevision: ContractRevisionItem | null =
     data && data.currentRevisionId

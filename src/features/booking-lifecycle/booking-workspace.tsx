@@ -108,6 +108,8 @@ export function ManagementBookingWorkspace({
       ) : null}
       <div className="booking-live" aria-live="polite">
         {pending === null ? null : <span role="status">Đang xử lý yêu cầu…</span>}
+        {message === null ? null : <span role="status">{message}</span>}
+        {error === null ? null : <span role="alert">{error}</span>}
         {contextStatus === 'error' ? (
           <button type="button" onClick={retryContext}>
             Tải lại hồ sơ
@@ -238,7 +240,7 @@ export function ManagementBookingWorkspace({
         aria-label="Khảo sát sảnh &amp; Tạo booking"
         style={
           activeTab === 'booking'
-            ? bookingStyles.stepContainerVisible('900px')
+            ? bookingStyles.stepContainerVisible('1060px')
             : bookingStyles.stepContainerHidden
         }
       >
@@ -288,17 +290,6 @@ export function ManagementBookingWorkspace({
             </span>
           ) : null}
         </div>
-        {activeTab === 'booking' && consultation && !proposal ? (
-          <CoupleAccountCard
-            consultationId={consultation.id}
-            email={prefill.email}
-            canInvite
-            pending={pending !== null || contextStatus !== 'ready'}
-            inviteLogs={inviteLogs}
-            onInvite={() => void sendWorkspaceInvite()}
-            onClearLogs={() => setInviteLogs([])}
-          />
-        ) : null}
         {proposal ? (
           <article className="booking-card">
             <h2>Hồ sơ tư vấn này đã có tiệc</h2>
@@ -333,6 +324,19 @@ export function ManagementBookingWorkspace({
             onValidationError={setError}
           />
         )}
+        {activeTab === 'booking' && consultation && !proposal ? (
+          <div style={{ marginTop: '1.5rem' }}>
+            <CoupleAccountCard
+              consultationId={consultation.id}
+              email={prefill.email}
+              canInvite
+              pending={pending !== null || contextStatus !== 'ready'}
+              inviteLogs={inviteLogs}
+              onInvite={() => void sendWorkspaceInvite()}
+              onClearLogs={() => setInviteLogs([])}
+            />
+          </div>
+        ) : null}
       </section>
 
       {/* Phân hệ 3: Tiệc đang xử lý (Đề xuất & Vòng đời) */}

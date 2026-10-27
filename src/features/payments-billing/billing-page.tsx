@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useLiveRefresh } from '../realtime/use-live-refresh';
 import { useEffect, useRef, useState } from 'react';
 import { ApiClientError } from '../../lib/api/client';
 import { sanitizeSearchId } from '../../lib/input-sanitizers';
@@ -197,6 +198,28 @@ export function ManagementBillingWorkspace({
       more && view !== null ? { ...value, history: [...view.history, ...value.history] } : value,
     );
   };
+
+  useLiveRefresh(
+    async (isCurrent) => {
+      if (!view) return;
+      await run(async () => {
+        await load(view.bookingId);
+        if (attempt) {
+          const fresh = await authorize((token) =>
+            gateway.loadAttempt(token, view.bookingId, attempt.paymentAttemptId),
+          );
+          if (isCurrent()) setAttempt(fresh);
+        }
+      });
+    },
+    {
+      scope: view?.bookingId ?? 'no-billing',
+      bookingId: view?.bookingId,
+      enabled: view !== null,
+      blocked: pending,
+      types: ['billing.updated', 'deposit.received', 'contract.updated', 'booking.updated'],
+    },
+  );
 
   const mutate = async (
     kind: 'manual' | 'refund' | 'approval',

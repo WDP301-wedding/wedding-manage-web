@@ -1,4 +1,5 @@
 'use client';
+import { useLiveRefresh } from '../realtime/use-live-refresh';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { z } from 'zod';
 import { ApiClientError, createApiClient } from '../../lib/api/client';
@@ -158,6 +159,17 @@ export function useConsultationRequests() {
       abort.current?.abort();
     };
   }, [access, load]);
+  useLiveRefresh(
+    async () => {
+      await loadLatest.current();
+    },
+    {
+      scope: filterKey,
+      enabled: access === 'manager',
+      blocked: pending,
+      types: ['booking.updated'],
+    },
+  );
   async function act(item: Item, action: 'conversion' | 'closure') {
     if (pending || actionInFlight.current) return;
     actionInFlight.current = true;
