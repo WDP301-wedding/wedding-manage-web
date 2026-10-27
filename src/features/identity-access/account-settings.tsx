@@ -170,6 +170,17 @@ export function AccountSettings({
         const msg = 'Bạn đã thử mã quá nhiều lần. Hãy chờ trước khi thử lại.';
         setError(msg);
         notify.error(caught, { fallbackMessage: msg });
+      } else if (
+        challenge &&
+        caught instanceof ApiClientError &&
+        caught.status === 422 &&
+        caught.details &&
+        caught.details.length > 0
+      ) {
+        const pw = caught.details.find((d) => d.path === 'newPassword' || d.path === 'password');
+        const msg = pw?.message || 'Mật khẩu mới chưa hợp lệ (phải từ 1 đến 128 ký tự).';
+        setError(msg);
+        notify.error(caught, { fallbackMessage: msg });
       } else if (challenge) {
         const msg = 'Chưa cập nhật được mật khẩu. Hãy kiểm tra kết nối rồi thử lại.';
         setError(msg);
