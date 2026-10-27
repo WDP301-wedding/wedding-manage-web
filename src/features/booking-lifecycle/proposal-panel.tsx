@@ -78,17 +78,6 @@ export function ProposalPanel({
             marginTop: '0.75rem',
           }}
         >
-          <button
-            disabled={disabled || ['CONFIRMED', 'CANCELLED', 'COMPLETED'].includes(proposal.phase)}
-            type="button"
-            onClick={() =>
-              void command('hold', 'Đã giữ khung giờ trong 15 phút.', (token) =>
-                gateway.acquireHold(token, proposal.bookingId, proposal.revision),
-              )
-            }
-          >
-            Giữ lịch 15 phút
-          </button>
           <a
             href={`/billing?bookingId=${proposal.bookingId}`}
             style={{

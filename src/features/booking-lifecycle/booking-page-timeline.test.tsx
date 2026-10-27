@@ -140,13 +140,9 @@ function failure(code: string, status?: number) {
 }
 
 describe('Management booking timeline, cancellation and access', () => {
-  it('holds the slot and saves an empty initial timeline against the server revision', async () => {
+  it('saves an empty initial timeline against the server revision', async () => {
     const gateway = fakeGateway();
     await open(gateway);
-    fireEvent.click(screen.getByRole('button', { name: 'Giữ lịch 15 phút' }));
-    await waitFor(() =>
-      expect(gateway.acquireHold).toHaveBeenCalledWith('manager-token', proposal.bookingId, 3),
-    );
     await waitFor(() =>
       expect(screen.getByRole('button', { name: 'Lưu kịch bản mới' })).toBeEnabled(),
     );
@@ -225,14 +221,11 @@ describe('Management booking timeline, cancellation and access', () => {
   });
 
   it.each(['CONFIRMED', 'CANCELLED', 'COMPLETED'] as const)(
-    'does not offer a temporary hold for a %s booking',
+    'renders payment link for a %s booking',
     async (phase) => {
       const gateway = fakeGateway();
       await open(gateway, { ...proposal, phase });
-      const hold = screen.getByRole('button', { name: 'Giữ lịch 15 phút' });
-      expect(hold).toBeDisabled();
-      fireEvent.click(hold);
-      expect(gateway.acquireHold).not.toHaveBeenCalled();
+      expect(screen.getByRole('link', { name: /Mở thanh toán & Thu cọc tiệc này/ })).toBeInTheDocument();
     },
   );
 
@@ -259,7 +252,6 @@ describe('Management booking timeline, cancellation and access', () => {
 
   it.each([
     [failure('STALE_BOOKING_REVISION', 409), 'Hồ sơ đã thay đổi'],
-    [failure('SLOT_NOT_AVAILABLE', 409), 'Khung giờ vừa được giữ'],
     [failure('DEPOSIT_INTENT_ACTIVE', 409), 'Đang có giao dịch tiền cọc'],
     [failure('BOOKING_NOT_FOUND', 404), 'Không tìm thấy hồ sơ'],
     [failure('UNKNOWN', 401), 'Yêu cầu chưa hoàn tất'],
@@ -269,13 +261,13 @@ describe('Management booking timeline, cancellation and access', () => {
   ])('handles command failure and allows correction or retry: %s', async (error, message) => {
     const gateway = fakeGateway();
     await open(gateway);
-    vi.mocked(gateway.acquireHold).mockRejectedValue(error);
-    fireEvent.click(screen.getByRole('button', { name: 'Giữ lịch 15 phút' }));
+    vi.mocked(gateway.saveTimeline).mockRejectedValue(error);
+    fireEvent.click(screen.getByRole('button', { name: 'Lưu kịch bản mới' }));
     expect(await screen.findByRole('alert')).toHaveTextContent(message);
     if (error instanceof ApiClientError && [401, 403, 404].includes(error.status ?? 0)) {
       expect(screen.queryByText('Sảnh Ánh Dương')).not.toBeInTheDocument();
     } else {
-      expect(screen.getByRole('button', { name: 'Giữ lịch 15 phút' })).toBeEnabled();
+      expect(screen.getByRole('button', { name: 'Lưu kịch bản mới' })).toBeEnabled();
       expect(screen.getByLabelText('Lý do hủy')).toBeEnabled();
     }
   });
