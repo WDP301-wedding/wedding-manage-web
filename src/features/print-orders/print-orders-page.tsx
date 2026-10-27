@@ -114,7 +114,7 @@ export function ManagementPrintOrdersPage({
       <div className="v0-shell">
         <main className="v0-content" style={printOrderStyles.centeredNotice}>
           <h1>Yêu cầu đăng nhập</h1>
-          <p role="alert">
+          <p>
             Bạn cần đăng nhập bằng tài khoản Quản lý (Manager) để truy cập phân hệ in ấn thiệp cưới.
           </p>
           <Link
@@ -138,7 +138,7 @@ export function ManagementPrintOrdersPage({
       <div className="v0-shell">
         <main className="v0-content" style={printOrderStyles.centeredNotice}>
           <h1>Truy cập bị từ chối</h1>
-          <p role="alert">
+          <p>
             Tài khoản {snapshot.actor.displayEmail} thuộc vai trò {roleLabel}. Phân hệ Quản lý Đơn
             in ấn yêu cầu quyền Quản lý (Manager).
           </p>

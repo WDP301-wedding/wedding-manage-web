@@ -111,7 +111,9 @@ export function DashboardKpiStrip({
           />
           <MetricCard
             label="Tổng cọc đã thu"
-            value={isLoading || !analytics ? '—' : formatVndNullable(analytics.grossCashReceivedVnd)}
+            value={
+              isLoading || !analytics ? '—' : formatVndNullable(analytics.grossCashReceivedVnd)
+            }
             detail={
               isLoading
                 ? 'Đang tính toán…'

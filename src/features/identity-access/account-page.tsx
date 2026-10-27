@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { AccountSettings } from './account-settings';
 import { OperationsShell } from './operations-shell';
 import {
@@ -10,6 +10,7 @@ import {
   sharedManagementSession,
 } from './session';
 import { useManagementSession } from './use-management-session';
+import { notify } from '../../design-system/notifications';
 
 const browserSession = sharedManagementSession;
 
@@ -25,13 +26,18 @@ export function ManagementAccountExperience({ session }: { session: ManagementId
     logoutError,
     logout,
   } = useManagementSession({ session });
-  const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (logoutError) {
+      notify.error(logoutError);
+    }
+  }, [logoutError]);
+
   const sessionExpired = useCallback(() => {
     setSnapshot(session.snapshot());
-    setError('Phiên làm việc đã hết hạn. Hãy đăng nhập lại.');
-    setMessage(null);
+    notify.warning('Phiên làm việc đã hết hạn. Hãy đăng nhập lại.');
   }, [session, setSnapshot]);
+
   const authenticated = snapshot?.status === 'authenticated' && snapshot.presentation !== 'denied';
   return (
     <OperationsShell
@@ -48,16 +54,6 @@ export function ManagementAccountExperience({ session }: { session: ManagementId
             <h1>Quản lý tài khoản</h1>
           </div>
         </header>
-        {message ? (
-          <p className="auth-message auth-success" role="status">
-            {message}
-          </p>
-        ) : null}
-        {error || logoutError ? (
-          <p className="auth-message auth-error" role="alert">
-            {error || logoutError}
-          </p>
-        ) : null}
         {snapshot === null ? (
           <p role="status">Đang khôi phục phiên làm việc…</p>
         ) : authenticated ? (
@@ -67,7 +63,7 @@ export function ManagementAccountExperience({ session }: { session: ManagementId
             onSessionExpired={sessionExpired}
             onSignedOut={() => {
               setSnapshot(session.snapshot());
-              setMessage('Đã đổi mật khẩu thành công. Hãy đăng nhập lại bằng mật khẩu mới.');
+              notify.success('Đã đổi mật khẩu thành công. Hãy đăng nhập lại bằng mật khẩu mới.');
             }}
           />
         ) : (

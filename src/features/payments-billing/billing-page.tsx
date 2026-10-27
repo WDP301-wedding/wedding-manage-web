@@ -32,6 +32,7 @@ import { BillingMutationsSection } from './billing-mutations-section';
 import { IncidentalsPanel } from './incidentals-panel';
 
 import { useManagementSession } from '../identity-access/use-management-session';
+import { notify } from '../../design-system/notifications';
 
 type Authorize = <T>(operation: (token: string) => Promise<T>) => Promise<T>;
 type MutationResult =
@@ -55,6 +56,12 @@ export function ManagementBillingPage({
     session,
   });
 
+  useEffect(() => {
+    if (logoutError) {
+      notify.error(logoutError);
+    }
+  }, [logoutError]);
+
   let content;
   if (snapshot === null) {
     content = (
@@ -69,8 +76,7 @@ export function ManagementBillingPage({
         <h1>
           {snapshot.status === 'anonymous' ? 'Cần đăng nhập' : 'Không có quyền xem thanh toán'}
         </h1>
-        <p role="alert">Khu vực này dành cho tài khoản Quản lý.</p>
-        {logoutError ? <p role="alert">{logoutError}</p> : null}
+        <p>Khu vực này dành cho tài khoản Quản lý.</p>
         <Link className="billing-primary-link" href="/">
           Về trang đăng nhập
         </Link>
@@ -121,8 +127,6 @@ export function ManagementBillingWorkspace({
   const [uncertain, setUncertain] = useState<'manual' | 'refund' | 'approval' | null>(null);
   const [refundRevision, setRefundRevision] = useState<number | null>(null);
   const [approvalRevision, setApprovalRevision] = useState<number | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -140,22 +144,13 @@ export function ManagementBillingWorkspace({
       setAttempt(null);
     }
     const msg = billingMessage(caught);
-    if (caught instanceof ApiClientError && (caught.code || caught.requestId)) {
-      const parts = [
-        caught.code ? `Mã: ${caught.code}` : null,
-        caught.requestId ? `Request ID: ${caught.requestId}` : null,
-      ].filter(Boolean);
-      setError(parts.length > 0 ? `${msg} (${parts.join(', ')})` : msg);
-    } else {
-      setError(msg);
-    }
+    notify.error(caught, { fallbackMessage: msg });
   };
 
   const run = async (operation: () => Promise<void>) => {
     if (busy.current) return;
     busy.current = true;
     setPending(true);
-    setError(null);
     try {
       await operation();
     } catch (caught) {
@@ -192,10 +187,11 @@ export function ManagementBillingWorkspace({
               ? 'approval'
               : null,
       );
-      if (manual !== null || refund !== null || approval !== null)
-        setError(
+      if (manual !== null || refund !== null || approval !== null) {
+        notify.warning(
           'Yêu cầu trước chưa rõ kết quả. Nhập lại đúng nội dung chứng từ và thử lại yêu cầu đó.',
         );
+      }
     }
     setView(
       more && view !== null ? { ...value, history: [...view.history, ...value.history] } : value,
@@ -209,8 +205,6 @@ export function ManagementBillingWorkspace({
     if (busy.current || view === null) return 'retry';
     busy.current = true;
     setPending(true);
-    setError(null);
-    setMessage(null);
     try {
       const result = await intents.run<MutationResult>(
         `${kind}:${view.bookingId}`,
@@ -227,13 +221,13 @@ export function ManagementBillingWorkspace({
       setUncertain(null);
       setRefundRevision(null);
       setApprovalRevision(null);
-      setMessage(
+      const okMsg =
         'paymentId' in result
           ? `Đã ghi nhận khoản thu. Mã thanh toán: ${result.paymentId}`
           : 'refundId' in result
             ? `Đã ghi nhận khoản hoàn. Mã hoàn: ${result.refundId}`
-            : `Đã phê duyệt hoàn tiền. Mã phê duyệt: ${result.refundApprovalId}`,
-      );
+            : `Đã phê duyệt hoàn tiền. Mã phê duyệt: ${result.refundApprovalId}`;
+      notify.success(okMsg);
       try {
         await load(view.bookingId);
       } catch (caught) {
@@ -268,7 +262,6 @@ export function ManagementBillingWorkspace({
         className="billing-lookup"
         onSubmit={(event) => {
           event.preventDefault();
-          setMessage(null);
           setAttempt(null);
           setView(null);
           void run(() => load(bookingId.trim()));
@@ -286,8 +279,6 @@ export function ManagementBillingWorkspace({
               setAttemptId('');
               setRefundRevision(null);
               setApprovalRevision(null);
-              setError(null);
-              setMessage(null);
             }}
             required
             disabled={pending || uncertain !== null}
@@ -297,8 +288,6 @@ export function ManagementBillingWorkspace({
       </form>
       <div className="billing-live" aria-live="polite">
         {pending && <p role="status">Đang xử lý yêu cầu…</p>}
-        {message !== null && <p role="status">{message}</p>}
-        {error !== null && <p role="alert">{error}</p>}
       </div>
       <div className="billing-workspace-body">
         {view !== null && (

@@ -7,6 +7,8 @@ import {
   sharedManagementSession,
   type ManagementSessionSnapshot,
 } from '../identity-access/session';
+import { notify } from '../../design-system/notifications';
+
 const session = sharedManagementSession;
 let resolvedApi: ReturnType<typeof createApiClient> | undefined;
 const getApi = () => (resolvedApi ??= createApiClient());
@@ -40,8 +42,6 @@ export function useConsultationRequests() {
   const [resultKey, setResultKey] = useState('');
   const [queue, setQueue] = useState<Queue | null>(null),
     [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null),
-    [notice, setNotice] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
   const [searchQuery, setSearchQuery] = useState(''),
     [searchTerm, setSearchTerm] = useState('');
@@ -59,24 +59,31 @@ export function useConsultationRequests() {
       const controller = new AbortController();
       abort.current = controller;
       setPending(true);
-      setError(null);
-
       try {
-        const query = {
-          limit: 20,
-          status: statusFilter,
-          q: searchTerm,
-          sort: sortBy,
-          ...(cursor ? { cursor } : {}),
-        };
+        const query: Record<string, string> = {};
+        if (statusFilter !== 'ALL') query.status = statusFilter;
+        if (searchTerm) query.search = searchTerm;
+        if (sortBy !== 'newest') query.sortBy = sortBy;
+        if (cursor) query.cursor = cursor;
         const result = await session.authorize((token) =>
           getApi().GET('/management/consultation-requests', {
-            headers: { Authorization: 'Bearer ' + token },
+            headers: { Authorization: `Bearer ${token}` },
             params: { query },
             signal: controller.signal,
           }),
         );
-        if (!result.data) throw new Error('Missing list');
+        if (current !== sequence.current || controller.signal.aborted) return;
+        if (result.error) {
+          const errObj = result.error as { code?: string; message?: string; requestId?: string };
+          throw new ApiClientError({
+            kind: 'api',
+            code: errObj.code ?? 'REQUEST_FAILED',
+            message: errObj.message ?? 'Request failed',
+            requestId: errObj.requestId ?? crypto.randomUUID(),
+            status: result.response?.status,
+          });
+        }
+        if (!result.data) throw new Error('Dữ liệu yêu cầu tư vấn trống');
         const rawData = (Array.isArray(result.data.data) ? result.data.data : []) as Item[];
         const meta = metadata.safeParse(result.data);
         const resolvedMeta = meta.success
@@ -109,11 +116,13 @@ export function useConsultationRequests() {
           setQueue(null);
           setAccess('denied');
         }
-        setError(
-          caught instanceof ApiClientError && caught.code === 'CONSULTATION_LIST_CHANGED'
-            ? 'Danh sách vừa thay đổi. Bấm tải lại để nhận kết quả mới.'
-            : 'Không tải được yêu cầu tư vấn. Hãy thử lại.',
-        );
+        notify.error(caught, {
+          title: 'Yêu cầu tư vấn',
+          message:
+            caught instanceof ApiClientError && caught.code === 'CONSULTATION_LIST_CHANGED'
+              ? 'Danh sách vừa thay đổi. Bấm tải lại để nhận kết quả mới.'
+              : 'Không tải được yêu cầu tư vấn. Hãy thử lại.',
+        });
       } finally {
         if (current === sequence.current) setPending(false);
       }
@@ -153,8 +162,6 @@ export function useConsultationRequests() {
     if (pending || actionInFlight.current) return;
     actionInFlight.current = true;
     setPending(true);
-    setError(null);
-    setNotice(null);
     try {
       const result = await session.authorize((token) =>
         action === 'conversion'
@@ -188,7 +195,7 @@ export function useConsultationRequests() {
           .safeParse(result.data);
         if (!converted.success) {
           await loadLatest.current();
-          setError(
+          notify.warning(
             'Đã mở hồ sơ. Máy chủ chưa hỗ trợ gửi kích hoạt tại bước duyệt; hãy mở hồ sơ để gửi lời mời.',
           );
           return;
@@ -209,18 +216,20 @@ export function useConsultationRequests() {
               }),
             );
             invitationKeys.current.delete(consultationId);
-          } catch {
+          } catch (invitationErr) {
             await loadLatest.current();
-            setError(
-              'Đã mở hồ sơ nhưng chưa xác nhận gửi lời mời. Mở hồ sơ để kiểm tra và gửi lại; không cần đặt cọc để kích hoạt tài khoản.',
-            );
+            notify.error(invitationErr, {
+              title: 'Gửi lời mời kích hoạt',
+              message:
+                'Đã mở hồ sơ nhưng chưa xác nhận gửi lời mời. Mở hồ sơ để kiểm tra và gửi lại; không cần đặt cọc để kích hoạt tài khoản.',
+            });
             return;
           }
         }
       }
-      setNotice(
+      notify.success(
         action === 'conversion'
-          ? 'Đã mở hồ sơ tư vấn và phát hành lời mời kích hoạt tài khoản. Khách tự đặt hoặc xác nhận mật khẩu để vào web/app, không cần chờ đặt cọc.'
+          ? 'Đã mở hồ sơ tư vấn và phát hành lời mời kích hoạt tài khoản thành công.'
           : 'Đã đóng yêu cầu tư vấn.',
       );
       await loadLatest.current();
@@ -229,7 +238,7 @@ export function useConsultationRequests() {
         setQueue(null);
         setAccess('denied');
       }
-      setError('Không hoàn tất được thao tác. Tải lại để kiểm tra trạng thái mới nhất.');
+      notify.error(caught);
     } finally {
       actionInFlight.current = false;
       setPending(false);
@@ -240,55 +249,70 @@ export function useConsultationRequests() {
     sequence.current++;
     abort.current?.abort();
     setPending(true);
-    setError(null);
-    setNotice(null);
     setQueue(null);
     setAccess('denied');
     void session
       .logout()
-      .catch(() => setError('Không thể kết nối máy chủ để đăng xuất.'))
+      .catch((err) => notify.error(err, { message: 'Không thể kết nối máy chủ để đăng xuất.' }))
       .finally(() => {
         setSnapshot(session.snapshot());
         setPending(false);
       });
   };
   const rawList = queue?.data ?? [];
-  const counts = queue?.counts ?? {
-    NEW: rawList.filter((i) => i.status === 'NEW').length,
-    CONVERTED: rawList.filter((i) => i.status === 'CONVERTED').length,
-    CLOSED: rawList.filter((i) => i.status === 'CLOSED').length,
-  };
-  const stats = {
-    total: counts.NEW + counts.CONVERTED + counts.CLOSED,
-    newCount: counts.NEW,
-    convertedCount: counts.CONVERTED,
-    closedCount: counts.CLOSED,
-  };
+  const stats = useMemo(() => {
+    return {
+      total: queue?.totalMatches ?? rawList.length,
+      newCount:
+        queue?.counts?.NEW ?? rawList.filter((item) => (item.status as string) === 'NEW').length,
+      convertedCount:
+        queue?.counts?.CONVERTED ??
+        rawList.filter((item) => (item.status as string) === 'CONVERTED').length,
+      closedCount:
+        queue?.counts?.CLOSED ??
+        rawList.filter((item) => (item.status as string) === 'CLOSED').length,
+    };
+  }, [queue, rawList]);
   const filteredItems = useMemo(() => {
-    let list = rawList;
+    let list = [...rawList];
     if (statusFilter !== 'ALL') {
-      list = list.filter((item) => item.status === statusFilter);
+      list = list.filter((item) => (item.status as string) === statusFilter);
     }
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim().normalize('NFC');
+    if (searchTerm) {
+      const q = searchTerm.toLowerCase();
       list = list.filter(
         (item) =>
           (item.displayName ?? '').toLowerCase().includes(q) ||
           (item.email ?? '').toLowerCase().includes(q) ||
-          (item.phone ?? '').toLowerCase().includes(q) ||
-          (item.message ?? '').toLowerCase().includes(q),
+          (item.phone && item.phone.includes(q)) ||
+          item.id.toLowerCase().includes(q),
       );
     }
+    if (sortBy === 'newest') {
+      list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    } else if (sortBy === 'oldest') {
+      list.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    } else if (sortBy === 'date-asc') {
+      list.sort((a, b) => {
+        if (!a.preferredDate && !b.preferredDate) return 0;
+        if (!a.preferredDate) return 1;
+        if (!b.preferredDate) return -1;
+        return new Date(a.preferredDate).getTime() - new Date(b.preferredDate).getTime();
+      });
+    } else if (sortBy === 'guests-desc') {
+      list.sort((a, b) => (b.expectedGuests ?? 0) - (a.expectedGuests ?? 0));
+    } else if (sortBy === 'name-asc') {
+      list.sort((a, b) => (a.displayName ?? '').localeCompare(b.displayName ?? '', 'vi'));
+    }
     return list;
-  }, [rawList, statusFilter, searchQuery]);
-
+  }, [rawList, statusFilter, searchTerm, sortBy]);
   return {
     snapshot,
     access,
     queue,
     pending,
-    error,
-    notice,
+    error: null,
+    notice: null,
     statusFilter,
     setStatusFilter,
     searchQuery,
@@ -299,7 +323,6 @@ export function useConsultationRequests() {
     act,
     logout,
     stats,
-    resultsCurrent: resultKey === filterKey,
     filteredItems,
   };
 }

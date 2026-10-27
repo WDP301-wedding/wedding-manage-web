@@ -33,7 +33,9 @@ export function parsePublicEnv(
 ): PublicEnv {
   return createPublicEnvSchema(runtimeEnvironment).parse({
     NEXT_PUBLIC_API_BASE_URL: source.NEXT_PUBLIC_API_BASE_URL,
-    ...(source.NEXT_PUBLIC_REALTIME_URL ? { NEXT_PUBLIC_REALTIME_URL: source.NEXT_PUBLIC_REALTIME_URL } : {}),
+    ...(source.NEXT_PUBLIC_REALTIME_URL
+      ? { NEXT_PUBLIC_REALTIME_URL: source.NEXT_PUBLIC_REALTIME_URL }
+      : {}),
   });
 }
 

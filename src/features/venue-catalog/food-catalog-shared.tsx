@@ -1,9 +1,11 @@
 'use client';
 
+import { useEffect } from 'react';
 import type React from 'react';
 import { ApiClientError } from '../../lib/api/client';
 import { formatVnd } from '../../lib/formatters';
 import type { CatalogDish, CatalogMenu } from './catalog-api';
+import { notify } from '../../design-system/notifications';
 
 export type Authorize = <T>(operation: (accessToken: string) => Promise<T>) => Promise<T>;
 export type DishVersion = CatalogDish['versions'][number];
@@ -90,20 +92,19 @@ export function PanelMessages({
   error,
   message,
 }: Readonly<{ error: string | null; message: string | null }>) {
-  return (
-    <div className="catalog-panel-messages" aria-live="polite">
-      {message === null ? null : (
-        <p className="catalog-success" role="status">
-          {message}
-        </p>
-      )}
-      {error === null ? null : (
-        <p className="catalog-error" role="alert">
-          {error}
-        </p>
-      )}
-    </div>
-  );
+  useEffect(() => {
+    if (error) {
+      notify.error(error);
+    }
+  }, [error]);
+
+  useEffect(() => {
+    if (message) {
+      notify.success(message);
+    }
+  }, [message]);
+
+  return null;
 }
 
 export function text(data: FormData, name: string): string {

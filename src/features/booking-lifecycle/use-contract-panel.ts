@@ -5,6 +5,7 @@ import {
   type ContractListData,
   type ContractRevisionItem,
 } from '../../services/contract.service';
+import { notify } from '../../design-system/notifications';
 
 export interface UseContractPanelOptions {
   bookingId: string;
@@ -68,15 +69,15 @@ export function useContractPanel({
     setActionMessage(null);
     try {
       await contractService.approveContract(bookingId, currentRevision.revisionId, bookingRevision);
-      setActionMessage('Đã ghi nhận phê duyệt hợp đồng từ phía Quản lý.');
+      const msg = 'Đã ghi nhận phê duyệt hợp đồng từ phía Quản lý.';
+      setActionMessage(msg);
+      notify.success(msg);
       await loadContracts();
       onRefresh();
     } catch (err) {
-      if (err instanceof ApiServiceError) {
-        setError(err.message);
-      } else {
-        setError('Không thể phê duyệt hợp đồng.');
-      }
+      const msg = err instanceof ApiServiceError ? err.message : 'Không thể phê duyệt hợp đồng.';
+      setError(msg);
+      notify.error(err, { message: msg });
     } finally {
       setLoading(false);
     }
@@ -89,15 +90,15 @@ export function useContractPanel({
     setActionMessage(null);
     try {
       await contractService.submitContract(bookingId, currentRevision.revisionId, bookingRevision);
-      setActionMessage('Đã gửi duyệt hợp đồng thành công. Chờ hai bên phê duyệt.');
+      const msg = 'Đã gửi duyệt hợp đồng thành công. Chờ hai bên phê duyệt.';
+      setActionMessage(msg);
+      notify.success(msg);
       await loadContracts();
       onRefresh();
     } catch (err) {
-      if (err instanceof ApiServiceError) {
-        setError(err.message);
-      } else {
-        setError('Không thể gửi duyệt hợp đồng.');
-      }
+      const msg = err instanceof ApiServiceError ? err.message : 'Không thể gửi duyệt hợp đồng.';
+      setError(msg);
+      notify.error(err, { message: msg });
     } finally {
       setLoading(false);
     }
@@ -118,11 +119,9 @@ export function useContractPanel({
       window.URL.revokeObjectURL(url);
       a.remove();
     } catch (err) {
-      if (err instanceof ApiServiceError) {
-        setError(err.message);
-      } else {
-        setError('Không thể tải file PDF hợp đồng.');
-      }
+      const msg = err instanceof ApiServiceError ? err.message : 'Không thể tải file PDF hợp đồng.';
+      setError(msg);
+      notify.error(err, { message: msg });
     } finally {
       setDownloadingPdf(false);
     }

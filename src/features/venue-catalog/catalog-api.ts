@@ -8,18 +8,10 @@ import { createFoodCatalogGateway } from './catalog-food-gateway';
 import { createLayoutCatalogGateway } from './catalog-layout-gateway';
 import { createMediaCatalogGateway } from './catalog-media-gateway';
 import { createTimelineCatalogGateway } from './catalog-timeline-gateway';
-import type {
-  CatalogGateway,
-  CatalogHall,
-  ManagerShift,
-} from './catalog-types';
+import type { CatalogGateway, CatalogHall, ManagerShift } from './catalog-types';
 
 export * from './catalog-types';
-export {
-  clearCatalogCache,
-  invalidateCatalogResource,
-  fetchSharedCatalogResource,
-};
+export { clearCatalogCache, invalidateCatalogResource, fetchSharedCatalogResource };
 
 function authorization(accessToken: string) {
   return { Authorization: `Bearer ${accessToken}` };
@@ -161,7 +153,8 @@ export function createVenueCatalogGateway(client?: ApiClient): CatalogGateway {
     updateTimelineDraft: (token, input) => timelineGateway.updateTimelineDraft(token, input),
     publishTimeline: (token, input) => timelineGateway.publishTimeline(token, input),
     cloneTimeline: (token, input) => timelineGateway.cloneTimeline(token, input),
-    changeTimelineLifecycle: (token, input) => timelineGateway.changeTimelineLifecycle(token, input),
+    changeTimelineLifecycle: (token, input) =>
+      timelineGateway.changeTimelineLifecycle(token, input),
 
     // Layout domain methods delegated to LayoutCatalogGateway
     loadLayouts: (token) => layoutGateway.loadLayouts(token),

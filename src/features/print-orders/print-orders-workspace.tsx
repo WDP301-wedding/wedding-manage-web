@@ -17,6 +17,7 @@ import { usePrintOrderQuoteMutations } from './print-orders-quote-mutations';
 import { PrintOrdersTable } from './print-orders-table';
 import { usePrintOrdersData } from './use-print-orders-data';
 import { QuoteDrawer } from './quote-drawer';
+import { notify } from '../../design-system/notifications';
 
 export interface WorkspaceProps {
   snapshot?: ManagementSessionSnapshot | null;
@@ -66,21 +67,12 @@ export function PrintOrdersWorkspace({
   const [createOrderNoticeOpen, setCreateOrderNoticeOpen] = useState(false);
 
   // Notifications
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
   const showToast = useCallback((msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => {
-      setToastMessage((cur) => (cur === msg ? null : cur));
-    }, 3200);
+    notify.success(msg);
   }, []);
 
   const showError = useCallback((msg: string) => {
-    setErrorMessage(msg);
-    setTimeout(() => {
-      setErrorMessage((cur) => (cur === msg ? null : cur));
-    }, 4500);
+    notify.error(msg);
   }, []);
 
   const {
@@ -219,21 +211,6 @@ export function PrintOrdersWorkspace({
               </button>
             </div>
           </div>
-
-          {/* Toast / Error alerts */}
-          {toastMessage ? (
-            <div className="v0-toast-banner" role="status">
-              <CheckIcon width={16} height={16} />
-              <span>{toastMessage}</span>
-            </div>
-          ) : null}
-
-          {errorMessage ? (
-            <div className="v0-alert-banner v0-alert-danger" role="alert">
-              <CircleAlertIcon width={16} height={16} />
-              <span>{errorMessage}</span>
-            </div>
-          ) : null}
 
           {/* Context Strip */}
           <div className="v0-context-strip">

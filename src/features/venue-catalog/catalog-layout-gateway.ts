@@ -1,10 +1,6 @@
 import type { ApiClient } from '../../lib/api/client';
 import { invalidateCatalogResource } from './catalog-cache';
-import type {
-  CatalogHall,
-  CatalogLayout,
-  LayoutCatalogGateway,
-} from './catalog-types';
+import type { CatalogHall, CatalogLayout, LayoutCatalogGateway } from './catalog-types';
 
 export type SharedCatalogFetcher = <T>(
   accessToken: string,
@@ -19,7 +15,11 @@ export function createLayoutCatalogGateway(
   required: <T>(value: T | undefined, operation: string) => T,
   fetchShared?: SharedCatalogFetcher,
 ): LayoutCatalogGateway {
-  const read = <T>(accessToken: string, endpoint: string, params?: Record<string, unknown>): Promise<T> => {
+  const read = <T>(
+    accessToken: string,
+    endpoint: string,
+    params?: Record<string, unknown>,
+  ): Promise<T> => {
     const headers = authorization(accessToken);
     const fetcher = () =>
       api().GET(

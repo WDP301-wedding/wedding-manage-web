@@ -6,14 +6,15 @@ import { type FormEvent, useCallback, useEffect, useMemo, useState } from 'react
 
 import { ApiClientError } from '../../lib/api/client';
 import type {
+  Authorize,
   CatalogGateway,
   CatalogHall,
   CatalogLayout,
   LayoutCatalogSnapshot,
   LayoutTableWrite,
   LayoutWrite,
-} from './catalog-api';
-import type { Authorize } from './catalog-types';
+} from './catalog-types';
+import { notify } from '../../design-system/notifications';
 import {
   CANVAS_SIZE,
   defaultTable,
@@ -46,18 +47,21 @@ export function LayoutPanel({
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async (background = false) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const next = await authorize((token) => gateway.loadLayouts(token));
-      if (!background || !hasDirtyCatalogForms()) setSnapshot(next);
-    } catch (caught) {
-      setError(layoutErrorMessage(caught));
-    } finally {
-      setLoading(false);
-    }
-  }, [authorize, gateway]);
+  const load = useCallback(
+    async (background = false) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const next = await authorize((token) => gateway.loadLayouts(token));
+        if (!background || !hasDirtyCatalogForms()) setSnapshot(next);
+      } catch (caught) {
+        setError(layoutErrorMessage(caught));
+      } finally {
+        setLoading(false);
+      }
+    },
+    [authorize, gateway],
+  );
 
   useEffect(() => {
     queueMicrotask(() => void load());
@@ -369,20 +373,19 @@ function PanelMessages({
   error,
   message,
 }: Readonly<{ error: string | null; message: string | null }>) {
-  return (
-    <div className="catalog-panel-messages" aria-live="polite">
-      {message === null ? null : (
-        <p className="catalog-success" role="status">
-          {message}
-        </p>
-      )}
-      {error === null ? null : (
-        <p className="catalog-error" role="alert">
-          {error}
-        </p>
-      )}
-    </div>
-  );
+  useEffect(() => {
+    if (error) {
+      notify.error(error);
+    }
+  }, [error]);
+
+  useEffect(() => {
+    if (message) {
+      notify.success(message);
+    }
+  }, [message]);
+
+  return null;
 }
 
 function text(data: FormData, name: string): string {

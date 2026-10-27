@@ -16,6 +16,7 @@ import {
   parseConsultationChoices,
 } from './booking-helpers';
 import { useRealtimeSubscription } from '../realtime/use-realtime';
+import { notify } from '../../design-system/notifications';
 
 export interface UseBookingWorkspaceStateOptions {
   authorize: Authorize;
@@ -101,7 +102,9 @@ export function useBookingWorkspaceState({
         }),
       );
       console.log(`[Workspace Invitation] ${now} Gửi lời mời thành công:`, res);
-      setMessage('Đã yêu cầu gửi lời mời không gian cộng tác.');
+      const successMsg = 'Đã yêu cầu gửi lời mời không gian cộng tác.';
+      setMessage(successMsg);
+      notify.success(successMsg);
       const invitationId = (res as { invitationId?: string } | undefined)?.invitationId;
       const isReplayed = (res as { replayed?: boolean } | undefined)?.replayed;
       setInviteLogs((prev) =>
@@ -123,6 +126,7 @@ export function useBookingWorkspaceState({
       const errText = errorMessage(caught, proposal?.proposal.shift);
       console.error(`[Workspace Invitation] ${now} Lỗi gửi lời mời:`, caught);
       setError(errText);
+      notify.error(caught, { message: errText });
       setInviteLogs((prev) =>
         prev.map((item) =>
           item.id === logId
@@ -167,7 +171,9 @@ export function useBookingWorkspaceState({
         setPrefill({});
         setContextStatus('error');
       }
-      setError(errorMessage(caught, proposal?.proposal.shift));
+      const errText = errorMessage(caught, proposal?.proposal.shift);
+      setError(errText);
+      notify.error(caught, { message: errText });
       if (
         label === 'booking' &&
         caught instanceof ApiClientError &&
@@ -242,7 +248,9 @@ export function useBookingWorkspaceState({
         setPrefill({});
         setBookingId('');
       }
-      setError(errorMessage(caught));
+      const errText = errorMessage(caught);
+      setError(errText);
+      notify.error(caught, { message: errText });
     } finally {
       if (sequence === contextSequence.current) setPending(null);
     }
@@ -269,7 +277,9 @@ export function useBookingWorkspaceState({
     } catch (caught) {
       if (sequence !== contextSequence.current) return;
       setContextStatus('error');
-      setError(errorMessage(caught));
+      const errText = errorMessage(caught);
+      setError(errText);
+      notify.error(caught, { message: errText });
     } finally {
       if (sequence === contextSequence.current) setPending(null);
     }

@@ -117,13 +117,17 @@ export class ManagementRealtimeManager {
 
     socket.on('disconnect', (reason) => {
       if (reason === 'io server disconnect' && this.token !== null && this.tokenRefreshHandler) {
-        void this.tokenRefreshHandler().then(renewed => {
-          if (renewed && this.socket === socket && this.token !== null) {
-            this.token = renewed;
-            socket.auth = { token: renewed };
-            socket.connect();
-          }
-        }).catch(() => { /* Session layer handles refresh denial. */ });
+        void this.tokenRefreshHandler()
+          .then((renewed) => {
+            if (renewed && this.socket === socket && this.token !== null) {
+              this.token = renewed;
+              socket.auth = { token: renewed };
+              socket.connect();
+            }
+          })
+          .catch(() => {
+            /* Session layer handles refresh denial. */
+          });
       }
 
       if (reason === 'io server disconnect') {
@@ -135,14 +139,22 @@ export class ManagementRealtimeManager {
 
     socket.on('connect_error', (error: Error) => {
       this.setStatus('reconnecting');
-      if (this.token !== null && this.tokenRefreshHandler && /AUTHENTICATION|TOKEN|REVOKED|UNAUTHORIZED/u.test(error.message)) {
-        void this.tokenRefreshHandler().then(renewed => {
-          if (renewed && this.socket === socket && this.token !== null) {
-            this.token = renewed;
-            socket.auth = { token: renewed };
-            socket.connect();
-          }
-        }).catch(() => { /* Session layer handles refresh denial. */ });
+      if (
+        this.token !== null &&
+        this.tokenRefreshHandler &&
+        /AUTHENTICATION|TOKEN|REVOKED|UNAUTHORIZED/u.test(error.message)
+      ) {
+        void this.tokenRefreshHandler()
+          .then((renewed) => {
+            if (renewed && this.socket === socket && this.token !== null) {
+              this.token = renewed;
+              socket.auth = { token: renewed };
+              socket.connect();
+            }
+          })
+          .catch(() => {
+            /* Session layer handles refresh denial. */
+          });
       }
     });
 

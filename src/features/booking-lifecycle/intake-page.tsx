@@ -52,17 +52,6 @@ export function ConsultationRequestsPage() {
             <Link href="/">Đăng nhập để tiếp tục</Link>
           </section>
         )}
-        {notice && <p role="status">{notice}</p>}
-        {error && (
-          <div role="alert">
-            <p>{error}</p>
-            {access === 'manager' && (
-              <button type="button" disabled={pending} onClick={() => void load()}>
-                Tải lại
-              </button>
-            )}
-          </div>
-        )}
 
         {access === 'manager' && (
           <>

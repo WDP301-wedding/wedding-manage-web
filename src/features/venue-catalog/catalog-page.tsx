@@ -1,6 +1,8 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect } from 'react';
+import { notify } from '../../design-system/notifications';
 
 import apiContractLock from '../../../api-contract.lock.json';
 import { OperationsShell } from '../identity-access/operations-shell';
@@ -74,6 +76,13 @@ export function VenueCatalogPage() {
   } = useManagementSession({
     session: catalogSession,
   });
+
+  useEffect(() => {
+    if (logoutError) {
+      notify.error(logoutError);
+    }
+  }, [logoutError]);
+
   const state =
     identity === null
       ? 'loading'
@@ -89,7 +98,6 @@ export function VenueCatalogPage() {
     ) : state === 'anonymous' ? (
       <CatalogAccessPanel title="Cần đăng nhập">
         <p>Hãy đăng nhập bằng tài khoản Quản lý để mở danh mục địa điểm.</p>
-        {logoutError ? <p role="alert">{logoutError}</p> : null}
         <Link className="catalog-primary-link" href="/">
           Về trang đăng nhập
         </Link>
@@ -127,7 +135,7 @@ export function VenueCatalogWorkspace({
   if (role !== 'MANAGER') {
     return (
       <CatalogAccessPanel title="Không có quyền quản trị danh mục">
-        <p role="alert">Khu vực này chỉ dành cho Quản lý được máy chủ xác thực.</p>
+        <p>Khu vực này chỉ dành cho Quản lý được máy chủ xác thực.</p>
       </CatalogAccessPanel>
     );
   }

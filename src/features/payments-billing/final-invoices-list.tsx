@@ -98,7 +98,13 @@ export function FinalInvoicesList({
                   </div>
 
                   <div style={{ textAlign: 'right' }}>
-                    <small style={{ fontSize: '0.75rem', color: 'var(--hy-ink-muted)', display: 'block' }}>
+                    <small
+                      style={{
+                        fontSize: '0.75rem',
+                        color: 'var(--hy-ink-muted)',
+                        display: 'block',
+                      }}
+                    >
                       Tổng tiền quyết toán
                     </small>
                     <strong
@@ -147,9 +153,7 @@ export function FinalInvoicesList({
                     <span style={{ color: 'var(--hy-ink-muted)', display: 'block' }}>
                       Số dư công nợ:
                     </span>
-                    <strong style={{ color: 'var(--hy-wine)' }}>
-                      Căn cứ tất toán cuối cùng
-                    </strong>
+                    <strong style={{ color: 'var(--hy-wine)' }}>Căn cứ tất toán cuối cùng</strong>
                   </div>
                 </div>
 
@@ -184,7 +188,13 @@ export function FinalInvoicesList({
                           paddingTop: '0.5rem',
                         }}
                       >
-                        <table style={{ width: '100%', fontSize: '0.825rem', borderCollapse: 'collapse' }}>
+                        <table
+                          style={{
+                            width: '100%',
+                            fontSize: '0.825rem',
+                            borderCollapse: 'collapse',
+                          }}
+                        >
                           <thead>
                             <tr style={{ textAlign: 'left', color: 'var(--hy-ink-muted)' }}>
                               <th style={{ padding: '4px 6px' }}>Hạng mục</th>
@@ -202,7 +212,13 @@ export function FinalInvoicesList({
                                 <td style={{ padding: '4px 6px', fontWeight: 500 }}>{line.name}</td>
                                 <td style={{ padding: '4px 6px' }}>{line.quantity}</td>
                                 <td style={{ padding: '4px 6px' }}>{line.unit}</td>
-                                <td style={{ padding: '4px 6px', textAlign: 'right', fontWeight: 600 }}>
+                                <td
+                                  style={{
+                                    padding: '4px 6px',
+                                    textAlign: 'right',
+                                    fontWeight: 600,
+                                  }}
+                                >
                                   {formatVnd(line.totalVnd)}
                                 </td>
                               </tr>

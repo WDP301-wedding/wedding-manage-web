@@ -265,9 +265,7 @@ export function QuoteDrawer({
                     </div>
                     <div className="v0-line-subtotal-display">
                       <span className="v0-subtotal-label">Thành tiền dòng:</span>
-                      <strong className="v0-subtotal-value">
-                        = {formatVnd(lineSubtotal)}
-                      </strong>
+                      <strong className="v0-subtotal-value">= {formatVnd(lineSubtotal)}</strong>
                     </div>
                   </div>
                   {lineError ? <span className="v0-input-error-msg">{lineError}</span> : null}
@@ -288,7 +286,9 @@ export function QuoteDrawer({
                 hasError={Boolean(dateError)}
                 required
               />
-              <span className="v0-input-hint">Đảm bảo tối thiểu 5 ngày làm việc để xưởng in hoàn thiện</span>
+              <span className="v0-input-hint">
+                Đảm bảo tối thiểu 5 ngày làm việc để xưởng in hoàn thiện
+              </span>
             </div>
             {dateError ? <span className="v0-input-error-msg">{dateError}</span> : null}
           </div>

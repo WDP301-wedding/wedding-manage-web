@@ -27,15 +27,24 @@ export function useCatalogLiveRefresh(refresh: (background?: boolean) => Promise
       if (pending) schedule();
     };
     const schedule = () => {
-      if (!disposed && timer === null) timer = setTimeout(() => { timer = null; void flush(); }, 400);
+      if (!disposed && timer === null)
+        timer = setTimeout(() => {
+          timer = null;
+          void flush();
+        }, 400);
     };
     const flush = async () => {
       if (disposed || inFlight || !pending) return;
       if (hasDirtyCatalogForms()) return;
       pending = false;
       inFlight = true;
-      try { await refresh(true); if (hasDirtyCatalogForms()) pending = true; }
-      finally { inFlight = false; if (pending && !hasDirtyCatalogForms()) schedule(); }
+      try {
+        await refresh(true);
+        if (hasDirtyCatalogForms()) pending = true;
+      } finally {
+        inFlight = false;
+        if (pending && !hasDirtyCatalogForms()) schedule();
+      }
     };
     const observer = new MutationObserver(() => {
       if (pending && !hasDirtyCatalogForms()) schedule();
@@ -44,7 +53,10 @@ export function useCatalogLiveRefresh(refresh: (background?: boolean) => Promise
     document.addEventListener('input', markDirty, true);
     document.addEventListener('change', markDirty, true);
     document.addEventListener('reset', reset, true);
-    const unsubscribe = addCatalogInvalidationListener(() => { pending = true; schedule(); });
+    const unsubscribe = addCatalogInvalidationListener(() => {
+      pending = true;
+      schedule();
+    });
     return () => {
       disposed = true;
       unsubscribe();

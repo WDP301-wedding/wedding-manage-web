@@ -5,6 +5,7 @@ import {
   type AppendixListData,
   type AppendixRevisionItem,
 } from '../../services/contract.service';
+import { notify } from '../../design-system/notifications';
 
 export interface UseAppendixPanelOptions {
   bookingId: string;
@@ -74,15 +75,19 @@ export function useAppendixPanel({
     try {
       const rev = data?.bookingRevision ?? bookingRevision;
       await contractService.approveAppendix(bookingId, revisionId, rev);
-      setActionMessage('Đã ghi nhận phê duyệt phụ lục hợp đồng từ phía Quản lý.');
+      const msg = 'Đã ghi nhận phê duyệt phụ lục hợp đồng từ phía Quản lý.';
+      setActionMessage(msg);
+      notify.success(msg);
       await loadAppendices();
       onRefresh();
     } catch (err) {
       const friendly = describeApiError(err, {
-        CONTRACT_DISTINCT_APPROVERS_REQUIRED: 'Quản lý đã duyệt phụ lục này rồi; cần phía Cặp đôi phê duyệt.',
+        CONTRACT_DISTINCT_APPROVERS_REQUIRED:
+          'Quản lý đã duyệt phụ lục này rồi; cần phía Cặp đôi phê duyệt.',
         COMMERCIAL_PREDECESSOR_STALE: 'Dữ liệu phụ lục vừa được cập nhật. Vui lòng làm mới trang.',
       });
       setError(friendly.message);
+      notify.error(err, { message: friendly.message });
     } finally {
       setLoading(false);
     }
@@ -96,12 +101,15 @@ export function useAppendixPanel({
     try {
       const rev = data?.bookingRevision ?? bookingRevision;
       await contractService.submitAppendix(bookingId, revisionId, rev);
-      setActionMessage('Đã gửi duyệt phụ lục hợp đồng thành công. Chờ hai bên phê duyệt.');
+      const msg = 'Đã gửi duyệt phụ lục hợp đồng thành công. Chờ hai bên phê duyệt.';
+      setActionMessage(msg);
+      notify.success(msg);
       await loadAppendices();
       onRefresh();
     } catch (err) {
       const friendly = describeApiError(err);
       setError(friendly.message);
+      notify.error(err, { message: friendly.message });
     } finally {
       setLoading(false);
     }

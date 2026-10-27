@@ -2,6 +2,7 @@
 
 import { type FormEvent, useState } from 'react';
 import type { CatalogMedia } from './catalog-api';
+import { notify } from '../../design-system/notifications';
 
 function value(data: FormData, name: string): string {
   const item = data.get(name);
@@ -17,27 +18,25 @@ export interface MediaUploadFormProps {
 }
 
 export function MediaUploadForm({ assets, onSubmit, pending }: Readonly<MediaUploadFormProps>) {
-  const [localError, setLocalError] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setLocalError(null);
     const form = event.currentTarget;
     const data = new FormData(form);
     const file = selectedFile;
     const alternativeText = value(data, 'alternativeText');
     const oldAssetId = value(data, 'oldAssetId');
     if (file === null || file.size === 0) {
-      setLocalError('Hãy chọn một ảnh để tải lên.');
+      notify.warning('Hãy chọn một ảnh để tải lên.');
       return;
     }
     if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
-      setLocalError('Chỉ chấp nhận ảnh JPEG, PNG hoặc WebP.');
+      notify.warning('Chỉ chấp nhận ảnh JPEG, PNG hoặc WebP.');
       return;
     }
     if (file.size > 10 * 1024 * 1024) {
-      setLocalError('Ảnh phải nhỏ hơn hoặc bằng 10 MB.');
+      notify.warning('Ảnh phải nhỏ hơn hoặc bằng 10 MB.');
       return;
     }
     void onSubmit({
@@ -62,11 +61,6 @@ export function MediaUploadForm({ assets, onSubmit, pending }: Readonly<MediaUpl
         <span className="section-kicker">JPEG · PNG · WebP, tối đa 10 MB</span>
         <h3>Tải lên hoặc thay thế ảnh</h3>
       </div>
-      {localError === null ? null : (
-        <p className="catalog-error" role="alert">
-          {localError}
-        </p>
-      )}
       <label className="catalog-field">
         <span>Ảnh JPEG, PNG hoặc WebP</span>
         <input

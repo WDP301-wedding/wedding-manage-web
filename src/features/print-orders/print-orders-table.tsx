@@ -161,7 +161,7 @@ export function PrintOrdersTable({
 
       {/* Error Banner if load failed */}
       {loadError ? (
-        <div className="v0-error-banner" role="alert">
+        <div className="v0-error-banner">
           <CircleAlertIcon width={18} height={18} />
           <div>
             <strong>Lỗi kết nối máy chủ</strong>

@@ -15,6 +15,7 @@ import {
   sharedManagementSession,
   type ManagementSessionSnapshot,
 } from './session';
+import { notify } from '../../design-system/notifications';
 
 const browserResetToken =
   typeof window === 'undefined'
@@ -81,7 +82,9 @@ export function ManagementIdentityExperience({
     try {
       await operation();
     } catch (caught) {
-      setError(identityErrorMessage(caught));
+      const msg = identityErrorMessage(caught);
+      setError(msg);
+      notify.error(caught, { fallbackMessage: msg });
     } finally {
       setPending(false);
     }
@@ -93,7 +96,11 @@ export function ManagementIdentityExperience({
     setMessage(null);
     void session
       .logout()
-      .catch(() => setError('Không thể kết nối máy chủ. Trạng thái cục bộ đã được xóa.'))
+      .catch((caught) =>
+        notify.error(caught, {
+          fallbackMessage: 'Không thể kết nối máy chủ. Trạng thái cục bộ đã được xóa.',
+        }),
+      )
       .finally(() => {
         setSnapshot(session.snapshot());
         setView('login');
@@ -104,7 +111,7 @@ export function ManagementIdentityExperience({
   if (snapshot.status === 'authenticated' && snapshot.presentation === 'denied') {
     return (
       <main className="permission-page">
-        <section className="permission-panel" role="alert">
+        <section className="permission-panel">
           <span className="preview-label">Wedding Estate · Operations</span>
           <h1>Không có quyền vào khu vực vận hành</h1>
           <p>Phiên đăng nhập hợp lệ nhưng máy chủ không trả về vai trò Quản lý hoặc Nhân viên.</p>
@@ -169,21 +176,11 @@ export function ManagementIdentityExperience({
           <PasswordResetOtpForm
             onCompleted={() => {
               setView('login');
-              setMessage('Mật khẩu đã được cập nhật. Hãy đăng nhập lại.');
+              notify.success('Mật khẩu đã được cập nhật. Hãy đăng nhập lại.');
             }}
           />
         ) : null}
 
-        {error === null ? null : (
-          <p className="auth-message auth-error" role="alert">
-            {error}
-          </p>
-        )}
-        {message === null ? null : (
-          <p className="auth-message auth-success" role="status">
-            {message}
-          </p>
-        )}
         {view === 'login' ? (
           <button className="text-button" type="button" onClick={() => setView('reset-request')}>
             Quên mật khẩu?
@@ -209,6 +206,13 @@ function OperationsDashboard({
   snapshot: Extract<ManagementSessionSnapshot, { status: 'authenticated' }>;
 }>) {
   const manager = snapshot.presentation === 'manager';
+
+  useEffect(() => {
+    if (snapshot.denial !== null) {
+      notify.error('Máy chủ đã từ chối thao tác. Dữ liệu trình bày không thay đổi quyền thực tế.');
+    }
+  }, [snapshot.denial]);
+
   return (
     <OperationsShell
       activePage="overview"
@@ -230,11 +234,6 @@ function OperationsDashboard({
             </Link>
           ) : null}
         </header>
-        {snapshot.denial === null ? null : (
-          <p className="backend-denial" role="alert">
-            Máy chủ đã từ chối thao tác. Dữ liệu trình bày không thay đổi quyền thực tế.
-          </p>
-        )}
         <DashboardLiveView
           isManager={manager}
           currentAccountId={snapshot.actor.accountId}
@@ -330,7 +329,9 @@ function Field({
           type={password && visible ? 'text' : input.type}
           id={id}
           name={name}
-          className={`${className ?? ''} ${password ? fieldStyles.passwordInput : ''}`.trim() || undefined}
+          className={
+            `${className ?? ''} ${password ? fieldStyles.passwordInput : ''}`.trim() || undefined
+          }
           required
         />
         {password ? (

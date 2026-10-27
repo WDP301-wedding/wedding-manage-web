@@ -4,6 +4,7 @@ import type { OtpChallenge } from './password-otp-api';
 import { ApiClientError } from '../../lib/api/client';
 import { createAccountGateway, type Profile } from './account-api';
 import type { ManagementIdentitySession } from './session';
+import { notify } from '../../design-system/notifications';
 
 const gateway = createAccountGateway();
 function waitLabel(seconds: number) {
@@ -39,30 +40,26 @@ export function AccountSettings({
     setNotice('Mã OTP đã được gửi vào email của bạn. Mã có hiệu lực 10 phút.');
   }
   function requestFailed(caught: unknown) {
+    let msg = 'Chưa gửi được mã xác nhận. Hãy kiểm tra kết nối rồi thử lại.';
     if (caught instanceof ApiClientError) {
       if (caught.status === 401) {
         onSessionExpired?.();
-        setError('Phiên làm việc đã hết hạn. Hãy đăng nhập lại.');
-        return;
-      }
-      if (caught.status === 429) {
+        msg = 'Phiên làm việc đã hết hạn. Hãy đăng nhập lại.';
+      } else if (caught.status === 429) {
         const seconds = caught.retryAfterSeconds ?? 60;
         setRemaining(seconds);
-        setError(
-          `Bạn đã yêu cầu mã quá nhiều lần. Hãy chờ ${waitLabel(seconds)} trước khi thử lại.`,
-        );
-        return;
-      }
-      if (caught.code === 'CURRENT_PASSWORD_INVALID') {
-        setError('Mật khẩu hiện tại chưa đúng.');
-        return;
-      }
-      if (caught.code === 'EMAIL_NOT_CONFIGURED' || caught.code === 'OTP_EMAIL_DELIVERY_FAILED') {
-        setError('Dịch vụ email đang gặp sự cố nên chưa gửi được mã OTP. Hãy thử lại sau.');
-        return;
+        msg = `Bạn đã yêu cầu mã quá nhiều lần. Hãy chờ ${waitLabel(seconds)} trước khi thử lại.`;
+      } else if (caught.code === 'CURRENT_PASSWORD_INVALID') {
+        msg = 'Mật khẩu hiện tại chưa đúng.';
+      } else if (
+        caught.code === 'EMAIL_NOT_CONFIGURED' ||
+        caught.code === 'OTP_EMAIL_DELIVERY_FAILED'
+      ) {
+        msg = 'Dịch vụ email đang gặp sự cố nên chưa gửi được mã OTP. Hãy thử lại sau.';
       }
     }
-    setError('Chưa gửi được mã xác nhận. Hãy kiểm tra kết nối rồi thử lại.');
+    setError(msg);
+    notify.error(caught, { fallbackMessage: msg });
   }
   async function resend() {
     if (pending || remaining > 0 || !passwordForm.current) return;
@@ -111,14 +108,15 @@ export function AccountSettings({
         gateway.updateProfile(token, name.trim(), profile.revision),
       );
       setProfile(next);
-      setNotice('Đã lưu tên hiển thị.');
+      notify.success('Đã lưu tên hiển thị.');
     } catch (caught) {
       if (caught instanceof ApiClientError && caught.status === 401) onSessionExpired?.();
-      setError(
+      const msg =
         caught instanceof ApiClientError && caught.status === 409
           ? 'Hồ sơ đã thay đổi ở nơi khác. Tải lại trước khi tiếp tục.'
-          : 'Chưa lưu được hồ sơ. Nội dung của bạn vẫn được giữ lại.',
-      );
+          : 'Chưa lưu được hồ sơ. Nội dung của bạn vẫn được giữ lại.';
+      setError(msg);
+      notify.error(caught, { fallbackMessage: msg });
     } finally {
       setPending(false);
     }
@@ -131,7 +129,7 @@ export function AccountSettings({
       next = form.get('newPassword');
     if (typeof current !== 'string' || typeof next !== 'string') return;
     if (next !== form.get('confirmation')) {
-      setError('Hai mật khẩu mới chưa trùng khớp.');
+      notify.warning('Hai mật khẩu mới chưa trùng khớp.');
       return;
     }
     setPending(true);
@@ -140,6 +138,7 @@ export function AccountSettings({
     try {
       if (!challenge) {
         await sendCode(current);
+        notify.info('Mã OTP đã được gửi vào email của bạn. Mã có hiệu lực 10 phút.');
         return;
       }
       await session.authorize((token) =>
@@ -151,21 +150,30 @@ export function AccountSettings({
         ),
       );
       session.discardRevokedSession();
+      notify.success('Đổi mật khẩu thành công! Vui lòng đăng nhập lại.');
       onSignedOut();
     } catch (caught) {
       if (caught instanceof ApiClientError && caught.status === 401) {
         onSessionExpired?.();
-        setError('Phiên làm việc đã hết hạn. Hãy đăng nhập lại.');
+        const msg = 'Phiên làm việc đã hết hạn. Hãy đăng nhập lại.';
+        setError(msg);
+        notify.error(caught, { fallbackMessage: msg });
       } else if (
         challenge &&
         caught instanceof ApiClientError &&
         caught.code === 'OTP_INVALID_OR_EXPIRED'
       ) {
-        setError('Mã OTP chưa đúng hoặc đã hết hạn. Kiểm tra mã mới nhất hoặc gửi lại.');
+        const msg = 'Mã OTP chưa đúng hoặc đã hết hạn. Kiểm tra mã mới nhất hoặc gửi lại.';
+        setError(msg);
+        notify.error(caught, { fallbackMessage: msg });
       } else if (challenge && caught instanceof ApiClientError && caught.status === 429) {
-        setError('Bạn đã thử mã quá nhiều lần. Hãy chờ trước khi thử lại.');
+        const msg = 'Bạn đã thử mã quá nhiều lần. Hãy chờ trước khi thử lại.';
+        setError(msg);
+        notify.error(caught, { fallbackMessage: msg });
       } else if (challenge) {
-        setError('Chưa cập nhật được mật khẩu. Hãy kiểm tra kết nối rồi thử lại.');
+        const msg = 'Chưa cập nhật được mật khẩu. Hãy kiểm tra kết nối rồi thử lại.';
+        setError(msg);
+        notify.error(caught, { fallbackMessage: msg });
       } else {
         requestFailed(caught);
       }
@@ -184,8 +192,6 @@ export function AccountSettings({
           Tải lại hồ sơ
         </button>
       </div>
-      {error ? <p role="alert">{error}</p> : null}
-      {notice ? <p role="status">{notice}</p> : null}
       {!profile && !error ? <p role="status">Đang tải hồ sơ…</p> : null}
       {profile ? (
         <div className="operations-account-grid">

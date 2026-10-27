@@ -2,6 +2,8 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { ApiClientError } from '../../lib/api/client';
 import { createPasswordOtpGateway, type OtpChallenge } from './password-otp-api';
+import { notify } from '../../design-system/notifications';
+
 const gateway = createPasswordOtpGateway();
 export function PasswordResetOtpForm({ onCompleted }: { onCompleted: () => void }) {
   const [email, setEmail] = useState('');
@@ -22,12 +24,16 @@ export function PasswordResetOtpForm({ onCompleted }: { onCompleted: () => void 
       const next = await gateway.request(email.trim());
       setChallenge(next);
       setRemaining(next.resendAfterSeconds);
+      notify.info(
+        'Nếu tài khoản đủ điều kiện, mã OTP đã được gửi vào email. Mã có hiệu lực 10 phút.',
+      );
     } catch (caught) {
-      setError(
+      const msg =
         caught instanceof ApiClientError && caught.status === 429
           ? 'Bạn đã yêu cầu nhiều mã. Hãy đợi trước khi thử lại.'
-          : 'Chưa gửi được mã xác nhận. Vui lòng thử lại.',
-      );
+          : 'Chưa gửi được mã xác nhận. Vui lòng thử lại.';
+      setError(msg);
+      notify.error(caught, { fallbackMessage: msg });
     } finally {
       setPending(false);
     }
@@ -42,20 +48,22 @@ export function PasswordResetOtpForm({ onCompleted }: { onCompleted: () => void 
     const form = new FormData(event.currentTarget);
     const password = readString(form, 'password');
     if (password !== form.get('passwordConfirmation')) {
-      setError('Hai mật khẩu chưa trùng khớp.');
+      notify.warning('Hai mật khẩu chưa trùng khớp.');
       return;
     }
     setPending(true);
     setError(null);
     try {
       await gateway.complete(challenge.challengeId, readString(form, 'code'), password);
+      notify.success('Cập nhật mật khẩu thành công!');
       onCompleted();
     } catch (caught) {
-      setError(
+      const msg =
         caught instanceof ApiClientError && caught.status === 429
           ? 'Bạn đã thử nhiều lần. Hãy đợi trước khi tiếp tục.'
-          : 'Mã chưa đúng, đã hết hạn hoặc đã được sử dụng. Hãy kiểm tra mã mới nhất hoặc gửi lại.',
-      );
+          : 'Mã chưa đúng, đã hết hạn hoặc đã được sử dụng. Hãy kiểm tra mã mới nhất hoặc gửi lại.';
+      setError(msg);
+      notify.error(caught, { fallbackMessage: msg });
     } finally {
       setPending(false);
     }
@@ -122,11 +130,6 @@ export function PasswordResetOtpForm({ onCompleted }: { onCompleted: () => void 
           </div>
           <p>Mật khẩu tối đa 128 ký tự. Sau khi cập nhật, hãy đăng nhập lại trên các thiết bị.</p>
         </>
-      )}
-      {error && (
-        <p role="alert" className="auth-message error">
-          {error}
-        </p>
       )}
       <button className="primary-button" type="submit" disabled={pending}>
         {pending ? 'Đang xử lý…' : challenge ? 'Xác nhận và cập nhật mật khẩu' : 'Gửi mã OTP'}

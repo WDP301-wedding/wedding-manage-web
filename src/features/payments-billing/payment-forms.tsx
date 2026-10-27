@@ -2,6 +2,7 @@
 
 import { useRef, useState, type FormEvent } from 'react';
 import type { BillingView, ManualPaymentBody, RefundBody } from './billing-api';
+import { notify } from '../../design-system/notifications';
 
 export type CommandOutcome = 'succeeded' | 'retry' | 'failed';
 const money = (value: number) =>
@@ -112,10 +113,9 @@ export function ManualPaymentForm({
       !evidence.reason ||
       !evidence.evidenceReference
     ) {
-      setInvalid(true);
+      notify.warning('Nhập số tiền nguyên dương, thời điểm và chứng từ hợp lệ.');
       return;
     }
-    setInvalid(false);
     setDraft({
       bookingId,
       purpose: data.get('purpose') === 'BALANCE' ? 'BALANCE' : 'DEPOSIT',
@@ -177,7 +177,6 @@ export function ManualPaymentForm({
           <button type="submit">Kiểm tra khoản thu</button>
         </fieldset>
       </form>
-      {invalid && <p role="alert">Nhập số tiền nguyên dương, thời điểm và chứng từ hợp lệ.</p>}
       {draft !== null && (
         <>
           <p>
@@ -229,10 +228,9 @@ export function RefundForm({
       !evidence.reason ||
       !evidence.evidenceReference
     ) {
-      setInvalid(true);
+      notify.warning('Chọn khoản gốc và nhập số tiền nguyên dương, lý do, chứng từ hợp lệ.');
       return;
     }
-    setInvalid(false);
     setDraft({
       sourcePaymentId,
       amountVnd,
@@ -288,9 +286,6 @@ export function RefundForm({
       </form>
       {payments.length === 0 && (
         <p>Chưa có khoản thanh toán trong các trang đã tải. Tải thêm lịch sử để tìm khoản gốc.</p>
-      )}
-      {invalid && (
-        <p role="alert">Chọn khoản gốc và nhập số tiền nguyên dương, lý do, chứng từ hợp lệ.</p>
       )}
       {draft !== null && (
         <>

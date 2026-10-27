@@ -1,9 +1,6 @@
 import type { ApiClient } from '../../lib/api/client';
 import { invalidateCatalogResource } from './catalog-cache';
-import type {
-  CatalogTimeline,
-  TimelineCatalogGateway,
-} from './catalog-types';
+import type { CatalogTimeline, TimelineCatalogGateway } from './catalog-types';
 
 export type SharedCatalogFetcher = <T>(
   accessToken: string,
@@ -18,7 +15,11 @@ export function createTimelineCatalogGateway(
   required: <T>(value: T | undefined, operation: string) => T,
   fetchShared?: SharedCatalogFetcher,
 ): TimelineCatalogGateway {
-  const read = <T>(accessToken: string, endpoint: string, params?: Record<string, unknown>): Promise<T> => {
+  const read = <T>(
+    accessToken: string,
+    endpoint: string,
+    params?: Record<string, unknown>,
+  ): Promise<T> => {
     const headers = authorization(accessToken);
     const fetcher = () =>
       api().GET(

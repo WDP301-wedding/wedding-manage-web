@@ -13,6 +13,7 @@ import type {
   CatalogMediaResourceType,
 } from './catalog-api';
 import { MediaUploadForm } from './media-upload-form';
+import { notify } from '../../design-system/notifications';
 
 type Authorize = <T>(operation: (accessToken: string) => Promise<T>) => Promise<T>;
 
@@ -99,7 +100,10 @@ export function MediaPanel({
     queueMicrotask(() => void load());
   }, [load]);
 
-  const refreshSelected = useCallback((background = false) => load(selectedKey, background), [load, selectedKey]);
+  const refreshSelected = useCallback(
+    (background = false) => load(selectedKey, background),
+    [load, selectedKey],
+  );
   useCatalogLiveRefresh(refreshSelected);
 
   useEffect(() => {
@@ -303,20 +307,19 @@ function PanelMessages({
   error,
   message,
 }: Readonly<{ error: string | null; message: string | null }>) {
-  return (
-    <div className="catalog-panel-messages" aria-live="polite">
-      {message === null ? null : (
-        <p className="catalog-success" role="status">
-          {message}
-        </p>
-      )}
-      {error === null ? null : (
-        <p className="catalog-error" role="alert">
-          {error}
-        </p>
-      )}
-    </div>
-  );
+  useEffect(() => {
+    if (error) {
+      notify.error(error);
+    }
+  }, [error]);
+
+  useEffect(() => {
+    if (message) {
+      notify.success(message);
+    }
+  }, [message]);
+
+  return null;
 }
 
 function mediaResourceKey(resource: Pick<CatalogMediaResource, 'path' | 'id'>): string {

@@ -6,6 +6,7 @@ import type { BookingPrefill } from './booking-helpers';
 import { field, formatDateTime, money, normalizeSearch } from './booking-helpers';
 import { bookingStyles } from './booking.styles';
 import { DatePicker } from '../../design-system/date-picker';
+import { notify } from '../../design-system/notifications';
 import type { Authorize, BookingSelections, ManagementBookingGateway } from './booking-api';
 
 export interface BookingCreatePanelProps {
@@ -62,16 +63,18 @@ export function BookingCreatePanel({
           setSelections(result);
           setLoadError(null);
         } else {
-          setLoadError(
-            'Không thể tải danh mục đặt tiệc. Vui lòng bấm "Tải lại danh mục đặt tiệc" để thử lại.',
-          );
+          const msg =
+            'Không thể tải danh mục đặt tiệc. Vui lòng bấm "Tải lại danh mục đặt tiệc" để thử lại.';
+          setLoadError(msg);
+          notify.error(msg);
         }
         return result;
       })
-      .catch(() => {
-        setLoadError(
-          'Không thể tải danh mục đặt tiệc. Vui lòng bấm "Tải lại danh mục đặt tiệc" để thử lại.',
-        );
+      .catch((err) => {
+        const msg =
+          'Không thể tải danh mục đặt tiệc. Vui lòng bấm "Tải lại danh mục đặt tiệc" để thử lại.';
+        setLoadError(msg);
+        notify.error(err, { fallbackMessage: msg });
         return null;
       })
       .finally(() => {
@@ -182,10 +185,6 @@ export function BookingCreatePanel({
       </button>
       {loadingSelections ? (
         <p role="status">Đang tải danh mục sảnh, khung giờ và thực đơn đang phục vụ…</p>
-      ) : loadError !== null ? (
-        <p role="alert" style={{ color: 'var(--hy-status-error, #c62828)', fontSize: '0.875rem' }}>
-          {loadError}
-        </p>
       ) : selections === null ? (
         <p>Tải danh mục để chọn sảnh, khung giờ và thực đơn đang phục vụ.</p>
       ) : selections.halls.length === 0 ||

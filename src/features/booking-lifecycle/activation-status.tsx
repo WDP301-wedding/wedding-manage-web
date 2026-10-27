@@ -1,14 +1,18 @@
 'use client';
-import type { ApiClient } from '../../lib/api/client';
+
+import { type Client } from 'openapi-fetch';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { Client } from 'openapi-fetch';
 import { z } from 'zod';
-import { createApiClient, ApiClientError } from '../../lib/api/client';
-import { sharedManagementSession as session } from '../identity-access/session';
-const activationSchema = z.object({
-  consultationId: z.string(),
+import { ApiClientError, createApiClient, type ApiClient } from '../../lib/api/client';
+import { sharedManagementSession } from '../identity-access/session';
+import { notify } from '../../design-system/notifications';
+
+const session = sharedManagementSession;
+
+const activationSchema = z.strictObject({
+  consultationId: z.string().uuid(),
   consultationRevision: z.number().int().positive(),
-  recipientEmail: z.string(),
+  recipientEmail: z.string().email(),
   state: z.enum([
     'NOT_ISSUED',
     'DELIVERY_PENDING',
@@ -62,8 +66,6 @@ export function ActivationStatus({
 }: Readonly<{ consultationId: string; disabled?: boolean; reloadSignal?: number }>) {
   const [retrying, setRetrying] = useState(false);
   const [value, setValue] = useState<Activation | null>(null),
-    [error, setError] = useState<string | null>(null),
-    [notice, setNotice] = useState<string | null>(null),
     [pending, setPending] = useState(false);
   const sequence = useRef(0),
     sending = useRef(false),
@@ -71,9 +73,8 @@ export function ActivationStatus({
     confirmation = useRef<HTMLDialogElement>(null);
   const load = useCallback(async () => {
     const current = ++sequence.current;
-    setError(null);
     try {
-      const result = await session.authorize((token) =>
+      const result = await session.authorize((token: string) =>
         client().GET('/management/consultations/{consultationId}/activation-status', {
           headers: { Authorization: 'Bearer ' + token },
           params: { path: { consultationId } },
@@ -84,12 +85,12 @@ export function ActivationStatus({
       const parsed = activationSchema.safeParse(result.data?.data);
       if (!parsed.success) throw Error('Missing activation state');
       setValue(parsed.data);
-    } catch {
+    } catch (caught) {
       if (current === sequence.current) {
         setValue(null);
-        setError(
-          'Chưa đọc được trạng thái kích hoạt. Kiểm tra kết nối và phiên bản BE rồi thử lại.',
-        );
+        notify.error(caught, {
+          title: 'Trạng thái kích hoạt',
+        });
       }
     }
   }, [consultationId]);
@@ -109,11 +110,9 @@ export function ActivationStatus({
     if (!value || !value.canSend || sending.current || disabled) return;
     sending.current = true;
     setPending(true);
-    setError(null);
-    setNotice(null);
     key.current ??= crypto.randomUUID();
     try {
-      await session.authorize((token) =>
+      await session.authorize((token: string) =>
         client().POST('/management/consultations/{consultationId}/activation-invitations', {
           headers: { Authorization: 'Bearer ' + token },
           params: { path: { consultationId }, header: { 'Idempotency-Key': key.current! } },
@@ -123,8 +122,8 @@ export function ActivationStatus({
       key.current = null;
       setRetrying(false);
       await load();
-      setNotice(
-        'Đã phát hành lời mời. Khách cần mở email và tự đặt hoặc xác nhận mật khẩu; chưa xác minh email đã đến hộp thư.',
+      notify.success(
+        'Đã phát hành lời mời kích hoạt thành công. Khách cần mở email và tự đặt hoặc xác nhận mật khẩu.',
       );
     } catch (caught) {
       const unknown =
@@ -134,13 +133,7 @@ export function ActivationStatus({
       if (!unknown) key.current = null;
       setRetrying(unknown);
       await load();
-      setError(
-        unknown
-          ? 'Chưa rõ kết quả gửi. Giữ nguyên yêu cầu và bấm thử lại, hệ thống sẽ dùng cùng mã thao tác.'
-          : caught instanceof ApiClientError && caught.status === 429
-            ? 'Đã đến giới hạn gửi lại. Vui lòng chờ rồi thử lại.'
-            : 'Không thể gửi lời mời ở trạng thái hiện tại. Đã cập nhật trạng thái để bạn kiểm tra.',
-      );
+      notify.error(caught);
     } finally {
       sending.current = false;
       setPending(false);
@@ -191,8 +184,6 @@ export function ActivationStatus({
       <button type="button" disabled={pending} onClick={() => void load()}>
         Cập nhật trạng thái
       </button>
-      {error ? <p role="alert">{error}</p> : null}
-      {notice ? <p role="status">{notice}</p> : null}
       <dialog ref={confirmation} aria-labelledby="activation-confirm-title">
         <h3 id="activation-confirm-title">Phát hành lời mời kích hoạt?</h3>
         <p>

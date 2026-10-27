@@ -12,7 +12,7 @@ export function SessionRevocationBoundary({ children }: Readonly<{ children: Rea
     const revoked = () => {
       // Remount consumers so snapshots captured before revocation are discarded,
       // including when the current route is already the login entry route.
-      setGeneration(value => value + 1);
+      setGeneration((value) => value + 1);
       router.replace('/');
     };
     window.addEventListener(managementSessionRevokedEvent, revoked);

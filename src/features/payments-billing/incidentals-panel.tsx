@@ -12,6 +12,7 @@ import { formatVnd } from '../../lib/formatters';
 import { IncidentalCreateForm, type IncidentalFormData } from './incidental-create-form';
 import { IncidentalTable } from './incidental-table';
 import { FinalInvoicesList } from './final-invoices-list';
+import { notify } from '../../design-system/notifications';
 
 export function IncidentalsPanel({
   bookingId,
@@ -100,7 +101,9 @@ export function IncidentalsPanel({
         ...formData,
         expectedRevision: incidentals?.revision ?? 1,
       });
-      setMessage('Đã thêm chi phí phát sinh thành công.');
+      const msg = 'Đã thêm chi phí phát sinh thành công.';
+      setMessage(msg);
+      notify.success(msg);
       setShowAddForm(false);
       await loadData();
       onRefresh();
@@ -109,6 +112,7 @@ export function IncidentalsPanel({
         EVENT_NOT_ENDED: 'Chỉ có thể ghi nhận phát sinh sau khi tiệc kết thúc.',
       });
       setError(friendly.message);
+      notify.error(err, { message: friendly.message });
     } finally {
       setLoading(false);
     }
@@ -119,12 +123,15 @@ export function IncidentalsPanel({
     setError(null);
     try {
       await billingService.deleteIncidental(bookingId, lineId, incidentals?.revision ?? 1);
-      setMessage('Đã xoá dòng phát sinh.');
+      const msg = 'Đã xoá dòng phát sinh.';
+      setMessage(msg);
+      notify.success(msg);
       await loadData();
       onRefresh();
     } catch (err) {
       const friendly = describeApiError(err);
       setError(friendly.message);
+      notify.error(err, { message: friendly.message });
     } finally {
       setLoading(false);
     }
@@ -132,7 +139,10 @@ export function IncidentalsPanel({
 
   const handleFinalizeInvoice = async () => {
     if (!appendices?.effectiveRevisionId) {
-      setError('Chưa thể chốt hoá đơn: không tìm thấy thoả thuận thương mại hiệu lực của booking.');
+      const msg =
+        'Chưa thể chốt hoá đơn: không tìm thấy thoả thuận thương mại hiệu lực của booking.';
+      setError(msg);
+      notify.error(msg);
       return;
     }
     setFinalizing(true);
@@ -144,18 +154,22 @@ export function IncidentalsPanel({
         expectedCommercialRevisionId: appendices.effectiveRevisionId,
         expectedDraftRevision: incidentals?.revision ?? 0,
       });
-      setMessage('Đã chốt hoá đơn quyết toán cuối thành công. Sổ cái công nợ đã được khoá sổ.');
+      const msg = 'Đã chốt hoá đơn quyết toán cuối thành công. Sổ cái công nợ đã được khoá sổ.';
+      setMessage(msg);
+      notify.success(msg);
       setShowFinalizeConfirm(false);
       await loadData();
       onRefresh();
     } catch (err) {
       const friendly = describeApiError(err, {
-        EVENT_NOT_ENDED: 'Tiệc chưa kết thúc; chỉ được chốt chi phí phát sinh và hoá đơn sau khi tan tiệc.',
+        EVENT_NOT_ENDED:
+          'Tiệc chưa kết thúc; chỉ được chốt chi phí phát sinh và hoá đơn sau khi tan tiệc.',
         INVOICE_FINALIZED: 'Hoá đơn quyết toán cuối đã được chốt và khoá sổ từ trước.',
         COMMERCIAL_PREDECESSOR_STALE: 'Thoả thuận thương mại vừa thay đổi. Vui lòng làm mới trang.',
         EXPENSE_REVISION_STALE: 'Dữ liệu phát sinh vừa thay đổi. Vui lòng làm mới trang.',
       });
       setError(friendly.message);
+      notify.error(err, { message: friendly.message });
     } finally {
       setFinalizing(false);
     }
@@ -204,40 +218,6 @@ export function IncidentalsPanel({
           {loading ? 'Đang tải…' : 'Làm mới'}
         </button>
       </div>
-
-      {message ? (
-        <div
-          role="status"
-          style={{
-            background: 'var(--hy-success-bg)',
-            color: 'var(--hy-success)',
-            padding: '0.75rem 1rem',
-            borderRadius: 'var(--hy-radius-sm)',
-            marginBottom: '1rem',
-            fontSize: '0.875rem',
-            border: '1px solid var(--hy-success)',
-          }}
-        >
-          {message}
-        </div>
-      ) : null}
-
-      {error ? (
-        <div
-          role="alert"
-          style={{
-            background: 'var(--hy-error-bg)',
-            color: 'var(--hy-error)',
-            padding: '0.75rem 1rem',
-            borderRadius: 'var(--hy-radius-sm)',
-            marginBottom: '1rem',
-            fontSize: '0.875rem',
-            border: '1px solid var(--hy-error)',
-          }}
-        >
-          {error}
-        </div>
-      ) : null}
 
       {/* Phần 1: Chi phí phát sinh nháp */}
       <div style={{ marginBottom: '1.5rem' }}>
@@ -360,7 +340,8 @@ export function IncidentalsPanel({
                 }}
               >
                 Sau khi tiệc cưới kết thúc và phát sinh được ghi nhận đầy đủ, Quản lý tiến hành chốt
-                hoá đơn để khoá sổ các khoản phát sinh và làm căn cứ thanh toán số dư hoặc hoàn tiền.
+                hoá đơn để khoá sổ các khoản phát sinh và làm căn cứ thanh toán số dư hoặc hoàn
+                tiền.
               </p>
               {!appendices?.effectiveRevisionId ? (
                 <p
@@ -371,8 +352,8 @@ export function IncidentalsPanel({
                     fontWeight: 500,
                   }}
                 >
-                  ⚠️ Cần hoàn tất hợp đồng và đặt cọc để xác định thoả thuận thương mại trước khi chốt
-                  hoá đơn.
+                  ⚠️ Cần hoàn tất hợp đồng và đặt cọc để xác định thoả thuận thương mại trước khi
+                  chốt hoá đơn.
                 </p>
               ) : null}
             </div>
@@ -459,10 +440,17 @@ export function IncidentalsPanel({
               >
                 Xác nhận chốt hoá đơn quyết toán cuối
               </h4>
-              <p style={{ margin: '0 0 0.75rem', fontSize: '0.85rem', color: 'var(--hy-ink, #2b1d22)', lineHeight: 1.45 }}>
-                Hoá đơn sau khi chốt là <strong>chứng từ pháp lý và kế toán bất biến</strong>. Toàn bộ
-                chi phí phát sinh nháp (Bản {incidentals?.revision ?? 0}) sẽ được đóng sổ và tích hợp
-                chính thức vào công nợ cuối cùng của tiệc với tổng tiền{' '}
+              <p
+                style={{
+                  margin: '0 0 0.75rem',
+                  fontSize: '0.85rem',
+                  color: 'var(--hy-ink, #2b1d22)',
+                  lineHeight: 1.45,
+                }}
+              >
+                Hoá đơn sau khi chốt là <strong>chứng từ pháp lý và kế toán bất biến</strong>. Toàn
+                bộ chi phí phát sinh nháp (Bản {incidentals?.revision ?? 0}) sẽ được đóng sổ và tích
+                hợp chính thức vào công nợ cuối cùng của tiệc với tổng tiền{' '}
                 <strong>{formatVnd(projectedTotal)}</strong>.
               </p>
               <div

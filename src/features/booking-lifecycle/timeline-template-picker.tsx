@@ -4,6 +4,7 @@ import { useState } from 'react';
 
 import type { CatalogTimeline, TimelineCatalogSnapshot } from '../venue-catalog/catalog-api';
 import type { TimelineItemInput } from './booking-api';
+import { notify } from '../../design-system/notifications';
 
 export type TimelineTemplateSource = Readonly<{
   load: () => Promise<TimelineCatalogSnapshot>;
@@ -24,11 +25,9 @@ export function TimelineTemplatePicker({
   const [versions, setVersions] = useState<readonly Version[] | null>(null);
   const [selectedId, setSelectedId] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
-    setError(null);
     setVersions(null);
     setSelectedId('');
     try {
@@ -44,8 +43,8 @@ export function TimelineTemplatePicker({
             : [],
         ),
       );
-    } catch {
-      setError('Không tải được mẫu kịch bản. Hãy thử lại.');
+    } catch (err) {
+      notify.error(err, { fallbackMessage: 'Không tải được mẫu kịch bản. Hãy thử lại.' });
     } finally {
       setLoading(false);
     }
@@ -57,7 +56,7 @@ export function TimelineTemplatePicker({
     const start = minutes(source.shift.startTime);
     const end = minutes(source.shift.endTime);
     if (version.items.some((item) => item.offsetMinutes < 0 || start + item.offsetMinutes >= end)) {
-      setError('Mẫu có mốc nằm ngoài ca tiệc. Hãy chọn mẫu khác hoặc tạo kịch bản trống.');
+      notify.warning('Mẫu có mốc nằm ngoài ca tiệc. Hãy chọn mẫu khác hoặc tạo kịch bản trống.');
       return;
     }
     const items = [...version.items].sort((left, right) => left.displayOrder - right.displayOrder);
@@ -72,7 +71,7 @@ export function TimelineTemplatePicker({
         };
       }),
     );
-    setError(null);
+    notify.success('Đã nạp mốc kịch bản từ mẫu.');
   };
 
   return (
@@ -82,7 +81,6 @@ export function TimelineTemplatePicker({
         Tải mẫu kịch bản
       </button>
       {loading ? <p role="status">Đang tải mẫu kịch bản…</p> : null}
-      {error === null ? null : <p role="alert">{error}</p>}
       {versions === null ? null : versions.length === 0 ? (
         <p role="status">Chưa có mẫu kịch bản đang công bố.</p>
       ) : (

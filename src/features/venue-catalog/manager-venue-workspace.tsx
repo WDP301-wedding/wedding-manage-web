@@ -23,6 +23,7 @@ import { LayoutPanel } from './layout-panel';
 import { MediaPanel } from './media-panel';
 import { TimelinePanel } from './timeline-panel';
 import { VenueHallsSection } from './venue-halls-section';
+import { notify } from '../../design-system/notifications';
 
 export type Authorize = <T>(operation: (accessToken: string) => Promise<T>) => Promise<T>;
 
@@ -158,18 +159,23 @@ export function ManagerVenueWorkspace({
   const [editingHall, setEditingHall] = useState<CatalogHall | null>(null);
   const [creatingHall, setCreatingHall] = useState(false);
 
-  const load = useCallback(async (background = false) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const next = await authorize((token) => gateway.loadVenue(token));
-      if (!background || !hasDirtyCatalogForms()) setSnapshot(next);
-    } catch (caught) {
-      setError(catalogErrorMessage(caught));
-    } finally {
-      setLoading(false);
-    }
-  }, [authorize, gateway]);
+  const load = useCallback(
+    async (background = false) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const next = await authorize((token) => gateway.loadVenue(token));
+        if (!background || !hasDirtyCatalogForms()) setSnapshot(next);
+      } catch (caught) {
+        const msg = catalogErrorMessage(caught);
+        setError(msg);
+        notify.error(caught, { fallbackMessage: msg });
+      } finally {
+        setLoading(false);
+      }
+    },
+    [authorize, gateway],
+  );
 
   useEffect(() => {
     queueMicrotask(() => void load());
@@ -184,12 +190,14 @@ export function ManagerVenueWorkspace({
     const focused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     try {
       await authorize(operation);
-      setMessage(successMessage);
+      notify.success(successMessage);
       await load();
       focused?.focus();
       return true;
     } catch (caught) {
-      setError(catalogErrorMessage(caught));
+      const msg = catalogErrorMessage(caught);
+      setError(msg);
+      notify.error(caught, { fallbackMessage: msg });
       focused?.focus();
       return false;
     } finally {
@@ -201,7 +209,7 @@ export function ManagerVenueWorkspace({
   if (snapshot === null) {
     return (
       <CatalogAccessPanel title="Không thể tải danh mục">
-        <p role="alert">{error ?? 'Máy chủ không trả về dữ liệu danh mục.'}</p>
+        <p>{error ?? 'Máy chủ không trả về dữ liệu danh mục.'}</p>
         <button className="catalog-primary-button" type="button" onClick={() => void load()}>
           Thử lại
         </button>
@@ -230,19 +238,6 @@ export function ManagerVenueWorkspace({
           </div>
         ) : null}
       </header>
-
-      <div className="catalog-announcements" aria-live="polite">
-        {message === null ? null : (
-          <p className="catalog-success" role="status">
-            {message}
-          </p>
-        )}
-        {error === null ? null : (
-          <p className="catalog-error" role="alert">
-            {error}
-          </p>
-        )}
-      </div>
 
       <CatalogTabs active={activeTab} onChange={handleTabChange} />
       <div

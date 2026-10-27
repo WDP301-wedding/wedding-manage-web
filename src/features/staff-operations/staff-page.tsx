@@ -15,6 +15,7 @@ import { ApiServiceError } from '../../lib/api/axios-client';
 import { staffStyles } from './staff.styles';
 import { CheckinDeskSection } from './checkin-desk-section';
 import { StaffManagementSection } from './staff-management-section';
+import { notify } from '../../design-system/notifications';
 
 import { useManagementSession } from '../identity-access/use-management-session';
 
@@ -25,8 +26,6 @@ export function StaffOperationsPage({
 }>) {
   const { snapshot, logout: handleLogout } = useManagementSession({ session });
   const [pending, setPending] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
   // Tab: 'checkin' | 'management'
   const [activeTab, setActiveTab] = useState<'checkin' | 'management'>('checkin');
@@ -58,25 +57,20 @@ export function StaffOperationsPage({
   const handleSearchGuests = async (event?: FormEvent) => {
     if (event) event.preventDefault();
     if (!bookingId.trim()) {
-      setError('Vui lòng nhập mã tiệc (bookingId) để tìm khách.');
+      notify.warning('Vui lòng nhập mã tiệc (bookingId) để tìm khách.');
       return;
     }
     setSearching(true);
-    setError(null);
     try {
       const res = await staffService.searchGuests(bookingId.trim(), searchQuery.trim());
       setGuests(res.items);
       if (res.items.length === 0) {
-        setMessage('Không tìm thấy khách mời nào phù hợp.');
-      } else {
-        setMessage(null);
+        notify.info('Không tìm thấy khách mời nào phù hợp.');
       }
     } catch (err) {
-      if (err instanceof ApiServiceError) {
-        setError(err.message);
-      } else {
-        setError('Không thể tra cứu khách mời. Vui lòng kiểm tra lại mã tiệc.');
-      }
+      notify.error(err, {
+        fallbackMessage: 'Không thể tra cứu khách mời. Vui lòng kiểm tra lại mã tiệc.',
+      });
     } finally {
       setSearching(false);
     }
@@ -85,17 +79,12 @@ export function StaffOperationsPage({
   // Check-in
   const handleCheckIn = async (guestId: string) => {
     setPending(true);
-    setError(null);
     try {
       await staffService.checkInGuest(bookingId.trim(), guestId);
-      setMessage('Đã check-in thành công cho khách mời.');
+      notify.success('Đã check-in thành công cho khách mời.');
       await handleSearchGuests();
     } catch (err) {
-      if (err instanceof ApiServiceError) {
-        setError(err.message);
-      } else {
-        setError('Thao tác check-in thất bại.');
-      }
+      notify.error(err, { fallbackMessage: 'Thao tác check-in thất bại.' });
     } finally {
       setPending(false);
     }
@@ -104,17 +93,12 @@ export function StaffOperationsPage({
   // Undo Check-in
   const handleUndoCheckIn = async (guestId: string) => {
     setPending(true);
-    setError(null);
     try {
       await staffService.undoCheckIn(bookingId.trim(), guestId);
-      setMessage('Đã hoàn tác check-in.');
+      notify.success('Đã hoàn tác check-in.');
       await handleSearchGuests();
     } catch (err) {
-      if (err instanceof ApiServiceError) {
-        setError(err.message);
-      } else {
-        setError('Thao tác hoàn tác thất bại.');
-      }
+      notify.error(err, { fallbackMessage: 'Thao tác hoàn tác thất bại.' });
     } finally {
       setPending(false);
     }
@@ -124,14 +108,11 @@ export function StaffOperationsPage({
   const handleLoadAssignments = async () => {
     if (!bookingId.trim()) return;
     setLoadingAssignments(true);
-    setError(null);
     try {
       const res = await staffService.getEventAssignments(bookingId.trim());
       setAssignments(res);
     } catch (err) {
-      if (err instanceof ApiServiceError) {
-        setError(err.message);
-      }
+      notify.error(err);
     } finally {
       setLoadingAssignments(false);
     }
@@ -145,20 +126,15 @@ export function StaffOperationsPage({
     const email = data.get('email') as string;
 
     setPending(true);
-    setError(null);
     try {
       const res = await staffService.provisionStaffAccount({ email });
-      setMessage(
+      notify.success(
         `Đã tạo/tìm thấy tài khoản nhân viên ${email} (ID: ${res.accountId}). Bạn có thể phân công ngay bên dưới.`,
       );
       setStaffAccountId(res.accountId);
       form.reset();
     } catch (err) {
-      if (err instanceof ApiServiceError) {
-        setError(err.message);
-      } else {
-        setError('Không thể cấp tài khoản nhân viên.');
-      }
+      notify.error(err, { fallbackMessage: 'Không thể cấp tài khoản nhân viên.' });
     } finally {
       setPending(false);
     }
@@ -173,28 +149,23 @@ export function StaffOperationsPage({
     const roleCode = data.get('roleCode') as 'CHECK_IN' | 'COORDINATOR' | 'GENERAL_SUPPORT';
 
     if (!bookingId.trim()) {
-      setError('Vui lòng nhập mã tiệc trước khi phân công.');
+      notify.warning('Vui lòng nhập mã tiệc trước khi phân công.');
       return;
     }
 
     setPending(true);
-    setError(null);
     try {
       await staffService.assignStaff({
         bookingId: bookingId.trim(),
         staffAccountId: staffId,
         roleCode,
       });
-      setMessage('Phân công nhân sự vào tiệc thành công!');
+      notify.success('Phân công nhân sự vào tiệc thành công!');
       await handleLoadAssignments();
       form.reset();
       setStaffAccountId('');
     } catch (err) {
-      if (err instanceof ApiServiceError) {
-        setError(err.message);
-      } else {
-        setError('Phân công nhân sự thất bại.');
-      }
+      notify.error(err, { fallbackMessage: 'Phân công nhân sự thất bại.' });
     } finally {
       setPending(false);
     }
@@ -204,17 +175,12 @@ export function StaffOperationsPage({
   const handleRevokeAssignment = async (assignmentId: string) => {
     if (!bookingId.trim()) return;
     setPending(true);
-    setError(null);
     try {
       await staffService.revokeAssignment(bookingId.trim(), assignmentId);
-      setMessage('Đã thu hồi phân công nhân sự.');
+      notify.success('Đã thu hồi phân công nhân sự.');
       await handleLoadAssignments();
     } catch (err) {
-      if (err instanceof ApiServiceError) {
-        setError(err.message);
-      } else {
-        setError('Thu hồi phân công thất bại.');
-      }
+      notify.error(err, { fallbackMessage: 'Thu hồi phân công thất bại.' });
     } finally {
       setPending(false);
     }
@@ -241,18 +207,6 @@ export function StaffOperationsPage({
             vận hành.
           </p>
         </header>
-
-        {/* Thông báo Alert */}
-        {message ? (
-          <div role="status" style={staffStyles.successBox}>
-            {message}
-          </div>
-        ) : null}
-        {error ? (
-          <div role="alert" style={staffStyles.errorBox}>
-            {error}
-          </div>
-        ) : null}
 
         {/* Tab Switcher cho Manager */}
         {isManager ? (

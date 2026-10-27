@@ -187,111 +187,101 @@ export function ContractPanel({
               </button>
             </div>
           ) : null}
-      {actionMessage ? (
-        <div role="status" style={contractStyles.actionMessage}>
-          {actionMessage}
-        </div>
-      ) : null}
 
-      {error ? (
-        <div role="alert" style={contractStyles.errorMessage}>
-          {error}
-        </div>
-      ) : null}
-
-      {loading && !currentRevision ? (
-        <p style={{ color: 'var(--hy-text-muted, #6e5d63)', fontSize: '0.875rem' }}>
-          Đang tải hợp đồng…
-        </p>
-      ) : !currentRevision ? (
-        <div style={contractStyles.emptyBox}>
-          <p style={{ color: 'var(--hy-text-muted, #6e5d63)', margin: 0 }}>
-            Tiệc này chưa có bản ghi hợp đồng chính thức.
-          </p>
-        </div>
-      ) : (
-        <div>
-          <div style={contractStyles.metaGrid}>
-            <div>
-              <small style={contractStyles.metaSmall}>Cô dâu &amp; Chú rể</small>
-              <strong>
-                {currentRevision.document.brideName || '—'} &amp;{' '}
-                {currentRevision.document.groomName || '—'}
-              </strong>
+          {loading && !currentRevision ? (
+            <p style={{ color: 'var(--hy-text-muted, #6e5d63)', fontSize: '0.875rem' }}>
+              Đang tải hợp đồng…
+            </p>
+          ) : !currentRevision ? (
+            <div style={contractStyles.emptyBox}>
+              <p style={{ color: 'var(--hy-text-muted, #6e5d63)', margin: 0 }}>
+                Tiệc này chưa có bản ghi hợp đồng chính thức.
+              </p>
             </div>
+          ) : (
             <div>
-              <small style={contractStyles.metaSmall}>Sảnh &amp; Ngày tiệc</small>
-              <strong>
-                {currentRevision.document.hallName} ({formatDate(currentRevision.document.eventDate)})
-              </strong>
-            </div>
-            <div>
-              <small style={contractStyles.metaSmall}>Tổng giá trị hợp đồng</small>
-              <strong style={{ color: 'var(--hy-wine, #7a1f3d)' }}>
-                {formatVnd(currentRevision.document.contractTotalVnd)}
-              </strong>
-            </div>
-            <div>
-              <small style={contractStyles.metaSmall}>Tiền cọc cam kết (30%)</small>
-              <strong style={{ color: 'var(--hy-wine-bold, #5c1430)' }}>
-                {formatVnd(currentRevision.document.depositAmountVnd)}
-              </strong>
-            </div>
-          </div>
+              <div style={contractStyles.metaGrid}>
+                <div>
+                  <small style={contractStyles.metaSmall}>Cô dâu &amp; Chú rể</small>
+                  <strong>
+                    {currentRevision.document.brideName || '—'} &amp;{' '}
+                    {currentRevision.document.groomName || '—'}
+                  </strong>
+                </div>
+                <div>
+                  <small style={contractStyles.metaSmall}>Sảnh &amp; Ngày tiệc</small>
+                  <strong>
+                    {currentRevision.document.hallName} (
+                    {formatDate(currentRevision.document.eventDate)})
+                  </strong>
+                </div>
+                <div>
+                  <small style={contractStyles.metaSmall}>Tổng giá trị hợp đồng</small>
+                  <strong style={{ color: 'var(--hy-wine, #7a1f3d)' }}>
+                    {formatVnd(currentRevision.document.contractTotalVnd)}
+                  </strong>
+                </div>
+                <div>
+                  <small style={contractStyles.metaSmall}>Tiền cọc cam kết (30%)</small>
+                  <strong style={{ color: 'var(--hy-wine-bold, #5c1430)' }}>
+                    {formatVnd(currentRevision.document.depositAmountVnd)}
+                  </strong>
+                </div>
+              </div>
 
-          <ContractLinesTable lines={currentRevision.document.lines} />
+              <ContractLinesTable lines={currentRevision.document.lines} />
 
-          {/* Trạng thái phê duyệt 2 bên */}
-          <div style={contractStyles.approvalStatusBox}>
-            <div>
-              <span>Quản lý (Manager): </span>
-              <strong style={contractStyles.approvalStatusText(Boolean(managerApproved))}>
-                {managerApproved ? '✓ Đã phê duyệt' : 'Chưa duyệt'}
-              </strong>
+              {/* Trạng thái phê duyệt 2 bên */}
+              <div style={contractStyles.approvalStatusBox}>
+                <div>
+                  <span>Quản lý (Manager): </span>
+                  <strong style={contractStyles.approvalStatusText(Boolean(managerApproved))}>
+                    {managerApproved ? '✓ Đã phê duyệt' : 'Chưa duyệt'}
+                  </strong>
+                </div>
+                <div>
+                  <span>Cặp đôi (Couple): </span>
+                  <strong style={contractStyles.approvalStatusText(Boolean(coupleApproved))}>
+                    {coupleApproved ? '✓ Đã phê duyệt' : 'Chưa duyệt'}
+                  </strong>
+                </div>
+              </div>
+
+              {/* Các nút hành động */}
+              <div style={contractStyles.actionsRow}>
+                <button
+                  type="button"
+                  disabled={disabled || downloadingPdf}
+                  onClick={() => void handleDownloadPdf()}
+                  style={contractStyles.downloadButton(disabled || downloadingPdf)}
+                >
+                  {downloadingPdf ? 'Đang tải PDF…' : 'Tải PDF hợp đồng'}
+                </button>
+
+                {currentRevision.state === 'DRAFT' ? (
+                  <button
+                    type="button"
+                    disabled={disabled || loading}
+                    onClick={() => void handleSubmitDraft()}
+                    style={contractStyles.submitDraftButton(disabled || loading)}
+                  >
+                    Gửi duyệt hợp đồng
+                  </button>
+                ) : null}
+
+                {currentRevision.state === 'AWAITING_APPROVAL' && !managerApproved ? (
+                  <button
+                    type="button"
+                    disabled={disabled || loading}
+                    onClick={() => void handleApprove()}
+                    style={contractStyles.approveButton(disabled || loading)}
+                  >
+                    Phê duyệt hợp đồng (Quản lý)
+                  </button>
+                ) : null}
+              </div>
             </div>
-            <div>
-              <span>Cặp đôi (Couple): </span>
-              <strong style={contractStyles.approvalStatusText(Boolean(coupleApproved))}>
-                {coupleApproved ? '✓ Đã phê duyệt' : 'Chưa duyệt'}
-              </strong>
-            </div>
-          </div>
-
-          {/* Các nút hành động */}
-          <div style={contractStyles.actionsRow}>
-            <button
-              type="button"
-              disabled={disabled || downloadingPdf}
-              onClick={() => void handleDownloadPdf()}
-              style={contractStyles.downloadButton(disabled || downloadingPdf)}
-            >
-              {downloadingPdf ? 'Đang tải PDF…' : 'Tải PDF hợp đồng'}
-            </button>
-
-            {currentRevision.state === 'DRAFT' ? (
-              <button
-                type="button"
-                disabled={disabled || loading}
-                onClick={() => void handleSubmitDraft()}
-                style={contractStyles.submitDraftButton(disabled || loading)}
-              >
-                Gửi duyệt hợp đồng
-              </button>
-            ) : null}
-
-            {currentRevision.state === 'AWAITING_APPROVAL' && !managerApproved ? (
-              <button
-                type="button"
-                disabled={disabled || loading}
-                onClick={() => void handleApprove()}
-                style={contractStyles.approveButton(disabled || loading)}
-              >
-                Phê duyệt hợp đồng (Quản lý)
-              </button>
-            ) : null}
-          </div>
-        </div>
-      )}
+          )}
         </>
       )}
     </article>

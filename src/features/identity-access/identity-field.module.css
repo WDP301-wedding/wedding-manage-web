@@ -28,7 +28,9 @@
   height: 2.25rem;
   cursor: pointer;
   border-radius: 0.375rem;
-  transition: color 0.15s ease, background-color 0.15s ease;
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease;
 }
 .toggle:hover {
   color: var(--hy-wine-hover, #531428);

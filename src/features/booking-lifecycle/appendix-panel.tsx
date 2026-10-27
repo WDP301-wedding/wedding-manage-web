@@ -86,18 +86,6 @@ export function AppendixPanel({
         </div>
       </div>
 
-      {actionMessage ? (
-        <div role="status" style={contractStyles.actionMessage}>
-          {actionMessage}
-        </div>
-      ) : null}
-
-      {error ? (
-        <div role="alert" style={contractStyles.errorMessage}>
-          {error}
-        </div>
-      ) : null}
-
       {loading && revisions.length === 0 ? (
         <p style={{ color: 'var(--hy-text-muted, #6e5d63)', fontSize: '0.875rem' }}>
           Đang tải danh sách phụ lục…
@@ -106,7 +94,8 @@ export function AppendixPanel({
         <div style={contractStyles.emptyBox}>
           <p style={{ color: 'var(--hy-text-muted, #6e5d63)', margin: 0, fontSize: '0.875rem' }}>
             Chưa có phụ lục hợp đồng nào được tạo cho tiệc này. Phụ lục được lập khi cần điều chỉnh
-            thực đơn, số bàn, dịch vụ hoặc số lượng thiệp in sau khi hợp đồng chính đã ký và đặt cọc.
+            thực đơn, số bàn, dịch vụ hoặc số lượng thiệp in sau khi hợp đồng chính đã ký và đặt
+            cọc.
           </p>
         </div>
       ) : (
@@ -141,12 +130,8 @@ export function AppendixPanel({
                       border: isSelected
                         ? '1px solid var(--hy-wine, #7a1f3d)'
                         : '1px solid var(--hy-outline, #eadfd6)',
-                      background: isSelected
-                        ? 'var(--hy-surface-container, #fdf6ee)'
-                        : '#ffffff',
-                      color: isSelected
-                        ? 'var(--hy-wine, #7a1f3d)'
-                        : 'var(--hy-text, #2b1d22)',
+                      background: isSelected ? 'var(--hy-surface-container, #fdf6ee)' : '#ffffff',
+                      color: isSelected ? 'var(--hy-wine, #7a1f3d)' : 'var(--hy-text, #2b1d22)',
                       cursor: 'pointer',
                       display: 'inline-flex',
                       alignItems: 'center',
@@ -220,7 +205,13 @@ export function AppendixPanel({
                 </div>
 
                 <div style={{ textAlign: 'right' }}>
-                  <small style={{ color: 'var(--hy-text-muted, #6e5d63)', display: 'block', fontSize: '0.75rem' }}>
+                  <small
+                    style={{
+                      color: 'var(--hy-text-muted, #6e5d63)',
+                      display: 'block',
+                      fontSize: '0.75rem',
+                    }}
+                  >
                     Chênh lệch thoả thuận
                   </small>
                   <strong
@@ -278,7 +269,14 @@ export function AppendixPanel({
               </div>
 
               {/* Chi tiết bảng dịch vụ sau điều chỉnh */}
-              <div style={{ background: '#ffffff', padding: '0.75rem', borderRadius: 6, marginBottom: '1rem' }}>
+              <div
+                style={{
+                  background: '#ffffff',
+                  padding: '0.75rem',
+                  borderRadius: 6,
+                  marginBottom: '1rem',
+                }}
+              >
                 <ContractLinesTable
                   lines={activeAppendix.document.afterLines}
                   title={`Chi tiết các hạng mục sau điều chỉnh (${activeAppendix.document.afterLines.length})`}
@@ -324,7 +322,13 @@ export function AppendixPanel({
                   >
                     Xác nhận phê duyệt phụ lục số {activeAppendix.revisionNumber}
                   </h6>
-                  <p style={{ margin: '0 0 0.75rem', fontSize: '0.85rem', color: 'var(--hy-ink, #2b1d22)' }}>
+                  <p
+                    style={{
+                      margin: '0 0 0.75rem',
+                      fontSize: '0.85rem',
+                      color: 'var(--hy-ink, #2b1d22)',
+                    }}
+                  >
                     Bạn đang đồng ý thay đổi tổng thoả thuận tiệc từ{' '}
                     <strong>{formatVnd(activeAppendix.document.beforeTotalVnd)}</strong> thành{' '}
                     <strong>{formatVnd(activeAppendix.document.afterTotalVnd)}</strong> (chênh lệch:{' '}
@@ -388,7 +392,9 @@ export function AppendixPanel({
                   </button>
                 ) : null}
 
-                {activeAppendix.state === 'AWAITING_APPROVAL' && !managerApproved && !confirmingApproval ? (
+                {activeAppendix.state === 'AWAITING_APPROVAL' &&
+                !managerApproved &&
+                !confirmingApproval ? (
                   <button
                     type="button"
                     disabled={disabled || loading}

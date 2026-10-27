@@ -108,8 +108,6 @@ export function ManagementBookingWorkspace({
       ) : null}
       <div className="booking-live" aria-live="polite">
         {pending === null ? null : <span role="status">Đang xử lý yêu cầu…</span>}
-        {message === null ? null : <span role="status">{message}</span>}
-        {error === null ? null : <span role="alert">{error}</span>}
         {contextStatus === 'error' ? (
           <button type="button" onClick={retryContext}>
             Tải lại hồ sơ

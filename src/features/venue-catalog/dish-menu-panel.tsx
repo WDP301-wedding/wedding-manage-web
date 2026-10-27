@@ -64,15 +64,18 @@ export function DishMenuPanel({
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async (background = false) => {
-    try {
-      const next = await authorize((token) => gateway.loadFood(token));
-      if (!background || !hasDirtyCatalogForms()) setSnapshot(next);
-      setError(null);
-    } catch (caught) {
-      setError(foodErrorMessage(caught));
-    }
-  }, [authorize, gateway]);
+  const load = useCallback(
+    async (background = false) => {
+      try {
+        const next = await authorize((token) => gateway.loadFood(token));
+        if (!background || !hasDirtyCatalogForms()) setSnapshot(next);
+        setError(null);
+      } catch (caught) {
+        setError(foodErrorMessage(caught));
+      }
+    },
+    [authorize, gateway],
+  );
 
   useEffect(() => {
     queueMicrotask(() => void load());
@@ -110,7 +113,7 @@ export function DishMenuPanel({
           </p>
         ) : (
           <div className="catalog-retry-state">
-            <p role="alert">{error}</p>
+            <p>{error}</p>
             <button type="button" className="catalog-primary-button" onClick={() => void load()}>
               Thử lại
             </button>

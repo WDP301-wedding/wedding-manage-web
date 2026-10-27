@@ -149,14 +149,16 @@ export async function fetchSharedCatalogResource<T>(
 }
 
 if (typeof window !== 'undefined') {
-  import('../realtime/realtime-client').then(({ sharedManagementRealtime }) => {
-    sharedManagementRealtime.addResyncListener(clearCatalogCache);
-    sharedManagementRealtime.addEventListener((event) => {
-      if (event.type === 'catalog.updated') {
-        clearCatalogCache();
-      }
+  import('../realtime/realtime-client')
+    .then(({ sharedManagementRealtime }) => {
+      sharedManagementRealtime.addResyncListener(clearCatalogCache);
+      sharedManagementRealtime.addEventListener((event) => {
+        if (event.type === 'catalog.updated') {
+          clearCatalogCache();
+        }
+      });
+    })
+    .catch(() => {
+      // Ignore in non-browser/test environments
     });
-  }).catch(() => {
-    // Ignore in non-browser/test environments
-  });
 }

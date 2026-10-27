@@ -33,11 +33,7 @@ function isValidDate(year: number, month: number, day: number): boolean {
     return false;
   }
   const date = new Date(year, month - 1, day);
-  return (
-    date.getFullYear() === year &&
-    date.getMonth() === month - 1 &&
-    date.getDate() === day
-  );
+  return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
 }
 
 function parseDateParts(val?: string | null): DateParts | null {
@@ -118,10 +114,14 @@ export function DatePicker({
 
   const controlledParts = isControlled ? parseDateParts(value) : null;
   const selectedIso = isControlled
-    ? (controlledParts ? toIsoString(controlledParts) : '')
+    ? controlledParts
+      ? toIsoString(controlledParts)
+      : ''
     : uncontrolledIso;
   const displayValue = isControlled
-    ? (controlledParts ? toVnString(controlledParts) : (value ?? ''))
+    ? controlledParts
+      ? toVnString(controlledParts)
+      : (value ?? '')
     : uncontrolledDisplay;
 
   // View year and month for calendar navigation
@@ -300,7 +300,8 @@ export function DatePicker({
     const days = [];
     for (let day = 1; day <= totalDays; day++) {
       const currentIso = toIsoString({ year: viewYear, month: viewMonth + 1, day });
-      const isDisabled = (minIso !== null && currentIso < minIso) || (maxIso !== null && currentIso > maxIso);
+      const isDisabled =
+        (minIso !== null && currentIso < minIso) || (maxIso !== null && currentIso > maxIso);
       const isSelected = selectedIso === currentIso;
       const isToday = todayIso === currentIso;
 
@@ -321,9 +322,7 @@ export function DatePicker({
 
   return (
     <div ref={containerRef} className={`${styles.container} ${className ?? ''}`} style={style}>
-      {name ? (
-        <input type="hidden" name={name} value={selectedIso} />
-      ) : null}
+      {name ? <input type="hidden" name={name} value={selectedIso} /> : null}
 
       <div className={styles.trigger}>
         <input
@@ -377,12 +376,7 @@ export function DatePicker({
       </div>
 
       {isOpen && (
-        <div
-          role="dialog"
-          aria-modal="false"
-          aria-label="Chọn ngày"
-          className={styles.popover}
-        >
+        <div role="dialog" aria-modal="false" aria-label="Chọn ngày" className={styles.popover}>
           <div className={styles.header}>
             <span className={styles.monthTitle}>
               Tháng {viewMonth + 1}/{viewYear}
@@ -476,18 +470,10 @@ export function DatePicker({
           </div>
 
           <div className={styles.footer}>
-            <button
-              type="button"
-              className={styles.cancelBtn}
-              onClick={handleClear}
-            >
+            <button type="button" className={styles.cancelBtn} onClick={handleClear}>
               Xoá
             </button>
-            <button
-              type="button"
-              className={styles.confirmBtn}
-              onClick={() => setIsOpen(false)}
-            >
+            <button type="button" className={styles.confirmBtn} onClick={() => setIsOpen(false)}>
               Đóng
             </button>
           </div>

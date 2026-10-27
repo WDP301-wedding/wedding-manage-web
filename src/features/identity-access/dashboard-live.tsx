@@ -37,6 +37,7 @@ import { DashboardBookingsSection } from './dashboard-bookings-section';
 import { DashboardConsultationsSection } from './dashboard-consultations-section';
 import { DashboardKpiStrip } from './dashboard-kpi-strip';
 import { DashboardVenueHalls } from './dashboard-venue-halls';
+import { notify } from '../../design-system/notifications';
 
 // Re-export assignment types & utilities for consumers
 export type { BookingAssignment, BookingAssignmentsRegistry };
@@ -118,18 +119,22 @@ export function DashboardLiveView({
       hallName,
     );
     if (result.success) {
+      const msg = `✓ Bạn đã tiếp nhận tiệc ${hallName || ''} (${bookingId.slice(0, 8)}…). Tiệc này đã được khóa cho tài khoản của bạn.`;
+      notify.success(msg);
       setLockNotice({
         type: 'success',
-        message: `✓ Bạn đã tiếp nhận tiệc ${hallName || ''} (${bookingId.slice(0, 8)}…). Tiệc này đã được khóa cho tài khoản của bạn.`,
+        message: msg,
       });
       setAssignments(getBookingAssignments());
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new Event('wedding_booking_assignments_changed'));
       }
     } else {
+      const msg = `Tiệc này đã được ${result.existingAssignment?.assignedEmail || 'quản lý khác'} tiếp nhận và khóa. Bạn không thể nhận trùng tiệc.`;
+      notify.warning(msg);
       setLockNotice({
         type: 'warning',
-        message: `Tiệc này đã được ${result.existingAssignment?.assignedEmail || 'quản lý khác'} tiếp nhận và khóa. Bạn không thể nhận trùng tiệc.`,
+        message: msg,
       });
       setAssignments(getBookingAssignments());
     }
@@ -138,9 +143,11 @@ export function DashboardLiveView({
   const handleRelease = (bookingId: string) => {
     const result = releaseBookingAssignment(bookingId, resolvedAccountId);
     if (result.success) {
+      const msg = `Đã hủy tiếp nhận tiệc (${bookingId.slice(0, 8)}…). Tiệc này có thể được tiếp nhận bởi quản lý khác.`;
+      notify.info(msg);
       setLockNotice({
         type: 'info',
-        message: `Đã hủy tiếp nhận tiệc (${bookingId.slice(0, 8)}…). Tiệc này có thể được tiếp nhận bởi quản lý khác.`,
+        message: msg,
       });
       setAssignments(getBookingAssignments());
       if (typeof window !== 'undefined') {
@@ -199,7 +206,9 @@ export function DashboardLiveView({
       setState('success');
     } catch (error) {
       const friendly = describeApiError(error);
-      setErrorMessage(friendly.message || 'Không thể tải dữ liệu tổng quan. Vui lòng thử lại.');
+      const msg = friendly.message || 'Không thể tải dữ liệu tổng quan. Vui lòng thử lại.';
+      setErrorMessage(msg);
+      notify.error(error, { fallbackMessage: msg });
       setState('error');
     }
   }, [isManager]);
@@ -223,7 +232,7 @@ export function DashboardLiveView({
     <div className="dashboard-live-container">
       {/* State: Error with Retry */}
       {state === 'error' && errorMessage ? (
-        <div className="booking-error" role="alert" style={{ margin: '1rem 0' }}>
+        <div className="booking-error" style={{ margin: '1rem 0' }}>
           <strong>Lỗi kết nối máy chủ</strong>
           <p>{errorMessage}</p>
           <button type="button" onClick={() => void fetchData()} className="text-button">

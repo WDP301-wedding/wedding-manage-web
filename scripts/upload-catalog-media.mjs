@@ -48,7 +48,15 @@ async function getCatalogInfo() {
   const roastedChicken = dishes.find((d) => d.name.toLowerCase().includes('roasted chicken'));
   const pannaCotta = dishes.find((d) => d.name.toLowerCase().includes('panna cotta'));
 
-  if (!lotusHall || !orchidHall || !classicMenu || !premiumMenu || !lotusSalad || !roastedChicken || !pannaCotta) {
+  if (
+    !lotusHall ||
+    !orchidHall ||
+    !classicMenu ||
+    !premiumMenu ||
+    !lotusSalad ||
+    !roastedChicken ||
+    !pannaCotta
+  ) {
     console.error('❌ Không tìm thấy đầy đủ các mục catalog tương ứng trên backend:', {
       lotusHall: !!lotusHall,
       orchidHall: !!orchidHall,
@@ -113,7 +121,8 @@ async function main() {
       resourceType: 'HALL',
       resourceId: info.lotusHall.id,
       filePath: join(CATALOG_DIR, 'halls', 'lotus-hall', 'lotus-hall-01.webp'),
-      alternativeText: 'Toàn cảnh Lotus Hall với đèn chùm pha lê, bàn tiệc phủ khăn kem và sân khấu hoa trắng',
+      alternativeText:
+        'Toàn cảnh Lotus Hall với đèn chùm pha lê, bàn tiệc phủ khăn kem và sân khấu hoa trắng',
       label: 'Lotus Hall [1/6 - Ảnh bìa]',
     },
     {
@@ -264,7 +273,9 @@ async function main() {
     if (ok) successCount++;
   }
 
-  console.log(`\n🎉 Hoàn thành: Đã tải lên ${successCount}/${itemsToUpload.length} ảnh thành công!`);
+  console.log(
+    `\n🎉 Hoàn thành: Đã tải lên ${successCount}/${itemsToUpload.length} ảnh thành công!`,
+  );
 }
 
 main().catch((err) => {

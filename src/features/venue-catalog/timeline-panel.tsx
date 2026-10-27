@@ -13,6 +13,7 @@ import type {
   TimelineWrite,
 } from './catalog-api';
 import type { Authorize } from './catalog-types';
+import { notify } from '../../design-system/notifications';
 import {
   move,
   newTimelineItem,
@@ -45,15 +46,18 @@ export function TimelinePanel({
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async (background = false) => {
-    try {
-      const next = await authorize((token) => gateway.loadTimelines(token));
-      if (!background || !hasDirtyCatalogForms()) setSnapshot(next);
-      setError(null);
-    } catch (caught) {
-      setError(timelineError(caught));
-    }
-  }, [authorize, gateway]);
+  const load = useCallback(
+    async (background = false) => {
+      try {
+        const next = await authorize((token) => gateway.loadTimelines(token));
+        if (!background || !hasDirtyCatalogForms()) setSnapshot(next);
+        setError(null);
+      } catch (caught) {
+        setError(timelineError(caught));
+      }
+    },
+    [authorize, gateway],
+  );
 
   useEffect(() => {
     queueMicrotask(() => void load());
@@ -67,11 +71,13 @@ export function TimelinePanel({
     setError(null);
     try {
       await authorize(operation);
-      setMessage(success);
+      notify.success(success);
       await load();
       return true;
     } catch (caught) {
-      setError(timelineError(caught));
+      const msg = timelineError(caught);
+      setError(msg);
+      notify.error(caught, { fallbackMessage: msg });
       return false;
     } finally {
       setPending(false);
@@ -92,18 +98,6 @@ export function TimelinePanel({
   return (
     <section className="catalog-section" id="timeline" aria-labelledby="timeline-title">
       <TimelineHeading />
-      <div className="catalog-panel-messages" aria-live="polite">
-        {message === null ? null : (
-          <p className="catalog-success" role="status">
-            {message}
-          </p>
-        )}
-        {error === null ? null : (
-          <p className="catalog-error" role="alert">
-            {error}
-          </p>
-        )}
-      </div>
       <NewTimelineForm
         pending={pending}
         onSubmit={(input) =>

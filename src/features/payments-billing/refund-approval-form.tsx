@@ -4,6 +4,7 @@ import { useRef, useState, type FormEvent } from 'react';
 import type { BillingView, RefundApprovalBody } from './billing-api';
 import { money } from './billing-display';
 import type { CommandOutcome } from './payment-forms';
+import { notify } from '../../design-system/notifications';
 
 function field(data: FormData, name: string): string {
   const value = data.get(name);
@@ -40,10 +41,9 @@ export function RefundApprovalForm({
       evidenceReference.length > 120 ||
       (basis !== 'CANCELLATION' && !credits.some((entry) => entry.ledgerEntryId === basis))
     ) {
-      setInvalid(true);
+      notify.warning('Chọn căn cứ và nhập hạn mức nguyên dương, lý do, chứng từ hợp lệ.');
       return;
     }
-    setInvalid(false);
     setDraft({
       bookingId: booking.bookingId,
       expectedBillingRevision: booking.billingRevision,
@@ -110,9 +110,6 @@ export function RefundApprovalForm({
         <p>
           Chưa có điều chỉnh giảm trong các trang đã tải. Tải thêm lịch sử nếu cần chọn căn cứ này.
         </p>
-      )}
-      {invalid && (
-        <p role="alert">Chọn căn cứ và nhập hạn mức nguyên dương, lý do, chứng từ hợp lệ.</p>
       )}
       {draft !== null && (
         <section className="billing-confirm" aria-label="Xác nhận phê duyệt hoàn tiền">

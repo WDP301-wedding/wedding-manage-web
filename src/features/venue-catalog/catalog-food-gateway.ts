@@ -1,10 +1,6 @@
 import type { ApiClient } from '../../lib/api/client';
 import { invalidateCatalogResource } from './catalog-cache';
-import type {
-  CatalogDish,
-  CatalogMenu,
-  FoodCatalogGateway,
-} from './catalog-types';
+import type { CatalogDish, CatalogMenu, FoodCatalogGateway } from './catalog-types';
 
 export type SharedCatalogFetcher = <T>(
   accessToken: string,
@@ -19,7 +15,11 @@ export function createFoodCatalogGateway(
   required: <T>(value: T | undefined, operation: string) => T,
   fetchShared?: SharedCatalogFetcher,
 ): FoodCatalogGateway {
-  const read = <T>(accessToken: string, endpoint: string, params?: Record<string, unknown>): Promise<T> => {
+  const read = <T>(
+    accessToken: string,
+    endpoint: string,
+    params?: Record<string, unknown>,
+  ): Promise<T> => {
     const headers = authorization(accessToken);
     const fetcher = () =>
       api().GET(

@@ -105,9 +105,7 @@ export const contractStyles = {
   } satisfies CSSProperties,
 
   approvalStatusText: (approved: boolean): CSSProperties => ({
-    color: approved
-      ? 'var(--hy-status-success, #2f6b4f)'
-      : 'var(--hy-status-warning, #8a5300)',
+    color: approved ? 'var(--hy-status-success, #2f6b4f)' : 'var(--hy-status-warning, #8a5300)',
   }),
 
   actionsRow: {

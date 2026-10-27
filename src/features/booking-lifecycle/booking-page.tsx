@@ -1,12 +1,14 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect } from 'react';
 import { OperationsShell } from '../identity-access/operations-shell';
 import { sharedManagementSession } from '../identity-access/session';
 import { useManagementSession } from '../identity-access/use-management-session';
 import { createManagementBookingGateway } from './booking-api';
 import { type BookingPrefill, type InviteLogEntry, PageState } from './booking-helpers';
 import { ManagementBookingWorkspace } from './booking-workspace';
+import { notify } from '../../design-system/notifications';
 
 // Re-export types and workspace component for full backward compatibility
 export type { BookingPrefill, InviteLogEntry };
@@ -21,6 +23,13 @@ export function ManagementBookingPage({
   autoLoadCatalog?: boolean;
 } = {}) {
   const { snapshot, loggingOut, logoutError, logout } = useManagementSession({ session });
+
+  useEffect(() => {
+    if (logoutError) {
+      notify.error(logoutError);
+    }
+  }, [logoutError]);
+
   const access =
     snapshot === null
       ? 'loading'
@@ -35,12 +44,11 @@ export function ManagementBookingPage({
   else if (access !== 'manager') {
     content = (
       <PageState title={access === 'anonymous' ? 'Cần đăng nhập' : 'Không có quyền truy cập'}>
-        <p role="alert">
+        <p>
           {access === 'anonymous'
             ? 'Đăng nhập bằng tài khoản Quản lý để xử lý hồ sơ đặt tiệc.'
             : 'Tài khoản hiện tại không có quyền quản lý đặt tiệc.'}
         </p>
-        {logoutError ? <p role="alert">{logoutError}</p> : null}
         <Link className="booking-primary-link" href="/">
           Về trang đăng nhập
         </Link>
