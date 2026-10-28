@@ -90,58 +90,65 @@ export function TimelineEditor({
           />
         ) : null}
         {drafts.length === 0 ? <p>Chưa có mốc. Thêm nội dung hoặc lưu bản nháp trống.</p> : null}
-        {drafts.map((item, index) => (
-          <div className="timeline-editor-item" key={item.key}>
-            <strong>Mốc {index + 1}</strong>
-            <label>
-              Giờ bắt đầu mốc {index + 1}
-              <input
-                type="time"
-                required
-                value={item.startTime}
-                onChange={(event) => update(item.key, { startTime: event.target.value })}
-              />
-            </label>
-            <label>
-              Nội dung mốc {index + 1}
-              <input
-                required
-                maxLength={120}
-                value={item.title}
-                onChange={(event) => update(item.key, { title: event.target.value })}
-              />
-            </label>
-            <label>
-              Ghi chú mốc {index + 1}
-              <textarea
-                rows={2}
-                maxLength={2000}
-                value={item.description}
-                onChange={(event) => update(item.key, { description: event.target.value })}
-              />
-            </label>
-            <div className="timeline-editor-actions">
-              <button type="button" disabled={index === 0} onClick={() => move(index, -1)}>
-                Đưa mốc {index + 1} lên
-              </button>
-              <button
-                type="button"
-                disabled={index === drafts.length - 1}
-                onClick={() => move(index, 1)}
-              >
-                Đưa mốc {index + 1} xuống
-              </button>
-              <button
-                type="button"
-                onClick={() =>
-                  setDrafts((current) => current.filter((row) => row.key !== item.key))
-                }
-              >
-                Xóa mốc {index + 1}
-              </button>
+        <div className="timeline-editor-items-container">
+          {drafts.map((item, index) => (
+            <div className="timeline-editor-item" key={item.key}>
+              <div className="timeline-editor-item-header">
+                <strong>Mốc {index + 1}</strong>
+                <div className="timeline-editor-actions">
+                  <button type="button" disabled={index === 0} onClick={() => move(index, -1)}>
+                    Đưa mốc {index + 1} lên
+                  </button>
+                  <button
+                    type="button"
+                    disabled={index === drafts.length - 1}
+                    onClick={() => move(index, 1)}
+                  >
+                    Đưa mốc {index + 1} xuống
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setDrafts((current) => current.filter((row) => row.key !== item.key))
+                    }
+                  >
+                    Xóa mốc {index + 1}
+                  </button>
+                </div>
+              </div>
+              <div className="timeline-editor-fields-row">
+                <label>
+                  Giờ bắt đầu mốc {index + 1}
+                  <input
+                    type="time"
+                    required
+                    value={item.startTime}
+                    onChange={(event) => update(item.key, { startTime: event.target.value })}
+                  />
+                </label>
+                <label>
+                  Nội dung mốc {index + 1}
+                  <input
+                    required
+                    maxLength={120}
+                    value={item.title}
+                    onChange={(event) => update(item.key, { title: event.target.value })}
+                  />
+                </label>
+              </div>
+              <label>
+                Ghi chú mốc {index + 1}
+                <textarea
+                  rows={1}
+                  maxLength={2000}
+                  placeholder="Ghi chú chi tiết (nếu có)"
+                  value={item.description}
+                  onChange={(event) => update(item.key, { description: event.target.value })}
+                />
+              </label>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
         <button
           type="button"
           disabled={drafts.length >= 100}

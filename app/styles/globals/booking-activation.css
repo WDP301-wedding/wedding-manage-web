@@ -1,0 +1,267 @@
+/* ========================================================
+   Activation Card & Modal Dialog (Hỷ Yến Luxury UI)
+   ======================================================== */
+
+.hy-activation-card {
+  margin-top: 1rem;
+  padding: 1.25rem 1.4rem;
+  background: #ffffff;
+  border: 1px solid var(--hy-outline, #eadfd6);
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(122, 31, 61, 0.03);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hy-activation-card:hover {
+  border-color: #dfcfc4;
+  box-shadow: 0 4px 16px rgba(122, 31, 61, 0.06);
+}
+
+.hy-activation-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+}
+
+.hy-activation-header-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.hy-activation-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+
+.hy-activation-heading {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 0.98rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--hy-ink, #2b1d22);
+}
+
+.hy-activation-subheading {
+  font-family: var(--font-body);
+  font-size: 0.76rem;
+  line-height: 1.35;
+  color: var(--hy-ink-muted, #6e5d63);
+}
+
+.hy-activation-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.35rem 0.8rem;
+  border-radius: 9999px;
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.hy-activation-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.hy-activation-badge-success {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #065f46;
+}
+
+.hy-activation-badge-info {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1e40af;
+}
+
+.hy-activation-badge-neutral {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+}
+
+.hy-activation-badge-warning {
+  background: #fefce8;
+  border: 1px solid #fde047;
+  color: #854d0e;
+}
+
+.hy-activation-badge-danger {
+  background: #fff1f2;
+  border: 1px solid #fecdd3;
+  color: #9f1239;
+}
+
+.hy-activation-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.hy-action-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 0.9rem;
+  background: #ffffff;
+  border: 1px solid var(--hy-outline, #eadfd6);
+  border-radius: 8px;
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--hy-ink, #2b1d22);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.hy-action-btn-secondary:hover:not(:disabled) {
+  background: var(--hy-surface-container, #f7ede4);
+  border-color: var(--hy-outline-strong, #9a877f);
+  color: var(--hy-wine, #7a1f3d);
+}
+
+.hy-action-btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.hy-action-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 1.05rem;
+  background: var(--hy-wine, #7a1f3d);
+  border: 1px solid var(--hy-wine, #7a1f3d);
+  border-radius: 8px;
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: #ffffff;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(122, 31, 61, 0.16);
+  transition: all 0.15s ease;
+}
+
+.hy-action-btn-primary:hover:not(:disabled) {
+  background: var(--hy-wine-pressed, #5c1430);
+  border-color: var(--hy-wine-pressed, #5c1430);
+  box-shadow: 0 2px 6px rgba(122, 31, 61, 0.24);
+}
+
+.hy-action-btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.hy-activation-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.hy-activation-status-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.hy-activation-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 0.75rem;
+}
+
+.hy-activation-meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.75rem 0.95rem;
+  background: var(--hy-surface-warm, #fbf4ee);
+  border: 1px solid var(--hy-outline, #eadfd6);
+  border-radius: 8px;
+  transition: background-color 0.15s ease;
+}
+
+.hy-activation-meta-item:hover {
+  background: #fdf8f4;
+}
+
+.hy-activation-meta-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  line-height: 1.3;
+  color: var(--hy-ink-muted, #6e5d63);
+}
+
+.hy-activation-meta-value {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--hy-ink, #2b1d22);
+  word-break: break-all;
+}
+
+.hy-activation-hint-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 0.75rem 0.95rem;
+  background: var(--hy-surface-warm, #fbf4ee);
+  border: 1px solid var(--hy-outline, #eadfd6);
+  border-radius: 8px;
+  color: var(--hy-ink-muted, #6e5d63);
+}
+
+.hy-activation-hint {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--hy-ink-muted, #6e5d63);
+}
+
+.hy-couple-email-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.15rem 0.55rem;
+  background: var(--hy-surface-warm, #fbf4ee);
+  border: 1px solid var(--hy-outline, #eadfd6);
+  border-radius: 6px;
+  font-weight: 600;
+  color: var(--hy-wine, #7a1f3d);
+  font-size: 0.8rem;
+}
+
+@keyframes hy-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.hy-spin {
+  animation: hy-spin 0.8s linear infinite;
+}

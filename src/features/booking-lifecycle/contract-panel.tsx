@@ -44,7 +44,7 @@ export function ContractPanel({
           <h3 style={contractStyles.heading}>Hồ sơ hợp đồng &amp; Phụ lục</h3>
         </div>
         {subTab === 'contract' && currentRevision ? (
-          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
             <span style={contractStyles.statusBadge(currentRevision.state)}>
               {currentRevision.state === 'APPROVED'
                 ? 'Đã duyệt 2 bên'
@@ -57,6 +57,29 @@ export function ContractPanel({
             <small style={{ color: 'var(--hy-text-muted, #6e5d63)' }}>
               REV {currentRevision.revisionNumber}
             </small>
+            <button
+              type="button"
+              disabled={disabled || downloadingPdf}
+              onClick={() => void handleDownloadPdf()}
+              style={{
+                marginLeft: '0.25rem',
+                padding: '0.3rem 0.75rem',
+                borderRadius: 6,
+                border: '1px solid var(--hy-outline, #eadfd6)',
+                background: '#ffffff',
+                color: 'var(--hy-wine, #7a1f3d)',
+                cursor: disabled || downloadingPdf ? 'not-allowed' : 'pointer',
+                fontWeight: 600,
+                fontSize: '0.8rem',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                transition: 'all 0.15s ease',
+              }}
+              title="Tải tệp PDF hợp đồng"
+            >
+              <span>{downloadingPdf ? 'Đang tải PDF…' : 'Tải PDF'}</span>
+            </button>
           </div>
         ) : null}
       </div>

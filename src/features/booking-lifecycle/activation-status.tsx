@@ -1,76 +1,36 @@
 'use client';
 
-import { type Client } from 'openapi-fetch';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { z } from 'zod';
-import { ApiClientError, createApiClient, type ApiClient } from '../../lib/api/client';
+import { ApiClientError, createApiClient } from '../../lib/api/client';
 import { sharedManagementSession } from '../identity-access/session';
 import { notify } from '../../design-system/notifications';
+import {
+  activationSchema,
+  activationLabels,
+  getActivationBadgeVariant,
+  type Activation,
+  type ActivationApiClient,
+} from './activation-status.types';
+import { ActivationConfirmDialog } from './activation-confirm-dialog';
 
 const session = sharedManagementSession;
 
-const activationSchema = z.strictObject({
-  consultationId: z.string().uuid(),
-  consultationRevision: z.number().int().positive(),
-  recipientEmail: z.string().email(),
-  state: z.enum([
-    'NOT_ISSUED',
-    'DELIVERY_PENDING',
-    'AWAITING_ACCEPTANCE',
-    'EXPIRED',
-    'REVOKED',
-    'ACTIVATED',
-    'ACCOUNT_UNAVAILABLE',
-    'ACCESS_UNAVAILABLE',
-  ]),
-  expiresAt: z.string().nullable(),
-  acceptedAt: z.string().nullable(),
-  canSend: z.boolean(),
-});
-type Activation = z.infer<typeof activationSchema>;
-type ActivationPaths = {
-  '/management/consultations/{consultationId}/activation-status': {
-    get: {
-      parameters: { path: { consultationId: string } };
-      responses: { 200: { content: { 'application/json': { data: Activation } } } };
-    };
-  };
-  '/management/consultations/{consultationId}/activation-invitations': {
-    post: {
-      parameters: { path: { consultationId: string }; header: { 'Idempotency-Key': string } };
-      requestBody: { content: { 'application/json': { expectedRevision: number } } };
-      responses: {
-        202: {
-          content: { 'application/json': { data: { invitationId: string; state: 'ISSUED' } } };
-        };
-      };
-    };
-  };
-};
-let api: (ApiClient & Client<ActivationPaths>) | undefined;
-const client = () => (api ??= createApiClient() as ApiClient & Client<ActivationPaths>);
-const labels: Record<Activation['state'], string> = {
-  NOT_ISSUED: 'Chưa phát hành lời mời',
-  DELIVERY_PENDING: 'Chưa xác nhận phát hành',
-  AWAITING_ACCEPTANCE: 'Đã phát hành · Chờ khách nhận lời mời vào hồ sơ',
-  EXPIRED: 'Lời mời đã hết hạn',
-  REVOKED: 'Lời mời đã bị thu hồi',
-  ACTIVATED: 'Tài khoản đã kích hoạt',
-  ACCOUNT_UNAVAILABLE: 'Tài khoản hiện bị khóa hoặc vô hiệu hóa',
-  ACCESS_UNAVAILABLE: 'Đã nhận lời mời nhưng quyền truy cập cần kiểm tra',
-};
+let api: ActivationApiClient | undefined;
+const client = () => (api ??= createApiClient() as ActivationApiClient);
+
 export function ActivationStatus({
   consultationId,
   disabled = false,
   reloadSignal = 0,
 }: Readonly<{ consultationId: string; disabled?: boolean; reloadSignal?: number }>) {
   const [retrying, setRetrying] = useState(false);
-  const [value, setValue] = useState<Activation | null>(null),
-    [pending, setPending] = useState(false);
-  const sequence = useRef(0),
-    sending = useRef(false),
-    key = useRef<string | null>(null),
-    confirmation = useRef<HTMLDialogElement>(null);
+  const [value, setValue] = useState<Activation | null>(null);
+  const [pending, setPending] = useState(false);
+  const sequence = useRef(0);
+  const sending = useRef(false);
+  const key = useRef<string | null>(null);
+  const confirmation = useRef<HTMLDialogElement>(null);
+
   const load = useCallback(async () => {
     const current = ++sequence.current;
     try {
@@ -94,6 +54,7 @@ export function ActivationStatus({
       }
     }
   }, [consultationId]);
+
   useEffect(() => {
     void load();
     const focus = () => {
@@ -105,6 +66,7 @@ export function ActivationStatus({
       window.removeEventListener('focus', focus);
     };
   }, [load, reloadSignal]);
+
   const send = async () => {
     confirmation.current?.close();
     if (!value || !value.canSend || sending.current || disabled) return;
@@ -139,64 +101,117 @@ export function ActivationStatus({
       setPending(false);
     }
   };
+
   return (
     <section
-      className="booking-result"
+      className="hy-activation-card"
       aria-label="Trạng thái kích hoạt tài khoản"
       aria-busy={pending}
     >
-      <h4>Kích hoạt tài khoản khách hàng</h4>
-      {value ? (
-        <>
-          <p role="status">
-            <strong>{labels[value.state]}</strong>
-          </p>
-          <p>Email nhận: {value.recipientEmail}</p>
-          {value.expiresAt && value.state !== 'ACTIVATED' ? (
-            <p>Hạn lời mời: {new Date(value.expiresAt).toLocaleString('vi-VN')}</p>
-          ) : null}
-          {value.acceptedAt ? (
-            <p>Khách nhận lời mời lúc {new Date(value.acceptedAt).toLocaleString('vi-VN')}</p>
-          ) : null}
-          <p>
-            Không bắt buộc đặt cọc để kích hoạt tài khoản. Hệ thống tự động phân quyền truy cập theo từng giai đoạn của tiệc.
-          </p>
-          {value.canSend ? (
+      <div className="hy-activation-header">
+        <div className="hy-activation-header-info">
+          <div>
+            <h4 className="hy-activation-heading">Kích hoạt tài khoản khách hàng</h4>
+            <span className="hy-activation-subheading">
+              Cổng thông tin duyệt kịch bản &amp; theo dõi hợp đồng
+            </span>
+          </div>
+        </div>
+
+        <div className="hy-activation-actions">
+          <button
+            type="button"
+            className="hy-action-btn-secondary"
+            disabled={pending}
+            onClick={() => void load()}
+            title="Tải lại trạng thái mới nhất"
+          >
+            {pending ? (
+              <span className="hy-button-spinner" aria-hidden="true" />
+            ) : null}
+            <span>Cập nhật trạng thái</span>
+          </button>
+          {value?.canSend ? (
             <button
               type="button"
+              className="hy-action-btn-primary"
               disabled={disabled || pending}
               onClick={() => {
                 if (key.current) void send();
                 else confirmation.current?.showModal();
               }}
             >
-              {pending
-                ? 'Đang gửi…'
-                : retrying
-                  ? 'Thử lại yêu cầu gửi'
-                  : value.state === 'NOT_ISSUED'
-                    ? 'Gửi lời mời kích hoạt'
-                    : 'Gửi lại lời mời'}
+              <span>
+                {pending
+                  ? 'Đang gửi…'
+                  : retrying
+                    ? 'Thử lại yêu cầu gửi'
+                    : value.state === 'NOT_ISSUED'
+                      ? 'Gửi lời mời kích hoạt'
+                      : 'Gửi lại lời mời'}
+              </span>
             </button>
           ) : null}
-        </>
+        </div>
+      </div>
+
+      {value ? (
+        <div className="hy-activation-body">
+          <div className="hy-activation-status-row">
+            <div
+              role="status"
+              className={`hy-activation-badge hy-activation-badge-${getActivationBadgeVariant(value.state)}`}
+            >
+              <span className="hy-activation-status-dot" aria-hidden="true" />
+              <strong>{activationLabels[value.state]}</strong>
+            </div>
+          </div>
+
+          <div className="hy-activation-meta-grid">
+            <div className="hy-activation-meta-item">
+              <div className="hy-activation-meta-label">Email nhận</div>
+              <div className="hy-activation-meta-value">{value.recipientEmail}</div>
+            </div>
+
+            {value.acceptedAt ? (
+              <div className="hy-activation-meta-item">
+                <div className="hy-activation-meta-label">Khách nhận lời mời</div>
+                <div className="hy-activation-meta-value">
+                  {new Date(value.acceptedAt).toLocaleString('vi-VN')}
+                </div>
+              </div>
+            ) : null}
+
+            {value.expiresAt && value.state !== 'ACTIVATED' ? (
+              <div className="hy-activation-meta-item">
+                <div className="hy-activation-meta-label">Hạn lời mời</div>
+                <div className="hy-activation-meta-value">
+                  {new Date(value.expiresAt).toLocaleString('vi-VN')}
+                </div>
+              </div>
+            ) : null}
+
+            <div className="hy-activation-meta-item">
+              <div className="hy-activation-meta-label">Quyền truy cập</div>
+              <div className="hy-activation-meta-value">Tự động phân quyền theo tiến độ tiệc</div>
+            </div>
+          </div>
+
+          <div className="hy-activation-hint-box">
+            <p className="hy-activation-hint">
+              Không bắt buộc đặt cọc để kích hoạt tài khoản. Hệ thống tự động phân quyền truy cập
+              theo từng giai đoạn của tiệc.
+            </p>
+          </div>
+        </div>
       ) : null}
-      <button type="button" disabled={pending} onClick={() => void load()}>
-        Cập nhật trạng thái
-      </button>
-      <dialog ref={confirmation} aria-labelledby="activation-confirm-title">
-        <h3 id="activation-confirm-title">Phát hành lời mời kích hoạt?</h3>
-        <p>
-          Gửi tới {value?.recipientEmail}. Nếu đang có lời mời còn hiệu lực, liên kết cũ sẽ hết hiệu
-          lực. Không tạo mật khẩu hoặc thay đổi quyền sau đặt cọc.
-        </p>
-        <button type="button" onClick={() => confirmation.current?.close()}>
-          Quay lại
-        </button>
-        <button type="button" onClick={() => void send()}>
-          Xác nhận gửi
-        </button>
-      </dialog>
+
+      <ActivationConfirmDialog
+        dialogRef={confirmation}
+        recipientEmail={value?.recipientEmail}
+        onSend={() => void send()}
+        onClose={() => confirmation.current?.close()}
+      />
     </section>
   );
 }

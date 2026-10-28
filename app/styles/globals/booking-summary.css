@@ -1,0 +1,306 @@
+/* Right Column: Sticky Summary Card */
+.booking-summary-sticky {
+  position: sticky;
+  top: 1.5rem;
+}
+
+.booking-summary-card {
+  background: #ffffff;
+  border: 1.5px solid var(--hy-outline, #eadfd6);
+  border-radius: 12px;
+  box-shadow: 0 4px 18px rgba(122, 31, 61, 0.06);
+  overflow: hidden;
+}
+
+.booking-summary-header {
+  padding: 1rem 1.25rem;
+  background: var(--hy-surface-container, #fdf6ee);
+  border-bottom: 1px solid var(--hy-outline, #eadfd6);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.booking-summary-kicker {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--hy-text-muted, #6e5d63);
+}
+
+.booking-summary-title {
+  margin: 2px 0 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--hy-wine, #7a1f3d);
+}
+
+.booking-summary-badge {
+  background: var(--hy-wine, #7a1f3d);
+  color: #ffffff;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.booking-summary-body {
+  padding: 1.15rem 1.25rem;
+  display: grid;
+  gap: 0.9rem;
+}
+
+.booking-summary-meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--hy-outline, #eadfd6);
+}
+
+.booking-meta-item {
+  display: grid;
+  gap: 2px;
+}
+
+.booking-meta-label {
+  font-size: 0.75rem;
+  color: var(--hy-text-muted, #6e5d63);
+}
+
+.booking-meta-val {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--hy-text, #2b1d22);
+}
+
+.booking-capacity-box {
+  padding: 0.75rem 0.85rem;
+  background: #fbf9f7;
+  border: 1px solid var(--hy-outline, #eadfd6);
+  border-radius: 8px;
+}
+
+.booking-capacity-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.booking-capacity-track {
+  width: 100%;
+  height: 6px;
+  background: #e2e8f0;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.booking-capacity-fill {
+  height: 100%;
+  background: var(--hy-status-success, #2f6b4f);
+  transition: width 0.3s ease;
+}
+
+.booking-capacity-fill.is-over {
+  background: var(--hy-status-error, #c62828);
+}
+
+.booking-capacity-alert {
+  margin: 6px 0 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--hy-status-error, #c62828);
+}
+
+.booking-capacity-ok {
+  margin: 6px 0 0;
+  font-size: 0.75rem;
+  color: var(--hy-status-success, #2f6b4f);
+}
+
+.booking-price-breakdown {
+  display: grid;
+  gap: 0.45rem;
+  font-size: 0.84rem;
+}
+
+.booking-price-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--hy-text-muted, #6e5d63);
+}
+
+.booking-price-row strong {
+  color: var(--hy-text, #2b1d22);
+}
+
+.booking-price-divider {
+  height: 1px;
+  background: var(--hy-outline, #eadfd6);
+  margin: 0.2rem 0;
+}
+
+.booking-total-row {
+  font-size: 0.95rem;
+  color: var(--hy-text, #2b1d22);
+}
+
+.booking-total-price {
+  font-size: 1.1rem;
+  color: var(--hy-wine, #7a1f3d);
+}
+
+.booking-deposit-row {
+  padding-top: 0.2rem;
+  font-size: 0.86rem;
+}
+
+.booking-deposit-price {
+  color: var(--hy-wine-gold, #c5a880);
+}
+
+.booking-summary-action {
+  padding: 1rem 1.25rem;
+  background: var(--hy-surface-container, #fdf6ee);
+  border-top: 1px solid var(--hy-outline, #eadfd6);
+}
+
+.booking-submit-btn {
+  width: 100% !important;
+  min-height: 3rem !important;
+  background: var(--hy-wine, #7a1f3d) !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  font-size: 0.95rem !important;
+  border: none !important;
+  border-radius: 8px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 2px !important;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(122, 31, 61, 0.2) !important;
+  transition: all 0.15s ease !important;
+}
+
+.booking-submit-btn:hover:not(:disabled) {
+  background: #631931 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(122, 31, 61, 0.25) !important;
+}
+
+.booking-submit-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.booking-submit-sub {
+  font-size: 0.75rem;
+  font-weight: 500;
+  opacity: 0.85;
+}
+
+.booking-action-hint {
+  margin: 0.5rem 0 0;
+  font-size: 0.74rem;
+  color: var(--hy-text-muted, #6e5d63);
+  text-align: center;
+}
+
+.booking-workspace {
+  margin-top: 2.5rem;
+}
+
+.booking-section-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 2rem;
+  margin-bottom: 1rem;
+}
+
+.booking-section-heading h2 {
+  font-size: clamp(1.7rem, 3vw, 2.7rem);
+}
+
+.booking-lookup {
+  width: min(100%, 32rem);
+  grid-template-columns: 1fr auto;
+  align-items: end;
+}
+
+.booking-empty,
+.proposal-layout > article {
+  padding: 1.35rem 1.45rem;
+  border: 1px solid var(--hy-outline, #eadfd6);
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 2px 12px rgba(122, 31, 61, 0.04);
+}
+
+.booking-empty p {
+  margin-bottom: 0;
+  color: #687069;
+}
+
+.proposal-layout {
+  display: grid;
+  grid-template-columns: minmax(320px, 1fr) minmax(380px, 1.25fr);
+  gap: 1.25rem;
+  background: transparent;
+  border: none;
+  align-items: start;
+}
+
+.proposal-status {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.proposal-status-phase {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.65rem;
+  border-radius: 9999px;
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: var(--hy-wine-soft, #f5e4e9);
+  color: var(--hy-wine, #7a1f3d);
+  border: 1px solid var(--hy-outline, #eadfd6);
+}
+
+.proposal-status-phase.is-confirmed {
+  background: #ecfdf5;
+  color: #065f46;
+  border-color: #a7f3d0;
+}
+
+.proposal-status-revision {
+  color: var(--hy-ink-muted, #6e5d63);
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.proposal-summary h3,
+.proposal-timeline h3 {
+  margin: 0 0 0.25rem;
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--hy-wine, #7a1f3d);
+  line-height: 1.35;
+}

@@ -1,5 +1,10 @@
 @import './styles/globals/tokens.css';
 @import './styles/globals/booking-lifecycle.css';
+@import './styles/globals/booking-create.css';
+@import './styles/globals/booking-summary.css';
+@import './styles/globals/booking-proposal.css';
+@import './styles/globals/booking-activation.css';
+@import './styles/globals/booking-modals.css';
 @import './styles/globals/admin-shell-account.css';
 @import './styles/globals/admin-sidebar.css';
 @import './styles/globals/dashboard-metrics.css';

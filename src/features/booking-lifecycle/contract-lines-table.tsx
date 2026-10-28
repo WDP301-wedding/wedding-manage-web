@@ -45,21 +45,52 @@ export function ContractLinesTable({ lines, title }: Readonly<ContractLinesTable
               </th>
             </tr>
           </thead>
-          <tbody>
-            {lines.map((line, idx) => (
-              <tr
-                key={`${line.sourceId}-${idx}`}
-                style={{ borderBottom: '1px solid var(--hy-outline, #eadfd6)' }}
-              >
-                <td style={{ padding: '0.5rem', fontWeight: 600 }}>{line.category}</td>
-                <td style={{ padding: '0.5rem' }}>
-                  <strong>{line.name}</strong>
-                  {line.description || line.note ? (
-                    <div style={{ fontSize: '0.75rem', color: 'var(--hy-text-muted, #6e5d63)' }}>
-                      {line.description || line.note}
-                    </div>
-                  ) : null}
-                </td>
+              <tbody>
+                {lines.map((line, idx) => (
+                  <tr
+                    key={`${line.sourceId}-${idx}`}
+                    style={{ borderBottom: '1px solid var(--hy-outline, #eadfd6)' }}
+                  >
+                    <td style={{ padding: '0.45rem 0.5rem' }}>
+                      <span
+                        style={{
+                          display: 'inline-block',
+                          padding: '0.15rem 0.5rem',
+                          borderRadius: '4px',
+                          fontSize: '0.74rem',
+                          fontWeight: 600,
+                          background:
+                            line.category === 'MENU'
+                              ? '#fef3c7'
+                              : line.category === 'SERVICE'
+                                ? '#eff6ff'
+                                : '#f5e4e9',
+                          color:
+                            line.category === 'MENU'
+                              ? '#92400e'
+                              : line.category === 'SERVICE'
+                                ? '#1e40af'
+                                : 'var(--hy-wine, #7a1f3d)',
+                          border: `1px solid ${
+                            line.category === 'MENU'
+                              ? '#fde68a'
+                              : line.category === 'SERVICE'
+                                ? '#bfdbfe'
+                                : '#eadfd6'
+                          }`,
+                        }}
+                      >
+                        {line.category}
+                      </span>
+                    </td>
+                    <td style={{ padding: '0.45rem 0.5rem' }}>
+                      <strong>{line.name}</strong>
+                      {line.description || line.note ? (
+                        <div style={{ fontSize: '0.75rem', color: 'var(--hy-text-muted, #6e5d63)' }}>
+                          {line.description || line.note}
+                        </div>
+                      ) : null}
+                    </td>
                 <td style={{ padding: '0.5rem' }}>
                   {line.quantity} {line.unit}
                 </td>

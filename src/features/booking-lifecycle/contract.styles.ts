@@ -6,8 +6,9 @@ export const contractStyles = {
     marginTop: 0,
     background: '#ffffff',
     border: '1px solid var(--hy-outline, #eadfd6)',
-    borderRadius: 8,
-    padding: '1.5rem',
+    borderRadius: 14,
+    padding: '1.35rem 1.45rem',
+    boxShadow: '0 2px 12px rgba(122, 31, 61, 0.04)',
   } satisfies CSSProperties,
 
   header: {
@@ -81,32 +82,37 @@ export const contractStyles = {
   metaGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-    gap: '1rem',
-    background: 'var(--hy-surface-container, #fdf6ee)',
+    gap: '0.75rem',
+    background: 'var(--hy-surface-warm, #fbf4ee)',
     border: '1px solid var(--hy-outline, #eadfd6)',
-    padding: '1rem',
-    borderRadius: 6,
-    marginBottom: '1.25rem',
+    padding: '0.85rem 1rem',
+    borderRadius: 8,
+    marginBottom: '1rem',
   } satisfies CSSProperties,
 
   metaSmall: {
     color: 'var(--hy-text-muted, #6e5d63)',
     display: 'block',
+    fontSize: '0.75rem',
+    marginBottom: '2px',
   } satisfies CSSProperties,
 
   approvalStatusBox: {
     display: 'flex',
-    gap: '2rem',
-    padding: '0.75rem',
-    background: 'var(--hy-surface-container, #fdf6ee)',
-    border: '1px solid var(--hy-outline, #eadfd6)',
-    borderRadius: 6,
-    marginBottom: '1.25rem',
-    fontSize: '0.875rem',
+    gap: '1.5rem',
+    padding: '0.65rem 1rem',
+    background: '#ecfdf5',
+    border: '1px solid #a7f3d0',
+    borderRadius: 8,
+    marginBottom: '1rem',
+    fontSize: '0.85rem',
+    flexWrap: 'wrap',
+    alignItems: 'center',
   } satisfies CSSProperties,
 
   approvalStatusText: (approved: boolean): CSSProperties => ({
-    color: approved ? 'var(--hy-status-success, #2f6b4f)' : 'var(--hy-status-warning, #8a5300)',
+    color: approved ? '#065f46' : '#854d0e',
+    fontWeight: 600,
   }),
 
   actionsRow: {
@@ -116,13 +122,14 @@ export const contractStyles = {
   } satisfies CSSProperties,
 
   downloadButton: (disabled: boolean): CSSProperties => ({
-    padding: '0.5rem 1rem',
+    padding: '0.45rem 1rem',
     borderRadius: 6,
     border: '1px solid var(--hy-outline, #eadfd6)',
     background: '#ffffff',
-    color: 'var(--hy-text, #2b1d22)',
+    color: 'var(--hy-wine, #7a1f3d)',
     cursor: disabled ? 'not-allowed' : 'pointer',
     fontWeight: 600,
+    fontSize: '0.82rem',
   }),
 
   submitDraftButton: (disabled: boolean): CSSProperties => ({

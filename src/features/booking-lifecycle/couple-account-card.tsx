@@ -27,10 +27,11 @@ export function CoupleAccountCard({
       id="couple-account-card"
       style={{
         backgroundColor: '#ffffff',
-        border: '1px solid var(--hy-outline, #e2e8f0)',
-        borderRadius: '8px',
-        padding: '1.25rem',
+        border: '1px solid var(--hy-outline, #eadfd6)',
+        borderRadius: '14px',
+        padding: '1.35rem',
         marginBottom: '1.5rem',
+        boxShadow: '0 2px 12px rgba(122, 31, 61, 0.04)',
       }}
     >
       <div
@@ -39,29 +40,33 @@ export function CoupleAccountCard({
           justifyContent: 'space-between',
           alignItems: 'center',
           flexWrap: 'wrap',
-          gap: '0.75rem',
-          marginBottom: inviteLogs.length > 0 ? '0.75rem' : 0,
+          gap: '0.85rem',
+          marginBottom: inviteLogs.length > 0 ? '0.85rem' : 0,
         }}
       >
         <div>
           <h3
             style={{
-              margin: '0 0 0.25rem',
-              fontSize: '0.95rem',
+              margin: '0 0 0.35rem',
+              fontSize: '1rem',
               fontWeight: 700,
+              fontFamily: 'var(--font-display)',
+              lineHeight: 1.35,
               color: 'var(--hy-wine, #7a1f3d)',
               display: 'flex',
               alignItems: 'center',
-              gap: '6px',
+              gap: '8px',
             }}
           >
-            <span>Tài khoản &amp; Quyền truy cập hồ sơ tiệc</span>
+            Tài khoản &amp; Quyền truy cập hồ sơ tiệc
           </h3>
           <p
             style={{
               margin: 0,
-              fontSize: '0.82rem',
-              color: 'var(--hy-text-muted, #64748b)',
+              fontSize: '0.84rem',
+              lineHeight: 1.45,
+              color: 'var(--hy-ink-muted, #6e5d63)',
+              fontFamily: 'var(--font-body)',
             }}
           >
             Gửi email kích hoạt tài khoản để cặp đôi đăng nhập vào cổng thông tin duyệt kịch bản và
@@ -71,7 +76,10 @@ export function CoupleAccountCard({
             {email ? (
               <>
                 {' '}
-                · Email: <strong>{email}</strong>
+                · Email:{' '}
+                <span className="hy-couple-email-pill">
+                  {email}
+                </span>
               </>
             ) : null}
           </p>
@@ -81,18 +89,9 @@ export function CoupleAccountCard({
             type="button"
             disabled={pending}
             onClick={onInvite}
+            className="hy-action-btn-primary"
             style={{
-              backgroundColor: 'var(--hy-wine, #7a1f3d)',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: '6px',
-              padding: '8px 16px',
-              fontSize: '0.85rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
+              padding: '0.55rem 1.15rem',
             }}
           >
             <span>
@@ -115,11 +114,11 @@ export function CoupleAccountCard({
       {inviteLogs.length > 0 ? (
         <div
           style={{
-            marginTop: '0.75rem',
-            padding: '0.75rem',
-            backgroundColor: '#f8fafc',
-            border: '1px solid #e2e8f0',
-            borderRadius: '6px',
+            marginTop: '0.85rem',
+            padding: '0.85rem 1rem',
+            backgroundColor: 'var(--hy-surface-warm, #fbf4ee)',
+            border: '1px solid var(--hy-outline, #eadfd6)',
+            borderRadius: '10px',
           }}
         >
           <div
@@ -127,16 +126,15 @@ export function CoupleAccountCard({
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
-              marginBottom: '0.5rem',
+              marginBottom: '0.6rem',
             }}
           >
             <span
               style={{
-                fontSize: '0.72rem',
+                fontSize: '0.75rem',
                 fontWeight: 700,
-                color: '#475569',
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
+                color: 'var(--hy-ink, #2b1d22)',
+                fontFamily: 'var(--font-body)',
               }}
             >
               Nhật ký gửi lời mời
@@ -147,25 +145,27 @@ export function CoupleAccountCard({
               style={{
                 background: 'none',
                 border: 'none',
-                fontSize: '0.72rem',
-                color: '#94a3b8',
+                fontSize: '0.74rem',
+                color: 'var(--hy-ink-muted, #6e5d63)',
                 cursor: 'pointer',
-                padding: '2px 4px',
+                padding: '2px 6px',
                 textDecoration: 'underline',
+                fontFamily: 'var(--font-body)',
               }}
             >
               Xóa log
             </button>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
             {inviteLogs.map((item) => (
               <div
                 key={item.id}
                 style={{
-                  padding: '0.45rem 0.6rem',
-                  borderRadius: '4px',
-                  fontSize: '0.78rem',
+                  padding: '0.5rem 0.75rem',
+                  borderRadius: '6px',
+                  fontSize: '0.8rem',
                   lineHeight: '1.4',
+                  fontFamily: 'var(--font-body)',
                   backgroundColor:
                     item.type === 'success'
                       ? '#f0fdf4'

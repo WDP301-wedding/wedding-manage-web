@@ -18,6 +18,8 @@ import {
 import { useRealtimeSubscription } from '../realtime/use-realtime';
 import { useRefreshQueue } from '../realtime/refresh-queue';
 import { notify } from '../../design-system/notifications';
+import { useWorkspaceInvite } from './use-workspace-invite';
+import { parseBookingUrlParams } from './booking-url-params';
 
 export interface UseBookingWorkspaceStateOptions {
   authorize: Authorize;
@@ -63,7 +65,6 @@ export function useBookingWorkspaceState({
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [recentBookingIds, setRecentBookingIds] = useState<string[]>([]);
-  const [inviteLogs, setInviteLogs] = useState<readonly InviteLogEntry[]>([]);
   const [prefill, setPrefill] = useState<BookingPrefill>({});
   const [createdBookingNotice, setCreatedBookingNotice] = useState<{
     bookingId: string;
@@ -71,84 +72,15 @@ export function useBookingWorkspaceState({
     email?: string | undefined;
   } | null>(null);
 
-  const sendWorkspaceInvite = async () => {
-    const targetConsultationId = consultation?.id ?? proposal?.consultationId;
-    const targetRevision = consultation?.revision ?? 1;
-    if (!targetConsultationId) return;
-    const now = new Date().toLocaleTimeString('vi-VN');
-    const logId = crypto.randomUUID();
-    console.log(`[Workspace Invitation] ${now} Bắt đầu gửi lời mời cộng tác:`, {
-      consultationId: targetConsultationId,
-      revision: targetRevision,
-    });
-    setInviteLogs((prev) => [
-      {
-        id: logId,
-        time: now,
-        type: 'pending',
-        message: 'Đang gửi yêu cầu mời cộng tác tới máy chủ...',
-        consultationId: targetConsultationId,
-      },
-      ...prev,
-    ]);
-
-    setPending('invite');
-    setMessage(null);
-    setError(null);
-    try {
-      const res = await authorize((token) =>
-        gateway.invite(token, {
-          consultationId: targetConsultationId,
-          expectedRevision: targetRevision,
-        }),
-      );
-      console.log(`[Workspace Invitation] ${now} Gửi lời mời thành công:`, res);
-      const successMsg = 'Đã yêu cầu gửi lời mời không gian cộng tác.';
-      setMessage(successMsg);
-      notify.success(successMsg);
-      const invitationId = (res as { invitationId?: string } | undefined)?.invitationId;
-      const isReplayed = (res as { replayed?: boolean } | undefined)?.replayed;
-      setInviteLogs((prev) =>
-        prev.map((item) =>
-          item.id === logId
-            ? {
-                ...item,
-                type: 'success',
-                message: 'Đã gửi lời mời thành công tới email của cặp đôi.',
-                invitationId: invitationId ?? 'Đã phát hành (ISSUED)',
-                details: isReplayed
-                  ? 'Yêu cầu lặp lại (replayed) - lời mời đã được phát hành trước đó.'
-                  : undefined,
-              }
-            : item,
-        ),
-      );
-    } catch (caught) {
-      const errText = errorMessage(caught, proposal?.proposal.shift);
-      console.error(`[Workspace Invitation] ${now} Lỗi gửi lời mời:`, caught);
-      setError(errText);
-      notify.error(caught, { message: errText });
-      setInviteLogs((prev) =>
-        prev.map((item) =>
-          item.id === logId
-            ? {
-                ...item,
-                type: 'error',
-                message: `Gửi lời mời thất bại: ${errText}`,
-                details:
-                  caught instanceof ApiClientError
-                    ? `HTTP ${caught.status ?? 'N/A'} (${caught.code}): ${caught.message}`
-                    : caught instanceof Error
-                      ? caught.message
-                      : String(caught),
-              }
-            : item,
-        ),
-      );
-    } finally {
-      setPending(null);
-    }
-  };
+  const { inviteLogs, setInviteLogs, sendWorkspaceInvite } = useWorkspaceInvite({
+    authorize,
+    gateway,
+    consultation,
+    proposal,
+    setPending,
+    setMessage,
+    setError,
+  });
 
   useEffect(() => {
     setRecentBookingIds(getMyManagedBookingIds(currentAccountId));
@@ -357,46 +289,19 @@ export function useBookingWorkspaceState({
   };
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const bId = params.get('bookingId');
-    const id = params.get('consultationId');
-    const dName = params.get('displayName') || undefined;
-    const em = params.get('email') || undefined;
-    const nt = params.get('note') || undefined;
-    const pDate = params.get('preferredDate')?.slice(0, 10) || undefined;
-    const expGuestsParam = params.get('expectedGuests');
-    const expG =
-      expGuestsParam && !Number.isNaN(Number(expGuestsParam)) ? Number(expGuestsParam) : undefined;
-
-    const parsedChoices = parseConsultationChoices(nt);
-    const prefHall = params.get('preferredHall') || parsedChoices.hallName;
-    const prefMenu = params.get('preferredMenu') || parsedChoices.menuName;
-    const paramShift = params.get('preferredShift');
-    const prefShift =
-      paramShift === 'LUNCH' || paramShift === 'DINNER' ? paramShift : parsedChoices.shift;
-
-    if (bId && /^[a-f0-9-]{36}$/iu.test(bId)) {
-      void loadProposal(bId);
+    const parsed = parseBookingUrlParams(window.location.search);
+    if (parsed.bookingId) {
+      void loadProposal(parsed.bookingId);
       return;
     }
-    if (id && /^[a-f0-9-]{36}$/iu.test(id)) {
-      void resumeConsultation(id);
+    if (parsed.consultationId) {
+      void resumeConsultation(parsed.consultationId);
       return;
     }
     setContextStatus('ready');
-    // Ưu tiên 3: Chưa có consultationId nhưng có thông tin khách (tạo mới/vãng lai) -> Tab 1
-    if (dName || em || nt || pDate || expG || prefHall || prefMenu || prefShift) {
+    if (parsed.prefill) {
       switchTab('consultation');
-      setPrefill({
-        displayName: dName,
-        email: em,
-        note: nt,
-        eventDate: pDate,
-        expectedGuests: expG,
-        preferredHallName: prefHall,
-        preferredMenuName: prefMenu,
-        preferredShift: prefShift,
-      });
+      setPrefill(parsed.prefill);
     }
   }, []);
 

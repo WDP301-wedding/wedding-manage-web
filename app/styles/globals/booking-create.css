@@ -1,0 +1,187 @@
+/* ========================================================
+   Mục 02: Đề xuất & Giữ sảnh (Enterprise 2-Column Layout)
+   ======================================================== */
+
+.booking-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.25rem;
+  position: relative;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid var(--hy-outline, #eadfd6);
+}
+
+.booking-catalog-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.6rem 0.95rem;
+  background: var(--hy-surface-container, #fdf6ee);
+  border: 1px solid var(--hy-outline, #eadfd6);
+  border-radius: 8px;
+  margin-bottom: 1.25rem;
+  font-size: 0.84rem;
+}
+
+.booking-catalog-status {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--hy-text, #2b1d22);
+}
+
+.booking-catalog-status.is-success {
+  color: var(--hy-status-success, #2f6b4f);
+  font-weight: 500;
+}
+
+.booking-catalog-status.is-warning {
+  color: var(--hy-status-warning, #8a5300);
+}
+
+.booking-catalog-btn {
+  padding: 5px 12px !important;
+  font-size: 0.8rem !important;
+  min-height: auto !important;
+  border-radius: 6px !important;
+  white-space: nowrap;
+}
+
+/* Prefill / Preferences Card */
+.booking-prefill-card {
+  padding: 0.85rem 1rem;
+  background: var(--hy-status-success-bg, #e7f1ea);
+  border: 1px solid var(--hy-status-success-border, #bbf7d0);
+  border-radius: 8px;
+  margin-bottom: 1.25rem;
+}
+
+.booking-prefill-header {
+  margin-bottom: 0.5rem;
+}
+
+.booking-prefill-badge {
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: var(--hy-status-success, #2f6b4f);
+  margin-right: 6px;
+}
+
+.booking-prefill-desc {
+  font-size: 0.78rem;
+  color: var(--hy-status-success, #2f6b4f);
+  line-height: 1.45;
+}
+
+.booking-prefill-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.booking-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  background: #ffffff;
+  border: 1px solid var(--hy-status-success-border, #bbf7d0);
+  border-radius: 999px;
+  font-size: 0.78rem;
+  color: var(--hy-status-success, #2f6b4f);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+/* 2-Column Grid Layout */
+.booking-create-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.booking-form-sections {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.booking-section-card {
+  padding: 1.15rem 1.25rem;
+  background: #ffffff;
+  border: 1px solid var(--hy-outline, #eadfd6);
+  border-radius: 12px;
+  display: grid;
+  gap: 1rem;
+  box-shadow: 0 1px 4px rgba(122, 31, 61, 0.02);
+}
+
+.booking-section-title {
+  margin: 0 0 0.15rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--hy-wine, #7a1f3d);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.booking-readonly-input {
+  background: var(--hy-surface-container, #fdf6ee) !important;
+  color: var(--hy-text-muted, #6e5d63) !important;
+  border-color: var(--hy-outline, #eadfd6) !important;
+  font-family: var(--font-code);
+  font-size: 0.84rem !important;
+}
+
+.booking-consultation-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Availability Action & Inline Tag */
+.booking-availability-inline {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding-top: 0.25rem;
+}
+
+.booking-check-btn {
+  min-height: 2.25rem !important;
+  padding: 6px 14px !important;
+  font-size: 0.82rem !important;
+  border-radius: 6px !important;
+}
+
+.booking-avail-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.booking-avail-tag.is-available {
+  background: var(--hy-status-success-bg, #e7f1ea);
+  color: var(--hy-status-success, #2f6b4f);
+  border: 1px solid var(--hy-status-success-border, #bbf7d0);
+}
+
+.booking-avail-tag.is-busy {
+  background: var(--hy-status-warning-bg, #fcefd6);
+  color: var(--hy-status-warning, #8a5300);
+  border: 1px solid var(--hy-status-warning-border, #fcd34d);
+}
+
+.booking-avail-hint {
+  font-size: 0.78rem;
+  color: var(--hy-text-muted, #6e5d63);
+}

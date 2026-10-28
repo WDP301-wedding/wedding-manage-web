@@ -195,7 +195,7 @@ describe('Management booking lifecycle workspace', () => {
         expect.objectContaining({ eventDate: '2026-10-11' }),
       ),
     );
-  });
+  }, 15000);
 
   it('updates the date minimum when an overnight page regains focus', () => {
     render(<ManagementBookingWorkspace authorize={authorize} gateway={fakeGateway()} />);

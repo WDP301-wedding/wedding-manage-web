@@ -3,10 +3,11 @@
 import { useEffect, useState } from 'react';
 
 import { createVenueCatalogGateway } from '../venue-catalog/catalog-api';
-import { field, formatDate, money } from './booking-helpers';
+import { formatDate, money } from './booking-helpers';
 import { ContractPanel } from './contract-panel';
 import type { Authorize, ManagementBookingGateway, ProposalView } from './booking-api';
 import { TimelineEditor } from './timeline-editor';
+import { ProposalLifecycleClosure } from './proposal-lifecycle-closure';
 
 const catalogGateway = createVenueCatalogGateway();
 
@@ -47,44 +48,52 @@ export function ProposalPanel({
     <div className="proposal-layout">
       <article className="proposal-summary">
         <div className="proposal-status">
-          <span>{proposal.phase.replaceAll('_', ' ')}</span>
-          <small>REV {proposal.revision}</small>
+          <span
+            className={`proposal-status-phase ${proposal.phase === 'CONFIRMED' ? 'is-confirmed' : ''}`}
+          >
+            {proposal.phase.replaceAll('_', ' ')}
+          </span>
+          <span className="proposal-status-revision">REV {proposal.revision}</span>
         </div>
         <h3>{proposal.proposal.hall.name}</h3>
-        <p>
+        <p className="proposal-summary-subtitle">
           {formatDate(proposal.eventDate)} · {proposal.proposal.shift.startTime}–
           {proposal.proposal.shift.endTime}
         </p>
-        <dl>
-          <div>
-            <dt>Thực đơn</dt>
-            <dd>{proposal.proposal.menu.name}</dd>
+        <dl className="hy-proposal-metrics-grid">
+          <div className="hy-proposal-metric-card">
+            <dt className="hy-proposal-metric-label">Thực đơn</dt>
+            <dd className="hy-proposal-metric-value">{proposal.proposal.menu.name}</dd>
           </div>
-          <div>
-            <dt>Số bàn</dt>
-            <dd>{proposal.proposal.tableCount}</dd>
+          <div className="hy-proposal-metric-card">
+            <dt className="hy-proposal-metric-label">Số bàn</dt>
+            <dd className="hy-proposal-metric-value">{proposal.proposal.tableCount} bàn</dd>
           </div>
-          <div>
-            <dt>
+          <div className="hy-proposal-metric-card">
+            <dt className="hy-proposal-metric-label">
               {isConfirmedOrLater || proposal.phase === 'AWAITING_DEPOSIT'
                 ? 'Tổng giá trị'
                 : 'Tạm tính'}
             </dt>
-            <dd>{money(proposal.proposal.baseChargeVnd)}</dd>
+            <dd className="hy-proposal-metric-value is-wine">
+              {money(proposal.proposal.baseChargeVnd)}
+            </dd>
           </div>
-          <div>
-            <dt>
+          <div className="hy-proposal-metric-card">
+            <dt className="hy-proposal-metric-label">
               {isConfirmedOrLater || proposal.phase === 'AWAITING_DEPOSIT'
                 ? 'Tiền cọc cam kết'
                 : 'Tiền cọc'}
             </dt>
-            <dd>{money(proposal.proposal.depositAmountVnd)}</dd>
+            <dd className="hy-proposal-metric-value">
+              {money(proposal.proposal.depositAmountVnd)}
+            </dd>
           </div>
         </dl>
         <div
           style={{
             display: 'flex',
-            gap: '0.75rem',
+            gap: '0.65rem',
             flexWrap: 'wrap',
             alignItems: 'center',
             marginTop: '0.75rem',
@@ -101,8 +110,8 @@ export function ProposalPanel({
                 color: 'var(--hy-status-success, #2f6b4f)',
                 background: 'var(--hy-status-success-bg, #e7f1ea)',
                 border: '1px solid var(--hy-status-success-border, #bbf7d0)',
-                borderRadius: 4,
-                padding: '3px 8px',
+                borderRadius: '6px',
+                padding: '4px 10px',
                 width: 'fit-content',
               }}
             >
@@ -112,7 +121,7 @@ export function ProposalPanel({
           <a
             href={`/billing?bookingId=${proposal.bookingId}`}
             style={{
-              padding: '7px 12px',
+              padding: '6px 12px',
               fontSize: '0.82rem',
               fontWeight: 600,
               color: 'var(--hy-wine, #7a1f3d)',
@@ -124,6 +133,7 @@ export function ProposalPanel({
               alignItems: 'center',
               gap: '6px',
               width: 'fit-content',
+              transition: 'background-color 0.15s ease',
             }}
           >
             <span>Mở thanh toán &amp; Thu cọc tiệc này →</span>
@@ -131,7 +141,27 @@ export function ProposalPanel({
         </div>
       </article>
       <article className="proposal-timeline">
-        <h3>Kịch bản tiệc</h3>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '0.4rem',
+          }}
+        >
+          <h3>Kịch bản tiệc</h3>
+          {proposal.timeline !== null ? (
+            <span
+              style={{
+                fontSize: '0.78rem',
+                color: 'var(--hy-ink-muted, #6e5d63)',
+                fontWeight: 600,
+              }}
+            >
+              {proposal.timeline.items.length} mốc chương trình
+            </span>
+          ) : null}
+        </div>
         {proposal.timeline === null ? (
           <p>Chưa có mốc chương trình.</p>
         ) : (
@@ -147,7 +177,14 @@ export function ProposalPanel({
             ))}
           </ol>
         )}
-        <p style={{ fontSize: '0.82rem', color: 'var(--hy-text-muted, #6e5d63)' }}>
+        <p
+          style={{
+            fontSize: '0.78rem',
+            color: 'var(--hy-ink-muted, #6e5d63)',
+            margin: '0 0 0.75rem',
+            lineHeight: 1.4,
+          }}
+        >
           Giờ bắt đầu mỗi mốc phải từ {proposal.proposal.shift.startTime} đến trước{' '}
           {proposal.proposal.shift.endTime} theo ca tiệc đã chọn.
         </p>
@@ -209,90 +246,12 @@ export function ProposalPanel({
         disabled={disabled}
         onRefresh={() => void refresh('Đã làm mới dữ liệu hợp đồng.')}
       />
-      <article className="proposal-danger" style={{ gridColumn: '1 / -1' }}>
-        <h3>Kết thúc vòng đời</h3>
-        {(proposal.cancellationRequests ?? []).map((request) => (
-          <form
-            key={request.requestId}
-            onSubmit={(event) => {
-              event.preventDefault();
-              const form = event.currentTarget;
-              const submitter = event.nativeEvent.submitter;
-              const decision =
-                submitter instanceof HTMLButtonElement && submitter.value === 'APPROVE'
-                  ? 'APPROVE'
-                  : 'REJECT';
-              const reason = field(new FormData(form), 'decisionReason');
-              void command(
-                'cancellation-decision',
-                decision === 'APPROVE' ? 'Đã chấp nhận yêu cầu hủy.' : 'Đã từ chối yêu cầu hủy.',
-                (token) =>
-                  gateway.decideCancellation(token, {
-                    bookingId: proposal.bookingId,
-                    requestId: request.requestId,
-                    expectedRevision: proposal.revision,
-                    decision,
-                    reason,
-                  }),
-              );
-            }}
-          >
-            <h4>Yêu cầu hủy từ cặp đôi</h4>
-            <p>{request.reason}</p>
-            <label>
-              Lý do quyết định
-              <textarea name="decisionReason" required minLength={1} maxLength={500} rows={2} />
-            </label>
-            <div className="booking-actions">
-              <button type="submit" value="APPROVE" disabled={disabled}>
-                Chấp nhận yêu cầu hủy
-              </button>
-              <button type="submit" value="REJECT" disabled={disabled}>
-                Từ chối yêu cầu hủy
-              </button>
-            </div>
-          </form>
-        ))}
-        <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            const reason = field(new FormData(event.currentTarget), 'reason');
-            void command('cancel', 'Booking đã được hủy.', (token) =>
-              gateway.cancel(token, {
-                bookingId: proposal.bookingId,
-                expectedRevision: proposal.revision,
-                reason,
-              }),
-            );
-          }}
-        >
-          <label>
-            Lý do hủy
-            <textarea name="reason" required minLength={1} maxLength={500} rows={3} />
-          </label>
-          <button
-            disabled={disabled || ['CANCELLED', 'COMPLETED'].includes(proposal.phase)}
-            type="submit"
-          >
-            Hủy booking
-          </button>
-        </form>
-        <button
-          className="booking-secondary"
-          disabled={disabled || proposal.phase !== 'CONFIRMED'}
-          type="button"
-          onClick={() =>
-            void command('complete', 'Booking đã hoàn thành.', (token) =>
-              gateway.complete(token, {
-                bookingId: proposal.bookingId,
-                expectedRevision: proposal.revision,
-              }),
-            )
-          }
-        >
-          Đánh dấu hoàn thành
-        </button>
-      </article>
+      <ProposalLifecycleClosure
+        proposal={proposal}
+        disabled={disabled}
+        gateway={gateway}
+        command={command}
+      />
     </div>
   );
 }
