@@ -8,8 +8,6 @@ import { notify } from '../../design-system/notifications';
 import type { Authorize, BookingSelections, ManagementBookingGateway } from './booking-api';
 import { BookingCreateSummary } from './booking-create-summary';
 import { BookingCreateFormFields } from './booking-create-form-fields';
-import { BookingCreateCatalogBar } from './booking-create-catalog-bar';
-import { BookingCreatePrefillCard } from './booking-create-prefill-card';
 import { useBookingCatalog } from './use-booking-catalog';
 
 export interface BookingCreatePanelProps {
@@ -239,18 +237,9 @@ export function BookingCreatePanel({
         </div>
       </div>
 
-      <BookingCreateCatalogBar
-        loadingSelections={loadingSelections}
-        selections={selections}
-        disabled={disabled}
-        onLoadCatalog={loadCatalog}
-      />
-
-      <BookingCreatePrefillCard prefill={prefill} />
-
       {selections &&
-      ((prefill?.preferredHallId && !matchedHall) ||
-        (prefill?.preferredMenuVersionId && !matchedMenu)) ? (
+        ((prefill?.preferredHallId && !matchedHall) ||
+          (prefill?.preferredMenuVersionId && !matchedMenu)) ? (
         <p role="status">
           Sảnh hoặc phiên bản thực đơn khách chọn không còn trong danh mục phục vụ. Hãy trao đổi với
           khách và chọn phương án thay thế; hệ thống không tự đổi lựa chọn.

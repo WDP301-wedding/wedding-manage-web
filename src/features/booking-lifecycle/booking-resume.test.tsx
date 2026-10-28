@@ -177,7 +177,7 @@ describe('resume consultation by server state', () => {
     fireEvent.change(screen.getByLabelText(/Tìm khách theo/), { target: { value: 'Lan' } });
     fireEvent.click(screen.getByRole('button', { name: 'Tìm khách đã có' }));
     fireEvent.click(await screen.findByRole('button', { name: 'Dùng thông tin cho tiệc mới' }));
-    expect(screen.getByLabelText('Tên cặp đôi')).toHaveValue('Lan');
+    expect(screen.getByLabelText(/Tên (khách|cặp đôi)/)).toHaveValue('Lan');
     expect(screen.getByLabelText('Email liên hệ')).toHaveValue('lan@example.test');
     expect(screen.getByLabelText('Mã hồ sơ tư vấn')).toHaveValue('');
     expect(gateway.createBooking).not.toHaveBeenCalled();

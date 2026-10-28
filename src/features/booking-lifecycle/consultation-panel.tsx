@@ -16,6 +16,7 @@ export interface ConsultationPanelProps {
   onInvite?: (() => Promise<void>) | undefined;
   onReset?: (() => void) | undefined;
   prefill?: BookingPrefill | undefined;
+  customerPicker?: React.ReactNode | undefined;
 }
 
 export function ConsultationPanel({
@@ -27,6 +28,7 @@ export function ConsultationPanel({
   onCreate,
   onReset,
   prefill,
+  customerPicker,
 }: Readonly<ConsultationPanelProps>) {
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -40,88 +42,181 @@ export function ConsultationPanel({
   };
 
   return (
-    <article className="booking-card">
-      <span className="booking-step">01</span>
-      <h2>Hồ sơ tư vấn</h2>
-      <p style={bookingStyles.stepKicker}>
+    <article
+      className="booking-card"
+      style={{
+        padding: '1.25rem 1.35rem',
+        borderRadius: '14px',
+        position: 'relative',
+      }}
+    >
+      <span
+        className="booking-step"
+        style={{
+          top: '1rem',
+          right: '1.25rem',
+          fontSize: '1.25rem',
+          opacity: 0.7,
+        }}
+      >
+        01
+      </span>
+      <h2
+        style={{
+          fontSize: '1.15rem',
+          margin: '0 0 0.35rem',
+          color: 'var(--hy-wine, #7a1f3d)',
+          fontWeight: 600,
+        }}
+      >
+        Hồ sơ tư vấn
+      </h2>
+      <p
+        style={{
+          ...bookingStyles.stepKicker,
+          fontSize: '0.8rem',
+          marginBottom: '0.75rem',
+          lineHeight: 1.45,
+        }}
+      >
         {consultation ? (
-          'Hồ sơ tư vấn đã được lưu. Tiếp tục xử lý hồ sơ này hoặc chọn khách cũ để lập hồ sơ riêng cho một tiệc khác.'
+          'Hồ sơ tư vấn đã được lưu. Tiếp tục xử lý hoặc chọn khách cũ cho tiệc khác.'
         ) : (
           <>
-            Nhập thông tin cặp đôi và bấm <strong>&quot;Tạo hồ sơ tư vấn&quot;</strong> để cấp mã tự
-            động sang Bước 02.
+            Nhập thông tin khách và bấm <strong>&quot;Tạo hồ sơ tư vấn&quot;</strong> để chuyển
+            sang Bước 02.
           </>
         )}
       </p>
+
+      {customerPicker ? (
+        <div style={{ marginBottom: '0.75rem' }}>{customerPicker}</div>
+      ) : null}
+
       {prefill?.displayName || prefill?.email ? (
-        <div style={bookingStyles.prefillBox}>
+        <div
+          style={{
+            ...bookingStyles.prefillBox,
+            padding: '5px 8px',
+            fontSize: '0.78rem',
+            marginBottom: '0.65rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+          }}
+        >
           <span>✓</span>
           <span>Đã tự động điền thông tin từ yêu cầu tư vấn của khách hàng.</span>
         </div>
       ) : null}
-      <form onSubmit={submit}>
-        <label>
-          Tên cặp đôi
-          <input
-            key={`displayName-${prefill?.displayName ?? ''}`}
-            name="displayName"
-            readOnly={consultation !== null}
-            required
-            minLength={1}
-            maxLength={120}
-            defaultValue={prefill?.displayName ?? ''}
-          />
-        </label>
-        <label>
-          Email liên hệ
-          <input
-            key={`email-${prefill?.email ?? ''}`}
-            name="email"
-            readOnly={consultation !== null}
-            type="email"
-            required
-            defaultValue={prefill?.email ?? ''}
-          />
-        </label>
-        <label>
-          Ghi chú
+
+      <form onSubmit={submit} style={{ display: 'grid', gap: '0.65rem' }}>
+        <div className="booking-fields-inline" style={{ gap: '0.65rem' }}>
+          <label style={{ display: 'grid', gap: '0.25rem', fontSize: '0.8rem', margin: 0 }}>
+            <span>Tên khách</span>
+            <input
+              key={`displayName-${prefill?.displayName ?? ''}`}
+              name="displayName"
+              readOnly={consultation !== null}
+              required
+              minLength={1}
+              maxLength={120}
+              defaultValue={prefill?.displayName ?? ''}
+              placeholder="VD: Lã Gia Huy"
+              style={{
+                minHeight: '2.35rem',
+                height: '2.35rem',
+                padding: '0.35rem 0.75rem',
+                fontSize: '0.84rem',
+              }}
+            />
+          </label>
+          <label style={{ display: 'grid', gap: '0.25rem', fontSize: '0.8rem', margin: 0 }}>
+            <span>Email liên hệ</span>
+            <input
+              key={`email-${prefill?.email ?? ''}`}
+              name="email"
+              readOnly={consultation !== null}
+              type="email"
+              required
+              defaultValue={prefill?.email ?? ''}
+              placeholder="email@example.com"
+              style={{
+                minHeight: '2.35rem',
+                height: '2.35rem',
+                padding: '0.35rem 0.75rem',
+                fontSize: '0.84rem',
+              }}
+            />
+          </label>
+        </div>
+        <label style={{ display: 'grid', gap: '0.25rem', fontSize: '0.8rem', margin: 0 }}>
+          <span>Ghi chú</span>
           <textarea
             key={`note-${prefill?.note ?? ''}`}
             name="note"
             readOnly={consultation !== null}
             maxLength={2000}
-            rows={3}
+            rows={2}
             defaultValue={prefill?.note ?? ''}
+            placeholder="Yêu cầu riêng, ngày dự kiến, số khách ước tính..."
+            style={{
+              minHeight: '3.6rem',
+              padding: '0.4rem 0.75rem',
+              fontSize: '0.84rem',
+              resize: 'vertical',
+            }}
           />
         </label>
-        <button disabled={disabled || consultation !== null} type="submit">
+        <button
+          disabled={disabled || consultation !== null}
+          type="submit"
+          style={{
+            minHeight: '2.45rem',
+            height: '2.45rem',
+            padding: '0 1rem',
+            fontSize: '0.84rem',
+            fontWeight: 600,
+            borderRadius: '8px',
+          }}
+        >
           {consultation ? 'Đã tạo hồ sơ tư vấn' : 'Tạo hồ sơ tư vấn'}
         </button>
       </form>
+
       {consultation === null ? null : (
-        <div className="booking-result">
-          <small>CONSULTATION · REV {consultation.revision}</small>
-          <code>{consultation.id}</code>
+        <div
+          className="booking-result"
+          style={{
+            marginTop: '0.75rem',
+            padding: '0.75rem 0.9rem',
+            gap: '0.45rem',
+            borderRadius: '8px',
+          }}
+        >
+          <small style={{ fontSize: '0.72rem', letterSpacing: '0.05em' }}>
+            CONSULTATION · REV {consultation.revision}
+          </small>
+          <code style={{ fontSize: '0.82rem' }}>{consultation.id}</code>
           <div
             style={{
-              marginTop: '0.75rem',
-              padding: '0.75rem 0.9rem',
+              marginTop: '0.25rem',
+              padding: '0.5rem 0.75rem',
               backgroundColor: '#f0fdf4',
               border: '1px solid #bbf7d0',
               borderRadius: '6px',
-              fontSize: '0.84rem',
+              fontSize: '0.8rem',
               color: '#166534',
-              lineHeight: 1.5,
+              lineHeight: 1.45,
             }}
           >
             <strong>✓ Đã lưu hồ sơ tư vấn ban đầu.</strong>
-            <p style={{ margin: '0.35rem 0 0', color: '#15803d' }}>
-              Bạn có thể <strong>Gửi lời mời cộng tác</strong> ngay để cặp đôi cùng theo dõi thông
-              tin tư vấn, hoặc chuyển sang <strong>Bước 02: Khảo sát sảnh &amp; Đặt tiệc</strong> để
-              chọn sảnh và hoàn tất thủ tục đặt tiệc.
+            <p style={{ margin: '0.25rem 0 0', color: '#15803d' }}>
+              Bạn có thể <strong>Gửi lời mời cộng tác</strong> hoặc chuyển sang{' '}
+              <strong>Bước 02: Khảo sát sảnh &amp; Đặt tiệc</strong>.
             </p>
           </div>
-          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.4rem', flexWrap: 'wrap' }}>
             {activationVisible ? (
               <ActivationStatus
                 key={consultation.id}
@@ -136,6 +231,12 @@ export function ConsultationPanel({
                 type="button"
                 className="booking-secondary"
                 onClick={onReset}
+                style={{
+                  minHeight: '2.1rem',
+                  height: '2.1rem',
+                  padding: '0 0.75rem',
+                  fontSize: '0.78rem',
+                }}
               >
                 + Lập hồ sơ tư vấn cho tiệc khác
               </button>
@@ -144,8 +245,8 @@ export function ConsultationPanel({
           {logs && logs.length > 0 ? (
             <div
               style={{
-                marginTop: '1rem',
-                padding: '0.75rem',
+                marginTop: '0.65rem',
+                padding: '0.65rem',
                 backgroundColor: '#f8fafc',
                 border: '1px solid #e2e8f0',
                 borderRadius: '6px',
@@ -156,12 +257,12 @@ export function ConsultationPanel({
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
-                  marginBottom: '0.5rem',
+                  marginBottom: '0.4rem',
                 }}
               >
                 <span
                   style={{
-                    fontSize: '0.75rem',
+                    fontSize: '0.72rem',
                     fontWeight: 700,
                     color: '#475569',
                     textTransform: 'uppercase',
@@ -188,15 +289,15 @@ export function ConsultationPanel({
                   </button>
                 ) : null}
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                 {logs.map((item) => (
                   <div
                     key={item.id}
                     style={{
-                      padding: '0.5rem 0.65rem',
+                      padding: '0.4rem 0.6rem',
                       borderRadius: '4px',
-                      fontSize: '0.8rem',
-                      lineHeight: '1.4',
+                      fontSize: '0.78rem',
+                      lineHeight: '1.35',
                       backgroundColor:
                         item.type === 'success'
                           ? '#f0fdf4'
@@ -237,16 +338,16 @@ export function ConsultationPanel({
                             ? '✕ Gửi thất bại'
                             : '⏳ Đang xử lý...'}
                       </span>
-                      <small style={{ color: '#64748b', fontSize: '0.75rem' }}>{item.time}</small>
+                      <small style={{ color: '#64748b', fontSize: '0.72rem' }}>{item.time}</small>
                     </div>
-                    <div style={{ marginTop: '3px', color: '#1e293b' }}>{item.message}</div>
+                    <div style={{ marginTop: '2px', color: '#1e293b' }}>{item.message}</div>
                     {item.invitationId ? (
-                      <div style={{ marginTop: '4px', fontSize: '0.75rem' }}>
+                      <div style={{ marginTop: '3px', fontSize: '0.72rem' }}>
                         <span style={{ color: '#64748b' }}>Mã lời mời: </span>
                         <code
                           style={{
                             background: 'rgba(0,0,0,0.06)',
-                            padding: '1px 5px',
+                            padding: '1px 4px',
                             borderRadius: '3px',
                             wordBreak: 'break-all',
                           }}

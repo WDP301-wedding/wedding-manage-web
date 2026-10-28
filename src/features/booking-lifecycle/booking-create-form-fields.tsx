@@ -122,7 +122,7 @@ export function BookingCreateFormFields({
             </small>
           </label>
           <label htmlFor="shiftCode-select">
-            Ca
+            <span>Ca</span>
             <select
               id="shiftCode-select"
               key={`shiftCode-${prefillShift ?? ''}`}
@@ -207,7 +207,7 @@ export function BookingCreateFormFields({
 
         <div className="booking-fields-inline">
           <label htmlFor="tableCount-input">
-            Số bàn
+            <span>Số bàn</span>
             <input
               id="tableCount-input"
               key={`tableCount-${prefillTableCount ?? ''}`}
@@ -220,7 +220,7 @@ export function BookingCreateFormFields({
             />
           </label>
           <label htmlFor="planningHeadcount-input">
-            Số khách dự kiến
+            <span>Số khách dự kiến</span>
             <input
               id="planningHeadcount-input"
               key={`planningHeadcount-${prefillExpectedGuests ?? ''}`}

@@ -1,6 +1,6 @@
 'use client';
 
-import { money } from './booking-helpers';
+import { formatDate, money } from './booking-helpers';
 import type { BookingSelections } from './booking-api';
 
 export interface BookingCreateSummaryProps {
@@ -51,7 +51,7 @@ export function BookingCreateSummary({
             <div className="booking-meta-item">
               <span className="booking-meta-label">Ngày tổ chức</span>
               <span className="booking-meta-val">
-                {eventDate || 'Chưa chọn ngày'}
+                {eventDate ? formatDate(eventDate) : 'Chưa chọn ngày'}
               </span>
             </div>
             <div className="booking-meta-item">

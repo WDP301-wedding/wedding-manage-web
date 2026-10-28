@@ -22,7 +22,12 @@ export function ProposalLifecycleClosure({
 }: Readonly<ProposalLifecycleClosureProps>) {
   return (
     <article className="proposal-danger" style={{ gridColumn: '1 / -1' }}>
-      <h3>Kết thúc vòng đời</h3>
+      <div className="proposal-danger-header">
+        <h3>Hủy booking</h3>
+        <p className="proposal-danger-desc">
+          Khu vực xử lý yêu cầu hủy từ khách hoặc hủy bỏ booking. Thao tác này không thể hoàn tác.
+        </p>
+      </div>
       {(proposal.cancellationRequests ?? []).map((request) => (
         <form
           key={request.requestId}
@@ -65,45 +70,33 @@ export function ProposalLifecycleClosure({
           </div>
         </form>
       ))}
-      <form
-        onSubmit={(event) => {
-          event.preventDefault();
-          const reason = field(new FormData(event.currentTarget), 'reason');
-          void command('cancel', 'Booking đã được hủy.', (token) =>
-            gateway.cancel(token, {
-              bookingId: proposal.bookingId,
-              expectedRevision: proposal.revision,
-              reason,
-            }),
-          );
-        }}
-      >
-        <label>
-          Lý do hủy
-          <textarea name="reason" required minLength={1} maxLength={500} rows={3} />
-        </label>
-        <button
-          disabled={disabled || ['CANCELLED', 'COMPLETED'].includes(proposal.phase)}
-          type="submit"
+      <details className="proposal-cancel-details">
+        <summary>Hủy booking</summary>
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            const reason = field(new FormData(event.currentTarget), 'reason');
+            void command('cancel', 'Booking đã được hủy.', (token) =>
+              gateway.cancel(token, {
+                bookingId: proposal.bookingId,
+                expectedRevision: proposal.revision,
+                reason,
+              }),
+            );
+          }}
         >
-          Hủy booking
-        </button>
-      </form>
-      <button
-        className="booking-secondary"
-        disabled={disabled || proposal.phase !== 'CONFIRMED'}
-        type="button"
-        onClick={() =>
-          void command('complete', 'Booking đã hoàn thành.', (token) =>
-            gateway.complete(token, {
-              bookingId: proposal.bookingId,
-              expectedRevision: proposal.revision,
-            }),
-          )
-        }
-      >
-        Đánh dấu hoàn thành
-      </button>
+          <label>
+            Lý do hủy
+            <textarea name="reason" required minLength={1} maxLength={500} rows={3} />
+          </label>
+          <button
+            disabled={disabled || ['CANCELLED', 'COMPLETED'].includes(proposal.phase)}
+            type="submit"
+          >
+            Hủy booking
+          </button>
+        </form>
+      </details>
     </article>
   );
 }
