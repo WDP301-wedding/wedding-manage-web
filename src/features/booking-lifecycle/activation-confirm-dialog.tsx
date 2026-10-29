@@ -1,10 +1,12 @@
 'use client';
 
 import { type RefObject } from 'react';
+import type { Activation } from './activation-status.types';
 
 export interface ActivationConfirmDialogProps {
   dialogRef: RefObject<HTMLDialogElement | null>;
   recipientEmail?: string | undefined;
+  accountState?: Activation['accountState'];
   onSend: () => void;
   onClose: () => void;
 }
@@ -12,6 +14,7 @@ export interface ActivationConfirmDialogProps {
 export function ActivationConfirmDialog({
   dialogRef,
   recipientEmail,
+  accountState,
   onSend,
   onClose,
 }: Readonly<ActivationConfirmDialogProps>) {
@@ -29,19 +32,16 @@ export function ActivationConfirmDialog({
           <div className="hy-modal-header-left">
             <div>
               <h3 id="activation-confirm-title" className="hy-modal-title">
-                Phát hành lời mời kích hoạt?
+                {accountState === 'ACTIVE'
+                  ? 'Mời khách truy cập tiệc này?'
+                  : accountState === 'NOT_REGISTERED'
+                    ? 'Mời kích hoạt tài khoản và truy cập tiệc?'
+                    : 'Gửi lời mời truy cập hồ sơ tiệc?'}
               </h3>
-              <span className="hy-modal-subtitle">
-                Gửi thư mời điện tử truy cập cổng tiệc cưới
-              </span>
+              <span className="hy-modal-subtitle">Gửi thư mời điện tử truy cập cổng tiệc cưới</span>
             </div>
           </div>
-          <button
-            type="button"
-            className="hy-modal-close-btn"
-            aria-label="Đóng"
-            onClick={onClose}
-          >
+          <button type="button" className="hy-modal-close-btn" aria-label="Đóng" onClick={onClose}>
             <svg
               width="16"
               height="16"
@@ -67,25 +67,23 @@ export function ActivationConfirmDialog({
 
           <div className="hy-modal-warning-box">
             <p className="hy-modal-note">
-              Gửi tới {recipientEmail}. Nếu đang có lời mời còn hiệu lực, liên kết cũ sẽ
-              hết hiệu lực. Không tạo mật khẩu hoặc thay đổi quyền sau đặt cọc.
+              Gửi tới {recipientEmail}.{' '}
+              {accountState === 'ACTIVE'
+                ? 'Khách dùng tài khoản và mật khẩu hiện tại để nhận quyền vào tiệc mới; không cần kích hoạt lại tài khoản.'
+                : accountState === 'NOT_REGISTERED'
+                  ? 'Khách thiết lập mật khẩu khi nhận lời mời.'
+                  : 'Khách đã có tài khoản xác nhận bằng mật khẩu hiện tại; khách mới thiết lập mật khẩu khi nhận lời mời.'}{' '}
+              Nếu gửi lại lời mời còn hiệu lực, liên kết trước sẽ hết hiệu lực. Quyền sau đặt cọc
+              không thay đổi.
             </p>
           </div>
         </div>
 
         <div className="hy-modal-footer">
-          <button
-            type="button"
-            className="hy-action-btn-secondary"
-            onClick={onClose}
-          >
+          <button type="button" className="hy-action-btn-secondary" onClick={onClose}>
             Quay lại
           </button>
-          <button
-            type="button"
-            className="hy-action-btn-primary"
-            onClick={onSend}
-          >
+          <button type="button" className="hy-action-btn-primary" onClick={onSend}>
             <span>Xác nhận gửi</span>
           </button>
         </div>

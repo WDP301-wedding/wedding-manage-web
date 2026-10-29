@@ -69,17 +69,13 @@ export function CoupleAccountCard({
               fontFamily: 'var(--font-body)',
             }}
           >
-            Gửi email kích hoạt tài khoản để cặp đôi đăng nhập vào cổng thông tin duyệt kịch bản và
-            xem hợp đồng. Khách có thể kích hoạt và đăng nhập app trước đặt cọc; các chức năng sau
-            cọc vẫn theo quyền của từng tiệc. Khách đã có tài khoản dùng tài khoản hiện có để nhận
-            lời mời vào tiệc mới, không cần tạo lại tài khoản.
+            Mỗi tiệc có quyền truy cập riêng. Khách đã có tài khoản nhận lời mời vào tiệc mới bằng
+            tài khoản hiện có; khách mới thiết lập tài khoản khi nhận lời mời. Quyền sử dụng các
+            chức năng vẫn theo tiến độ của từng tiệc.
             {email ? (
               <>
                 {' '}
-                · Email:{' '}
-                <span className="hy-couple-email-pill">
-                  {email}
-                </span>
+                · Email: <span className="hy-couple-email-pill">{email}</span>
               </>
             ) : null}
           </p>
@@ -96,7 +92,7 @@ export function CoupleAccountCard({
           >
             <span>
               {inviteLogs.some((l) => l.type === 'success')
-                ? 'Gửi lại email kích hoạt'
+                ? 'Gửi lại lời mời truy cập'
                 : 'Gửi lời mời cộng tác'}
             </span>
           </button>

@@ -208,7 +208,7 @@ export function useConsultationRequests() {
         if (!converted.success) {
           await loadLatest.current();
           notify.warning(
-            'Đã mở hồ sơ. Máy chủ chưa hỗ trợ gửi kích hoạt tại bước duyệt; hãy mở hồ sơ để gửi lời mời.',
+            'Đã mở hồ sơ. Máy chủ chưa hỗ trợ gửi lời mời tại bước duyệt; hãy mở hồ sơ để gửi lời mời.',
           );
           return;
         }
@@ -231,9 +231,9 @@ export function useConsultationRequests() {
           } catch (invitationErr) {
             await loadLatest.current();
             notify.error(invitationErr, {
-              title: 'Gửi lời mời kích hoạt',
+              title: 'Mời khách truy cập hồ sơ',
               message:
-                'Đã mở hồ sơ nhưng chưa xác nhận gửi lời mời. Mở hồ sơ để kiểm tra và gửi lại; không cần đặt cọc để kích hoạt tài khoản.',
+                'Đã mở hồ sơ nhưng chưa xác nhận gửi lời mời. Mở hồ sơ để kiểm tra và gửi lại; không cần đặt cọc để nhận quyền truy cập ban đầu.',
             });
             return;
           }
@@ -241,7 +241,7 @@ export function useConsultationRequests() {
       }
       notify.success(
         action === 'conversion'
-          ? 'Đã mở hồ sơ tư vấn và phát hành lời mời kích hoạt tài khoản thành công.'
+          ? 'Đã mở hồ sơ tư vấn và phát hành lời mời truy cập hồ sơ thành công.'
           : 'Đã đóng yêu cầu tư vấn.',
       );
       await loadLatest.current();

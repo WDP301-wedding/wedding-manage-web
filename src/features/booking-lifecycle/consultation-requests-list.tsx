@@ -97,7 +97,7 @@ export function ConsultationRequestsList({
                     style={intakeStyles.primaryActionBtn}
                     aria-label="Mở hồ sơ tư vấn"
                   >
-                    Duyệt hồ sơ và gửi lời mời kích hoạt
+                    Duyệt hồ sơ và mời khách truy cập
                   </button>
                 </div>
               )}

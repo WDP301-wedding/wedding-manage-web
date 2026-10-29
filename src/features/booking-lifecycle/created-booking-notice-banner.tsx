@@ -58,7 +58,7 @@ export function CreatedBookingNoticeBanner({
             Hồ sơ tiệc mới đã sẵn sàng
           </h3>
           <p style={{ margin: 0, fontSize: '0.85rem', color: '#166534', lineHeight: 1.5 }}>
-            Bản nháp tiệc đã sẵn sàng! Bây giờ bạn có thể cấp tài khoản cho cặp đôi
+            Bản nháp tiệc đã sẵn sàng! Bạn có thể mời cặp đôi truy cập hồ sơ tiệc
             {notice.email ? (
               <>
                 {' '}

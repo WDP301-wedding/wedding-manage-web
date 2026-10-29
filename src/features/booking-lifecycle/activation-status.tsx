@@ -6,7 +6,7 @@ import { sharedManagementSession } from '../identity-access/session';
 import { notify } from '../../design-system/notifications';
 import {
   activationSchema,
-  activationLabels,
+  getActivationCopy,
   getActivationBadgeVariant,
   type Activation,
   type ActivationApiClient,
@@ -30,17 +30,38 @@ export function ActivationStatus({
   const sending = useRef(false);
   const key = useRef<string | null>(null);
   const confirmation = useRef<HTMLDialogElement>(null);
+  const accountDetailsSupported = useRef(true);
+  const copy = getActivationCopy(value);
 
   const load = useCallback(async () => {
     const current = ++sequence.current;
     try {
-      const result = await session.authorize((token: string) =>
-        client().GET('/management/consultations/{consultationId}/activation-status', {
-          headers: { Authorization: 'Bearer ' + token },
-          params: { path: { consultationId } },
-          cache: 'no-store',
-        }),
-      );
+      const fetchStatus = (includeAccountState: boolean) =>
+        session.authorize((token: string) =>
+          client().GET('/management/consultations/{consultationId}/activation-status', {
+            headers: { Authorization: 'Bearer ' + token },
+            params: {
+              path: { consultationId },
+              ...(includeAccountState ? { query: { includeAccountState: 'true' as const } } : {}),
+            },
+            cache: 'no-store',
+          }),
+        );
+      let result;
+      try {
+        result = await fetchStatus(accountDetailsSupported.current);
+      } catch (error) {
+        // A still-deployed older backend rejects the additive query. Keep neutral
+        // access wording until that backend can report account readiness.
+        if (
+          !(error instanceof ApiClientError) ||
+          error.status !== 422 ||
+          error.code !== 'VALIDATION_ERROR'
+        )
+          throw error;
+        accountDetailsSupported.current = false;
+        result = await fetchStatus(false);
+      }
       if (current !== sequence.current) return;
       const parsed = activationSchema.safeParse(result.data?.data);
       if (!parsed.success) throw Error('Missing activation state');
@@ -49,7 +70,7 @@ export function ActivationStatus({
       if (current === sequence.current) {
         setValue(null);
         notify.error(caught, {
-          title: 'Trạng thái kích hoạt',
+          title: 'Quyền truy cập hồ sơ',
         });
       }
     }
@@ -84,9 +105,7 @@ export function ActivationStatus({
       key.current = null;
       setRetrying(false);
       await load();
-      notify.success(
-        'Đã phát hành lời mời kích hoạt thành công. Khách cần mở email và tự đặt hoặc xác nhận mật khẩu.',
-      );
+      notify.success(copy.success);
     } catch (caught) {
       const unknown =
         !(caught instanceof ApiClientError) ||
@@ -105,13 +124,13 @@ export function ActivationStatus({
   return (
     <section
       className="hy-activation-card"
-      aria-label="Trạng thái kích hoạt tài khoản"
+      aria-label="Trạng thái tài khoản và quyền truy cập tiệc"
       aria-busy={pending}
     >
       <div className="hy-activation-header">
         <div className="hy-activation-header-info">
           <div>
-            <h4 className="hy-activation-heading">Kích hoạt tài khoản khách hàng</h4>
+            <h4 className="hy-activation-heading">{copy.heading}</h4>
             <span className="hy-activation-subheading">
               Cổng thông tin duyệt kịch bản &amp; theo dõi hợp đồng
             </span>
@@ -126,9 +145,7 @@ export function ActivationStatus({
             onClick={() => void load()}
             title="Tải lại trạng thái mới nhất"
           >
-            {pending ? (
-              <span className="hy-button-spinner" aria-hidden="true" />
-            ) : null}
+            {pending ? <span className="hy-button-spinner" aria-hidden="true" /> : null}
             <span>Cập nhật trạng thái</span>
           </button>
           {value?.canSend ? (
@@ -147,7 +164,7 @@ export function ActivationStatus({
                   : retrying
                     ? 'Thử lại yêu cầu gửi'
                     : value.state === 'NOT_ISSUED'
-                      ? 'Gửi lời mời kích hoạt'
+                      ? copy.sendLabel
                       : 'Gửi lại lời mời'}
               </span>
             </button>
@@ -163,11 +180,17 @@ export function ActivationStatus({
               className={`hy-activation-badge hy-activation-badge-${getActivationBadgeVariant(value.state)}`}
             >
               <span className="hy-activation-status-dot" aria-hidden="true" />
-              <strong>{activationLabels[value.state]}</strong>
+              <strong>{copy.statusLabel}</strong>
             </div>
           </div>
 
           <div className="hy-activation-meta-grid">
+            {copy.accountLabel ? (
+              <div className="hy-activation-meta-item">
+                <div className="hy-activation-meta-label">Tài khoản khách</div>
+                <div className="hy-activation-meta-value">{copy.accountLabel}</div>
+              </div>
+            ) : null}
             <div className="hy-activation-meta-item">
               <div className="hy-activation-meta-label">Email nhận</div>
               <div className="hy-activation-meta-value">{value.recipientEmail}</div>
@@ -193,15 +216,20 @@ export function ActivationStatus({
 
             <div className="hy-activation-meta-item">
               <div className="hy-activation-meta-label">Quyền truy cập</div>
-              <div className="hy-activation-meta-value">Tự động phân quyền theo tiến độ tiệc</div>
+              <div className="hy-activation-meta-value">
+                {value.accessState === 'GRANTED'
+                  ? 'Đã có quyền · Chức năng theo tiến độ tiệc'
+                  : value.accessState === 'NOT_GRANTED'
+                    ? 'Chưa có quyền vào hồ sơ tiệc này'
+                    : value.accessState === 'UNAVAILABLE'
+                      ? 'Quyền truy cập cần được kiểm tra'
+                      : 'Theo lời mời và tiến độ tiệc'}
+              </div>
             </div>
           </div>
 
           <div className="hy-activation-hint-box">
-            <p className="hy-activation-hint">
-              Không bắt buộc đặt cọc để kích hoạt tài khoản. Hệ thống tự động phân quyền truy cập
-              theo từng giai đoạn của tiệc.
-            </p>
+            <p className="hy-activation-hint">{copy.hint}</p>
           </div>
         </div>
       ) : null}
@@ -209,6 +237,7 @@ export function ActivationStatus({
       <ActivationConfirmDialog
         dialogRef={confirmation}
         recipientEmail={value?.recipientEmail}
+        accountState={value?.accountState}
         onSend={() => void send()}
         onClose={() => confirmation.current?.close()}
       />
