@@ -40,10 +40,9 @@ export function BookingUnauthorizedHint({ bookingId }: Readonly<BookingUnauthori
           lineHeight: 1.5,
         }}
       >
-        Tiệc cưới <code>{bookingId.slice(0, 8)}…</code> được tạo bởi Quản lý khác (hoặc là dữ liệu
-        mẫu nhà hàng). Theo quy định của hệ thống, chỉ Quản lý trực tiếp tạo hồ sơ tư vấn ban đầu
-        mới có quyền duyệt &amp; chỉnh sửa kịch bản tiệc này. Bạn vẫn có thể thực hiện các thao tác
-        vận hành khác:
+        Hồ sơ tiệc đang mở được tạo bởi Quản lý khác (hoặc là dữ liệu mẫu nhà hàng). Theo quy định
+        của hệ thống, chỉ Quản lý trực tiếp tạo hồ sơ tư vấn ban đầu mới có quyền duyệt &amp; chỉnh
+        sửa kịch bản tiệc này. Bạn vẫn có thể thực hiện các thao tác vận hành khác:
       </p>
       <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
         <Link

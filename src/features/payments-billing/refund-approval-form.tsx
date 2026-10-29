@@ -72,36 +72,38 @@ export function RefundApprovalForm({
       </p>
       <form ref={form} onSubmit={review}>
         <fieldset disabled={disabled || draft !== null || booking.billingRevision === 0}>
-          <label>
-            Căn cứ phê duyệt
-            <select name="basis" required defaultValue="">
-              <option value="">Chọn căn cứ</option>
-              <option value="CANCELLATION">Quyết định hủy tiệc đã chốt</option>
-              {credits.map((entry) => (
-                <option key={entry.ledgerEntryId} value={entry.ledgerEntryId}>
-                  Điều chỉnh giảm · {money(entry.amountVnd)} · {entry.ledgerEntryId}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Hạn mức hoàn được duyệt (VND)
-            <input
-              name="amount"
-              type="number"
-              min={1}
-              max={Number.MAX_SAFE_INTEGER}
-              step={1}
-              required
-            />
-          </label>
+          <div className="billing-field-row">
+            <label>
+              Căn cứ phê duyệt
+              <select name="basis" required defaultValue="">
+                <option value="">Chọn căn cứ</option>
+                <option value="CANCELLATION">Quyết định hủy tiệc đã chốt</option>
+                {credits.map((entry) => (
+                  <option key={entry.ledgerEntryId} value={entry.ledgerEntryId}>
+                    Điều chỉnh giảm · {money(entry.amountVnd)} · {entry.ledgerEntryId}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Hạn mức hoàn được duyệt (VND)
+              <input
+                name="amount"
+                type="number"
+                min={1}
+                max={Number.MAX_SAFE_INTEGER}
+                step={1}
+                required
+              />
+            </label>
+          </div>
           <label>
             Mã chứng từ phê duyệt
             <input name="evidence" required maxLength={120} autoComplete="off" />
           </label>
           <label>
             Lý do phê duyệt
-            <textarea name="reason" required maxLength={500} rows={3} />
+            <textarea name="reason" required maxLength={500} rows={2} />
           </label>
           <button type="submit">Kiểm tra phê duyệt</button>
         </fieldset>

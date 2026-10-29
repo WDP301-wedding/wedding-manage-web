@@ -78,7 +78,9 @@ export function BillingSummary({ view }: Readonly<{ view: BillingView }>) {
         {Object.entries(view.totals).map(([key, value]) => (
           <div key={key}>
             <dt>{totalLabels[key as keyof typeof totalLabels]}</dt>
-            <dd>{money(value)}</dd>
+            <dd className={key === 'outstandingVnd' ? 'is-outstanding' : undefined}>
+              {money(value)}
+            </dd>
           </div>
         ))}
       </dl>
@@ -106,14 +108,18 @@ export function BillingHistory({ view }: Readonly<{ view: BillingView }>) {
             <tbody>
               {view.history.map((entry) => (
                 <tr key={entry.ledgerEntryId}>
-                  <td>{new Date(entry.occurredAt).toLocaleString('vi-VN')}</td>
+                  <td style={{ whiteSpace: 'nowrap' }}>
+                    {new Date(entry.occurredAt).toLocaleString('vi-VN')}
+                  </td>
                   <td>
                     {kinds[entry.kind]}
                     <small>{sources[entry.sourceType]}</small>
                   </td>
-                  <td>{money(entry.amountVnd)}</td>
+                  <td style={{ whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
+                    {money(entry.amountVnd)}
+                  </td>
                   <td>
-                    <code>{entry.ledgerEntryId}</code>
+                    <code title={entry.ledgerEntryId}>{entry.ledgerEntryId}</code>
                   </td>
                 </tr>
               ))}

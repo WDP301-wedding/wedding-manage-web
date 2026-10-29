@@ -137,30 +137,32 @@ export function ManualPaymentForm({
       <p>Ghi nhận tiền mặt hoặc chuyển khoản mà nhà hàng đã nhận và kiểm tra chứng từ.</p>
       <form ref={form} onSubmit={review}>
         <fieldset disabled={disabled || draft !== null}>
-          <label>
-            Loại khoản thu
-            <select name="purpose">
-              <option value="DEPOSIT">Đặt cọc</option>
-              <option value="BALANCE">Thanh toán còn lại</option>
-            </select>
-          </label>
-          <label>
-            Số tiền thực nhận (VND)
-            <input
-              name="amount"
-              type="number"
-              min={1}
-              max={Number.MAX_SAFE_INTEGER}
-              step={1}
-              required
-            />
-          </label>
+          <div className="billing-field-row">
+            <label>
+              Loại khoản thu
+              <select name="purpose">
+                <option value="DEPOSIT">Đặt cọc</option>
+                <option value="BALANCE">Thanh toán còn lại</option>
+              </select>
+            </label>
+            <label>
+              Số tiền thực nhận (VND)
+              <input
+                name="amount"
+                type="number"
+                min={1}
+                max={Number.MAX_SAFE_INTEGER}
+                step={1}
+                required
+              />
+            </label>
+          </div>
           <small
             style={{
               color: '#64748b',
               fontSize: '0.78rem',
               marginTop: '-0.25rem',
-              marginBottom: '0.75rem',
+              marginBottom: '0.5rem',
               display: 'block',
               lineHeight: 1.4,
             }}
@@ -169,11 +171,20 @@ export function ManualPaymentForm({
             phải khớp chính xác số tiền cọc quy định trên hồ sơ tiệc (xem tại mục &quot;Tiền
             cọc&quot;).
           </small>
+          <div className="billing-field-row">
+            <label>
+              Thời điểm nhận tiền
+              <input name="settledAt" type="datetime-local" required />
+            </label>
+            <label>
+              Mã chứng từ
+              <input name="evidence" required maxLength={120} autoComplete="off" />
+            </label>
+          </div>
           <label>
-            Thời điểm nhận tiền
-            <input name="settledAt" type="datetime-local" required />
+            Lý do ghi nhận
+            <textarea name="reason" required maxLength={500} rows={2} />
           </label>
-          <EvidenceFields />
           <button type="submit">Kiểm tra khoản thu</button>
         </fieldset>
       </form>
@@ -257,30 +268,39 @@ export function RefundForm({
             disabled || draft !== null || payments.length === 0 || booking.billingRevision === 0
           }
         >
+          <div className="billing-field-row">
+            <label>
+              Khoản thanh toán gốc
+              <select name="source" required defaultValue="">
+                <option value="">Chọn khoản thanh toán</option>
+                {payments.map((entry) => (
+                  <option key={entry.ledgerEntryId} value={entry.ledgerEntryId}>
+                    {money(entry.amountVnd)} ·{' '}
+                    {new Date(entry.occurredAt).toLocaleDateString('vi-VN')} · {entry.ledgerEntryId}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Số tiền hoàn (VND)
+              <input
+                name="amount"
+                type="number"
+                min={1}
+                max={Number.MAX_SAFE_INTEGER}
+                step={1}
+                required
+              />
+            </label>
+          </div>
           <label>
-            Khoản thanh toán gốc
-            <select name="source" required defaultValue="">
-              <option value="">Chọn khoản thanh toán</option>
-              {payments.map((entry) => (
-                <option key={entry.ledgerEntryId} value={entry.ledgerEntryId}>
-                  {money(entry.amountVnd)} ·{' '}
-                  {new Date(entry.occurredAt).toLocaleDateString('vi-VN')} · {entry.ledgerEntryId}
-                </option>
-              ))}
-            </select>
+            Mã chứng từ hoàn
+            <input name="evidence" required maxLength={120} autoComplete="off" />
           </label>
           <label>
-            Số tiền hoàn (VND)
-            <input
-              name="amount"
-              type="number"
-              min={1}
-              max={Number.MAX_SAFE_INTEGER}
-              step={1}
-              required
-            />
+            Lý do hoàn tiền
+            <textarea name="reason" required maxLength={500} rows={2} />
           </label>
-          <EvidenceFields refund />
           <button type="submit">Kiểm tra khoản hoàn</button>
         </fieldset>
       </form>

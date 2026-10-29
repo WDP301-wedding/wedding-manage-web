@@ -80,6 +80,10 @@ export function ManagementBookingWorkspace({
             <p>Mỗi hồ sơ tư vấn gắn với một tiệc. Mở lại hồ sơ để tiếp tục đúng tiến trình.</p>
           </div>
           <BookingLookupBar
+            key={currentAccountId ?? 'manager'}
+            authorize={authorize}
+            activeBookingId={proposal?.bookingId}
+            revision={proposal?.revision}
             bookingId={bookingId}
             setBookingId={setBookingId}
             onLoadProposal={loadProposal}
@@ -91,11 +95,11 @@ export function ManagementBookingWorkspace({
 
       {consultation ? (
         <p role="status">
-          <strong>{prefill.displayName}</strong> · {prefill.email} · Hồ sơ tư vấn: {consultation.id}
+          <strong>{prefill.displayName}</strong> · {prefill.email}
           {proposal ? (
             <>
               {' '}
-              · Tiệc: {proposal.bookingId} · Ngày: {proposal.eventDate} ·{' '}
+              · Ngày: {proposal.eventDate.split('-').reverse().join('/')} ·{' '}
               {bookingPhaseLabel(proposal.phase)}
             </>
           ) : (

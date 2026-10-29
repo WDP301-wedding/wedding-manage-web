@@ -275,43 +275,52 @@ export function ManagementBillingWorkspace({
   return (
     <main className="billing-shell" id="billing-content">
       <header className="billing-header">
-        <div>
-          <p className="section-kicker">Wedding Estate · Operations</p>
+        <div className="billing-header-title-group">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+            <span className="section-kicker" style={{ margin: 0 }}>Wedding Estate · Operations</span>
+            {view !== null && (
+              <Link className="billing-back-link" href={`/bookings/${encodeURIComponent(view.bookingId)}`}>
+                ← Về hồ sơ tiệc
+              </Link>
+            )}
+          </div>
           <h1>Quản lý thanh toán</h1>
           <p>Theo dõi tiền đặt tiệc, ghi nhận khoản thu và hoàn tiền.</p>
         </div>
+        <form
+          className="billing-lookup"
+          onSubmit={(event) => {
+            event.preventDefault();
+            setAttempt(null);
+            setView(null);
+            void run(() => load(bookingId.trim()));
+          }}
+        >
+          <label>
+            Mã hồ sơ đặt tiệc
+            <input
+              value={bookingId}
+              onChange={(event) => {
+                if (pending || uncertain !== null) return;
+                setBookingId(event.target.value);
+                setView(null);
+                setAttempt(null);
+                setAttemptId('');
+                setRefundRevision(null);
+                setApprovalRevision(null);
+              }}
+              required
+              disabled={pending || uncertain !== null}
+            />
+          </label>
+          <button disabled={pending || uncertain !== null}>Xem thanh toán</button>
+        </form>
       </header>
-      <form
-        className="billing-lookup"
-        onSubmit={(event) => {
-          event.preventDefault();
-          setAttempt(null);
-          setView(null);
-          void run(() => load(bookingId.trim()));
-        }}
-      >
-        <label>
-          Mã hồ sơ đặt tiệc
-          <input
-            value={bookingId}
-            onChange={(event) => {
-              if (pending || uncertain !== null) return;
-              setBookingId(event.target.value);
-              setView(null);
-              setAttempt(null);
-              setAttemptId('');
-              setRefundRevision(null);
-              setApprovalRevision(null);
-            }}
-            required
-            disabled={pending || uncertain !== null}
-          />
-        </label>
-        <button disabled={pending || uncertain !== null}>Xem thanh toán</button>
-      </form>
+
       <div className="billing-live" aria-live="polite">
         {pending && <p role="status">Đang xử lý yêu cầu…</p>}
       </div>
+
       <div className="billing-workspace-body">
         {view !== null && (
           <>
@@ -327,42 +336,56 @@ export function ManagementBillingWorkspace({
                 Cập nhật thông tin
               </button>
             </div>
-            <BillingSummary view={view} />
-            <BillingHistory view={view} />
-            {view.nextCursor !== null && (
-              <button
-                className="billing-secondary"
+
+            {/* ROW 1: TỔNG HỢP TÀI CHÍNH (6 CHỈ SỐ) & TRA CỨU GIAO DỊCH */}
+            <div className="billing-two-col-top">
+              <BillingSummary view={view} />
+              <AttemptLookupPanel
                 disabled={pending}
-                onClick={() => {
-                  void run(() => load(view.bookingId, true));
+                attemptId={attemptId}
+                setAttemptId={setAttemptId}
+                attempt={attempt}
+                onLookup={() => {
+                  void run(async () => {
+                    setAttempt(
+                      await authorize((token) =>
+                        gateway.loadAttempt(token, view.bookingId, attemptId.trim()),
+                      ),
+                    );
+                  });
                 }}
-              >
-                Tải thêm lịch sử
-              </button>
-            )}
-            <AttemptLookupPanel
-              disabled={pending}
-              attemptId={attemptId}
-              setAttemptId={setAttemptId}
-              attempt={attempt}
-              onLookup={() => {
-                void run(async () => {
-                  setAttempt(
-                    await authorize((token) =>
-                      gateway.loadAttempt(token, view.bookingId, attemptId.trim()),
-                    ),
-                  );
-                });
-              }}
-            />
-            <BillingMutationsSection
-              view={view}
-              pending={pending}
-              uncertain={uncertain}
-              refundRevision={refundRevision}
-              approvalRevision={approvalRevision}
-              onMutate={mutate}
-            />
+              />
+            </div>
+
+            {/* ROW 2: THAO TÁC NGHIỆP VỤ (TABBED) & LỊCH SỬ GIAO DỊCH */}
+            <div className="billing-two-col-main">
+              <BillingMutationsSection
+                view={view}
+                pending={pending}
+                uncertain={uncertain}
+                refundRevision={refundRevision}
+                approvalRevision={approvalRevision}
+                onMutate={mutate}
+              />
+
+              <div className="billing-history-col">
+                <BillingHistory view={view} />
+                {view.nextCursor !== null && (
+                  <button
+                    className="billing-secondary"
+                    style={{ marginTop: '12px' }}
+                    disabled={pending}
+                    onClick={() => {
+                      void run(() => load(view.bookingId, true));
+                    }}
+                  >
+                    Tải thêm lịch sử
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* ROW 3: PHÁT SINH & HOÁ ĐƠN QUYẾT TOÁN CUỐI */}
             <IncidentalsPanel
               bookingId={view.bookingId}
               billingRevision={view.billingRevision}

@@ -19,11 +19,11 @@ export function AttemptLookupPanel({
   onLookup,
 }: Readonly<AttemptLookupPanelProps>) {
   return (
-    <section className="billing-panel">
+    <section className="billing-panel billing-attempt-card">
       <h2>Tra cứu trạng thái giao dịch</h2>
       <p>Nhập mã giao dịch thanh toán để xem kết quả và tình trạng cập nhật hồ sơ.</p>
       <form
-        className="billing-lookup"
+        className="billing-lookup billing-attempt-form"
         onSubmit={(event) => {
           event.preventDefault();
           onLookup();
@@ -36,6 +36,7 @@ export function AttemptLookupPanel({
             onChange={(event) => setAttemptId(event.target.value)}
             required
             disabled={disabled}
+            placeholder="Nhập mã payment attempt..."
           />
         </label>
         <button disabled={disabled}>Tra cứu giao dịch</button>
