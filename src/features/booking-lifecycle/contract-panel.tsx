@@ -187,6 +187,34 @@ export function ContractPanel({
         </p>
       ) : null}
       {actionMessage ? <p role="status">{actionMessage}</p> : null}
+      {subTab === 'contract' && data?.customerSelection ? (
+        <section className="booking-selection-summary">
+          <h4>
+            Lựa chọn của khách ·{' '}
+            {data.customerSelection.status === 'SUBMITTED'
+              ? 'Đã gửi, khách không tự sửa'
+              : data.customerSelection.status === 'DRAFT'
+                ? 'Khách đang chọn, chưa gửi'
+                : 'Khách chưa gửi lựa chọn'}
+          </h4>
+          <details>
+            <summary>Xem các hạng mục và số bàn</summary>
+            <ContractLinesTable
+              lines={data.customerSelection.lines}
+              title="Thông tin từ phía khách"
+            />
+            <p>
+              Tổng lựa chọn: <strong>{formatVnd(data.customerSelection.totalVnd)}</strong>
+            </p>
+          </details>
+          {data.customerSelection.status !== 'SUBMITTED' && !currentRevision ? (
+            <p>
+              Chờ khách lưu nháp và gửi lựa chọn ở Thoả thuận → Hợp đồng. Sau khi gửi, hệ thống mới
+              mở lập hợp đồng và điền sẵn toàn bộ các hạng mục.
+            </p>
+          ) : null}
+        </section>
+      ) : null}
       {subTab === 'contract' && data?.capabilities?.canManageDraft && !editing ? (
         <div className="booking-actions">
           <button
@@ -195,16 +223,40 @@ export function ContractPanel({
             disabled={commandsDisabled || !proposal.timeline}
             onClick={() => setEditing(true)}
           >
-            {currentRevision ? 'Chỉnh sửa bản hợp đồng' : 'Lập hợp đồng từ đề xuất'}
+            {currentRevision ? 'Chỉnh sửa bản hợp đồng' : 'Lập hợp đồng từ lựa chọn khách'}
           </button>
           {!proposal.timeline ? <p>Cần lưu kịch bản tiệc trước khi lập hợp đồng.</p> : null}
         </div>
       ) : null}
       {subTab === 'contract' && editing && data?.capabilities?.canManageDraft ? (
         <ContractDraftComposer
-          key={bookingId + ':' + (currentRevision?.revisionId ?? 'new')}
+          key={
+            bookingId +
+            ':' +
+            (currentRevision?.revisionId ?? data.customerSelection?.revisionId ?? 'new')
+          }
           proposal={proposal}
           current={currentRevision}
+          seed={
+            data.draftSeed ??
+            currentRevision?.document.lines ??
+            proposal.proposal.menus.map((menu) => ({
+              category: 'MENU' as const,
+              sourceId: menu.packageId,
+              sourceRevisionId: menu.versionId,
+              quantity: menu.tableCount,
+              name: menu.name,
+              description: menu.description,
+              unit: 'table',
+              unitPriceVnd: menu.priceVndPerTable,
+              lineTotalVnd: menu.lineTotalVnd,
+            }))
+          }
+          seedTotalVnd={
+            currentRevision?.document.contractTotalVnd ??
+            data.customerSelection?.totalVnd ??
+            proposal.proposal.baseChargeVnd
+          }
           bookingRevision={data.bookingRevision}
           onCancel={() => setEditing(false)}
           onSaved={() => {

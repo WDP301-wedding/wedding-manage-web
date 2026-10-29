@@ -1,11 +1,15 @@
 import { z } from 'zod';
+import { customerSelectionSchema, selectionLineSchema } from './selection-wire';
 import { axiosApiClient } from '../lib/api/axios-client';
 import type { operations } from '../lib/api/generated/schema';
 
 const capabilityEnvelope = z.object({
+  customerSelection: customerSelectionSchema.optional(),
+  draftSeed: z.array(selectionLineSchema).optional(),
   capabilities: z
     .object({
       canManageDraft: z.boolean(),
+      canEditSelections: z.boolean().optional(),
       canApprove: z.boolean(),
       canWithdrawApproval: z.boolean(),
     })

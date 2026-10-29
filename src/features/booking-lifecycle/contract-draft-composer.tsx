@@ -14,35 +14,32 @@ import { ContractLinesTable } from './contract-lines-table';
 import styles from './contract-draft-composer.module.css';
 
 const keyOf = (line: Pick<DraftLine, 'category' | 'sourceId'>) =>
-  line.category + ':' + line.sourceId;
+  line.category + ':' + line.sourceId.toLowerCase();
 const labels = { MENU: 'Thực đơn', SERVICE: 'Dịch vụ', PRINT: 'Thiệp in' };
 export function ContractDraftComposer({
   proposal,
   current,
+  seed,
+  seedTotalVnd,
   bookingRevision,
   onCancel,
   onSaved,
 }: Readonly<{
   proposal: ProposalView;
   current: ContractRevisionItem | null;
+  seed: readonly ContractRevisionItem['document']['lines'][number][];
+  seedTotalVnd: number;
   bookingRevision: number;
   onCancel: () => void;
   onSaved: () => void;
 }>) {
   const [lines, setLines] = useState<readonly DraftLine[]>(() =>
-    current
-      ? current.document.lines.map(({ category, sourceId, sourceRevisionId, quantity }) => ({
-          category,
-          sourceId,
-          sourceRevisionId,
-          quantity,
-        }))
-      : proposal.proposal.menus.map((menu) => ({
-          category: 'MENU',
-          sourceId: menu.packageId,
-          sourceRevisionId: menu.versionId,
-          quantity: menu.tableCount,
-        })),
+    seed.map(({ category, sourceId, sourceRevisionId, quantity }) => ({
+      category,
+      sourceId,
+      sourceRevisionId,
+      quantity,
+    })),
   );
   const [choices, setChoices] = useState<readonly CatalogChoice[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -84,13 +81,7 @@ export function ContractDraftComposer({
     : null;
   const fingerprint = JSON.stringify(body);
   const priced = preview?.fingerprint === fingerprint ? preview.data : null;
-  const initial =
-    current?.document.lines ??
-    proposal.proposal.menus.map((m) => ({
-      category: 'MENU' as const,
-      sourceId: m.packageId,
-      name: m.name,
-    }));
+  const initial = seed;
   const missing = lines.filter((l) => !choices?.some((c) => keyOf(c) === keyOf(l)));
   const stale = lines.some((l) =>
     choices?.some((c) => keyOf(c) === keyOf(l) && c.sourceRevisionId !== l.sourceRevisionId),
@@ -161,15 +152,23 @@ export function ContractDraftComposer({
         </button>
       </div>
       <p>
-        Đã điền thực đơn và số bàn từ {current ? 'hợp đồng hiện tại' : 'đề xuất'}. Chọn thêm dịch vụ
-        hoặc thiệp in nếu đã thống nhất với khách. Giá và tổng tiền được máy chủ kiểm tra trước khi
-        lưu.
+        Đã điền các hạng mục từ {current ? 'hợp đồng hiện tại' : 'lựa chọn khách đã gửi'}. Chọn thêm
+        dịch vụ hoặc thiệp in nếu đã thống nhất với khách. Giá và tổng tiền được máy chủ kiểm tra
+        trước khi lưu.
       </p>
       {bookingRevision !== proposal.revision ? (
         <p role="alert">
           Hồ sơ đã thay đổi trong lúc soạn. Đóng bản soạn và mở lại để dùng đúng phiên bản mới nhất.
         </p>
       ) : null}
+      <ContractLinesTable
+        lines={seed}
+        title="Dữ liệu điền sẵn: thực đơn, số bàn & các hạng mục đã chọn"
+      />
+      <p>
+        Tổng dữ liệu điền sẵn: <strong>{formatVnd(seedTotalVnd)}</strong>. Đây là bản nhận ban đầu;
+        dùng “Kiểm tra giá & xem trước” sau khi chỉnh sửa.
+      </p>
       {error ? (
         <div role="alert">
           <p>{error}</p>

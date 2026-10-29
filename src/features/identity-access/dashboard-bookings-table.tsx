@@ -170,22 +170,6 @@ export function DashboardBookingsTable({
                     {booking.alias && booking.alias !== booking.customerName && (
                       <small>{booking.alias}</small>
                     )}
-                    <details>
-                      <summary style={{ cursor: 'pointer', fontSize: 12 }}>
-                        Thông tin kỹ thuật
-                      </summary>
-                      <div
-                        style={{
-                          display: 'flex',
-                          flexWrap: 'wrap',
-                          gap: 6,
-                          overflowWrap: 'anywhere',
-                        }}
-                      >
-                        <code style={{ fontFamily: 'var(--font-code)' }}>{booking.bookingId}</code>
-                        <CopyButton text={booking.bookingId} />
-                      </div>
-                    </details>
                   </div>
                 </td>
                 <td>
