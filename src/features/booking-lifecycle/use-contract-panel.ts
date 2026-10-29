@@ -19,6 +19,7 @@ export function useContractPanel({
   bookingRevision,
   onRefresh,
 }: UseContractPanelOptions) {
+  const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<ContractListData | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -52,11 +53,17 @@ export function useContractPanel({
 
   useEffect(() => {
     activeBookingIdRef.current = bookingId;
+    setEditing(false);
     setData(null);
     setError(null);
     setActionMessage(null);
     void loadContracts(bookingId);
   }, [bookingId]);
+
+  useEffect(() => {
+    if (data?.bookingId === bookingId && data.bookingRevision !== bookingRevision && !editing)
+      void loadContracts(bookingId);
+  }, [bookingId, bookingRevision, editing]);
 
   useLiveRefresh(
     async () => {
@@ -66,28 +73,29 @@ export function useContractPanel({
       scope: bookingId,
       bookingId,
       types: ['contract.updated', 'booking.updated'],
-      blocked: loading,
+      blocked: loading || editing,
     },
   );
 
   const currentRevision: ContractRevisionItem | null =
-    data && data.currentRevisionId
-      ? (data.revisions.find((r) => r.revisionId === data.currentRevisionId) ??
-        data.revisions[0] ??
-        null)
-      : (data?.revisions[0] ?? null);
+    data?.bookingId === bookingId && data.currentRevisionId
+      ? (data.revisions.find((r) => r.revisionId === data.currentRevisionId) ?? null)
+      : null;
 
   const handleApprove = async () => {
-    if (!currentRevision) return;
+    if (!currentRevision || !data) return;
     setLoading(true);
     setError(null);
     setActionMessage(null);
     try {
-      await contractService.approveContract(bookingId, currentRevision.revisionId, bookingRevision);
+      await contractService.approveContract(
+        bookingId,
+        currentRevision.revisionId,
+        data.bookingRevision,
+      );
       const msg = 'Đã ghi nhận phê duyệt hợp đồng từ phía Quản lý.';
       setActionMessage(msg);
       notify.success(msg);
-      await loadContracts();
       onRefresh();
     } catch (err) {
       const msg = err instanceof ApiServiceError ? err.message : 'Không thể phê duyệt hợp đồng.';
@@ -99,19 +107,42 @@ export function useContractPanel({
   };
 
   const handleSubmitDraft = async () => {
-    if (!currentRevision) return;
+    if (!currentRevision || !data) return;
     setLoading(true);
     setError(null);
     setActionMessage(null);
     try {
-      await contractService.submitContract(bookingId, currentRevision.revisionId, bookingRevision);
+      await contractService.submitContract(
+        bookingId,
+        currentRevision.revisionId,
+        data.bookingRevision,
+      );
       const msg = 'Đã gửi duyệt hợp đồng thành công. Chờ hai bên phê duyệt.';
       setActionMessage(msg);
       notify.success(msg);
-      await loadContracts();
       onRefresh();
     } catch (err) {
       const msg = err instanceof ApiServiceError ? err.message : 'Không thể gửi duyệt hợp đồng.';
+      setError(msg);
+      notify.error(err, { message: msg });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleWithdraw = async (reason: string) => {
+    if (!currentRevision || !data?.capabilities?.canWithdrawApproval) return;
+    setLoading(true);
+    setError(null);
+    try {
+      await contractService.withdrawContract(bookingId, currentRevision.revisionId, {
+        expectedRevision: data.bookingRevision,
+        reason,
+      });
+      notify.success('Đã rút duyệt. Hợp đồng cần được chuẩn bị và duyệt lại.');
+      onRefresh();
+    } catch (err) {
+      const msg = err instanceof ApiServiceError ? err.message : 'Không thể rút duyệt hợp đồng.';
       setError(msg);
       notify.error(err, { message: msg });
     } finally {
@@ -146,6 +177,9 @@ export function useContractPanel({
   const coupleApproved = currentRevision?.approvals.some((a) => a.party === 'COUPLE');
 
   return {
+    editing,
+    setEditing,
+    loadContracts,
     loading,
     data,
     error,
@@ -154,6 +188,7 @@ export function useContractPanel({
     currentRevision,
     managerApproved,
     coupleApproved,
+    handleWithdraw,
     handleApprove,
     handleSubmitDraft,
     handleDownloadPdf,

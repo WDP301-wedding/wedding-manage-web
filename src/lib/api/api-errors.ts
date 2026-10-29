@@ -11,6 +11,8 @@ import { ApiServiceError } from './axios-client';
  * 4. Lỗi 422 Validation Error hiển thị chi tiết trường sai sót để người dùng sửa ngay.
  */
 const codeMessages: Record<string, string> = {
+  TIMELINE_APPROVAL_WITHDRAWAL_REQUIRED:
+    'Kịch bản đã được hai bên duyệt. Rút phê duyệt trước khi chuẩn bị phiên bản mới.',
   // Xác thực & Phân quyền
   AUTHENTICATION_REQUIRED: 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.',
   UNAUTHORIZED: 'Bạn chưa đăng nhập hoặc phiên làm việc đã kết thúc.',

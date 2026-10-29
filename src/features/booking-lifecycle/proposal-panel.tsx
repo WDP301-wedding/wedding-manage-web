@@ -6,6 +6,8 @@ import styles from './proposal-panel.module.css';
 
 import { createVenueCatalogGateway } from '../venue-catalog/catalog-api';
 import { formatDate, money } from './booking-helpers';
+import { contractService } from '../../services/contract.service';
+import type { useContractPanel } from './use-contract-panel';
 import { ContractPanel } from './contract-panel';
 import type { Authorize, ManagementBookingGateway, ProposalView } from './booking-api';
 import { TimelineEditor } from './timeline-editor';
@@ -51,6 +53,7 @@ function EditIcon() {
 const catalogGateway = createVenueCatalogGateway();
 
 export interface ProposalPanelProps {
+  contractState: ReturnType<typeof useContractPanel>;
   authorize: Authorize;
   disabled: boolean;
   gateway: ManagementBookingGateway;
@@ -60,6 +63,7 @@ export interface ProposalPanelProps {
 }
 
 export function ProposalPanel({
+  contractState,
   authorize,
   disabled,
   gateway,
@@ -208,7 +212,7 @@ export function ProposalPanel({
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
             <h3 style={{ margin: 0 }}>Kịch bản tiệc</h3>
-            {proposal.timeline !== null && (
+            {proposal.timeline !== null && proposal.capabilities.canEditTimeline && (
               <button
                 type="button"
                 className={styles.editTimelineBtn}
@@ -293,57 +297,97 @@ export function ProposalPanel({
                 </li>
               ))}
             </ol>
-            <details open={isEditingTimeline} className={styles.timelineEditorDetails}>
-              <summary style={{ display: 'none' }}>Chỉnh sửa</summary>
-              <div className={styles.timelineEditorWrapper}>
-                <p
-                  style={{
-                    fontSize: '0.78rem',
-                    color: 'var(--hy-ink-muted, #6e5d63)',
-                    margin: '0 0 0.75rem',
-                    lineHeight: 1.4,
-                  }}
-                >
-                  Giờ bắt đầu mỗi mốc phải từ {proposal.proposal.shift.startTime} đến trước{' '}
-                  {proposal.proposal.shift.endTime} theo ca tiệc đã chọn.
-                </p>
-                <TimelineEditor
-                  key={proposal.bookingId + ':' + (proposal.timeline?.revisionId ?? 'empty')}
-                  disabled={disabled || !proposal.capabilities.canEditTimeline}
-                  initialItems={proposal.timeline?.items ?? []}
-                  templateSource={{
-                    load: async () => {
-                      const result = await run('templates', () =>
-                        authorize((token) => catalogGateway.loadTimelines(token)),
-                      );
-                      if (result === null) throw new Error('Timeline template loading failed.');
-                      return result;
-                    },
-                    shift: proposal.proposal.shift,
-                  }}
-                  needsReason={proposal.phase === 'CONFIRMED'}
-                  onCancel={() => setIsEditingTimeline(false)}
-                  onSave={async (items, reason) => {
-                    await command('timeline', 'Đã lưu revision kịch bản mới.', (token) =>
-                      proposal.phase === 'CONFIRMED'
-                        ? gateway.requestChange(token, {
-                            bookingId: proposal.bookingId,
-                            expectedRevision: proposal.revision,
-                            items,
-                            reason,
-                          })
-                        : gateway.saveTimeline(token, {
-                            bookingId: proposal.bookingId,
-                            expectedRevision: proposal.revision,
-                            predecessorRevisionId: proposal.timeline?.revisionId ?? null,
-                            items,
-                          }),
+            {!proposal.capabilities.canEditTimeline ? (
+              <p className="booking-hint">
+                Kịch bản đang được giữ nguyên theo phê duyệt hoặc giao dịch cọc. Muốn thay đổi trước
+                cọc, rút phê duyệt trước; giao dịch đang xử lý cần được xác minh kết quả.
+              </p>
+            ) : null}
+            {proposal.capabilities.canWithdrawApproval && proposal.timeline?.managerApprovedAt ? (
+              <form
+                className="booking-form"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  const reason = String(
+                    new FormData(event.currentTarget).get('reason') ?? '',
+                  ).trim();
+                  if (reason)
+                    void command('withdraw-timeline', 'Đã rút phê duyệt kịch bản.', () =>
+                      contractService.withdrawTimeline(
+                        proposal.bookingId,
+                        proposal.timeline!.revisionId,
+                        proposal.revision,
+                        reason,
+                      ),
                     );
-                    setIsEditingTimeline(false);
-                  }}
-                />
-              </div>
-            </details>
+                }}
+              >
+                <label>
+                  Lý do thay đổi kịch bản
+                  <textarea name="reason" required maxLength={500} />
+                </label>
+                <button
+                  type="submit"
+                  className="primary-button booking-secondary"
+                  disabled={disabled}
+                >
+                  Rút phê duyệt kịch bản
+                </button>
+              </form>
+            ) : null}
+            {proposal.capabilities.canEditTimeline ? (
+              <details open={isEditingTimeline} className={styles.timelineEditorDetails}>
+                <summary style={{ display: 'none' }}>Chỉnh sửa</summary>
+                <div className={styles.timelineEditorWrapper}>
+                  <p
+                    style={{
+                      fontSize: '0.78rem',
+                      color: 'var(--hy-ink-muted, #6e5d63)',
+                      margin: '0 0 0.75rem',
+                      lineHeight: 1.4,
+                    }}
+                  >
+                    Giờ bắt đầu mỗi mốc phải từ {proposal.proposal.shift.startTime} đến trước{' '}
+                    {proposal.proposal.shift.endTime} theo ca tiệc đã chọn.
+                  </p>
+                  <TimelineEditor
+                    key={proposal.bookingId + ':' + (proposal.timeline?.revisionId ?? 'empty')}
+                    disabled={disabled || !proposal.capabilities.canEditTimeline}
+                    initialItems={proposal.timeline?.items ?? []}
+                    templateSource={{
+                      load: async () => {
+                        const result = await run('templates', () =>
+                          authorize((token) => catalogGateway.loadTimelines(token)),
+                        );
+                        if (result === null) throw new Error('Timeline template loading failed.');
+                        return result;
+                      },
+                      shift: proposal.proposal.shift,
+                    }}
+                    needsReason={proposal.phase === 'CONFIRMED'}
+                    onCancel={() => setIsEditingTimeline(false)}
+                    onSave={async (items, reason) => {
+                      await command('timeline', 'Đã lưu revision kịch bản mới.', (token) =>
+                        proposal.phase === 'CONFIRMED'
+                          ? gateway.requestChange(token, {
+                              bookingId: proposal.bookingId,
+                              expectedRevision: proposal.revision,
+                              items,
+                              reason,
+                            })
+                          : gateway.saveTimeline(token, {
+                              bookingId: proposal.bookingId,
+                              expectedRevision: proposal.revision,
+                              predecessorRevisionId: proposal.timeline?.revisionId ?? null,
+                              items,
+                            }),
+                      );
+                      setIsEditingTimeline(false);
+                    }}
+                  />
+                </div>
+              </details>
+            ) : null}
           </>
         )}
         {proposal.timeline === null ? null : (
@@ -368,6 +412,8 @@ export function ProposalPanel({
       </article>
       <div className={styles.documents}>
         <ContractPanel
+          panelState={contractState}
+          proposal={proposal}
           bookingId={proposal.bookingId}
           bookingRevision={proposal.revision}
           disabled={disabled}

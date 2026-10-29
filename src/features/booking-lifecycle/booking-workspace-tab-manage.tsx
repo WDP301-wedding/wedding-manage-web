@@ -1,5 +1,6 @@
 'use client';
 
+import { useContractPanel } from './use-contract-panel';
 import { BookingLifecycleStepper } from './booking-lifecycle-stepper';
 import { BookingUnauthorizedHint } from './booking-unauthorized-hint';
 import { CoupleAccountCard } from './couple-account-card';
@@ -18,8 +19,14 @@ export interface BookingWorkspaceTabManageProps {
   consultation: { id: string; revision: number } | null;
   prefill: BookingPrefill;
   inviteLogs: readonly InviteLogEntry[];
-  createdBookingNotice: { bookingId: string; consultationId: string; email?: string | undefined } | null;
-  setCreatedBookingNotice: (notice: { bookingId: string; consultationId: string; email?: string | undefined } | null) => void;
+  createdBookingNotice: {
+    bookingId: string;
+    consultationId: string;
+    email?: string | undefined;
+  } | null;
+  setCreatedBookingNotice: (
+    notice: { bookingId: string; consultationId: string; email?: string | undefined } | null,
+  ) => void;
   switchTab: (tab: 'consultation' | 'booking' | 'manage') => void;
   sendWorkspaceInvite: () => Promise<void>;
   setInviteLogs: React.Dispatch<React.SetStateAction<readonly InviteLogEntry[]>>;
@@ -48,14 +55,33 @@ export function BookingWorkspaceTabManage({
   gateway,
   refresh,
 }: Readonly<BookingWorkspaceTabManageProps>) {
+  const contractState = useContractPanel({
+    bookingId: proposal?.bookingId ?? '',
+    bookingRevision: proposal?.revision ?? 0,
+    onRefresh: () => {
+      void refresh('Đã làm mới hợp đồng.');
+    },
+  });
+  const timelineApproved = Boolean(
+    proposal?.timeline?.managerApprovedAt && proposal.timeline.coupleApprovedAt,
+  );
+  const contracts =
+    contractState.data?.bookingId === proposal?.bookingId ? contractState.data : null;
+  const agreementsApproved =
+    timelineApproved &&
+    Boolean(
+      contracts &&
+      contracts.bookingRevision === proposal?.revision &&
+      contractState.currentRevision?.state === 'APPROVED' &&
+      contractState.currentRevision.document.timelineRevisionId === proposal?.timeline?.revisionId,
+    );
+
   return (
     <section
       className="booking-workspace"
       aria-labelledby="proposal-heading"
       style={
-        active
-          ? bookingStyles.stepContainerVisible('1120px')
-          : bookingStyles.stepContainerHidden
+        active ? bookingStyles.stepContainerVisible('1120px') : bookingStyles.stepContainerHidden
       }
     >
       <div className="booking-section-heading">
@@ -71,9 +97,7 @@ export function BookingWorkspaceTabManage({
           onDismiss={() => setCreatedBookingNotice(null)}
           onNavigateToAccount={() => {
             setCreatedBookingNotice(null);
-            document
-              .getElementById('couple-account-card')
-              ?.scrollIntoView({ behavior: 'smooth' });
+            document.getElementById('couple-account-card')?.scrollIntoView({ behavior: 'smooth' });
           }}
         />
       ) : null}
@@ -130,11 +154,7 @@ export function BookingWorkspaceTabManage({
         </div>
       ) : (
         <>
-          <BookingLifecycleStepper
-            phase={proposal.phase}
-            hasTimeline={proposal.timeline !== null}
-            hasContract={true}
-          />
+          <BookingLifecycleStepper phase={proposal.phase} agreementsApproved={agreementsApproved} />
           <CoupleAccountCard
             consultationId={active ? proposal.consultationId : undefined}
             email={prefill.email}
@@ -145,6 +165,7 @@ export function BookingWorkspaceTabManage({
             onClearLogs={() => setInviteLogs([])}
           />
           <ProposalPanel
+            contractState={contractState}
             disabled={disabled}
             proposal={proposal}
             run={run}

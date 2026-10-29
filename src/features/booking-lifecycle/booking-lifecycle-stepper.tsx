@@ -2,8 +2,7 @@
 
 export interface BookingLifecycleStepperProps {
   phase: string;
-  hasTimeline: boolean;
-  hasContract: boolean;
+  agreementsApproved: boolean;
 }
 
 const STEPS = [
@@ -16,8 +15,7 @@ const STEPS = [
 
 export function BookingLifecycleStepper({
   phase,
-  hasTimeline,
-  hasContract,
+  agreementsApproved,
 }: Readonly<BookingLifecycleStepperProps>) {
   const isCancelled = phase === 'CANCELLED';
 
@@ -32,25 +30,14 @@ export function BookingLifecycleStepper({
       if (index === 4) return 'active';
       return 'pending';
     }
-    if (phase === 'AWAITING_DEPOSIT') {
-      if (index <= 1) return 'done';
-      if (index === 2) return hasTimeline && hasContract ? 'done' : 'active';
-      if (index === 3) return 'active';
-      return 'pending';
-    }
-    // DRAFT
-    if (index === 0) return 'done';
-    if (hasTimeline && hasContract) {
+    // This indicator is mounted only after a booking proposal exists.
+    if (index <= 1) return 'done';
+    if (agreementsApproved) {
       if (index <= 2) return 'done';
       if (index === 3) return 'active';
       return 'pending';
     }
-    if (hasTimeline) {
-      if (index === 1) return 'done';
-      if (index === 2) return 'active';
-      return 'pending';
-    }
-    if (index === 1) return 'active';
+    if (index === 2) return 'active';
     return 'pending';
   };
 
@@ -119,11 +106,9 @@ export function BookingLifecycleStepper({
               ? 'Đã xác nhận & Cọc'
               : phase === 'COMPLETED'
                 ? 'Hoàn thành tiệc'
-                : phase === 'AWAITING_DEPOSIT' || (hasTimeline && hasContract)
+                : agreementsApproved
                   ? 'Chờ cọc giữ chỗ'
-                  : hasTimeline
-                    ? 'Kịch bản & Hợp đồng'
-                    : 'Bản nháp đề xuất'}
+                  : 'Kịch bản & Hợp đồng'}
         </span>
       </div>
 

@@ -1,10 +1,24 @@
+import { z } from 'zod';
 import { axiosApiClient } from '../lib/api/axios-client';
 import type { operations } from '../lib/api/generated/schema';
 
 export type AnalyticsOverviewData =
   operations['getAnalyticsOverview']['responses'][200]['content']['application/json']['data'];
-export type AnalyticsBookingsData =
+type PinnedBookingsData =
   operations['getAnalyticsBookings']['responses'][200]['content']['application/json']['data'];
+// Additive identity fields are validated at the boundary until the next released API pin.
+const bookingIdentity = z.object({
+  bookingCode: z
+    .string()
+    .regex(/^HY-\d{6,}$/)
+    .nullish(),
+  customerName: z.string().nullish(),
+  alias: z.string().nullish(),
+});
+export type AnalyticsBookingsData = Omit<PinnedBookingsData, 'items'> &
+  Readonly<{
+    items: readonly (PinnedBookingsData['items'][number] & z.infer<typeof bookingIdentity>)[];
+  }>;
 export type AnalyticsAttendanceData =
   operations['getAnalyticsAttendance']['responses'][200]['content']['application/json']['data'];
 export type AnalyticsPrintOrdersData =
@@ -18,6 +32,7 @@ export interface AnalyticsQuery {
   phase?: 'DRAFT' | 'AWAITING_DEPOSIT' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
   pageSize?: number;
   cursor?: string;
+  search?: string;
 }
 
 export const analyticsService = {
@@ -29,12 +44,16 @@ export const analyticsService = {
     return response.data.data;
   },
 
-  async getBookings(query: AnalyticsQuery): Promise<AnalyticsBookingsData> {
+  async getBookings(query: AnalyticsQuery, signal?: AbortSignal): Promise<AnalyticsBookingsData> {
     const response = await axiosApiClient.get<{ data: AnalyticsBookingsData }>(
       '/management/analytics/bookings',
-      { params: query },
+      { params: query, ...(signal ? { signal } : {}) },
     );
-    return response.data.data;
+    const data = response.data.data;
+    return {
+      ...data,
+      items: data.items.map((item) => ({ ...item, ...bookingIdentity.parse(item) })),
+    };
   },
 
   async getAttendance(query: {

@@ -1,7 +1,17 @@
+import { z } from 'zod';
 import { axiosApiClient } from '../lib/api/axios-client';
 import type { operations } from '../lib/api/generated/schema';
 
-export type ContractListData =
+const capabilityEnvelope = z.object({
+  capabilities: z
+    .object({
+      canManageDraft: z.boolean(),
+      canApprove: z.boolean(),
+      canWithdrawApproval: z.boolean(),
+    })
+    .optional(),
+});
+export type ContractListData = z.infer<typeof capabilityEnvelope> &
   operations['listCommercialContracts']['responses'][200]['content']['application/json']['data'];
 export type ContractRevisionItem = ContractListData['revisions'][number];
 export type ContractLineItem = ContractRevisionItem['document']['lines'][number];
@@ -11,13 +21,37 @@ export type AppendixListData =
 export type AppendixRevisionItem = AppendixListData['revisions'][number];
 export type AppendixLineItem = AppendixRevisionItem['document']['afterLines'][number];
 
+export type ContractDraftBody =
+  operations['createCommercialContractRevision']['requestBody']['content']['application/json'];
+export type ContractPreview =
+  operations['previewCommercialContract']['responses'][200]['content']['application/json']['data'];
 export const contractService = {
+  async withdrawTimeline(
+    bookingId: string,
+    revisionId: string,
+    expectedRevision: number,
+    reason: string,
+    idempotencyKey = crypto.randomUUID(),
+  ): Promise<void> {
+    await axiosApiClient.post(
+      `/bookings/${bookingId}/timeline-revisions/${revisionId}/withdrawals`,
+      { expectedRevision, reason },
+      { headers: { 'Idempotency-Key': idempotencyKey } },
+    );
+  },
+  async previewContract(bookingId: string, body: ContractDraftBody): Promise<ContractPreview> {
+    const response = await axiosApiClient.post<{ data: ContractPreview }>(
+      `/bookings/${bookingId}/contracts/preview`,
+      body,
+    );
+    return response.data.data;
+  },
   async getContracts(bookingId: string, query?: { cursor?: string }): Promise<ContractListData> {
     const response = await axiosApiClient.get<{ data: ContractListData }>(
       `/bookings/${bookingId}/contracts`,
       { params: query },
     );
-    return response.data.data;
+    return { ...response.data.data, ...capabilityEnvelope.parse(response.data.data) };
   },
 
   async getAppendices(bookingId: string, query?: { cursor?: string }): Promise<AppendixListData> {
@@ -30,17 +64,7 @@ export const contractService = {
 
   async createContractDraft(
     bookingId: string,
-    body: {
-      expectedRevision: number;
-      predecessorRevisionId: string | null;
-      lines: readonly {
-        category: 'MENU' | 'PRINT' | 'SERVICE';
-        sourceId: string;
-        sourceRevisionId: string;
-        quantity: number;
-      }[];
-      incidentalClause?: string;
-    },
+    body: ContractDraftBody,
     idempotencyKey = crypto.randomUUID(),
   ): Promise<void> {
     await axiosApiClient.post(`/bookings/${bookingId}/contracts`, body, {

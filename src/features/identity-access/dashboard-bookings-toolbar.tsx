@@ -70,7 +70,7 @@ export function DashboardBookingsToolbar({
       <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
         <input
           type="search"
-          placeholder="Tìm sảnh tiệc, UUID…"
+          placeholder="Tìm mã hồ sơ, tên khách, tên tiệc, sảnh…"
           value={searchQuery}
           onChange={(e) => {
             setSearchQuery(e.target.value);

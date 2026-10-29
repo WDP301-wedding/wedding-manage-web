@@ -38,6 +38,7 @@ export function DashboardBookingsSection({
   onDismissLockNotice,
 }: Readonly<DashboardBookingsSectionProps>) {
   const {
+    serverSearch,
     bookingTab,
     setBookingTab,
     searchQuery,
@@ -128,7 +129,14 @@ export function DashboardBookingsSection({
         onResetPage={() => setCurrentPage(1)}
       />
 
-      {state === 'loading' ? (
+      {serverSearch.error ? (
+        <div role="alert" className="booking-empty">
+          <p>{serverSearch.error}</p>
+          <button type="button" onClick={serverSearch.retry}>
+            Tìm lại từ đầu
+          </button>
+        </div>
+      ) : state === 'loading' || serverSearch.loading ? (
         <div
           style={{
             padding: '2rem 1rem',
@@ -138,7 +146,7 @@ export function DashboardBookingsSection({
         >
           <p>Đang đồng bộ danh sách tiệc cưới từ máy chủ…</p>
         </div>
-      ) : currentTabBookings.length === 0 ? (
+      ) : currentTabBookings.length === 0 && !searchQuery.trim() ? (
         bookingTab === 'mine' ? (
           <div className="booking-empty" style={dashboardStyles.emptyCard}>
             <strong
@@ -226,8 +234,8 @@ export function DashboardBookingsSection({
             <div style={dashboardStyles.paginationInfo}>
               <span>
                 Hiển thị <strong>{filteredBookings.length === 0 ? 0 : startIndex + 1}</strong> –{' '}
-                <strong>{endIndex}</strong> trên tổng số <strong>{filteredBookings.length}</strong>{' '}
-                tiệc cưới
+                <strong>{endIndex}</strong> trong <strong>{filteredBookings.length}</strong> kết quả
+                đã tải tiệc cưới
               </span>
               <label
                 style={{
@@ -339,6 +347,15 @@ export function DashboardBookingsSection({
             ) : null}
           </div>
         </>
+      )}
+      {serverSearch.hasMore && !serverSearch.error && (
+        <button
+          type="button"
+          disabled={serverSearch.loading}
+          onClick={() => void serverSearch.more()}
+        >
+          Tải thêm kết quả tìm kiếm
+        </button>
       )}
     </section>
   );

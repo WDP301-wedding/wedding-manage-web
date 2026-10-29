@@ -1,6 +1,14 @@
 'use client';
 
 import { useCallback, useMemo, useState } from 'react';
+import { useBookingSearch } from './use-booking-search';
+const normalizeSearch = (value: string) =>
+  value
+    .toLocaleLowerCase('vi-VN')
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .replaceAll('đ', 'd')
+    .trim();
 import type { AnalyticsBookingsData } from '../../services/analytics.service';
 import type { BookingAssignmentsRegistry } from './booking-assignments';
 import type { BookingSortField, SortOrder } from './dashboard-bookings-table';
@@ -58,11 +66,24 @@ export function useDashboardBookings({
     setCurrentPage(1);
   }, []);
 
-  const normalizedQuery = useMemo(() => searchQuery.toLowerCase().trim(), [searchQuery]);
+  const normalizedQuery = useMemo(() => normalizeSearch(searchQuery), [searchQuery]);
+  const serverSearch = useBookingSearch(normalizedQuery);
+  const searchBookings = useMemo(() => {
+    if (!normalizedQuery) return bookings;
+    const matchesAssignedEmail = bookings.filter((b) =>
+      (assignments[b.bookingId]?.assignedEmail ?? '').toLowerCase().includes(normalizedQuery),
+    );
+    return [
+      ...new Map(
+        [...(serverSearch.items ?? []), ...matchesAssignedEmail].map((b) => [b.bookingId, b]),
+      ).values(),
+    ];
+  }, [assignments, bookings, normalizedQuery, serverSearch.items]);
 
   const currentTabBookings = useMemo(
-    () => (bookingTab === 'mine' ? myBookings : bookings),
-    [bookingTab, myBookings, bookings],
+    () =>
+      bookingTab === 'mine' ? searchBookings.filter((b) => isMine(b.bookingId)) : searchBookings,
+    [bookingTab, searchBookings, isMine],
   );
 
   const filteredBookings = useMemo(() => {
@@ -70,7 +91,9 @@ export function useDashboardBookings({
     return currentTabBookings.filter((b) => {
       if (phaseFilter !== 'ALL' && b.phase !== phaseFilter) return false;
       if (normalizedQuery) {
-        const hallMatch = (b.hallNameSnapshot || '').toLowerCase().includes(normalizedQuery);
+        const hallMatch = [b.hallNameSnapshot, b.bookingCode, b.customerName, b.alias].some(
+          (value) => value != null && normalizeSearch(value).includes(normalizedQuery),
+        );
         const idMatch = b.bookingId.toLowerCase().includes(normalizedQuery);
         const emailMatch = (assignments[b.bookingId]?.assignedEmail || '')
           .toLowerCase()
@@ -123,6 +146,7 @@ export function useDashboardBookings({
   );
 
   return {
+    serverSearch,
     bookingTab,
     setBookingTab,
     searchQuery,

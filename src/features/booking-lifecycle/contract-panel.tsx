@@ -5,16 +5,22 @@ import { formatVnd } from '../../lib/formatters';
 import { formatDate } from './booking-helpers';
 import { ContractLinesTable } from './contract-lines-table';
 import { contractStyles } from './contract.styles';
-import { useContractPanel } from './use-contract-panel';
+import { ContractDraftComposer } from './contract-draft-composer';
+import type { ProposalView } from './booking-api';
+import type { useContractPanel } from './use-contract-panel';
 import { useAppendixPanel } from './use-appendix-panel';
 import { AppendixPanel } from './appendix-panel';
 
 export function ContractPanel({
+  panelState,
+  proposal,
   bookingId,
   bookingRevision,
   disabled,
   onRefresh,
 }: Readonly<{
+  panelState: ReturnType<typeof useContractPanel>;
+  proposal: ProposalView;
   bookingId: string;
   bookingRevision: number;
   disabled: boolean;
@@ -22,6 +28,9 @@ export function ContractPanel({
 }>) {
   const [subTab, setSubTab] = useState<'contract' | 'appendix'>('contract');
   const {
+    editing,
+    setEditing,
+    data: rawData,
     loading,
     error,
     actionMessage,
@@ -32,7 +41,12 @@ export function ContractPanel({
     handleApprove,
     handleSubmitDraft,
     handleDownloadPdf,
-  } = useContractPanel({ bookingId, bookingRevision, onRefresh });
+  } = panelState;
+
+  const data = rawData?.bookingId === bookingId ? rawData : null;
+
+  const commandsDisabled =
+    disabled || loading || Boolean(error) || data?.bookingRevision !== bookingRevision;
 
   const appendixState = useAppendixPanel({ bookingId, bookingRevision, onRefresh });
 
@@ -157,6 +171,48 @@ export function ContractPanel({
         </button>
       </div>
 
+      {error ? (
+        <p role="alert" className="booking-error">
+          {error}
+          <button
+            type="button"
+            disabled={loading}
+            onClick={() => {
+              void panelState.loadContracts();
+              onRefresh();
+            }}
+          >
+            Tải lại hợp đồng
+          </button>
+        </p>
+      ) : null}
+      {actionMessage ? <p role="status">{actionMessage}</p> : null}
+      {subTab === 'contract' && data?.capabilities?.canManageDraft && !editing ? (
+        <div className="booking-actions">
+          <button
+            type="button"
+            className="primary-button"
+            disabled={commandsDisabled || !proposal.timeline}
+            onClick={() => setEditing(true)}
+          >
+            {currentRevision ? 'Chỉnh sửa bản hợp đồng' : 'Lập hợp đồng từ đề xuất'}
+          </button>
+          {!proposal.timeline ? <p>Cần lưu kịch bản tiệc trước khi lập hợp đồng.</p> : null}
+        </div>
+      ) : null}
+      {subTab === 'contract' && editing && data?.capabilities?.canManageDraft ? (
+        <ContractDraftComposer
+          key={bookingId + ':' + (currentRevision?.revisionId ?? 'new')}
+          proposal={proposal}
+          current={currentRevision}
+          bookingRevision={data.bookingRevision}
+          onCancel={() => setEditing(false)}
+          onSaved={() => {
+            setEditing(false);
+            onRefresh();
+          }}
+        />
+      ) : null}
       {subTab === 'appendix' ? (
         <AppendixPanel
           bookingId={bookingId}
@@ -218,7 +274,8 @@ export function ContractPanel({
           ) : !currentRevision ? (
             <div style={contractStyles.emptyBox}>
               <p style={{ color: 'var(--hy-text-muted, #6e5d63)', margin: 0 }}>
-                Tiệc này chưa có bản ghi hợp đồng chính thức.
+                Chưa có hợp đồng. Quản lý lập hợp đồng từ đề xuất, kiểm tra các khoản phí rồi gửi
+                khách duyệt.
               </p>
             </div>
           ) : (
@@ -270,6 +327,30 @@ export function ContractPanel({
                 </div>
               </div>
 
+              {data?.capabilities?.canWithdrawApproval ? (
+                <form
+                  className="booking-form"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    const reason = String(
+                      new FormData(event.currentTarget).get('reason') ?? '',
+                    ).trim();
+                    if (reason) void panelState.handleWithdraw(reason);
+                  }}
+                >
+                  <label>
+                    Lý do cần thay đổi sau khi đã duyệt
+                    <textarea name="reason" required maxLength={500} />
+                  </label>
+                  <button
+                    className="primary-button booking-secondary"
+                    disabled={commandsDisabled}
+                    type="submit"
+                  >
+                    Rút duyệt để chuẩn bị bản mới
+                  </button>
+                </form>
+              ) : null}
               {/* Các nút hành động */}
               <div style={contractStyles.actionsRow}>
                 <button
@@ -281,10 +362,12 @@ export function ContractPanel({
                   {downloadingPdf ? 'Đang tải PDF…' : 'Tải PDF hợp đồng'}
                 </button>
 
-                {currentRevision.state === 'DRAFT' ? (
+                {currentRevision.state === 'DRAFT' &&
+                data?.capabilities?.canManageDraft &&
+                !editing ? (
                   <button
                     type="button"
-                    disabled={disabled || loading}
+                    disabled={commandsDisabled}
                     onClick={() => void handleSubmitDraft()}
                     style={contractStyles.submitDraftButton(disabled || loading)}
                   >
@@ -292,10 +375,12 @@ export function ContractPanel({
                   </button>
                 ) : null}
 
-                {currentRevision.state === 'AWAITING_APPROVAL' && !managerApproved ? (
+                {currentRevision.state === 'AWAITING_APPROVAL' &&
+                !managerApproved &&
+                data?.capabilities?.canApprove ? (
                   <button
                     type="button"
-                    disabled={disabled || loading}
+                    disabled={commandsDisabled}
                     onClick={() => void handleApprove()}
                     style={contractStyles.approveButton(disabled || loading)}
                   >

@@ -95,7 +95,7 @@ export function DashboardBookingsTable({
                 </span>
               </button>
             </th>
-            <th scope="col">Mã booking (UUID)</th>
+            <th scope="col">Hồ sơ tiệc</th>
             <th scope="col">
               <button
                 type="button"
@@ -157,27 +157,35 @@ export function DashboardBookingsTable({
                 </td>
                 <td>{booking.tableCount} bàn</td>
                 <td>
-                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
-                    <code
-                      style={{
-                        fontSize: '0.75rem',
-                        fontFamily: 'monospace',
-                        background: 'var(--hy-surface-container, #fdf6ee)',
-                        color: 'var(--hy-text, #2b1d22)',
-                        border: '1px solid var(--hy-outline, #eadfd6)',
-                        padding: '2px 6px',
-                        borderRadius: '4px',
-                        maxWidth: '170px',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                        display: 'inline-block',
-                      }}
-                      title={booking.bookingId}
-                    >
-                      {booking.bookingId}
-                    </code>
-                    <CopyButton text={booking.bookingId} />
+                  <div style={{ display: 'grid', gap: 4 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      {booking.bookingCode ? (
+                        <strong>{booking.bookingCode}</strong>
+                      ) : (
+                        <span className="muted">Mã hồ sơ chưa đồng bộ</span>
+                      )}
+                      {booking.bookingCode && <CopyButton text={booking.bookingCode} />}
+                    </div>
+                    <span>{booking.customerName || 'Chưa có tên khách'}</span>
+                    {booking.alias && booking.alias !== booking.customerName && (
+                      <small>{booking.alias}</small>
+                    )}
+                    <details>
+                      <summary style={{ cursor: 'pointer', fontSize: 12 }}>
+                        Thông tin kỹ thuật
+                      </summary>
+                      <div
+                        style={{
+                          display: 'flex',
+                          flexWrap: 'wrap',
+                          gap: 6,
+                          overflowWrap: 'anywhere',
+                        }}
+                      >
+                        <code style={{ fontFamily: 'var(--font-code)' }}>{booking.bookingId}</code>
+                        <CopyButton text={booking.bookingId} />
+                      </div>
+                    </details>
                   </div>
                 </td>
                 <td>

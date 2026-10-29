@@ -1,0 +1,54 @@
+.composer {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  margin-block: 16px;
+  border: 1px solid var(--hy-outline);
+  border-radius: 8px;
+  background: var(--hy-surface-container);
+}
+.heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.composer h4,
+.composer p {
+  margin: 0;
+  line-height: 1.5;
+}
+.scroll {
+  overflow: auto;
+  max-height: 360px;
+}
+.scroll table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+.scroll th,
+.scroll td {
+  padding: 10px;
+  border-bottom: 1px solid var(--hy-outline);
+  vertical-align: top;
+}
+.scroll small {
+  display: block;
+  color: var(--hy-text-muted);
+}
+.scroll input {
+  width: 6rem;
+  max-width: 100%;
+  padding: 8px;
+}
+.scroll button {
+  display: block;
+  margin-top: 6px;
+}
+.missing,
+.priced {
+  display: grid;
+  gap: 8px;
+}
