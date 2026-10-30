@@ -120,9 +120,9 @@ describe('Booking assignment locking and synchronization', () => {
 
       // Booking 1 (claimed by Manager A):
       // Manager B sees lock badge with Manager A's email
-      expect(screen.getByText('🔒 manager-a@wedding.com')).toBeInTheDocument();
+      expect(screen.getByText('manager-a@wedding.com')).toBeInTheDocument();
       // Manager B sees disabled locked button
-      const lockedBtn = screen.getByRole('button', { name: '🔒 Đã có người nhận' });
+      const lockedBtn = screen.getByRole('button', { name: 'Đã có người nhận' });
       expect(lockedBtn).toBeDisabled();
 
       // Booking 2 (unassigned):

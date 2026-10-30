@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { NotificationProvider } from '../../design-system/notifications';
 import { ApiClientError } from '../../lib/api/client';
 import type { ManagementIdentitySession } from '../identity-access/session';
 import { DEMO_PRINT_ORDERS, createFixturePrintOrdersGateway } from './print-orders-fixtures';
@@ -24,6 +25,7 @@ describe('Management Print Orders Workspace (M09–M14)', () => {
         isFixtureMode={false}
         onLogout={vi.fn()}
       />,
+      { wrapper: NotificationProvider },
     );
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Hàng đợi đơn in' })).toBeVisible();
@@ -54,6 +56,7 @@ describe('Management Print Orders Workspace (M09–M14)', () => {
         isFixtureMode={false}
         onLogout={vi.fn()}
       />,
+      { wrapper: NotificationProvider },
     );
 
     await screen.findByRole('heading', { level: 1, name: 'Hàng đợi đơn in' });
@@ -85,6 +88,7 @@ describe('Management Print Orders Workspace (M09–M14)', () => {
         isFixtureMode={false}
         onLogout={vi.fn()}
       />,
+      { wrapper: NotificationProvider },
     );
 
     await screen.findByRole('heading', { level: 1, name: 'Hàng đợi đơn in' });
@@ -118,6 +122,7 @@ describe('Management Print Orders Workspace (M09–M14)', () => {
         isFixtureMode={false}
         onLogout={vi.fn()}
       />,
+      { wrapper: NotificationProvider },
     );
 
     const row17 = await screen.findByRole('button', { name: /Chọn đơn in IN-2408-017/ });
@@ -141,6 +146,7 @@ describe('Management Print Orders Workspace (M09–M14)', () => {
         isFixtureMode={false}
         onLogout={vi.fn()}
       />,
+      { wrapper: NotificationProvider },
     );
 
     await screen.findByRole('button', { name: /Chọn đơn in IN-2408-018/ });
@@ -174,6 +180,7 @@ describe('Management Print Orders Workspace (M09–M14)', () => {
         isFixtureMode={false}
         onLogout={vi.fn()}
       />,
+      { wrapper: NotificationProvider },
     );
 
     const row16 = await screen.findByRole('button', { name: /Chọn đơn in IN-2408-016/ });
@@ -207,6 +214,7 @@ describe('Management Print Orders Workspace (M09–M14)', () => {
         isFixtureMode={false}
         onLogout={vi.fn()}
       />,
+      { wrapper: NotificationProvider },
     );
 
     const row14 = await screen.findByRole('button', { name: /Chọn đơn in IN-2408-014/ });
@@ -251,6 +259,7 @@ describe('Management Print Orders Workspace (M09–M14)', () => {
         isFixtureMode={false}
         onLogout={vi.fn()}
       />,
+      { wrapper: NotificationProvider },
     );
 
     // Select order IN-2408-015 which has expired quote
@@ -297,6 +306,7 @@ describe('Management Print Orders Workspace (M09–M14)', () => {
         isFixtureMode={false}
         onLogout={vi.fn()}
       />,
+      { wrapper: NotificationProvider },
     );
 
     // Select order IN-2408-019 which is in REQUESTED state
@@ -340,6 +350,7 @@ describe('Management Print Orders Workspace (M09–M14)', () => {
         isFixtureMode={false}
         onLogout={vi.fn()}
       />,
+      { wrapper: NotificationProvider },
     );
 
     await screen.findByRole('button', { name: /Chọn đơn in IN-2408-018/ });
@@ -361,6 +372,7 @@ describe('Management Print Orders Workspace (M09–M14)', () => {
         isFixtureMode={false}
         onLogout={vi.fn()}
       />,
+      { wrapper: NotificationProvider },
     );
 
     await screen.findByRole('heading', { level: 1, name: 'Hàng đợi đơn in' });
@@ -390,6 +402,7 @@ describe('Management Print Orders Workspace (M09–M14)', () => {
         isFixtureMode={false}
         onLogout={vi.fn()}
       />,
+      { wrapper: NotificationProvider },
     );
 
     await screen.findByRole('heading', { level: 1, name: 'Hàng đợi đơn in' });

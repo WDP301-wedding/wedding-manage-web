@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
+import { NotificationProvider } from '../../design-system/notifications';
 
 import { ApiClientError } from '../../lib/api/client';
 import type { CatalogGateway } from './catalog-api';
@@ -93,7 +94,9 @@ function gateway(overrides: Record<string, unknown> = {}): CatalogGateway {
 describe('VC-20 timeline template editor', () => {
   it('edits and reorders draft items with labeled keyboard controls', async () => {
     const updateTimelineDraft = vi.fn(() => Promise.resolve());
-    render(<TimelinePanel gateway={gateway({ updateTimelineDraft })} authorize={authorize} />);
+    render(<TimelinePanel gateway={gateway({ updateTimelineDraft })} authorize={authorize} />, {
+      wrapper: NotificationProvider,
+    });
 
     const editor = await screen.findByRole('form', { name: 'Bản nháp Tiệc tối điều chỉnh' });
     fireEvent.click(within(editor).getByRole('button', { name: 'Đưa Dùng tiệc lên' }));
@@ -136,6 +139,7 @@ describe('VC-20 timeline template editor', () => {
         })}
         authorize={authorize}
       />,
+      { wrapper: NotificationProvider },
     );
 
     const history = await screen.findByRole('region', { name: 'Lịch sử Tiệc tối chuẩn' });
@@ -163,7 +167,9 @@ describe('VC-20 timeline template editor', () => {
         }),
       ),
     );
-    render(<TimelinePanel gateway={gateway({ publishTimeline })} authorize={authorize} />);
+    render(<TimelinePanel gateway={gateway({ publishTimeline })} authorize={authorize} />, {
+      wrapper: NotificationProvider,
+    });
 
     const editor = await screen.findByRole('form', { name: 'Bản nháp Tiệc tối điều chỉnh' });
     fireEvent.click(within(editor).getByRole('button', { name: 'Công bố kịch bản' }));

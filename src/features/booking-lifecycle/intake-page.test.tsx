@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { components } from '../../lib/api/generated/schema';
+import { NotificationProvider } from '../../design-system/notifications';
 import { ManagementIdentitySession } from '../identity-access/session';
 import { ConsultationRequestsPage } from './intake-page';
 
@@ -102,7 +103,7 @@ describe('Consultation navigation', () => {
       message: '',
     };
     fetchMock.mockResolvedValueOnce(queueResponse([newRequest, converted, closed]));
-    render(<ConsultationRequestsPage />);
+    render(<ConsultationRequestsPage />, { wrapper: NotificationProvider });
     const fresh = (await screen.findByRole('heading', { name: 'Minh & An' })).closest('article')!;
     expect(within(fresh).getByText('Cần tiếp nhận')).toBeVisible();
     expect(within(fresh).getByRole('link', { name: newRequest.email })).toHaveAttribute(
@@ -124,7 +125,7 @@ describe('Consultation navigation', () => {
       .getByRole('heading', { name: closed.displayName })
       .closest('article')!;
     expect(within(closedArticle).getByText('Đã đóng')).toBeVisible();
-    expect(within(closedArticle).getByText('Chưa chọn')).toBeVisible();
+    expect(within(closedArticle).getAllByText('Chưa chọn')).toHaveLength(2);
     expect(within(closedArticle).getByText('Chưa cung cấp')).toBeVisible();
     expect(within(closedArticle).queryByRole('button')).not.toBeInTheDocument();
     expect(
@@ -143,7 +144,7 @@ describe('Consultation navigation', () => {
     fetchMock
       .mockResolvedValueOnce(queueResponse([newRequest], 'next-request-page'))
       .mockImplementationOnce(() => new Promise((resolve) => (resolvePage = resolve)));
-    render(<ConsultationRequestsPage />);
+    render(<ConsultationRequestsPage />, { wrapper: NotificationProvider });
     await screen.findByRole('heading', { name: newRequest.displayName });
     fireEvent.click(screen.getByRole('button', { name: 'Xem thêm yêu cầu' }));
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
@@ -165,7 +166,7 @@ describe('Consultation navigation', () => {
           { ...newRequest, status: 'CONVERTED', consultationId, consultationRevision: 1 },
         ]),
       );
-    render(<ConsultationRequestsPage />);
+    render(<ConsultationRequestsPage />, { wrapper: NotificationProvider });
     fireEvent.click(await screen.findByRole('button', { name: 'Mở hồ sơ tư vấn' }));
     expect(await screen.findByRole('link', { name: 'Tiếp tục tư vấn & lập tiệc' })).toHaveAttribute(
       'href',
@@ -189,7 +190,7 @@ describe('Consultation navigation', () => {
       .mockResolvedValueOnce(queueResponse([newRequest]))
       .mockImplementationOnce(() => new Promise((resolve) => (resolveClose = resolve)))
       .mockResolvedValueOnce(queueResponse([{ ...newRequest, status: 'CLOSED' }]));
-    render(<ConsultationRequestsPage />);
+    render(<ConsultationRequestsPage />, { wrapper: NotificationProvider });
     const close = await screen.findByRole('button', { name: 'Đóng yêu cầu' });
     fireEvent.click(close);
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
@@ -217,9 +218,9 @@ describe('Consultation navigation', () => {
         .mockResolvedValueOnce(queueResponse([newRequest]))
         .mockResolvedValueOnce(failureResponse(409))
         .mockResolvedValueOnce(queueResponse([newRequest]));
-      render(<ConsultationRequestsPage />);
+      render(<ConsultationRequestsPage />, { wrapper: NotificationProvider });
       fireEvent.click(await screen.findByRole('button', { name: action }));
-      expect(await screen.findByRole('alert')).toHaveTextContent('Không hoàn tất được thao tác');
+      expect(await screen.findByRole('alert')).toHaveTextContent('Xung đột dữ liệu (409)');
       expect(screen.getByRole('heading', { name: newRequest.displayName })).toBeVisible();
       expect(screen.getByRole('button', { name: action })).toBeEnabled();
       fireEvent.click(screen.getByRole('button', { name: 'Tải lại' }));
@@ -231,7 +232,7 @@ describe('Consultation navigation', () => {
   it.each([401, 403])('hides the queue when loading is denied with HTTP %s', async (status) => {
     useAuthorizedApi();
     fetchMock.mockResolvedValueOnce(failureResponse(status));
-    render(<ConsultationRequestsPage />);
+    render(<ConsultationRequestsPage />, { wrapper: NotificationProvider });
     expect(await screen.findByText('Cần tài khoản Quản lý')).toBeVisible();
     expect(screen.queryByRole('button', { name: 'Tải lại' })).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: newRequest.displayName })).not.toBeInTheDocument();
@@ -244,7 +245,7 @@ describe('Consultation navigation', () => {
       fetchMock
         .mockResolvedValueOnce(queueResponse([newRequest]))
         .mockResolvedValueOnce(failureResponse(status));
-      render(<ConsultationRequestsPage />);
+      render(<ConsultationRequestsPage />, { wrapper: NotificationProvider });
       fireEvent.click(await screen.findByRole('button', { name: 'Mở hồ sơ tư vấn' }));
       expect(await screen.findByText('Cần tài khoản Quản lý')).toBeVisible();
       expect(screen.queryByText(newRequest.email)).not.toBeInTheDocument();
@@ -257,7 +258,7 @@ describe('Consultation navigation', () => {
     fetchMock
       .mockResolvedValueOnce(new Response(null, { status: 204 }))
       .mockResolvedValueOnce(queueResponse([]));
-    render(<ConsultationRequestsPage />);
+    render(<ConsultationRequestsPage />, { wrapper: NotificationProvider });
     expect(await screen.findByRole('alert')).toHaveTextContent('Không tải được yêu cầu tư vấn');
     expect(screen.queryByText('Chưa có yêu cầu tư vấn')).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Tải lại' }));
@@ -284,7 +285,7 @@ describe('Consultation navigation', () => {
             sessionId: requestId,
           },
         });
-      render(<ConsultationRequestsPage />);
+      render(<ConsultationRequestsPage />, { wrapper: NotificationProvider });
       expect(await screen.findByText('Cần tài khoản Quản lý')).toBeVisible();
       expect(authorize).not.toHaveBeenCalled();
       expect(fetchMock).not.toHaveBeenCalled();
@@ -299,7 +300,7 @@ describe('Consultation navigation', () => {
       () => new Promise((resolve) => (finishRestore = resolve)),
     );
     const authorize = vi.spyOn(ManagementIdentitySession.prototype, 'authorize');
-    const { unmount } = render(<ConsultationRequestsPage />);
+    const { unmount } = render(<ConsultationRequestsPage />, { wrapper: NotificationProvider });
     expect(screen.getByRole('status')).toHaveTextContent('Đang xác minh quyền quản lý');
     unmount();
     await act(() =>
@@ -325,7 +326,7 @@ describe('Consultation navigation', () => {
     useAuthorizedApi();
     fetchMock.mockResolvedValueOnce(queueResponse([newRequest]));
     vi.spyOn(ManagementIdentitySession.prototype, 'logout').mockRejectedValue(new Error('offline'));
-    render(<ConsultationRequestsPage />);
+    render(<ConsultationRequestsPage />, { wrapper: NotificationProvider });
     await screen.findByRole('heading', { name: newRequest.displayName });
     fireEvent.click(screen.getByRole('button', { name: 'Đăng xuất' }));
     expect(await screen.findByRole('alert')).toHaveTextContent(
@@ -342,7 +343,7 @@ describe('Consultation navigation', () => {
       .spyOn(ManagementIdentitySession.prototype, 'authorize')
       .mockRejectedValueOnce(new Error('offline'))
       .mockResolvedValue({ data: { data: [], nextCursor: null } });
-    render(<ConsultationRequestsPage />);
+    render(<ConsultationRequestsPage />, { wrapper: NotificationProvider });
     const sidebar = screen.getByRole('navigation', { name: 'Điều hướng vận hành' });
     expect(sidebar).toBeVisible();
     expect(await screen.findByRole('alert')).toHaveTextContent('Không tải được yêu cầu tư vấn');
@@ -366,7 +367,7 @@ describe('Consultation navigation', () => {
       data: { data: [], nextCursor: null },
     });
     const logout = vi.spyOn(ManagementIdentitySession.prototype, 'logout').mockResolvedValue();
-    render(<ConsultationRequestsPage />);
+    render(<ConsultationRequestsPage />, { wrapper: NotificationProvider });
     expect(await screen.findByText('Chưa có yêu cầu tư vấn')).toBeVisible();
     fireEvent.click(screen.getByRole('button', { name: 'Đăng xuất' }));
     await waitFor(() => expect(logout).toHaveBeenCalledTimes(1));

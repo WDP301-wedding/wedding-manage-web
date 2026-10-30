@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { NotificationProvider } from '../../design-system/notifications';
 import type { ManagementIdentitySession } from '../identity-access/session';
 import { DEMO_PRINT_ORDERS, createFixturePrintOrdersGateway } from './print-orders-fixtures';
 import { ManagementPrintOrdersPage, PrintOrdersWorkspace } from './print-orders-page';
@@ -36,6 +37,7 @@ describe('Management Print Orders Mutations and Authorization', () => {
         isFixtureMode={false}
         onLogout={vi.fn()}
       />,
+      { wrapper: NotificationProvider },
     );
 
     await screen.findByRole('heading', { level: 1, name: 'Hàng đợi đơn in' });
@@ -71,6 +73,7 @@ describe('Management Print Orders Mutations and Authorization', () => {
         isFixtureMode={false}
         onLogout={vi.fn()}
       />,
+      { wrapper: NotificationProvider },
     );
 
     // Default order IN-2408-018 is APPROVED
@@ -121,6 +124,7 @@ describe('Management Print Orders Mutations and Authorization', () => {
         isFixtureMode={false}
         onLogout={vi.fn()}
       />,
+      { wrapper: NotificationProvider },
     );
 
     // IN-2408-018 has 2 lines: line_18_1 (220 qty) and line_18_2 (220 qty)
@@ -142,6 +146,7 @@ describe('Management Print Orders Mutations and Authorization', () => {
         isFixtureMode={false}
         onLogout={vi.fn()}
       />,
+      { wrapper: NotificationProvider },
     );
 
     // Select IN-2408-020 which has pending proposal
@@ -159,7 +164,9 @@ describe('Management Print Orders Mutations and Authorization', () => {
       logout: vi.fn(),
     } as unknown as ManagementIdentitySession;
 
-    render(<ManagementPrintOrdersPage session={fakeSession} useFixtures={false} />);
+    render(<ManagementPrintOrdersPage session={fakeSession} useFixtures={false} />, {
+      wrapper: NotificationProvider,
+    });
 
     expect(await screen.findByText('Yêu cầu đăng nhập')).toBeVisible();
     expect(screen.getByText(/Bạn cần đăng nhập bằng tài khoản Quản lý \(Manager\)/)).toBeVisible();
@@ -183,7 +190,9 @@ describe('Management Print Orders Mutations and Authorization', () => {
       logout: logoutMock,
     } as unknown as ManagementIdentitySession;
 
-    render(<ManagementPrintOrdersPage session={fakeSession} useFixtures={false} />);
+    render(<ManagementPrintOrdersPage session={fakeSession} useFixtures={false} />, {
+      wrapper: NotificationProvider,
+    });
 
     expect(await screen.findByText('Truy cập bị từ chối')).toBeVisible();
     expect(screen.getByText(/thuộc vai trò Nhân viên vận hành \(Staff\)/)).toBeVisible();
@@ -210,6 +219,7 @@ describe('Management Print Orders Mutations and Authorization', () => {
         isFixtureMode={false}
         onLogout={vi.fn()}
       />,
+      { wrapper: NotificationProvider },
     );
 
     await screen.findByRole('button', { name: /Chọn đơn in IN-2408-018/ });
@@ -240,6 +250,7 @@ describe('Management Print Orders Mutations and Authorization', () => {
         isFixtureMode={false}
         onLogout={vi.fn()}
       />,
+      { wrapper: NotificationProvider },
     );
 
     const row15 = await screen.findByRole('button', { name: /Chọn đơn in IN-2408-015/ });
@@ -282,6 +293,7 @@ describe('Management Print Orders Mutations and Authorization', () => {
         isFixtureMode={false}
         onLogout={vi.fn()}
       />,
+      { wrapper: NotificationProvider },
     );
 
     const row18 = await screen.findByRole('button', { name: /Chọn đơn in IN-2408-018/ });
@@ -329,6 +341,7 @@ describe('Management Print Orders Mutations and Authorization', () => {
         isFixtureMode={false}
         onLogout={vi.fn()}
       />,
+      { wrapper: NotificationProvider },
     );
 
     await screen.findByRole('button', { name: /Chọn đơn in IN-2408-018/ });
@@ -362,6 +375,7 @@ describe('Management Print Orders Mutations and Authorization', () => {
         isFixtureMode={false}
         onLogout={onLogoutMock}
       />,
+      { wrapper: NotificationProvider },
     );
 
     // Click logout

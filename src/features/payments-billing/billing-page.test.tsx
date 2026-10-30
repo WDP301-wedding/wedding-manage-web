@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ApiClientError } from '../../lib/api/client';
+import { NotificationProvider } from '../../design-system/notifications';
 import type { BillingView, ManagementBillingGateway } from './billing-api';
 import { ManagementBillingPage, ManagementBillingWorkspace } from './billing-page';
 import { createIdentityApi, ManagementIdentitySession } from '../identity-access/session';
@@ -65,6 +66,7 @@ describe('management billing workspace', () => {
         gateway={api}
         intents={intents}
       />,
+      { wrapper: NotificationProvider },
     );
     await load();
     fireEvent.change(screen.getByLabelText('Mã giao dịch thanh toán'), {
@@ -100,6 +102,7 @@ describe('management billing workspace', () => {
         gateway={api}
         intents={intents}
       />,
+      { wrapper: NotificationProvider },
     );
     await load();
     fireEvent.change(screen.getByLabelText('Căn cứ phê duyệt'), {
@@ -183,6 +186,7 @@ describe('management billing workspace', () => {
         gateway={api}
         intents={journal}
       />,
+      { wrapper: NotificationProvider },
     );
     await load();
     fireEvent.change(screen.getByLabelText('Số tiền thực nhận (VND)'), {
@@ -242,6 +246,7 @@ describe('management billing workspace', () => {
         gateway={api}
         intents={journal}
       />,
+      { wrapper: NotificationProvider },
     );
     await load();
     expect(screen.getByRole('alert')).toHaveTextContent('Nhập lại đúng nội dung');

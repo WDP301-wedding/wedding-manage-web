@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ManagementBookingGateway, ProposalView } from './booking-api';
 import { ManagementBookingWorkspace } from './booking-workspace';
+vi.mock('./booking-lookup-bar', () => ({ BookingLookupBar: () => null }));
 const proposal: ProposalView = {
   bookingId: '00000000-0000-4000-8000-000000000101',
   consultationId: '00000000-0000-4000-8000-000000000102',

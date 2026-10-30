@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { NotificationProvider } from '../../design-system/notifications';
 import { ManagementAccountExperience } from './account-page';
 import { createAccountGateway } from './account-api';
 import { ManagementIdentitySession, type IdentityApi } from './session';
@@ -69,7 +70,7 @@ describe('Management account access', () => {
 
   it('removes the local credential and account form after successful password verification', async () => {
     const session = createSession(['MANAGER']);
-    render(<ManagementAccountExperience session={session} />);
+    render(<ManagementAccountExperience session={session} />, { wrapper: NotificationProvider });
     await screen.findByLabelText('Mật khẩu hiện tại');
     for (const [label, value] of [
       ['Mật khẩu hiện tại', 'Current-password-123'],
@@ -101,7 +102,7 @@ describe('Management account access', () => {
       }),
     );
     const session = createSession(['MANAGER']);
-    render(<ManagementAccountExperience session={session} />);
+    render(<ManagementAccountExperience session={session} />, { wrapper: NotificationProvider });
     expect(await screen.findByRole('alert')).toHaveTextContent('Phiên làm việc đã hết hạn');
     await waitFor(() => expect(screen.getByText('Cần đăng nhập')).toBeVisible());
     expect(session.snapshot().status).toBe('anonymous');

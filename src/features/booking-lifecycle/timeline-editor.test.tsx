@@ -69,7 +69,7 @@ describe('immutable timeline editor', () => {
         '',
       ),
     );
-    expect(screen.queryByRole('button', { name: 'Dùng mẫu này' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Đổi mẫu kịch bản' })).toBeEnabled();
   });
 
   it('preserves existing IDs and content when adding and reordering a milestone', async () => {

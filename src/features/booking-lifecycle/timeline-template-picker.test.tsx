@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
+import { NotificationProvider } from '../../design-system/notifications';
 import type { CatalogTimeline } from '../venue-catalog/catalog-api';
 import { TimelineTemplatePicker } from './timeline-template-picker';
 
@@ -88,7 +89,9 @@ describe('timeline template picker', () => {
           }),
       )
       .mockResolvedValueOnce({ timelines: [] });
-    render(<TimelineTemplatePicker disabled={false} source={{ load, shift }} onCopy={vi.fn()} />);
+    render(<TimelineTemplatePicker disabled={false} source={{ load, shift }} onCopy={vi.fn()} />, {
+      wrapper: NotificationProvider,
+    });
     fireEvent.click(screen.getByRole('button', { name: 'Tải mẫu kịch bản' }));
     expect(screen.getByText('Đang tải mẫu kịch bản…')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Tải mẫu kịch bản' })).toBeDisabled();
@@ -96,7 +99,8 @@ describe('timeline template picker', () => {
     await screen.findByRole('alert');
     fireEvent.click(screen.getByRole('button', { name: 'Tải mẫu kịch bản' }));
     await screen.findByText('Chưa có mẫu kịch bản đang công bố.');
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    // Lỗi cũ là toast tự tắt sau 8 giây; lần thử lại thành công không phát thêm lỗi.
+    expect(screen.getAllByRole('alert')).toHaveLength(1);
     expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
   });
 
@@ -108,6 +112,7 @@ describe('timeline template picker', () => {
         source={{ load: vi.fn().mockResolvedValue({ timelines: [template(offset)] }), shift }}
         onCopy={onCopy}
       />,
+      { wrapper: NotificationProvider },
     );
     fireEvent.click(screen.getByRole('button', { name: 'Tải mẫu kịch bản' }));
     await screen.findByRole('combobox');

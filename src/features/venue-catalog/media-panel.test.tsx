@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
+import { NotificationProvider } from '../../design-system/notifications';
 
 import { ApiClientError } from '../../lib/api/client';
 import type { CatalogGateway } from './catalog-api';
@@ -57,7 +58,9 @@ function gateway(overrides: Record<string, unknown> = {}): CatalogGateway {
 describe('VC-22 shared catalog media', () => {
   it('shows signed previews without storage internals and refreshes expiring URLs', async () => {
     const loadMedia = vi.fn(() => Promise.resolve(assets));
-    render(<MediaPanel gateway={gateway({ loadMedia })} authorize={authorize} />);
+    render(<MediaPanel gateway={gateway({ loadMedia })} authorize={authorize} />, {
+      wrapper: NotificationProvider,
+    });
 
     expect(await screen.findByAltText('Không gian sân khấu')).toHaveAttribute(
       'src',
@@ -86,6 +89,7 @@ describe('VC-22 shared catalog media', () => {
         })}
         authorize={authorize}
       />,
+      { wrapper: NotificationProvider },
     );
 
     const picker = await screen.findByLabelText('Tài nguyên danh mục');
@@ -101,7 +105,9 @@ describe('VC-22 shared catalog media', () => {
 
   it('uploads or replaces an allowlisted image with required alternative text', async () => {
     const uploadMedia = vi.fn(() => Promise.resolve());
-    render(<MediaPanel gateway={gateway({ uploadMedia })} authorize={authorize} />);
+    render(<MediaPanel gateway={gateway({ uploadMedia })} authorize={authorize} />, {
+      wrapper: NotificationProvider,
+    });
 
     const form = await screen.findByRole('form', { name: 'Tải ảnh danh mục' });
     fireEvent.change(within(form).getByLabelText('Ảnh JPEG, PNG hoặc WebP'), {
@@ -130,7 +136,9 @@ describe('VC-22 shared catalog media', () => {
 
   it('rejects a non-image upload before calling the generated operation', async () => {
     const uploadMedia = vi.fn(() => Promise.resolve());
-    render(<MediaPanel gateway={gateway({ uploadMedia })} authorize={authorize} />);
+    render(<MediaPanel gateway={gateway({ uploadMedia })} authorize={authorize} />, {
+      wrapper: NotificationProvider,
+    });
 
     const form = await screen.findByRole('form', { name: 'Tải ảnh danh mục' });
     fireEvent.change(within(form).getByLabelText('Ảnh JPEG, PNG hoặc WebP'), {
@@ -141,7 +149,8 @@ describe('VC-22 shared catalog media', () => {
     });
     fireEvent.submit(form);
 
-    expect(await within(form).findByRole('alert')).toHaveTextContent('Chỉ chấp nhận ảnh');
+    // Cảnh báo hiện ở vùng toast chung, nằm ngoài form.
+    expect(await screen.findByRole('alert')).toHaveTextContent('Chỉ chấp nhận ảnh');
     expect(uploadMedia).not.toHaveBeenCalled();
   });
 
@@ -158,7 +167,9 @@ describe('VC-22 shared catalog media', () => {
         }),
       ),
     );
-    render(<MediaPanel gateway={gateway({ reorderMedia, uploadMedia })} authorize={authorize} />);
+    render(<MediaPanel gateway={gateway({ reorderMedia, uploadMedia })} authorize={authorize} />, {
+      wrapper: NotificationProvider,
+    });
 
     const gallery = await screen.findByRole('list', { name: 'Thứ tự ảnh danh mục' });
     fireEvent.click(within(gallery).getByRole('button', { name: 'Đưa ảnh 2 lên' }));
