@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
+import { NotificationProvider } from '../../design-system/notifications';
 
 import type { CatalogGateway } from './catalog-api';
 import { LayoutPanel } from './layout-panel';
@@ -103,7 +104,9 @@ function gateway(overrides: Record<string, unknown> = {}): CatalogGateway {
 describe('VC-21 layout template editor', () => {
   it('shows capacity and canvas constraints and preserves a table UUID during numeric edits', async () => {
     const updateLayoutDraft = vi.fn<CatalogGateway['updateLayoutDraft']>(() => Promise.resolve());
-    render(<LayoutPanel gateway={gateway({ updateLayoutDraft })} authorize={authorize} />);
+    render(<LayoutPanel gateway={gateway({ updateLayoutDraft })} authorize={authorize} />, {
+      wrapper: NotificationProvider,
+    });
 
     expect(await screen.findByText('Canvas 10.000 × 10.000')).toBeVisible();
     expect(screen.getByText('20 / 120 ghế')).toBeVisible();
@@ -125,7 +128,9 @@ describe('VC-21 layout template editor', () => {
 
   it('blocks geometry outside the canvas and totals above hall capacity before calling the API', async () => {
     const updateLayoutDraft = vi.fn(() => Promise.resolve());
-    render(<LayoutPanel gateway={gateway({ updateLayoutDraft })} authorize={authorize} />);
+    render(<LayoutPanel gateway={gateway({ updateLayoutDraft })} authorize={authorize} />, {
+      wrapper: NotificationProvider,
+    });
 
     const editor = await screen.findByRole('form', { name: 'Bản nháp Bố trí tiệc ấm cúng' });
     fireEvent.change(within(editor).getByLabelText('Tọa độ X Bàn 01'), {
@@ -147,7 +152,10 @@ describe('VC-21 layout template editor', () => {
     });
     fireEvent.click(within(editor).getByRole('button', { name: 'Lưu bố trí nháp' }));
 
-    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('sức chứa sảnh'));
+    // Toast cảnh báo trước vẫn còn; toast mới nhất nói về sức chứa.
+    await waitFor(() =>
+      expect(screen.getAllByRole('alert').at(-1)).toHaveTextContent('sức chứa sảnh'),
+    );
     expect(updateLayoutDraft).not.toHaveBeenCalled();
   });
 
@@ -159,6 +167,7 @@ describe('VC-21 layout template editor', () => {
         gateway={gateway({ retireLayoutTable, updateLayoutDraft })}
         authorize={authorize}
       />,
+      { wrapper: NotificationProvider },
     );
 
     const editor = await screen.findByRole('form', { name: 'Bản nháp Bố trí tiệc ấm cúng' });

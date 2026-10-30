@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
+import { NotificationProvider } from '../../design-system/notifications';
 import type { BillingView } from './billing-api';
 import { RefundApprovalForm } from './refund-approval-form';
 
@@ -50,7 +51,9 @@ function fill() {
 describe('Manager refund approval', () => {
   it('selects the immutable credit ledger entry, permits cancelling, then explicitly approves without recording a refund', async () => {
     const confirm = vi.fn().mockResolvedValue('succeeded');
-    render(<RefundApprovalForm booking={booking} disabled={false} onConfirm={confirm} />);
+    render(<RefundApprovalForm booking={booking} disabled={false} onConfirm={confirm} />, {
+      wrapper: NotificationProvider,
+    });
     fill();
     fireEvent.click(screen.getByRole('button', { name: 'Kiểm tra phê duyệt' }));
     expect(confirm).not.toHaveBeenCalled();
@@ -74,7 +77,9 @@ describe('Manager refund approval', () => {
   });
   it('refuses blank evidence and unsafe amounts, and retains editable fields after a definitive refusal', async () => {
     const confirm = vi.fn().mockResolvedValue('failed');
-    render(<RefundApprovalForm booking={booking} disabled={false} onConfirm={confirm} />);
+    render(<RefundApprovalForm booking={booking} disabled={false} onConfirm={confirm} />, {
+      wrapper: NotificationProvider,
+    });
     fill();
     fireEvent.change(screen.getByLabelText('Mã chứng từ phê duyệt'), { target: { value: '   ' } });
     fireEvent.click(screen.getByRole('button', { name: 'Kiểm tra phê duyệt' }));

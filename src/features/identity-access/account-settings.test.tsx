@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiClientError } from '../../lib/api/client';
+import { NotificationProvider } from '../../design-system/notifications';
 import { AccountSettings } from './account-settings';
 import { createAccountGateway } from './account-api';
 import { createIdentityApi, ManagementIdentitySession } from './session';
@@ -49,7 +50,9 @@ async function showForm() {
   const session = new ManagementIdentitySession(createIdentityApi());
   vi.spyOn(session, 'authorize').mockImplementation((operation) => operation('test-access-token'));
   const signedOut = vi.fn();
-  render(<AccountSettings session={session} onSignedOut={signedOut} />);
+  render(<AccountSettings session={session} onSignedOut={signedOut} />, {
+    wrapper: NotificationProvider,
+  });
   await screen.findByLabelText('Mật khẩu hiện tại');
   for (const [label, value] of [
     ['Mật khẩu hiện tại', 'Initial-password-123'],

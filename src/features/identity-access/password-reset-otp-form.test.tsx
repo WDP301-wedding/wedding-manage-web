@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPasswordOtpGateway } from './password-otp-api';
+import { NotificationProvider } from '../../design-system/notifications';
 import { PasswordResetOtpForm } from './password-reset-otp-form';
 vi.mock('./password-otp-api', () => {
   const gateway = { request: vi.fn(), complete: vi.fn() };
@@ -20,7 +21,7 @@ beforeEach(() => {
 describe('email OTP password recovery', () => {
   it('requires confirmation and sends the entered code before returning to login', async () => {
     const done = vi.fn();
-    render(<PasswordResetOtpForm onCompleted={done} />);
+    render(<PasswordResetOtpForm onCompleted={done} />, { wrapper: NotificationProvider });
     fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'couple@example.com' } });
     fireEvent.click(screen.getByRole('button', { name: 'Gửi mã OTP' }));
     await screen.findByLabelText('Mã OTP');
@@ -48,7 +49,7 @@ describe('email OTP password recovery', () => {
   });
   it('preserves the form after a wrong code and never automatically retries the mutation', async () => {
     gateway.complete.mockRejectedValue(new Error('invalid code'));
-    render(<PasswordResetOtpForm onCompleted={vi.fn()} />);
+    render(<PasswordResetOtpForm onCompleted={vi.fn()} />, { wrapper: NotificationProvider });
     fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'couple@example.com' } });
     fireEvent.click(screen.getByRole('button', { name: 'Gửi mã OTP' }));
     await screen.findByLabelText('Mã OTP');

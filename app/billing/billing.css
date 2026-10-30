@@ -388,7 +388,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   vertical-align: bottom;
-  font-family: monospace;
+  font-family: var(--font-code);
 }
 .billing-shell caption {
   text-align: left;

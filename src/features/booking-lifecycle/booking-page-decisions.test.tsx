@@ -4,6 +4,26 @@ import type { ManagementBookingGateway, ProposalView } from './booking-api';
 import { ManagementBookingWorkspace } from './booking-page';
 
 vi.mock('./activation-status', () => ({ ActivationStatus: () => null }));
+// Thanh tra cứu tự tạo API client riêng; giữ giao diện thật, chỉ thay phần gọi mạng.
+vi.mock('./use-booking-lookup', async () => {
+  const { useState } = await import('react');
+  return {
+    useBookingLookup: () => {
+      const [query, changeQuery] = useState('');
+      return {
+        query,
+        changeQuery,
+        recent: [],
+        matches: [],
+        searchStatus: 'idle',
+        recentError: null,
+        searchError: null,
+        retry: () => undefined,
+        current: undefined,
+      };
+    },
+  };
+});
 
 const proposal: ProposalView = {
   bookingId: '00000000-0000-4000-8000-000000000101',
@@ -129,10 +149,10 @@ describe('ManagementBookingWorkspace cancellation decisions and calculations', (
       ],
     });
     render(<ManagementBookingWorkspace authorize={authorize} gateway={gateway} />);
-    fireEvent.change(screen.getByLabelText('Mã booking'), {
+    fireEvent.change(screen.getByLabelText('Tìm hồ sơ tiệc'), {
       target: { value: proposal.bookingId },
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Tải hồ sơ' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Mở hồ sơ' }));
     expect(await screen.findByText('Plans changed')).toBeVisible();
     fireEvent.change(screen.getByLabelText('Lý do quyết định'), {
       target: { value: 'Continue planning' },
@@ -152,10 +172,10 @@ describe('ManagementBookingWorkspace cancellation decisions and calculations', (
   it('loads server-owned proposal values instead of calculating money in the client', async () => {
     const gateway = fakeGateway();
     render(<ManagementBookingWorkspace authorize={authorize} gateway={gateway} />);
-    fireEvent.change(screen.getByLabelText('Mã booking'), {
+    fireEvent.change(screen.getByLabelText('Tìm hồ sơ tiệc'), {
       target: { value: proposal.bookingId },
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Tải hồ sơ' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Mở hồ sơ' }));
 
     expect(await screen.findByText('Sảnh Ánh Dương')).toBeVisible();
     expect(screen.getByText(/42\.000\.000/u)).toBeVisible();

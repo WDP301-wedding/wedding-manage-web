@@ -7,6 +7,26 @@ import type { ManagementBookingGateway, ProposalView } from './booking-api';
 import { ManagementBookingPage, ManagementBookingWorkspace } from './booking-page';
 
 vi.mock('./activation-status', () => ({ ActivationStatus: () => null }));
+// Thanh tra cứu tự tạo API client riêng; giữ giao diện thật, chỉ thay phần gọi mạng.
+vi.mock('./use-booking-lookup', async () => {
+  const { useState } = await import('react');
+  return {
+    useBookingLookup: () => {
+      const [query, changeQuery] = useState('');
+      return {
+        query,
+        changeQuery,
+        recent: [],
+        matches: [],
+        searchStatus: 'idle',
+        recentError: null,
+        searchError: null,
+        retry: () => undefined,
+        current: undefined,
+      };
+    },
+  };
+});
 
 const proposal: ProposalView = {
   bookingId: '00000000-0000-4000-8000-000000000101',
@@ -121,8 +141,10 @@ afterEach(() => {
 async function open(gateway: ManagementBookingGateway, value: ProposalView = proposal) {
   vi.mocked(gateway.loadProposal).mockResolvedValue(value);
   render(<ManagementBookingWorkspace authorize={authorize} gateway={gateway} />);
-  fireEvent.change(screen.getByLabelText('Mã booking'), { target: { value: proposal.bookingId } });
-  fireEvent.click(screen.getByRole('button', { name: 'Tải hồ sơ' }));
+  fireEvent.change(screen.getByLabelText('Tìm hồ sơ tiệc'), {
+    target: { value: proposal.bookingId },
+  });
+  fireEvent.click(screen.getByRole('button', { name: 'Mở hồ sơ' }));
   await screen.findByText('Sảnh Ánh Dương');
 }
 function failure(code: string, status?: number) {
@@ -153,7 +175,7 @@ describe('Management booking lifecycle workspace', () => {
       'min',
       '2026-10-11',
     );
-    fireEvent.click(screen.getByRole('button', { name: 'Tải danh mục đặt tiệc' }));
+    fireEvent.focus(screen.getByLabelText('Sảnh tiệc'));
     await screen.findByRole('option', { name: 'Sảnh Ánh Dương · tối đa 320 khách' });
     fireEvent.change(screen.getByLabelText('Sảnh tiệc'), {
       target: { value: proposal.proposal.hall.id },
@@ -214,7 +236,7 @@ describe('Management booking lifecycle workspace', () => {
   it('keeps catalog selections and booking drafts when a consultation is created', async () => {
     const gateway = fakeGateway();
     render(<ManagementBookingWorkspace authorize={authorize} gateway={gateway} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Tải danh mục đặt tiệc' }));
+    fireEvent.focus(screen.getByLabelText('Sảnh tiệc'));
     await screen.findByRole('option', { name: 'Sảnh Ánh Dương · tối đa 320 khách' });
     fireEvent.change(screen.getByLabelText('Sảnh tiệc'), {
       target: { value: proposal.proposal.hall.id },
@@ -294,7 +316,7 @@ describe('Management booking lifecycle workspace', () => {
     const gateway = fakeGateway();
     vi.mocked(gateway.checkAvailability).mockResolvedValue({ available, expiresAt });
     render(<ManagementBookingWorkspace authorize={authorize} gateway={gateway} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Tải danh mục đặt tiệc' }));
+    fireEvent.focus(screen.getByLabelText('Sảnh tiệc'));
     await screen.findByRole('option', { name: 'Sảnh Ánh Dương · tối đa 320 khách' });
     fireEvent.change(screen.getByLabelText('Mã hồ sơ tư vấn'), {
       target: { value: proposal.consultationId },
@@ -328,7 +350,7 @@ describe('Management booking lifecycle workspace', () => {
       const selections = await gateway.loadSelections('manager-token');
       vi.mocked(gateway.loadSelections).mockResolvedValue({ ...selections, [missing]: [] });
       render(<ManagementBookingWorkspace authorize={authorize} gateway={gateway} />);
-      fireEvent.click(screen.getByRole('button', { name: 'Tải danh mục đặt tiệc' }));
+      fireEvent.focus(screen.getByLabelText('Sảnh tiệc'));
       expect(
         await screen.findByText(
           'Danh mục chưa đủ thông tin đặt tiệc. Cập nhật trong mục Danh mục rồi tải lại.',
@@ -371,7 +393,7 @@ describe('Management booking lifecycle workspace', () => {
     await waitFor(() =>
       expect(screen.getByLabelText('Mã hồ sơ tư vấn')).toHaveValue(proposal.consultationId),
     );
-    fireEvent.click(screen.getByRole('button', { name: 'Tải danh mục đặt tiệc' }));
+    fireEvent.focus(screen.getByLabelText('Sảnh tiệc'));
     const hall = await screen.findByRole('option', { name: 'Sảnh Ánh Dương · tối đa 320 khách' });
     expect(hall).toHaveValue(proposal.proposal.hall.id);
     fireEvent.change(screen.getByLabelText('Mã hồ sơ tư vấn'), {

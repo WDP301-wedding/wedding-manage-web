@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { components } from '../../lib/api/generated/schema';
 import { ManagementIdentitySession } from '../identity-access/session';
@@ -130,7 +130,8 @@ describe('ConsultationRequestsPage filters and search', () => {
       displayName: 'Hoàng & Mai',
       email: 'hoangmai@example.com',
     };
-    fetchMock.mockResolvedValueOnce(queueResponse([newRequest, item2]));
+    // Tìm kiếm được debounce rồi tải lại danh sách; máy chủ giả trả cùng dữ liệu mỗi lần.
+    fetchMock.mockResolvedValue(queueResponse([newRequest, item2]));
     render(<ConsultationRequestsPage />);
 
     expect(await screen.findByRole('heading', { name: 'Minh & An' })).toBeVisible();
@@ -139,20 +140,22 @@ describe('ConsultationRequestsPage filters and search', () => {
     const searchInput = screen.getByPlaceholderText(/Tìm theo tên/);
     fireEvent.change(searchInput, { target: { value: 'Hoàng' } });
 
-    expect(screen.queryByRole('heading', { name: 'Minh & An' })).not.toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Hoàng & Mai' })).toBeVisible();
+    await waitFor(() =>
+      expect(screen.queryByRole('heading', { name: 'Minh & An' })).not.toBeInTheDocument(),
+    );
+    expect(await screen.findByRole('heading', { name: 'Hoàng & Mai' })).toBeVisible();
 
     // Search for non-existent text
     fireEvent.change(searchInput, { target: { value: 'xyz123nonexistent' } });
+    expect(
+      await screen.findByText('Không tìm thấy yêu cầu tư vấn nào phù hợp với bộ lọc hiện tại.'),
+    ).toBeVisible();
     expect(screen.queryByRole('heading', { name: 'Minh & An' })).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Hoàng & Mai' })).not.toBeInTheDocument();
-    expect(
-      screen.getByText('Không tìm thấy yêu cầu tư vấn nào phù hợp với bộ lọc hiện tại.'),
-    ).toBeVisible();
 
     // Reset filter
     fireEvent.click(screen.getByRole('button', { name: 'Xóa bộ lọc' }));
-    expect(screen.getByRole('heading', { name: 'Minh & An' })).toBeVisible();
-    expect(screen.getByRole('heading', { name: 'Hoàng & Mai' })).toBeVisible();
+    expect(await screen.findByRole('heading', { name: 'Minh & An' })).toBeVisible();
+    expect(await screen.findByRole('heading', { name: 'Hoàng & Mai' })).toBeVisible();
   });
 });

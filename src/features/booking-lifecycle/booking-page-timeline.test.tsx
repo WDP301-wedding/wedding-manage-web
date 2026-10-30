@@ -7,6 +7,26 @@ import type { ManagementBookingGateway, ProposalView } from './booking-api';
 import { ManagementBookingPage, ManagementBookingWorkspace } from './booking-page';
 
 vi.mock('./activation-status', () => ({ ActivationStatus: () => null }));
+// Thanh tra cứu tự tạo API client riêng; giữ giao diện thật, chỉ thay phần gọi mạng.
+vi.mock('./use-booking-lookup', async () => {
+  const { useState } = await import('react');
+  return {
+    useBookingLookup: () => {
+      const [query, changeQuery] = useState('');
+      return {
+        query,
+        changeQuery,
+        recent: [],
+        matches: [],
+        searchStatus: 'idle',
+        recentError: null,
+        searchError: null,
+        retry: () => undefined,
+        current: undefined,
+      };
+    },
+  };
+});
 
 const proposal: ProposalView = {
   bookingId: '00000000-0000-4000-8000-000000000101',
@@ -124,8 +144,10 @@ afterEach(() => {
 async function open(gateway: ManagementBookingGateway, value: ProposalView = proposal) {
   vi.mocked(gateway.loadProposal).mockResolvedValue(value);
   render(<ManagementBookingWorkspace authorize={authorize} gateway={gateway} />);
-  fireEvent.change(screen.getByLabelText('Mã booking'), { target: { value: proposal.bookingId } });
-  fireEvent.click(screen.getByRole('button', { name: 'Tải hồ sơ' }));
+  fireEvent.change(screen.getByLabelText('Tìm hồ sơ tiệc'), {
+    target: { value: proposal.bookingId },
+  });
+  fireEvent.click(screen.getByRole('button', { name: 'Mở hồ sơ' }));
   await screen.findByText('Sảnh Ánh Dương');
 }
 

@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ApiClientError } from '../../lib/api/client';
+import { NotificationProvider } from '../../design-system/notifications';
 import type { BillingView, ManagementBillingGateway } from './billing-api';
 import { ManagementBillingPage, ManagementBillingWorkspace } from './billing-page';
 import { createIdentityApi, ManagementIdentitySession } from '../identity-access/session';
@@ -73,7 +74,9 @@ describe('management billing access and recovery', () => {
               },
             },
       );
-      render(<ManagementBillingPage session={session} gateway={gateway()} />);
+      render(<ManagementBillingPage session={session} gateway={gateway()} />, {
+        wrapper: NotificationProvider,
+      });
       await screen.findByRole('heading', {
         name:
           role === 'manager'
@@ -94,7 +97,9 @@ describe('management billing access and recovery', () => {
           finish = resolve;
         }),
     );
-    render(<ManagementBillingWorkspace accountId="actor" authorize={authorize} gateway={api} />);
+    render(<ManagementBillingWorkspace accountId="actor" authorize={authorize} gateway={api} />, {
+      wrapper: NotificationProvider,
+    });
     fireEvent.change(screen.getByLabelText('Mã hồ sơ đặt tiệc'), { target: { value: 'booking' } });
     fireEvent.click(screen.getByRole('button', { name: 'Xem thanh toán' }));
     fireEvent.click(screen.getByRole('button', { name: 'Xem thanh toán' }));
@@ -105,7 +110,9 @@ describe('management billing access and recovery', () => {
 
   it('keeps the previous ledger when a reload fails', async () => {
     const api = gateway();
-    render(<ManagementBillingWorkspace accountId="actor" authorize={authorize} gateway={api} />);
+    render(<ManagementBillingWorkspace accountId="actor" authorize={authorize} gateway={api} />, {
+      wrapper: NotificationProvider,
+    });
     await load();
     vi.mocked(api.load).mockRejectedValueOnce(new Error('fail'));
     fireEvent.click(screen.getByRole('button', { name: 'Cập nhật thông tin' }));
@@ -115,14 +122,19 @@ describe('management billing access and recovery', () => {
 
   it('clears stale errors when reloading succeeds', async () => {
     const api = gateway();
-    render(<ManagementBillingWorkspace accountId="actor" authorize={authorize} gateway={api} />);
+    render(<ManagementBillingWorkspace accountId="actor" authorize={authorize} gateway={api} />, {
+      wrapper: NotificationProvider,
+    });
     await load();
     vi.mocked(api.load).mockRejectedValueOnce(new Error('temporary failure'));
     fireEvent.click(screen.getByRole('button', { name: 'Cập nhật thông tin' }));
     await screen.findByRole('alert');
     vi.mocked(api.load).mockResolvedValueOnce(view);
     fireEvent.click(screen.getByRole('button', { name: 'Cập nhật thông tin' }));
-    await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument());
+    // Lỗi cũ là toast tự tắt sau 8 giây; lần tải lại thành công không phát thêm lỗi.
+    await waitFor(() => expect(api.load).toHaveBeenCalledTimes(3));
+    expect(await screen.findByText('Còn phải thu')).toBeInTheDocument();
+    expect(screen.getAllByRole('alert')).toHaveLength(1);
   });
 
   it('loads paginated payment history using the current billing revision fence', async () => {
@@ -146,7 +158,9 @@ describe('management billing access and recovery', () => {
         ],
         nextCursor: null,
       });
-    render(<ManagementBillingWorkspace accountId="actor" authorize={authorize} gateway={api} />);
+    render(<ManagementBillingWorkspace accountId="actor" authorize={authorize} gateway={api} />, {
+      wrapper: NotificationProvider,
+    });
     expect(screen.queryByText('Chưa có giao dịch')).not.toBeInTheDocument();
     await load();
     expect(screen.getByText('Chưa có giao dịch')).toBeInTheDocument();
@@ -163,7 +177,9 @@ describe('management billing access and recovery', () => {
 
   it('keeps a background failure visible and hides private data after denial', async () => {
     const api = gateway();
-    render(<ManagementBillingWorkspace accountId="actor" authorize={authorize} gateway={api} />);
+    render(<ManagementBillingWorkspace accountId="actor" authorize={authorize} gateway={api} />, {
+      wrapper: NotificationProvider,
+    });
     await load();
     vi.mocked(api.load).mockRejectedValueOnce(new Error('offline'));
     fireEvent.click(screen.getByRole('button', { name: 'Cập nhật thông tin' }));
@@ -180,12 +196,15 @@ describe('management billing access and recovery', () => {
     );
     fireEvent.click(screen.getByRole('button', { name: 'Cập nhật thông tin' }));
     await waitFor(() => expect(screen.queryByText('Còn phải thu')).not.toBeInTheDocument());
-    expect(screen.getByRole('alert')).toHaveTextContent('quyền');
+    // Toast lỗi mạng trước đó vẫn còn; toast mới nhất phải nói về quyền truy cập.
+    expect(screen.getAllByRole('alert').at(-1)).toHaveTextContent('quyền');
   });
 
   it('reads UNKNOWN without guessing failure or offering another charge', async () => {
     const api = gateway();
-    render(<ManagementBillingWorkspace accountId="actor" authorize={authorize} gateway={api} />);
+    render(<ManagementBillingWorkspace accountId="actor" authorize={authorize} gateway={api} />, {
+      wrapper: NotificationProvider,
+    });
     await load();
     fireEvent.change(screen.getByLabelText('Mã giao dịch thanh toán'), {
       target: { value: 'attempt' },
@@ -201,7 +220,9 @@ describe('management billing access and recovery', () => {
     vi.mocked(api.load)
       .mockResolvedValueOnce(view)
       .mockResolvedValueOnce({ ...view, billingRevision: 5 });
-    render(<ManagementBillingWorkspace accountId="actor" authorize={authorize} gateway={api} />);
+    render(<ManagementBillingWorkspace accountId="actor" authorize={authorize} gateway={api} />, {
+      wrapper: NotificationProvider,
+    });
     await load();
     fireEvent.click(screen.getByRole('button', { name: 'Tải thêm lịch sử' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('lịch sử');

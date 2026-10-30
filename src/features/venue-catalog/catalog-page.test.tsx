@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
+import { NotificationProvider } from '../../design-system/notifications';
 
 import { ApiClientError } from '../../lib/api/client';
 import type { VenueCatalogGateway } from './catalog-api';
@@ -76,7 +77,9 @@ const authorize = <T,>(operation: (accessToken: string) => Promise<T>) =>
 
 describe('VC-18 venue catalog workspace', () => {
   it('switches four catalog tabs with keyboard support and preserves unsaved venue fields', async () => {
-    render(<VenueCatalogWorkspace role="MANAGER" gateway={gateway()} authorize={authorize} />);
+    render(<VenueCatalogWorkspace role="MANAGER" gateway={gateway()} authorize={authorize} />, {
+      wrapper: NotificationProvider,
+    });
     await screen.findByRole('heading', { name: 'Danh mục địa điểm' });
     expect(screen.getAllByRole('tab')).toHaveLength(4);
     fireEvent.change(screen.getByLabelText('Tên hiển thị'), {
@@ -97,7 +100,9 @@ describe('VC-18 venue catalog workspace', () => {
   it('loads Manager venue state and submits the server revision without inventing authority', async () => {
     const updateRestaurant = vi.fn(() => Promise.resolve());
     const api = gateway({ updateRestaurant });
-    render(<VenueCatalogWorkspace role="MANAGER" gateway={api} authorize={authorize} />);
+    render(<VenueCatalogWorkspace role="MANAGER" gateway={api} authorize={authorize} />, {
+      wrapper: NotificationProvider,
+    });
 
     expect(screen.getByRole('status')).toHaveTextContent('Đang tải danh mục');
     expect(await screen.findByRole('heading', { name: 'Danh mục địa điểm' })).toBeVisible();
@@ -133,7 +138,9 @@ describe('VC-18 venue catalog workspace', () => {
         ),
       ),
     });
-    render(<VenueCatalogWorkspace role="MANAGER" gateway={api} authorize={authorize} />);
+    render(<VenueCatalogWorkspace role="MANAGER" gateway={api} authorize={authorize} />, {
+      wrapper: NotificationProvider,
+    });
 
     await screen.findByText('Sảnh Ánh Dương');
     fireEvent.change(screen.getByLabelText('Lọc trạng thái sảnh'), {
@@ -159,9 +166,12 @@ describe('VC-18 venue catalog workspace', () => {
   it('does not load data or expose mutations to Staff presentation', () => {
     const loadVenue = vi.fn(() => Promise.resolve(snapshot()));
     const api = gateway({ loadVenue });
-    render(<VenueCatalogWorkspace role="STAFF" gateway={api} authorize={authorize} />);
+    render(<VenueCatalogWorkspace role="STAFF" gateway={api} authorize={authorize} />, {
+      wrapper: NotificationProvider,
+    });
 
-    expect(screen.getByRole('alert')).toHaveTextContent('chỉ dành cho Quản lý');
+    expect(screen.getByRole('heading', { name: 'Không có quyền quản trị danh mục' })).toBeVisible();
+    expect(screen.getByText(/chỉ dành cho Quản lý/)).toBeVisible();
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
     expect(loadVenue).not.toHaveBeenCalled();
   });
