@@ -25,28 +25,31 @@ export function parseBookingUrlParams(search: string): ParsedBookingUrlParams {
   const prefShift =
     paramShift === 'LUNCH' || paramShift === 'DINNER' ? paramShift : parsedChoices.shift;
 
+  const prefill =
+    dName || em || nt || pDate || expG || prefHall || prefMenu || prefShift
+      ? {
+          displayName: dName,
+          email: em,
+          note: nt,
+          eventDate: pDate,
+          expectedGuests: expG,
+          preferredHallName: prefHall,
+          preferredMenuName: prefMenu,
+          preferredShift: prefShift,
+        }
+      : undefined;
+
   const validUuid = /^[a-f0-9-]{36}$/iu;
 
   if (bId && validUuid.test(bId)) {
     return { bookingId: bId };
   }
   if (id && validUuid.test(id)) {
-    return { consultationId: id };
+    return { consultationId: id, prefill };
   }
 
-  if (dName || em || nt || pDate || expG || prefHall || prefMenu || prefShift) {
-    return {
-      prefill: {
-        displayName: dName,
-        email: em,
-        note: nt,
-        eventDate: pDate,
-        expectedGuests: expG,
-        preferredHallName: prefHall,
-        preferredMenuName: prefMenu,
-        preferredShift: prefShift,
-      },
-    };
+  if (prefill) {
+    return { prefill };
   }
 
   return {};

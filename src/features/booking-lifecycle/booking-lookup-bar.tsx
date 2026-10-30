@@ -21,12 +21,24 @@ function details(item: BookingIdentity) {
     .join(' · ');
 }
 function IdentityLabel({ item }: Readonly<{ item: BookingIdentity }>) {
+  const couple = [item.groomName, item.brideName].filter(Boolean).join(' & ');
+  const contactInfo = [item.phone ? `SĐT: ${item.phone}` : null, item.email].filter(Boolean).join(' · ');
   return (
     <>
       <strong>
         {item.bookingCode} · {item.customerName}
       </strong>
+      {couple && couple !== item.customerName ? (
+        <span style={{ color: 'var(--hy-wine, #7a1f3d)', fontWeight: 500 }}>
+          👰🤵 {couple}
+        </span>
+      ) : null}
       <span>{details(item)}</span>
+      {contactInfo ? (
+        <small style={{ color: 'var(--hy-text-muted, #6e5d63)' }}>
+          {contactInfo}
+        </small>
+      ) : null}
       {item.alias ? <span>{item.alias}</span> : null}
     </>
   );
@@ -49,12 +61,19 @@ export function BookingLookupBar({
     void onLoadProposal(item.bookingId);
   };
   const searching = lookup.query.trim().length >= 2;
+  const isUuid = /^[a-f0-9-]{36}$/iu.test(lookup.query.trim());
   return (
     <section className={styles.lookup} aria-label="Tra cứu hồ sơ tiệc">
       <form
         onSubmit={(event) => {
           event.preventDefault();
-          if (lookup.matches.length === 1) select(lookup.matches[0]!);
+          if (lookup.matches.length >= 1) {
+            select(lookup.matches[0]!);
+          } else if (isUuid) {
+            setBookingId(lookup.query.trim());
+            lookup.changeQuery('');
+            void onLoadProposal(lookup.query.trim());
+          }
         }}
       >
         <label htmlFor="booking-lookup-search">Tìm hồ sơ tiệc</label>
@@ -65,23 +84,24 @@ export function BookingLookupBar({
             maxLength={120}
             value={lookup.query}
             onChange={(event) => lookup.changeQuery(event.target.value)}
-            placeholder="Mã HY, tên khách hoặc số điện thoại"
+            placeholder="Mã HY, tên cô dâu chú rể, người đặt, SĐT, email…"
             aria-describedby="booking-lookup-help"
           />
           <button
             type="submit"
             disabled={
               pending !== null ||
-              !searching ||
-              lookup.searchStatus !== 'ready' ||
-              lookup.matches.length !== 1
+              (!isUuid &&
+                (!searching ||
+                  lookup.searchStatus !== 'ready' ||
+                  lookup.matches.length === 0))
             }
           >
             Mở hồ sơ
           </button>
         </div>
         <small id="booking-lookup-help">
-          Nhập ít nhất 2 ký tự, sau đó chọn đúng tiệc trong kết quả.
+          Tìm theo mã tiệc (HY-...), tên cô dâu chú rể, tên người đặt, số điện thoại hoặc email.
         </small>
       </form>
       {searching ? (

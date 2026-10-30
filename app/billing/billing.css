@@ -100,11 +100,54 @@
   outline-offset: 3px;
 }
 .billing-lookup {
+  position: relative;
   display: flex;
   flex-wrap: wrap;
   align-items: end;
   gap: 16px;
   padding: 24px 0;
+}
+.billing-lookup-field {
+  position: relative;
+  flex: 1;
+  min-width: min(100%, 280px);
+}
+.billing-lookup-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  margin-top: 4px;
+  background: #ffffff;
+  border: 1px solid var(--gold);
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  max-height: 280px;
+  overflow-y: auto;
+}
+.billing-lookup-item {
+  width: 100% !important;
+  min-height: auto !important;
+  padding: 10px 14px !important;
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid var(--line) !important;
+  border-radius: 0 !important;
+  text-align: left !important;
+  color: var(--ink) !important;
+  font-weight: normal !important;
+  cursor: pointer;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+}
+.billing-lookup-item:hover,
+.billing-lookup-item:focus {
+  background: var(--powder) !important;
+}
+.billing-lookup-item:last-child {
+  border-bottom: none !important;
 }
 .billing-lookup label {
   flex: 1;

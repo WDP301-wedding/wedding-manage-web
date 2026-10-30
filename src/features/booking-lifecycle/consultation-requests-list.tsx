@@ -123,6 +123,18 @@ export function ConsultationRequestsList({
                   </div>
                   {(() => {
                     const params = new URLSearchParams({ consultationId: item.consultationId });
+                    if (item.displayName) params.set('displayName', item.displayName);
+                    if (item.email) params.set('email', item.email);
+                    if (item.preferredDate) params.set('preferredDate', item.preferredDate);
+                    if (item.expectedGuests !== undefined && item.expectedGuests !== null) {
+                      params.set('expectedGuests', String(item.expectedGuests));
+                    }
+                    if (item.preferredShift) params.set('preferredShift', item.preferredShift);
+                    if (item.preferredHallId) params.set('preferredHall', item.preferredHallId);
+                    if (item.preferredMenuVersionId) {
+                      params.set('preferredMenu', item.preferredMenuVersionId);
+                    }
+                    if (item.message) params.set('note', item.message);
                     return (
                       <Link
                         className="booking-primary-link"
@@ -149,6 +161,21 @@ export function ConsultationRequestsList({
                       {getDateRemainingText(item.preferredDate)}
                     </span>
                   ) : null}
+                </dd>
+              </div>
+
+              <div style={intakeStyles.ribbonItem}>
+                <dt style={intakeStyles.ribbonDt}>
+                  <span>Ca mong muốn</span>
+                </dt>
+                <dd style={intakeStyles.ribbonDd}>
+                  <span>
+                    {item.preferredShift === 'LUNCH'
+                      ? 'Ca trưa'
+                      : item.preferredShift === 'DINNER'
+                        ? 'Ca tối'
+                        : 'Chưa chọn'}
+                  </span>
                 </dd>
               </div>
 

@@ -13,6 +13,7 @@ export type InviteLogEntry = Readonly<{
 }>;
 
 export type BookingPrefill = Readonly<{
+  sourceConsultationId?: string | undefined;
   displayName?: string | undefined;
   email?: string | undefined;
   note?: string | undefined;
@@ -55,7 +56,7 @@ export function parseConsultationChoices(text: string | null | undefined): {
     result.menuName = menuVal;
   }
 
-  const shiftMatch = text.match(/Ca\s*(?:mong muốn)?:\s*([^\n\r]+)/iu);
+  const shiftMatch = text.match(/Ca\s*(?:mong muốn)?[:\s\-(]\s*([^)\n\r]+)/iu);
   const shiftVal = shiftMatch?.[1]?.trim().toLowerCase();
   if (shiftVal) {
     if (shiftVal.includes('trưa') || shiftVal.includes('lunch')) {

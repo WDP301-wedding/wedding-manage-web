@@ -124,7 +124,14 @@ export function DashboardConsultationsTable({
                 )}
               </td>
               <td>{item.phone || '—'}</td>
-              <td>{item.preferredDate || 'Chưa định ngày'}</td>
+              <td>
+                {item.preferredDate || 'Chưa định ngày'}
+                {item.preferredShift ? (
+                  <span style={{ display: 'block', fontSize: '0.8rem', color: '#64748b' }}>
+                    {item.preferredShift === 'LUNCH' ? 'Ca trưa' : 'Ca tối'}
+                  </span>
+                ) : null}
+              </td>
               <td>
                 <span
                   className={`status ${
@@ -154,6 +161,11 @@ export function DashboardConsultationsTable({
                     if (item.preferredDate) params.set('preferredDate', item.preferredDate);
                     if (item.expectedGuests !== undefined && item.expectedGuests !== null) {
                       params.set('expectedGuests', String(item.expectedGuests));
+                    }
+                    if (item.preferredShift) params.set('preferredShift', item.preferredShift);
+                    if (item.preferredHallId) params.set('preferredHall', item.preferredHallId);
+                    if (item.preferredMenuVersionId) {
+                      params.set('preferredMenu', item.preferredMenuVersionId);
                     }
                     if (item.message) params.set('note', item.message);
                     return (

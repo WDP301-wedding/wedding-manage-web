@@ -15,6 +15,10 @@ const identitySchema = z.object({
   hallName: z.string(),
   shiftCode: z.enum(['LUNCH', 'DINNER']),
   alias: z.string().nullable(),
+  brideName: z.string().nullable().optional(),
+  groomName: z.string().nullable().optional(),
+  phone: z.string().nullable().optional(),
+  email: z.string().nullable().optional(),
 });
 export type BookingIdentity = z.infer<typeof identitySchema>;
 type LookupPaths = {

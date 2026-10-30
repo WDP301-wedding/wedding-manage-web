@@ -167,6 +167,16 @@ export function DashboardBookingsTable({
                       {booking.bookingCode && <CopyButton text={booking.bookingCode} />}
                     </div>
                     <span>{booking.customerName || 'Chưa có tên khách'}</span>
+                    {Boolean(booking.brideName || booking.groomName) && (
+                      <small style={{ color: 'var(--hy-wine, #7a1f3d)', fontWeight: 500 }}>
+                        👰🤵 {[booking.groomName, booking.brideName].filter(Boolean).join(' & ')}
+                      </small>
+                    )}
+                    {Boolean(booking.phone || booking.email) && (
+                      <small style={{ color: 'var(--hy-text-muted, #6e5d63)' }}>
+                        {[booking.phone, booking.email].filter(Boolean).join(' · ')}
+                      </small>
+                    )}
                     {booking.alias && booking.alias !== booking.customerName && (
                       <small>{booking.alias}</small>
                     )}

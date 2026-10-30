@@ -125,7 +125,7 @@ export function BookingCreateFormFields({
             <span>Ca</span>
             <select
               id="shiftCode-select"
-              key={`shiftCode-${prefillShift ?? ''}`}
+              key={`shiftCode-${prefillShift ?? ''}-${selections ? 'loaded' : 'loading'}`}
               name="shiftCode"
               defaultValue={prefillShift ?? ''}
               required

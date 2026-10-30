@@ -7,6 +7,7 @@ import {
   type AnalyticsQuery,
 } from '../../services/analytics.service';
 import { describeApiError } from '../../lib/api/api-errors';
+import { axiosApiClient } from '../../lib/api/axios-client';
 
 type Result = Readonly<{
   query: string;
@@ -16,7 +17,21 @@ type Result = Readonly<{
   error: string | null;
 }>;
 
-/** Server search covers the report range, not just the dashboard's first loaded page. */
+interface LookupItem {
+  bookingId: string;
+  bookingCode: string;
+  customerName: string;
+  brideName?: string | null;
+  groomName?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  eventDate: string;
+  hallName: string;
+  shiftCode: 'LUNCH' | 'DINNER';
+  alias: string | null;
+}
+
+/** Server search covers the report range and expands across code, names, bride/groom, phone, and email. */
 export function useBookingSearch(query: string) {
   const generation = useRef(0);
   const loadingMore = useRef(false);
@@ -42,28 +57,68 @@ export function useBookingSearch(query: string) {
       };
       request.current = { query: parameters, controller };
       setResult({ query, items: [], cursor: null, pending: true, error: null });
-      void analyticsService
-        .getBookings(parameters, controller.signal)
-        .then((data) => {
-          if (generation.current !== current || controller.signal.aborted) return;
-          setResult({
-            query,
-            items: data.items,
-            cursor: data.nextCursor,
-            pending: false,
-            error: null,
-          });
+
+      const analyticsPromise = analyticsService.getBookings(parameters, controller.signal);
+      const lookupsPromise = axiosApiClient
+        .get<{ data: LookupItem[] }>('/management/booking-lookups', {
+          params: { q: query },
+          signal: controller.signal,
         })
-        .catch((error: unknown) => {
-          if (generation.current !== current || controller.signal.aborted) return;
-          setResult({
-            query,
-            items: [],
-            cursor: null,
-            pending: false,
-            error: describeApiError(error).message,
-          });
+        .then((res) => res.data?.data ?? [])
+        .catch(() => [] as LookupItem[]);
+
+      void Promise.allSettled([analyticsPromise, lookupsPromise]).then(([analyticsRes, lookupsRes]) => {
+        if (generation.current !== current || controller.signal.aborted) return;
+        const analyticsData = analyticsRes.status === 'fulfilled' ? analyticsRes.value : null;
+        const lookups = lookupsRes.status === 'fulfilled' ? lookupsRes.value : [];
+        const lookupMap = new Map(lookups.map((l) => [l.bookingId, l]));
+
+        const mergedItems = (analyticsData?.items ?? []).map((item) => {
+          const l = lookupMap.get(item.bookingId);
+          if (!l) return item;
+          return {
+            ...item,
+            brideName: l.brideName ?? null,
+            groomName: l.groomName ?? null,
+            phone: l.phone ?? null,
+            email: l.email ?? null,
+          };
         });
+
+        const existingIds = new Set(mergedItems.map((i) => i.bookingId));
+        for (const l of lookups) {
+          if (!existingIds.has(l.bookingId)) {
+            const extraItem: AnalyticsBookingsData['items'][number] = {
+              bookingId: l.bookingId,
+              bookingCode: l.bookingCode,
+              customerName: l.customerName,
+              brideName: l.brideName ?? null,
+              groomName: l.groomName ?? null,
+              phone: l.phone ?? null,
+              email: l.email ?? null,
+              alias: l.alias,
+              eventDate: l.eventDate,
+              hallId: '',
+              hallNameSnapshot: l.hallName,
+              shiftCode: l.shiftCode,
+              phase: 'CONFIRMED',
+              tableCount: 1,
+            };
+            mergedItems.push(extraItem);
+          }
+        }
+
+        setResult({
+          query,
+          items: mergedItems,
+          cursor: analyticsData?.nextCursor ?? null,
+          pending: false,
+          error:
+            analyticsRes.status === 'rejected' && lookups.length === 0
+              ? describeApiError(analyticsRes.reason).message
+              : null,
+        });
+      });
     }, 300);
     return () => {
       clearTimeout(timer);

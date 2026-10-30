@@ -70,7 +70,7 @@ export function DashboardBookingsToolbar({
       <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
         <input
           type="search"
-          placeholder="Tìm mã hồ sơ, tên khách, tên tiệc, sảnh…"
+          placeholder="Tìm theo mã HY, tên cô dâu chú rể, người đặt, SĐT, email, sảnh…"
           value={searchQuery}
           onChange={(e) => {
             setSearchQuery(e.target.value);

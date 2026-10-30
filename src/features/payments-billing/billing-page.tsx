@@ -34,6 +34,8 @@ import { IncidentalsPanel } from './incidentals-panel';
 
 import { useManagementSession } from '../identity-access/use-management-session';
 import { notify } from '../../design-system/notifications';
+import { axiosApiClient } from '../../lib/api/axios-client';
+import type { BookingIdentity } from '../booking-lifecycle/use-booking-lookup';
 
 type Authorize = <T>(operation: (token: string) => Promise<T>) => Promise<T>;
 type MutationResult =
@@ -128,6 +130,64 @@ export function ManagementBillingWorkspace({
   const [uncertain, setUncertain] = useState<'manual' | 'refund' | 'approval' | null>(null);
   const [refundRevision, setRefundRevision] = useState<number | null>(null);
   const [approvalRevision, setApprovalRevision] = useState<number | null>(null);
+  const [searchMatches, setSearchMatches] = useState<BookingIdentity[]>([]);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const fetchLookups = async (term: string): Promise<BookingIdentity[]> => {
+    return authorize(async (token) => {
+      const res = await axiosApiClient.get<{ data: BookingIdentity[] }>(
+        '/management/booking-lookups',
+        {
+          params: { q: term },
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+      return res.data?.data ?? [];
+    });
+  };
+
+  const handleBookingInputChange = (value: string) => {
+    if (pending || uncertain !== null) return;
+    setBookingId(value);
+    setView(null);
+    setAttempt(null);
+    setAttemptId('');
+    setRefundRevision(null);
+    setApprovalRevision(null);
+
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+
+    const trimmed = value.trim();
+    if (trimmed.length < 2 || /^[a-f0-9-]{36}$/iu.test(trimmed)) {
+      setSearchMatches([]);
+      setShowDropdown(false);
+      return;
+    }
+
+    searchTimer.current = setTimeout(async () => {
+      try {
+        const matches = await fetchLookups(trimmed);
+        setSearchMatches(matches);
+        setShowDropdown(matches.length > 0);
+      } catch {
+        setSearchMatches([]);
+        setShowDropdown(false);
+      }
+    }, 250);
+  };
+
+  const selectLookupBooking = (item: BookingIdentity) => {
+    setBookingId(item.bookingId);
+    setShowDropdown(false);
+    setSearchMatches([]);
+    setView(null);
+    setAttempt(null);
+    setAttemptId('');
+    setRefundRevision(null);
+    setApprovalRevision(null);
+    void run(() => load(item.bookingId));
+  };
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -291,28 +351,99 @@ export function ManagementBillingWorkspace({
           className="billing-lookup"
           onSubmit={(event) => {
             event.preventDefault();
-            setAttempt(null);
-            setView(null);
-            void run(() => load(bookingId.trim()));
+            setShowDropdown(false);
+            const raw = bookingId.trim();
+            if (!raw) return;
+
+            if (/^[a-f0-9-]{36}$/iu.test(raw)) {
+              setAttempt(null);
+              setView(null);
+              void run(() => load(raw));
+              return;
+            }
+
+            if (searchMatches.length === 1 && searchMatches[0]) {
+              selectLookupBooking(searchMatches[0]);
+              return;
+            }
+
+            void run(async () => {
+              try {
+                const matches = await fetchLookups(raw);
+                if (matches.length === 1 && matches[0]) {
+                  selectLookupBooking(matches[0]);
+                } else if (matches.length > 1) {
+                  setSearchMatches(matches);
+                  setShowDropdown(true);
+                  notify.info(
+                    `Tìm thấy ${matches.length} hồ sơ tiệc phù hợp. Hãy chọn tiệc cần xem từ danh sách gợi ý.`,
+                  );
+                } else {
+                  setAttempt(null);
+                  setView(null);
+                  await load(raw);
+                }
+              } catch {
+                setAttempt(null);
+                setView(null);
+                await load(raw);
+              }
+            });
           }}
         >
-          <label>
-            Mã hồ sơ đặt tiệc
-            <input
-              value={bookingId}
-              onChange={(event) => {
-                if (pending || uncertain !== null) return;
-                setBookingId(event.target.value);
-                setView(null);
-                setAttempt(null);
-                setAttemptId('');
-                setRefundRevision(null);
-                setApprovalRevision(null);
-              }}
-              required
-              disabled={pending || uncertain !== null}
-            />
-          </label>
+          <div className="billing-lookup-field">
+            <label>
+              Mã hồ sơ đặt tiệc
+              <input
+                value={bookingId}
+                onChange={(event) => handleBookingInputChange(event.target.value)}
+                onFocus={() => {
+                  if (searchMatches.length > 0) setShowDropdown(true);
+                }}
+                placeholder="Mã HY, tên cô dâu chú rể, người đặt, SĐT, email…"
+                required
+                disabled={pending || uncertain !== null}
+              />
+            </label>
+            {showDropdown && searchMatches.length > 0 && (
+              <div className="billing-lookup-dropdown" role="listbox">
+                {searchMatches.map((item) => {
+                  const couple = [item.groomName, item.brideName].filter(Boolean).join(' & ');
+                  const contactInfo = [item.phone ? `SĐT: ${item.phone}` : null, item.email]
+                    .filter(Boolean)
+                    .join(' · ');
+                  const dateStr = item.eventDate.split('-').reverse().join('/');
+                  return (
+                    <button
+                      key={item.bookingId}
+                      type="button"
+                      className="billing-lookup-item"
+                      onClick={() => selectLookupBooking(item)}
+                    >
+                      <strong style={{ fontSize: '13.5px' }}>
+                        {item.bookingCode} · {item.customerName}
+                      </strong>
+                      {couple && couple !== item.customerName && (
+                        <span style={{ fontSize: '12.5px', color: 'var(--burgundy)', fontWeight: 500 }}>
+                          👰🤵 {couple}
+                        </span>
+                      )}
+                      <span style={{ fontSize: '12px', color: 'var(--muted)' }}>
+                        {[dateStr, item.hallName, item.shiftCode === 'LUNCH' ? 'Ca trưa' : 'Ca tối']
+                          .filter(Boolean)
+                          .join(' · ')}
+                      </span>
+                      {contactInfo && (
+                        <small style={{ fontSize: '11.5px', color: 'var(--muted)' }}>
+                          {contactInfo}
+                        </small>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
           <button disabled={pending || uncertain !== null}>Xem thanh toán</button>
         </form>
       </header>

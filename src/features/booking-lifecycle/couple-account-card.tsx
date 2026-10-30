@@ -22,6 +22,17 @@ export function CoupleAccountCard({
   onInvite,
   onClearLogs,
 }: Readonly<CoupleAccountCardProps>) {
+  if (consultationId)
+    return (
+      <div id="couple-account-card">
+        <ActivationStatus
+          key={consultationId}
+          consultationId={consultationId}
+          disabled={pending}
+          reloadSignal={inviteLogs.length}
+        />
+      </div>
+    );
   return (
     <article
       id="couple-account-card"
@@ -80,7 +91,7 @@ export function CoupleAccountCard({
             ) : null}
           </p>
         </div>
-        {canInvite && !consultationId ? (
+        {canInvite ? (
           <button
             type="button"
             disabled={pending}
@@ -99,14 +110,6 @@ export function CoupleAccountCard({
         ) : null}
       </div>
 
-      {consultationId ? (
-        <ActivationStatus
-          key={consultationId}
-          consultationId={consultationId}
-          disabled={pending}
-          reloadSignal={inviteLogs.length}
-        />
-      ) : null}
       {inviteLogs.length > 0 ? (
         <div
           style={{

@@ -12,7 +12,12 @@ export interface ConsultationPanelProps {
   disabled: boolean;
   logs?: readonly InviteLogEntry[] | undefined;
   onClearLogs?: (() => void) | undefined;
-  onCreate: (input: { intendedEmail: string; displayName: string; note?: string }) => Promise<void>;
+  onCreate: (input: {
+    intendedEmail: string;
+    displayName: string;
+    note?: string;
+    sourceConsultationId?: string;
+  }) => Promise<void>;
   onInvite?: (() => Promise<void>) | undefined;
   onReset?: (() => void) | undefined;
   prefill?: BookingPrefill | undefined;
@@ -35,6 +40,9 @@ export function ConsultationPanel({
     const data = new FormData(event.currentTarget);
     const note = field(data, 'note').trim();
     void onCreate({
+      ...(prefill?.sourceConsultationId
+        ? { sourceConsultationId: prefill.sourceConsultationId }
+        : {}),
       intendedEmail: field(data, 'email'),
       displayName: field(data, 'displayName'),
       ...(note === '' ? {} : { note }),
@@ -83,15 +91,13 @@ export function ConsultationPanel({
           'Hồ sơ tư vấn đã được lưu. Tiếp tục xử lý hoặc chọn khách cũ cho tiệc khác.'
         ) : (
           <>
-            Nhập thông tin khách và bấm <strong>&quot;Tạo hồ sơ tư vấn&quot;</strong> để chuyển
-            sang Bước 02.
+            Nhập thông tin khách và bấm <strong>&quot;Tạo hồ sơ tư vấn&quot;</strong> để chuyển sang
+            Bước 02.
           </>
         )}
       </p>
 
-      {customerPicker ? (
-        <div style={{ marginBottom: '0.75rem' }}>{customerPicker}</div>
-      ) : null}
+      {customerPicker ? <div style={{ marginBottom: '0.75rem' }}>{customerPicker}</div> : null}
 
       {prefill?.displayName || prefill?.email ? (
         <div
@@ -106,10 +112,19 @@ export function ConsultationPanel({
           }}
         >
           <span>✓</span>
-          <span>Đã tự động điền thông tin từ yêu cầu tư vấn của khách hàng.</span>
+          <span>
+            {prefill?.sourceConsultationId
+              ? 'Đã chọn khách cũ. Email được giữ cố định để liên kết đúng tài khoản; có thể chọn lại khách ở danh sách bên cạnh.'
+              : 'Đã tự động điền thông tin từ yêu cầu tư vấn của khách hàng.'}
+          </span>
         </div>
       ) : null}
 
+      {prefill?.sourceConsultationId && consultation === null && onReset ? (
+        <button type="button" disabled={disabled} onClick={onReset} className="booking-secondary">
+          Bỏ chọn khách cũ
+        </button>
+      ) : null}
       <form onSubmit={submit} style={{ display: 'grid', gap: '0.65rem' }}>
         <div className="booking-fields-inline" style={{ gap: '0.65rem' }}>
           <label style={{ display: 'grid', gap: '0.25rem', fontSize: '0.8rem', margin: 0 }}>
@@ -136,7 +151,7 @@ export function ConsultationPanel({
             <input
               key={`email-${prefill?.email ?? ''}`}
               name="email"
-              readOnly={consultation !== null}
+              readOnly={consultation !== null || Boolean(prefill?.sourceConsultationId)}
               type="email"
               required
               defaultValue={prefill?.email ?? ''}
@@ -212,7 +227,7 @@ export function ConsultationPanel({
           >
             <strong>✓ Đã lưu hồ sơ tư vấn ban đầu.</strong>
             <p style={{ margin: '0.25rem 0 0', color: '#15803d' }}>
-              Bạn có thể <strong>Gửi lời mời cộng tác</strong> hoặc chuyển sang{' '}
+              Kiểm tra quyền truy cập khách hoặc chuyển sang{' '}
               <strong>Bước 02: Khảo sát sảnh &amp; Đặt tiệc</strong>.
             </p>
           </div>

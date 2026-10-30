@@ -91,14 +91,22 @@ export function useDashboardBookings({
     return currentTabBookings.filter((b) => {
       if (phaseFilter !== 'ALL' && b.phase !== phaseFilter) return false;
       if (normalizedQuery) {
-        const hallMatch = [b.hallNameSnapshot, b.bookingCode, b.customerName, b.alias].some(
-          (value) => value != null && normalizeSearch(value).includes(normalizedQuery),
-        );
+        const hallMatch = [
+          b.hallNameSnapshot,
+          b.bookingCode,
+          b.customerName,
+          b.alias,
+          b.brideName,
+          b.groomName,
+          b.phone,
+          b.email,
+        ].some((value) => value != null && normalizeSearch(value).includes(normalizedQuery));
         const idMatch = b.bookingId.toLowerCase().includes(normalizedQuery);
         const emailMatch = (assignments[b.bookingId]?.assignedEmail || '')
           .toLowerCase()
           .includes(normalizedQuery);
-        return hallMatch || idMatch || emailMatch;
+        const serverMatch = (serverSearch.items ?? []).some((s) => s.bookingId === b.bookingId);
+        return hallMatch || idMatch || emailMatch || serverMatch;
       }
       return true;
     });

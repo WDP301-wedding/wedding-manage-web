@@ -47,9 +47,7 @@ export function BookingWorkspaceTabConsultation({
     <section
       aria-label="Hồ sơ tư vấn cặp đôi"
       style={
-        active
-          ? bookingStyles.stepContainerVisible('860px')
-          : bookingStyles.stepContainerHidden
+        active ? bookingStyles.stepContainerVisible('860px') : bookingStyles.stepContainerHidden
       }
     >
       <div className={styles.grid}>
@@ -60,9 +58,13 @@ export function BookingWorkspaceTabConsultation({
             disabled={disabled}
             onChoose={(customer) => {
               resetConsultation();
-              setPrefill({ displayName: customer.displayName, email: customer.email });
+              setPrefill({
+                displayName: customer.displayName,
+                email: customer.email,
+                sourceConsultationId: customer.consultationId,
+              });
               setMessage(
-                'Đã chọn khách cũ. Kiểm tra thông tin và tạo hồ sơ tư vấn mới cho tiệc mới; hồ sơ cũ được giữ nguyên.',
+                'Đã chọn khách cũ. Khi tạo hồ sơ mới, hệ thống sẽ liên kết tài khoản đã có quyền truy cập trong các hồ sơ bạn quản lí. Hồ sơ và quyền của tiệc cũ được giữ nguyên.',
               );
             }}
           />

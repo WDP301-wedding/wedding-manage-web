@@ -21,11 +21,25 @@ export const activationSchema = z.strictObject({
   canSend: z.boolean(),
   accountState: z.enum(['NOT_REGISTERED', 'ACTIVE', 'UNAVAILABLE']).optional(),
   accessState: z.enum(['NOT_GRANTED', 'GRANTED', 'UNAVAILABLE']).optional(),
+  linkSourceConsultationId: z.string().uuid().nullable().optional(),
 });
 
 export type Activation = z.infer<typeof activationSchema>;
 
 export type ActivationPaths = {
+  '/management/consultations/{consultationId}/existing-customer-access': {
+    post: {
+      parameters: { path: { consultationId: string }; header: { 'Idempotency-Key': string } };
+      requestBody: {
+        content: { 'application/json': { expectedRevision: number; sourceConsultationId: string } };
+      };
+      responses: {
+        200: {
+          content: { 'application/json': { data: { consultationId: string; linked: true } } };
+        };
+      };
+    };
+  };
   '/management/consultations/{consultationId}/activation-status': {
     get: {
       parameters: { path: { consultationId: string }; query?: { includeAccountState?: 'true' } };

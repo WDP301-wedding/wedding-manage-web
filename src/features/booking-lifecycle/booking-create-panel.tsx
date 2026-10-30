@@ -164,20 +164,25 @@ export function BookingCreatePanel({
     if (prefill) {
       setFormValues((prev) => ({
         ...prev,
-        eventDate: prev.eventDate || prefill.eventDate || '',
-        shiftCode: prev.shiftCode || prefill.preferredShift || '',
+        eventDate: prefill.eventDate || prev.eventDate || '',
+        shiftCode: prefill.preferredShift || prev.shiftCode || '',
         planningHeadcount:
-          prev.planningHeadcount || (prefill.expectedGuests ? String(prefill.expectedGuests) : ''),
+          (prefill.expectedGuests ? String(prefill.expectedGuests) : '') || prev.planningHeadcount,
         tableCount:
-          prev.tableCount ||
           (prefill.tableCount
             ? String(prefill.tableCount)
             : prefill.expectedGuests
               ? String(Math.ceil(prefill.expectedGuests / 10))
-              : ''),
+              : '') || prev.tableCount,
       }));
     }
   }, [prefill]);
+
+  useEffect(() => {
+    if (prefill?.preferredShift && !formValues.shiftCode) {
+      setFormValues((prev) => ({ ...prev, shiftCode: prefill.preferredShift! }));
+    }
+  }, [prefill?.preferredShift, formValues.shiftCode]);
 
   const syncFormValues = (form: HTMLFormElement) => {
     const data = new FormData(form);

@@ -14,6 +14,10 @@ const bookingIdentity = z.object({
     .nullish(),
   customerName: z.string().nullish(),
   alias: z.string().nullish(),
+  brideName: z.string().nullish(),
+  groomName: z.string().nullish(),
+  phone: z.string().nullish(),
+  email: z.string().nullish(),
 });
 export type AnalyticsBookingsData = Omit<PinnedBookingsData, 'items'> &
   Readonly<{

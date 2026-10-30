@@ -125,18 +125,19 @@ export function useBookingWorkspaceState({
   ) => {
     const legacy = parseConsultationChoices(context.note);
     setConsultation({ id: context.consultationId, revision: context.revision });
-    setPrefill({
+    setPrefill((prev) => ({
       displayName: context.displayName,
       email: context.email,
       note: context.note ?? undefined,
-      eventDate: context.preferredDate ?? undefined,
-      expectedGuests: context.expectedGuests ?? undefined,
-      preferredHallId: context.preferredHallId ?? undefined,
-      preferredMenuVersionId: context.preferredMenuVersionId ?? undefined,
-      preferredHallName: legacy.hallName,
-      preferredMenuName: legacy.menuName,
-      preferredShift: context.preferredShift ?? legacy.shift,
-    });
+      eventDate: context.preferredDate ?? prev.eventDate ?? undefined,
+      expectedGuests: context.expectedGuests ?? prev.expectedGuests ?? undefined,
+      preferredHallId: context.preferredHallId ?? prev.preferredHallId ?? undefined,
+      preferredMenuVersionId:
+        context.preferredMenuVersionId ?? prev.preferredMenuVersionId ?? undefined,
+      preferredHallName: legacy.hallName ?? prev.preferredHallName,
+      preferredMenuName: legacy.menuName ?? prev.preferredMenuName,
+      preferredShift: context.preferredShift ?? legacy.shift ?? prev.preferredShift,
+    }));
   };
 
   const loadProposal = async (
@@ -290,6 +291,9 @@ export function useBookingWorkspaceState({
 
   useEffect(() => {
     const parsed = parseBookingUrlParams(window.location.search);
+    if (parsed.prefill) {
+      setPrefill(parsed.prefill);
+    }
     if (parsed.bookingId) {
       void loadProposal(parsed.bookingId);
       return;
@@ -301,7 +305,6 @@ export function useBookingWorkspaceState({
     setContextStatus('ready');
     if (parsed.prefill) {
       switchTab('consultation');
-      setPrefill(parsed.prefill);
     }
   }, []);
 

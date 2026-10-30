@@ -31,6 +31,11 @@ export function ActivationStatus({
   const key = useRef<string | null>(null);
   const confirmation = useRef<HTMLDialogElement>(null);
   const accountDetailsSupported = useRef(true);
+  const linkIntent = useRef<{
+    key: string;
+    expectedRevision: number;
+    sourceConsultationId: string;
+  } | null>(null);
   const copy = getActivationCopy(value);
 
   const load = useCallback(async () => {
@@ -121,6 +126,87 @@ export function ActivationStatus({
     }
   };
 
+  const linkAccess = async () => {
+    if (!value?.linkSourceConsultationId || sending.current || disabled) return;
+    sending.current = true;
+    setPending(true);
+    linkIntent.current ??= {
+      key: crypto.randomUUID(),
+      expectedRevision: value.consultationRevision,
+      sourceConsultationId: value.linkSourceConsultationId,
+    };
+    const intent = linkIntent.current;
+    try {
+      await session.authorize((token: string) =>
+        client().POST('/management/consultations/{consultationId}/existing-customer-access', {
+          headers: { Authorization: 'Bearer ' + token },
+          params: { path: { consultationId }, header: { 'Idempotency-Key': intent.key } },
+          body: {
+            expectedRevision: intent.expectedRevision,
+            sourceConsultationId: intent.sourceConsultationId,
+          },
+        }),
+      );
+      linkIntent.current = null;
+      await load();
+      notify.success(
+        'Đã liên kết hồ sơ tiệc với tài khoản khách hiện có. Khách không cần nhận lại lời mời.',
+      );
+    } catch (caught) {
+      if (caught instanceof ApiClientError && caught.kind === 'api' && (caught.status ?? 500) < 500)
+        linkIntent.current = null;
+      await load();
+      notify.error(caught, { title: 'Liên kết tài khoản khách' });
+    } finally {
+      sending.current = false;
+      setPending(false);
+    }
+  };
+
+  if (value?.state === 'ACTIVATED')
+    return (
+      <section className="hy-activation-card" aria-label="Tài khoản khách đã liên kết">
+        <div className="hy-activation-header">
+          <div>
+            <h4 className="hy-activation-heading">Đã liên kết với tài khoản khách</h4>
+            <p className="hy-activation-subheading">
+              {value.recipientEmail} · Khách dùng tài khoản hiện có để mở tiệc trên web hoặc app.
+            </p>
+            <small>Các chức năng vẫn theo quyền và tiến độ riêng của tiệc này.</small>
+          </div>
+        </div>
+      </section>
+    );
+  if (value?.accountState === 'ACTIVE' && value.linkSourceConsultationId)
+    return (
+      <section
+        className="hy-activation-card"
+        aria-label="Liên kết tài khoản khách hiện có"
+        aria-busy={pending}
+      >
+        <div className="hy-activation-header">
+          <div>
+            <h4 className="hy-activation-heading">Khách đã có tài khoản</h4>
+            <p className="hy-activation-subheading">
+              {value.recipientEmail} · Hồ sơ này được tạo trước khi có cơ chế liên kết tự động.
+            </p>
+            <small>
+              Liên kết trực tiếp để khách thấy tiệc mới; không gửi email kích hoạt hoặc thay đổi mật
+              khẩu.
+            </small>
+          </div>
+          <button
+            type="button"
+            className="hy-action-btn-primary"
+            disabled={disabled || pending}
+            onClick={() => void linkAccess()}
+          >
+            {pending ? 'Đang liên kết…' : 'Liên kết với khách này'}
+          </button>
+        </div>
+      </section>
+    );
+
   return (
     <section
       className="hy-activation-card"
@@ -205,7 +291,7 @@ export function ActivationStatus({
               </div>
             ) : null}
 
-            {value.expiresAt && value.state !== 'ACTIVATED' ? (
+            {value.expiresAt ? (
               <div className="hy-activation-meta-item">
                 <div className="hy-activation-meta-label">Hạn lời mời</div>
                 <div className="hy-activation-meta-value">

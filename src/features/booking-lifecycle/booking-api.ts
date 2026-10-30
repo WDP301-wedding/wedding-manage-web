@@ -46,7 +46,12 @@ export interface ManagementBookingGateway {
   createConsultation(
     this: void,
     accessToken: string,
-    input: Readonly<{ intendedEmail: string; displayName: string; note?: string }>,
+    input: Readonly<{
+      intendedEmail: string;
+      displayName: string;
+      note?: string;
+      sourceConsultationId?: string;
+    }>,
   ): Promise<Readonly<{ consultationId: string; revision: number }>>;
   invite(
     this: void,
