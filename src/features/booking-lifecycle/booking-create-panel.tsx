@@ -8,6 +8,7 @@ import { notify } from '../../design-system/notifications';
 import type { Authorize, BookingSelections, ManagementBookingGateway } from './booking-api';
 import { BookingCreateSummary } from './booking-create-summary';
 import { BookingCreateFormFields } from './booking-create-form-fields';
+import { BookingCreateCatalogBar } from './booking-create-catalog-bar';
 import { useBookingCatalog } from './use-booking-catalog';
 
 export interface BookingCreatePanelProps {
@@ -221,6 +222,11 @@ export function BookingCreatePanel({
     selections?.menus.find((m) => m.versionId === formValues.menuPackageVersionId) ?? matchedMenu;
   const currentTables = Number(formValues.tableCount) || 0;
   const currentHeadcount = Number(formValues.planningHeadcount) || 0;
+  const isCatalogIncomplete =
+    selections !== null &&
+    (selections.halls.length === 0 ||
+      selections.shifts.length === 0 ||
+      selections.menus.length === 0);
 
   return (
     <article className="booking-card">
@@ -241,6 +247,13 @@ export function BookingCreatePanel({
           </p>
         </div>
       </div>
+
+      <BookingCreateCatalogBar
+        loadingSelections={loadingSelections}
+        selections={selections}
+        disabled={disabled}
+        onLoadCatalog={loadCatalog}
+      />
 
       {selections &&
         ((prefill?.preferredHallId && !matchedHall) ||
@@ -305,7 +318,7 @@ export function BookingCreatePanel({
             currentTables={currentTables}
             currentHeadcount={currentHeadcount}
             disabled={disabled}
-            hasConsultation={consultation !== null}
+            hasConsultation={consultation !== null && !isCatalogIncomplete}
           />
         </div>
       </form>

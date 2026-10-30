@@ -43,6 +43,7 @@ export function useConsultationRequests() {
   const [resultKey, setResultKey] = useState('');
   const [queue, setQueue] = useState<Queue | null>(null),
     [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
   const [searchQuery, setSearchQuery] = useState(''),
     [searchTerm, setSearchTerm] = useState('');
@@ -60,11 +61,12 @@ export function useConsultationRequests() {
       const controller = new AbortController();
       abort.current = controller;
       setPending(true);
+      setError(null);
       try {
         const query: Record<string, string> = {};
         if (statusFilter !== 'ALL') query.status = statusFilter;
-        if (searchTerm) query.search = searchTerm;
-        if (sortBy !== 'newest') query.sortBy = sortBy;
+        if (searchTerm) query.q = searchTerm;
+        if (sortBy !== 'newest') query.sort = sortBy;
         if (cursor) query.cursor = cursor;
         const result = await session.authorize((token) =>
           getApi().GET('/management/consultation-requests', {
@@ -117,12 +119,14 @@ export function useConsultationRequests() {
           setQueue(null);
           setAccess('denied');
         }
+        const errMsg =
+          caught instanceof ApiClientError && caught.code === 'CONSULTATION_LIST_CHANGED'
+            ? 'Danh sách vừa thay đổi. Bấm tải lại để nhận kết quả mới.'
+            : 'Không tải được yêu cầu tư vấn. Hãy thử lại.';
+        setError(errMsg);
         notify.error(caught, {
           title: 'Yêu cầu tư vấn',
-          message:
-            caught instanceof ApiClientError && caught.code === 'CONSULTATION_LIST_CHANGED'
-              ? 'Danh sách vừa thay đổi. Bấm tải lại để nhận kết quả mới.'
-              : 'Không tải được yêu cầu tư vấn. Hãy thử lại.',
+          message: errMsg,
         });
       } finally {
         if (current === sequence.current) setPending(false);
@@ -174,6 +178,7 @@ export function useConsultationRequests() {
     if (pending || actionInFlight.current) return;
     actionInFlight.current = true;
     setPending(true);
+    setError(null);
     try {
       const result = await session.authorize((token) =>
         action === 'conversion'
@@ -250,6 +255,7 @@ export function useConsultationRequests() {
         setQueue(null);
         setAccess('denied');
       }
+      setError('Không hoàn tất được thao tác. Tải lại để kiểm tra trạng thái mới nhất.');
       notify.error(caught);
     } finally {
       actionInFlight.current = false;
@@ -297,6 +303,8 @@ export function useConsultationRequests() {
           (item.displayName ?? '').toLowerCase().includes(q) ||
           (item.email ?? '').toLowerCase().includes(q) ||
           (item.phone && item.phone.includes(q)) ||
+          (item.brideName && item.brideName.toLowerCase().includes(q)) ||
+          (item.groomName && item.groomName.toLowerCase().includes(q)) ||
           item.id.toLowerCase().includes(q),
       );
     }
@@ -323,7 +331,7 @@ export function useConsultationRequests() {
     access,
     queue,
     pending,
-    error: null,
+    error,
     notice: null,
     statusFilter,
     setStatusFilter,

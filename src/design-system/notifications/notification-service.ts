@@ -4,6 +4,39 @@ type NotificationListener = (notification: NotificationItem) => void;
 type DismissListener = (id: string) => void;
 type ClearListener = () => void;
 
+const KNOWN_CODE_TRANSLATIONS: Record<string, string> = {
+  CURRENT_PASSWORD_INVALID: 'Mật khẩu hiện tại chưa đúng.',
+  PASSWORD_INVALID: 'Mật khẩu không hợp lệ.',
+  EMAIL_NOT_CONFIGURED: 'Dịch vụ email đang gặp sự cố nên chưa gửi được mã OTP. Hãy thử lại sau.',
+  OTP_EMAIL_DELIVERY_FAILED:
+    'Dịch vụ email đang gặp sự cố nên chưa gửi được mã OTP. Hãy thử lại sau.',
+  RATE_LIMITED: 'Bạn đã thao tác quá nhiều lần. Vui lòng thử lại sau.',
+  UNAUTHORIZED: 'Phiên làm việc đã hết hạn. Vui lòng đăng nhập lại.',
+  FORBIDDEN: 'Tài khoản của bạn không có quyền thực hiện thao tác này.',
+  NOT_FOUND: 'Không tìm thấy dữ liệu yêu cầu hoặc dữ liệu đã bị xóa.',
+  CONFLICT: 'Dữ liệu đã bị thay đổi bởi phiên làm việc khác. Vui lòng tải lại.',
+  STALE_RECORD_REVISION:
+    'Dữ liệu trên máy chủ đã thay đổi bởi phiên làm việc khác. Vui lòng tải lại.',
+  STALE_BILLING_REVISION: 'Số dư đã thay đổi. Hãy làm mới và kiểm tra lại trước khi xác nhận.',
+  BOOKING_NOT_FOUND: 'Không tìm thấy hồ sơ đặt tiệc.',
+  BILLING_RECORD_NOT_FOUND: 'Không tìm thấy hồ sơ thanh toán.',
+  BILLING_ACCESS_DENIED: 'Phiên đăng nhập hoặc quyền xem hồ sơ không còn hợp lệ.',
+  REQUEST_FAILED: 'Yêu cầu không thành công. Vui lòng thử lại sau.',
+  NETWORK_ERROR: 'Lỗi kết nối mạng. Vui lòng kiểm tra lại đường truyền.',
+  SESSION_EXPIRED: 'Phiên làm việc đã hết hạn. Vui lòng đăng nhập lại.',
+};
+
+function isMachineCodeOrEnglishStatus(str: string): boolean {
+  const trimmed = str.trim();
+  return (
+    /^[A-Z0-9_-]+$/.test(trimmed) ||
+    /^Request failed with status code \d+$/i.test(trimmed) ||
+    trimmed === 'Network Error' ||
+    trimmed === 'Request failed' ||
+    trimmed === 'provider message'
+  );
+}
+
 class NotificationService {
   private readonly listeners = new Set<NotificationListener>();
   private readonly dismissListeners = new Set<DismissListener>();
@@ -124,45 +157,69 @@ class NotificationService {
 
       if (status === 401 || code === 'UNAUTHORIZED') {
         title = 'Hết phiên đăng nhập (401)';
-        message = 'Phiên làm việc đã hết hạn. Vui lòng đăng nhập lại để tiếp tục.';
+        message =
+          options?.fallbackMessage ??
+          'Phiên làm việc đã hết hạn. Vui lòng đăng nhập lại để tiếp tục.';
         return { title, message, requestId };
       }
 
       if (status === 403 || code === 'FORBIDDEN') {
         title = 'Từ chối quyền truy cập (403)';
-        message = 'Tài khoản của bạn không có quyền thực hiện thao tác này.';
+        message =
+          options?.fallbackMessage ??
+          'Tài khoản của bạn không có quyền thực hiện thao tác này.';
         return { title, message, requestId };
       }
 
       if (status === 404 || code === 'NOT_FOUND') {
         title = 'Không tìm thấy dữ liệu (404)';
         message =
-          rawMsg ?? options?.fallbackMessage ?? 'Dữ liệu yêu cầu không tồn tại hoặc đã bị xóa.';
+          options?.fallbackMessage ??
+          (rawMsg && !isMachineCodeOrEnglishStatus(rawMsg)
+            ? rawMsg
+            : 'Dữ liệu yêu cầu không tồn tại hoặc đã bị xóa.');
         return { title, message, requestId };
       }
 
       if (status === 409 || code?.includes('STALE') || code === 'CONFLICT') {
         title = 'Xung đột dữ liệu (409)';
         message =
-          rawMsg ??
           options?.fallbackMessage ??
-          'Dữ liệu trên máy chủ đã thay đổi bởi phiên làm việc khác. Vui lòng tải lại.';
+          (rawMsg && !isMachineCodeOrEnglishStatus(rawMsg)
+            ? rawMsg
+            : 'Dữ liệu trên máy chủ đã thay đổi bởi phiên làm việc khác. Vui lòng tải lại.');
         return { title, message, requestId };
       }
 
       if (status && status >= 500) {
         title = `Lỗi máy chủ (${status})`;
-        message = 'Máy chủ gặp sự cố xử lý hoặc đang bảo trì. Vui lòng thử lại sau ít phút.';
+        message =
+          options?.fallbackMessage ??
+          'Máy chủ gặp sự cố xử lý hoặc đang bảo trì. Vui lòng thử lại sau ít phút.';
         return { title, message, requestId };
       }
 
-      if (rawMsg) {
-        message = rawMsg;
-      } else if (options?.fallbackMessage) {
+      const translatedCode = code ? KNOWN_CODE_TRANSLATIONS[code] : undefined;
+      const translatedMsg = rawMsg ? KNOWN_CODE_TRANSLATIONS[rawMsg] : undefined;
+
+      if (options?.fallbackMessage) {
         message = options.fallbackMessage;
+      } else if (translatedCode) {
+        message = translatedCode;
+      } else if (translatedMsg) {
+        message = translatedMsg;
+      } else if (rawMsg && !isMachineCodeOrEnglishStatus(rawMsg)) {
+        message = rawMsg;
       }
     } else if (err instanceof Error) {
-      message = err.message;
+      const translated = KNOWN_CODE_TRANSLATIONS[err.message];
+      if (options?.fallbackMessage) {
+        message = options.fallbackMessage;
+      } else if (translated) {
+        message = translated;
+      } else if (!isMachineCodeOrEnglishStatus(err.message)) {
+        message = err.message;
+      }
     }
 
     return { title, message, requestId };

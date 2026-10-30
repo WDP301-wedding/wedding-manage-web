@@ -43,7 +43,25 @@ export function ConsultationRequestsPage() {
             <h1>Yêu cầu tư vấn</h1>
             <p>Tiếp nhận lời nhắn và mở hồ sơ để cùng khách hàng chuẩn bị buổi tiệc.</p>
           </div>
+          {access === 'manager' && (
+            <div className="booking-header-actions">
+              <button
+                type="button"
+                className="booking-secondary"
+                disabled={pending}
+                onClick={() => void load()}
+              >
+                Tải lại
+              </button>
+            </div>
+          )}
         </header>
+
+        {error && !queue && access === 'manager' && (
+          <div style={{ padding: '1rem', margin: '1rem 0', background: 'var(--hy-surface-container, #fdf6ee)', borderRadius: '8px', border: '1px solid var(--hy-wine, #7a1f3d)' }}>
+            <p style={{ margin: 0, color: 'var(--hy-wine, #7a1f3d)', fontWeight: 600 }}>{error}</p>
+          </div>
+        )}
 
         {access === 'loading' && <p role="status">Đang xác minh quyền quản lý…</p>}
         {access === 'denied' && (
