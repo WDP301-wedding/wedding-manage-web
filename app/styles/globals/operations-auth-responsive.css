@@ -87,7 +87,6 @@
     grid-template-columns: 1fr;
   }
 
-  .operations-shell .booking-header,
   .operations-shell .booking-section-heading {
     align-items: flex-start;
     flex-direction: column;

@@ -1,6 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { TriangleAlert } from 'lucide-react';
+import { Badge } from '../../components/ui/badge';
 import { minimumEventDate, useMinimumEventDate } from '../../lib/event-date';
 import type { BookingPrefill } from './booking-helpers';
 import { field, formatDateTime, normalizeSearch } from './booking-helpers';
@@ -229,23 +231,15 @@ export function BookingCreatePanel({
       selections.menus.length === 0);
 
   return (
-    <article className="booking-card">
-      <div className="booking-panel-header">
-        <div>
-          <span className="booking-step">02</span>
-          <h2 style={{ margin: 0, fontSize: '1.4rem', color: 'var(--hy-wine, #7a1f3d)' }}>
-            Đề xuất &amp; Giữ sảnh
-          </h2>
-          <p
-            style={{
-              margin: '4px 0 0',
-              fontSize: '0.86rem',
-              color: 'var(--hy-text-muted, #6e5d63)',
-            }}
-          >
+    <article className="flex flex-col gap-5">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="flex flex-col gap-1">
+          <h2 className="text-xl font-semibold">Đề xuất &amp; Giữ sảnh</h2>
+          <p className="text-muted-foreground">
             Khảo sát lịch khả dụng, chọn thực đơn và thiết lập đề xuất giữ chỗ 15 phút.
           </p>
         </div>
+        <Badge>Bước 02</Badge>
       </div>
 
       <BookingCreateCatalogBar
@@ -256,15 +250,20 @@ export function BookingCreatePanel({
       />
 
       {selections &&
-        ((prefill?.preferredHallId && !matchedHall) ||
-          (prefill?.preferredMenuVersionId && !matchedMenu)) ? (
-        <p role="status">
+      ((prefill?.preferredHallId && !matchedHall) ||
+        (prefill?.preferredMenuVersionId && !matchedMenu)) ? (
+        <p
+          role="status"
+          className="flex items-start gap-2 rounded-lg bg-hy-warning-bg px-4 py-3 text-xs text-hy-warning"
+        >
+          <TriangleAlert aria-hidden className="mt-0.5 size-4 shrink-0" />
           Sảnh hoặc phiên bản thực đơn khách chọn không còn trong danh mục phục vụ. Hãy trao đổi với
           khách và chọn phương án thay thế; hệ thống không tự đổi lựa chọn.
         </p>
       ) : null}
 
       <form
+        className="flex flex-wrap items-start gap-6"
         noValidate
         onChange={(e) => syncFormValues(e.currentTarget)}
         onSubmit={(event) => {
@@ -291,36 +290,34 @@ export function BookingCreatePanel({
             });
         }}
       >
-        <div className="booking-create-layout">
-          <BookingCreateFormFields
-            consultation={consultation}
-            selections={selections}
-            loadingSelections={loadingSelections}
-            loadError={loadError}
-            loadCatalog={loadCatalog}
-            matchedHall={matchedHall}
-            matchedMenu={matchedMenu}
-            prefillEventDate={prefill?.eventDate}
-            prefillShift={prefill?.preferredShift}
-            prefillTableCount={prefill?.tableCount}
-            prefillExpectedGuests={prefill?.expectedGuests}
-            minimumDate={minimumDate}
-            disabled={disabled}
-            localAvailability={localAvailability}
-            onCheckAvailability={handleCheckAvailability}
-          />
+        <BookingCreateFormFields
+          consultation={consultation}
+          selections={selections}
+          loadingSelections={loadingSelections}
+          loadError={loadError}
+          loadCatalog={loadCatalog}
+          matchedHall={matchedHall}
+          matchedMenu={matchedMenu}
+          prefillEventDate={prefill?.eventDate}
+          prefillShift={prefill?.preferredShift}
+          prefillTableCount={prefill?.tableCount}
+          prefillExpectedGuests={prefill?.expectedGuests}
+          minimumDate={minimumDate}
+          disabled={disabled}
+          localAvailability={localAvailability}
+          onCheckAvailability={handleCheckAvailability}
+        />
 
-          <BookingCreateSummary
-            currentHall={currentHall}
-            currentMenu={currentMenu}
-            eventDate={formValues.eventDate}
-            shiftCode={formValues.shiftCode}
-            currentTables={currentTables}
-            currentHeadcount={currentHeadcount}
-            disabled={disabled}
-            hasConsultation={consultation !== null && !isCatalogIncomplete}
-          />
-        </div>
+        <BookingCreateSummary
+          currentHall={currentHall}
+          currentMenu={currentMenu}
+          eventDate={formValues.eventDate}
+          shiftCode={formValues.shiftCode}
+          currentTables={currentTables}
+          currentHeadcount={currentHeadcount}
+          disabled={disabled}
+          hasConsultation={consultation !== null && !isCatalogIncomplete}
+        />
       </form>
     </article>
   );

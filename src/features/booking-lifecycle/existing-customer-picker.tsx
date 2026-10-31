@@ -1,7 +1,8 @@
 'use client';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
 import type { Authorize, ConsultationCustomer, ManagementBookingGateway } from './booking-api';
-import styles from './existing-customer-picker.module.css';
 
 export function ExistingCustomerPicker({
   authorize,
@@ -51,20 +52,24 @@ export function ExistingCustomerPicker({
   };
 
   return (
-    <article className={styles.pickerCard}>
-      <div className={styles.header}>
-        <h3 className={styles.title}>Khách cũ đặt thêm tiệc?</h3>
-        <p className={styles.desc}>
-          Tìm trong hồ sơ bạn quản lý để dùng lại thông tin. Mỗi tiệc có hồ sơ riêng; không thay đổi tiệc trước.
+    <article className="flex flex-col gap-4 rounded-xl border border-border bg-card p-5 shadow-hy-1">
+      <div className="flex flex-col gap-1">
+        <h3 className="text-base font-semibold">Khách cũ đặt thêm tiệc?</h3>
+        <p className="text-xs text-muted-foreground">
+          Tìm trong hồ sơ bạn quản lý để dùng lại thông tin. Mỗi tiệc có hồ sơ riêng; không thay đổi
+          tiệc trước.
         </p>
       </div>
 
-      <form onSubmit={(event) => void search(event)} className={styles.searchForm}>
-        <label className={styles.inputLabel} htmlFor="customer-search-query">
-          <span className={styles.labelText}>Tìm khách theo tên, email hoặc số điện thoại</span>
-          <input
+      <form onSubmit={(event) => void search(event)} className="flex flex-col gap-3">
+        <label
+          className="flex flex-col gap-1 text-xs font-semibold"
+          htmlFor="customer-search-query"
+        >
+          <span>Tìm khách theo tên, email hoặc số điện thoại</span>
+          <Input
             id="customer-search-query"
-            className={styles.input}
+            className="font-normal"
             value={query}
             minLength={2}
             maxLength={120}
@@ -78,31 +83,36 @@ export function ExistingCustomerPicker({
             }}
           />
         </label>
-        <button
-          className={styles.searchBtn}
+        <Button
+          variant="outline"
           disabled={disabled || pending || query.trim().length < 2}
           type="submit"
         >
           {pending ? 'Đang tìm…' : 'Tìm khách đã có'}
-        </button>
+        </Button>
       </form>
 
       {notice ? (
-        <p className={styles.notice} role="status">
+        <p className="rounded-lg bg-hy-info-bg px-4 py-3 text-xs text-hy-info" role="status">
           {notice}
         </p>
       ) : null}
 
       {customers.length ? (
-        <ul className={styles.resultsList} aria-label="Khách đã có">
+        <ul aria-label="Khách đã có" className="overflow-hidden rounded-lg border border-border">
           {customers.map((customer) => (
-            <li key={customer.consultationId} className={styles.resultItem}>
-              <div className={styles.resultInfo}>
-                <strong>{customer.displayName}</strong> · <span>{customer.email}</span>
+            <li
+              key={customer.consultationId}
+              className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3 last:border-b-0"
+            >
+              <div className="min-w-0 [overflow-wrap:anywhere]">
+                <strong className="font-semibold">{customer.displayName}</strong> ·{' '}
+                <span className="text-muted-foreground">{customer.email}</span>
               </div>
-              <button
+              <Button
                 type="button"
-                className={styles.chooseBtn}
+                variant="outline"
+                size="sm"
                 disabled={disabled}
                 onClick={() => {
                   onChoose(customer);
@@ -111,7 +121,7 @@ export function ExistingCustomerPicker({
                 }}
               >
                 Dùng thông tin cho tiệc mới
-              </button>
+              </Button>
             </li>
           ))}
         </ul>

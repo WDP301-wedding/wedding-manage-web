@@ -20,6 +20,21 @@
 @source '../src/features/booking-lifecycle/intake-page.tsx';
 @source '../src/features/booking-lifecycle/consultation-kpi-bar.tsx';
 @source '../src/features/booking-lifecycle/consultation-requests-list.tsx';
+@source '../src/features/booking-lifecycle/booking-page.tsx';
+@source '../src/features/booking-lifecycle/booking-helpers.tsx';
+@source '../src/features/booking-lifecycle/booking-workspace.tsx';
+@source '../src/features/booking-lifecycle/booking-lookup-bar.tsx';
+@source '../src/features/booking-lifecycle/booking-workspace-tab-consultation.tsx';
+@source '../src/features/booking-lifecycle/existing-customer-picker.tsx';
+@source '../src/features/booking-lifecycle/consultation-panel.tsx';
+@source '../src/features/booking-lifecycle/activation-status.tsx';
+@source '../src/features/booking-lifecycle/activation-confirm-dialog.tsx';
+@source '../src/features/booking-lifecycle/couple-account-card.tsx';
+@source '../src/features/booking-lifecycle/booking-workspace-tab-booking.tsx';
+@source '../src/features/booking-lifecycle/booking-create-panel.tsx';
+@source '../src/features/booking-lifecycle/booking-create-form-fields.tsx';
+@source '../src/features/booking-lifecycle/booking-create-catalog-bar.tsx';
+@source '../src/features/booking-lifecycle/booking-create-summary.tsx';
 
 /* Sản phẩm chỉ có giao diện sáng: khoá biến thể dark: vào class .dark không bao giờ được gắn. */
 @custom-variant dark (&:is(.dark *));

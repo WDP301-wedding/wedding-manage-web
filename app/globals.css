@@ -7,11 +7,8 @@
 @import './ui-v3.css';
 @import './styles/globals/tokens.css' layer(legacy);
 @import './styles/globals/booking-lifecycle.css' layer(legacy);
-@import './styles/globals/booking-create.css' layer(legacy);
 @import './styles/globals/booking-summary.css' layer(legacy);
 @import './styles/globals/booking-proposal.css' layer(legacy);
-@import './styles/globals/booking-activation.css' layer(legacy);
-@import './styles/globals/booking-modals.css' layer(legacy);
 @import './styles/globals/admin-shell-account.css' layer(legacy);
 @import './styles/globals/dashboard-metrics.css' layer(legacy);
 @import './styles/globals/tables-timeline.css' layer(legacy);

@@ -306,13 +306,3 @@
     transition-duration: 0.01ms !important;
   }
 }
-.intake-actions button,
-.intake-actions .booking-primary-link {
-  min-height: 2.35rem;
-  padding: 0.5rem 1.15rem;
-  font-size: 0.88rem;
-  font-weight: 600;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}

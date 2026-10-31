@@ -1,5 +1,8 @@
 'use client';
 
+import { ArrowLeft, Check } from 'lucide-react';
+import { Badge } from '../../components/ui/badge';
+import { Button } from '../../components/ui/button';
 import { BookingCreatePanel } from './booking-create-panel';
 import { CoupleAccountCard } from './couple-account-card';
 import { bookingStyles } from './booking.styles';
@@ -23,7 +26,9 @@ export interface BookingWorkspaceTabBookingProps {
   switchTab: (tab: 'consultation' | 'booking' | 'manage') => void;
   setBookingId: (id: string) => void;
   setConsultation: (c: { id: string; revision: number } | null) => void;
-  setCreatedBookingNotice: (notice: { bookingId: string; consultationId: string; email?: string | undefined } | null) => void;
+  setCreatedBookingNotice: (
+    notice: { bookingId: string; consultationId: string; email?: string | undefined } | null,
+  ) => void;
   setMessage: (msg: string | null) => void;
   loadProposal: (id: string, force?: boolean) => Promise<void>;
   recordMyBooking: (id: string) => void;
@@ -55,66 +60,38 @@ export function BookingWorkspaceTabBooking({
 }: Readonly<BookingWorkspaceTabBookingProps>) {
   return (
     <section
+      data-ui-v3
       aria-label="Khảo sát sảnh &amp; Tạo booking"
-      style={
-        active
-          ? bookingStyles.stepContainerVisible('1060px')
-          : bookingStyles.stepContainerHidden
-      }
+      className="flex flex-col gap-5"
+      style={active ? undefined : bookingStyles.stepContainerHidden}
     >
-      <div
-        style={{
-          marginBottom: '1rem',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '0.5rem',
-        }}
-      >
-        <button
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <Button
           type="button"
+          variant="ghost"
+          size="sm"
+          className="-ml-3"
           onClick={() => switchTab('consultation')}
-          style={{
-            background: 'none',
-            border: 'none',
-            color: 'var(--hy-wine, #7a1f3d)',
-            cursor: 'pointer',
-            fontSize: '0.88rem',
-            fontWeight: 600,
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px',
-            padding: '4px 0',
-          }}
         >
-          <span>←</span>
-          <span>Quay lại Bước 01: Hồ sơ tư vấn</span>
-        </button>
+          <ArrowLeft aria-hidden />
+          Quay lại Bước 01: Hồ sơ tư vấn
+        </Button>
         {consultation ? (
-          <span
-            style={{
-              fontSize: '0.82rem',
-              color: 'var(--hy-status-success, #2f6b4f)',
-              background: 'var(--hy-status-success-bg, #e7f1ea)',
-              padding: '4px 10px',
-              borderRadius: '6px',
-              fontWeight: 600,
-              border: '1px solid var(--hy-status-success-border, #bbf7d0)',
-            }}
-          >
-            ✓ Đã kết nối mã tư vấn: {consultation.id.slice(0, 8)}… (Phiên bản{' '}
-            {consultation.revision})
-          </span>
+          <Badge variant="success" className="h-auto whitespace-normal before:hidden">
+            <Check aria-hidden />
+            Đã kết nối mã tư vấn: {consultation.id.slice(0, 8)}… (Phiên bản {consultation.revision})
+          </Badge>
         ) : null}
       </div>
       {proposal ? (
-        <article className="booking-card">
-          <h2>Hồ sơ tư vấn này đã có tiệc</h2>
-          <p>Tiếp tục trong hồ sơ đã lưu để xem và chỉnh sửa theo trạng thái hiện tại.</p>
-          <button type="button" onClick={() => switchTab('manage')}>
+        <article className="flex flex-col items-start gap-3 rounded-xl border border-border bg-card p-6 shadow-hy-1">
+          <h2 className="text-lg font-semibold">Hồ sơ tư vấn này đã có tiệc</h2>
+          <p className="text-muted-foreground">
+            Tiếp tục trong hồ sơ đã lưu để xem và chỉnh sửa theo trạng thái hiện tại.
+          </p>
+          <Button type="button" onClick={() => switchTab('manage')}>
             Mở tiệc đang xử lý
-          </button>
+          </Button>
         </article>
       ) : (
         <BookingCreatePanel
@@ -143,17 +120,15 @@ export function BookingWorkspaceTabBooking({
         />
       )}
       {active && consultation && !proposal ? (
-        <div style={{ marginTop: '1.5rem' }}>
-          <CoupleAccountCard
-            consultationId={consultation.id}
-            email={prefill.email}
-            canInvite
-            pending={disabled}
-            inviteLogs={inviteLogs}
-            onInvite={() => void sendWorkspaceInvite()}
-            onClearLogs={() => setInviteLogs([])}
-          />
-        </div>
+        <CoupleAccountCard
+          consultationId={consultation.id}
+          email={prefill.email}
+          canInvite
+          pending={disabled}
+          inviteLogs={inviteLogs}
+          onInvite={() => void sendWorkspaceInvite()}
+          onClearLogs={() => setInviteLogs([])}
+        />
       ) : null}
     </section>
   );

@@ -77,9 +77,13 @@ export function PageState({
   title: string;
 }>) {
   return (
-    <main className="booking-state" id="booking-main">
-      <p className="section-kicker"> Wedding Estate </p>
-      <h1> {title} </h1>
+    <main
+      data-ui-v3
+      className="flex min-h-[60vh] flex-col items-start gap-3 bg-background p-6 sm:p-10"
+      id="booking-main"
+    >
+      <p className="text-xs font-semibold text-primary">Hỷ Yến · Quản trị nhà hàng</p>
+      <h1 className="text-2xl font-bold">{title}</h1>
       {children}
     </main>
   );
@@ -157,4 +161,17 @@ export function bookingPhaseLabel(phase: string): string {
     COMPLETED: 'Đã hoàn tất tiệc',
   };
   return labels[phase] ?? 'Đã có hồ sơ đặt tiệc';
+}
+
+export type BadgeTone = 'neutral' | 'brand' | 'success' | 'warning' | 'error' | 'info';
+
+export function bookingPhaseTone(phase: string): BadgeTone {
+  const tones: Record<string, BadgeTone> = {
+    DRAFT: 'neutral',
+    AWAITING_DEPOSIT: 'warning',
+    CONFIRMED: 'success',
+    CANCELLED: 'error',
+    COMPLETED: 'success',
+  };
+  return tones[phase] ?? 'brand';
 }

@@ -1,10 +1,15 @@
 'use client';
 
+import { Check, CircleCheck, Clock, Plus, X } from 'lucide-react';
+import { cn } from 'cn';
 import { ActivationStatus } from './activation-status';
 import type { FormEvent } from 'react';
 import type { BookingPrefill, InviteLogEntry } from './booking-helpers';
 import { field } from './booking-helpers';
-import { bookingStyles } from './booking.styles';
+import { Badge } from '../../components/ui/badge';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Textarea } from '../../components/ui/textarea';
 
 export interface ConsultationPanelProps {
   activationVisible?: boolean;
@@ -23,6 +28,16 @@ export interface ConsultationPanelProps {
   prefill?: BookingPrefill | undefined;
   customerPicker?: React.ReactNode | undefined;
 }
+
+const fieldLabelClass = 'flex flex-col gap-1 text-xs font-semibold';
+const fieldInputClass =
+  'font-normal read-only:border-border read-only:bg-secondary read-only:text-muted-foreground';
+
+const logTone = {
+  success: { box: 'bg-hy-success-bg text-hy-success', Icon: Check, label: 'Đã gửi thành công' },
+  error: { box: 'bg-hy-error-bg text-hy-error', Icon: X, label: 'Gửi thất bại' },
+  pending: { box: 'bg-hy-warning-bg text-hy-warning', Icon: Clock, label: 'Đang xử lý...' },
+} as const;
 
 export function ConsultationPanel({
   consultation,
@@ -48,89 +63,56 @@ export function ConsultationPanel({
       ...(note === '' ? {} : { note }),
     });
   };
+  const showPrefill = Boolean(prefill?.displayName || prefill?.email);
+  const showReset = Boolean(prefill?.sourceConsultationId && consultation === null && onReset);
 
   return (
-    <article
-      className="booking-card"
-      style={{
-        padding: '1.25rem 1.35rem',
-        borderRadius: '14px',
-        position: 'relative',
-      }}
-    >
-      <span
-        className="booking-step"
-        style={{
-          top: '1rem',
-          right: '1.25rem',
-          fontSize: '1.25rem',
-          opacity: 0.7,
-        }}
-      >
-        01
-      </span>
-      <h2
-        style={{
-          fontSize: '1.15rem',
-          margin: '0 0 0.35rem',
-          color: 'var(--hy-wine, #7a1f3d)',
-          fontWeight: 600,
-        }}
-      >
-        Hồ sơ tư vấn
-      </h2>
-      <p
-        style={{
-          ...bookingStyles.stepKicker,
-          fontSize: '0.8rem',
-          marginBottom: '0.75rem',
-          lineHeight: 1.45,
-        }}
-      >
-        {consultation ? (
-          'Hồ sơ tư vấn đã được lưu. Tiếp tục xử lý hoặc chọn khách cũ cho tiệc khác.'
-        ) : (
-          <>
-            Nhập thông tin khách và bấm <strong>&quot;Tạo hồ sơ tư vấn&quot;</strong> để chuyển sang
-            Bước 02.
-          </>
-        )}
-      </p>
+    <article className="flex flex-col gap-5 rounded-xl border border-border bg-card p-6 shadow-hy-1">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex max-w-xl flex-col gap-1">
+          <h2 className="text-lg font-semibold">Hồ sơ tư vấn</h2>
+          <p className="text-xs text-muted-foreground">
+            {consultation ? (
+              'Hồ sơ tư vấn đã được lưu. Tiếp tục xử lý hoặc chọn khách cũ cho tiệc khác.'
+            ) : (
+              <>
+                Nhập thông tin khách và bấm{' '}
+                <strong className="text-foreground">&quot;Tạo hồ sơ tư vấn&quot;</strong> để chuyển
+                sang Bước 02.
+              </>
+            )}
+          </p>
+        </div>
+        <Badge>Bước 01</Badge>
+      </div>
 
-      {customerPicker ? <div style={{ marginBottom: '0.75rem' }}>{customerPicker}</div> : null}
+      {customerPicker ? <div>{customerPicker}</div> : null}
 
-      {prefill?.displayName || prefill?.email ? (
-        <div
-          style={{
-            ...bookingStyles.prefillBox,
-            padding: '5px 8px',
-            fontSize: '0.78rem',
-            marginBottom: '0.65rem',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-          }}
-        >
-          <span>✓</span>
-          <span>
-            {prefill?.sourceConsultationId
-              ? 'Đã chọn khách cũ. Email được giữ cố định để liên kết đúng tài khoản; có thể chọn lại khách ở danh sách bên cạnh.'
-              : 'Đã tự động điền thông tin từ yêu cầu tư vấn của khách hàng.'}
-          </span>
+      {showPrefill || showReset ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-muted px-4 py-3">
+          {showPrefill ? (
+            <span className="flex min-w-0 flex-[1_1_320px] items-start gap-2 text-xs">
+              <Check aria-hidden className="mt-0.5 size-4 shrink-0 text-hy-success" />
+              {prefill?.sourceConsultationId
+                ? 'Đã chọn khách cũ. Email được giữ cố định để liên kết đúng tài khoản; có thể chọn lại khách ở danh sách bên cạnh.'
+                : 'Đã tự động điền thông tin từ yêu cầu tư vấn của khách hàng.'}
+            </span>
+          ) : null}
+          {showReset ? (
+            <Button type="button" variant="outline" size="sm" disabled={disabled} onClick={onReset}>
+              Bỏ chọn khách cũ
+            </Button>
+          ) : null}
         </div>
       ) : null}
 
-      {prefill?.sourceConsultationId && consultation === null && onReset ? (
-        <button type="button" disabled={disabled} onClick={onReset} className="booking-secondary">
-          Bỏ chọn khách cũ
-        </button>
-      ) : null}
-      <form onSubmit={submit} style={{ display: 'grid', gap: '0.65rem' }}>
-        <div className="booking-fields-inline" style={{ gap: '0.65rem' }}>
-          <label style={{ display: 'grid', gap: '0.25rem', fontSize: '0.8rem', margin: 0 }}>
+      <form onSubmit={submit} className="flex flex-col gap-4">
+        <div className="grid gap-x-4 gap-y-3 sm:grid-cols-2">
+          <label className={fieldLabelClass}>
             <span>Tên khách</span>
-            <input
+            <Input
               key={`displayName-${prefill?.displayName ?? ''}`}
+              className={fieldInputClass}
               name="displayName"
               readOnly={consultation !== null}
               required
@@ -138,240 +120,122 @@ export function ConsultationPanel({
               maxLength={120}
               defaultValue={prefill?.displayName ?? ''}
               placeholder="VD: Lã Gia Huy"
-              style={{
-                minHeight: '2.35rem',
-                height: '2.35rem',
-                padding: '0.35rem 0.75rem',
-                fontSize: '0.84rem',
-              }}
             />
           </label>
-          <label style={{ display: 'grid', gap: '0.25rem', fontSize: '0.8rem', margin: 0 }}>
+          <label className={fieldLabelClass}>
             <span>Email liên hệ</span>
-            <input
+            <Input
               key={`email-${prefill?.email ?? ''}`}
+              className={fieldInputClass}
               name="email"
               readOnly={consultation !== null || Boolean(prefill?.sourceConsultationId)}
               type="email"
               required
               defaultValue={prefill?.email ?? ''}
               placeholder="email@example.com"
-              style={{
-                minHeight: '2.35rem',
-                height: '2.35rem',
-                padding: '0.35rem 0.75rem',
-                fontSize: '0.84rem',
-              }}
             />
           </label>
         </div>
-        <label style={{ display: 'grid', gap: '0.25rem', fontSize: '0.8rem', margin: 0 }}>
+        <label className={fieldLabelClass}>
           <span>Ghi chú</span>
-          <textarea
+          <Textarea
             key={`note-${prefill?.note ?? ''}`}
+            className={fieldInputClass}
             name="note"
             readOnly={consultation !== null}
             maxLength={2000}
-            rows={2}
+            rows={3}
             defaultValue={prefill?.note ?? ''}
             placeholder="Yêu cầu riêng, ngày dự kiến, số khách ước tính..."
-            style={{
-              minHeight: '3.6rem',
-              padding: '0.4rem 0.75rem',
-              fontSize: '0.84rem',
-              resize: 'vertical',
-            }}
           />
         </label>
-        <button
-          disabled={disabled || consultation !== null}
-          type="submit"
-          style={{
-            minHeight: '2.45rem',
-            height: '2.45rem',
-            padding: '0 1rem',
-            fontSize: '0.84rem',
-            fontWeight: 600,
-            borderRadius: '8px',
-          }}
-        >
+        <Button className="self-end" disabled={disabled || consultation !== null} type="submit">
           {consultation ? 'Đã tạo hồ sơ tư vấn' : 'Tạo hồ sơ tư vấn'}
-        </button>
+        </Button>
       </form>
 
       {consultation === null ? null : (
-        <div
-          className="booking-result"
-          style={{
-            marginTop: '0.75rem',
-            padding: '0.75rem 0.9rem',
-            gap: '0.45rem',
-            borderRadius: '8px',
-          }}
-        >
-          <small style={{ fontSize: '0.72rem', letterSpacing: '0.05em' }}>
-            CONSULTATION · REV {consultation.revision}
-          </small>
-          <code style={{ fontSize: '0.82rem' }}>{consultation.id}</code>
-          <div
-            style={{
-              marginTop: '0.25rem',
-              padding: '0.5rem 0.75rem',
-              backgroundColor: '#f0fdf4',
-              border: '1px solid #bbf7d0',
-              borderRadius: '6px',
-              fontSize: '0.8rem',
-              color: '#166534',
-              lineHeight: 1.45,
-            }}
-          >
-            <strong>✓ Đã lưu hồ sơ tư vấn ban đầu.</strong>
-            <p style={{ margin: '0.25rem 0 0', color: '#15803d' }}>
-              Kiểm tra quyền truy cập khách hoặc chuyển sang{' '}
-              <strong>Bước 02: Khảo sát sảnh &amp; Đặt tiệc</strong>.
-            </p>
+        <div className="flex flex-col gap-4 border-t border-border pt-5">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            <span className="text-xs text-muted-foreground">
+              Mã hồ sơ tư vấn · phiên bản {consultation.revision}
+            </span>
+            <code className="rounded-md bg-secondary px-2 py-1 font-mono text-xs break-all">
+              {consultation.id}
+            </code>
           </div>
-          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.4rem', flexWrap: 'wrap' }}>
-            {activationVisible ? (
-              <ActivationStatus
-                key={consultation.id}
-                consultationId={consultation.id}
-                disabled={disabled}
-                reloadSignal={logs?.length ?? 0}
-              />
-            ) : null}
-            {onReset ? (
-              <button
-                disabled={disabled}
-                type="button"
-                className="booking-secondary"
-                onClick={onReset}
-                style={{
-                  minHeight: '2.1rem',
-                  height: '2.1rem',
-                  padding: '0 0.75rem',
-                  fontSize: '0.78rem',
-                }}
-              >
-                + Lập hồ sơ tư vấn cho tiệc khác
-              </button>
-            ) : null}
+          <div className="flex items-start gap-3 rounded-lg bg-hy-success-bg px-4 py-3 text-hy-success">
+            <CircleCheck aria-hidden className="mt-0.5 size-5 shrink-0" />
+            <div className="flex flex-col gap-0.5 text-xs">
+              <strong className="text-sm font-semibold">Đã lưu hồ sơ tư vấn ban đầu.</strong>
+              <p>
+                Kiểm tra quyền truy cập khách hoặc chuyển sang{' '}
+                <strong>Bước 02: Khảo sát sảnh &amp; Đặt tiệc</strong>.
+              </p>
+            </div>
           </div>
-          {logs && logs.length > 0 ? (
-            <div
-              style={{
-                marginTop: '0.65rem',
-                padding: '0.65rem',
-                backgroundColor: '#f8fafc',
-                border: '1px solid #e2e8f0',
-                borderRadius: '6px',
-              }}
+          {activationVisible ? (
+            <ActivationStatus
+              key={consultation.id}
+              consultationId={consultation.id}
+              disabled={disabled}
+              reloadSignal={logs?.length ?? 0}
+              inset
+            />
+          ) : null}
+          {onReset ? (
+            <Button
+              disabled={disabled}
+              type="button"
+              variant="outline"
+              size="sm"
+              className="self-start"
+              onClick={onReset}
             >
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: '0.4rem',
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: '0.72rem',
-                    fontWeight: 700,
-                    color: '#475569',
-                  }}
-                >
-                  Nhật ký gửi lời mời
-                </span>
+              <Plus aria-hidden />
+              Lập hồ sơ tư vấn cho tiệc khác
+            </Button>
+          ) : null}
+          {logs && logs.length > 0 ? (
+            <div className="flex flex-col gap-2 rounded-lg bg-muted p-4">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-semibold">Nhật ký gửi lời mời</span>
                 {onClearLogs ? (
-                  <button
+                  <Button
                     type="button"
+                    variant="link"
+                    size="xs"
+                    className="text-muted-foreground"
                     onClick={onClearLogs}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      fontSize: '0.72rem',
-                      color: '#94a3b8',
-                      cursor: 'pointer',
-                      padding: '2px 4px',
-                      textDecoration: 'underline',
-                    }}
                   >
                     Xóa log
-                  </button>
+                  </Button>
                 ) : null}
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                {logs.map((item) => (
+              {logs.map((item) => {
+                const tone = logTone[item.type];
+                return (
                   <div
                     key={item.id}
-                    style={{
-                      padding: '0.4rem 0.6rem',
-                      borderRadius: '4px',
-                      fontSize: '0.78rem',
-                      lineHeight: '1.35',
-                      backgroundColor:
-                        item.type === 'success'
-                          ? '#f0fdf4'
-                          : item.type === 'error'
-                            ? '#fef2f2'
-                            : '#fffbeb',
-                      border: `1px solid ${
-                        item.type === 'success'
-                          ? '#bbf7d0'
-                          : item.type === 'error'
-                            ? '#fecaca'
-                            : '#fde68a'
-                      }`,
-                    }}
+                    className={cn('flex flex-col gap-1 rounded-lg p-3 text-xs', tone.box)}
                   >
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        gap: '4px',
-                      }}
-                    >
-                      <span
-                        style={{
-                          fontWeight: 600,
-                          color:
-                            item.type === 'success'
-                              ? '#166534'
-                              : item.type === 'error'
-                                ? '#991b1b'
-                                : '#92400e',
-                        }}
-                      >
-                        {item.type === 'success'
-                          ? '✓ Đã gửi thành công'
-                          : item.type === 'error'
-                            ? '✕ Gửi thất bại'
-                            : '⏳ Đang xử lý...'}
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="inline-flex items-center gap-1.5 font-semibold">
+                        <tone.Icon aria-hidden className="size-4" />
+                        {tone.label}
                       </span>
-                      <small style={{ color: '#64748b', fontSize: '0.72rem' }}>{item.time}</small>
+                      <small className="text-2xs tabular-nums">{item.time}</small>
                     </div>
-                    <div style={{ marginTop: '2px', color: '#1e293b' }}>{item.message}</div>
+                    <div className="text-foreground">{item.message}</div>
                     {item.invitationId ? (
-                      <div style={{ marginTop: '3px', fontSize: '0.72rem' }}>
-                        <span style={{ color: '#64748b' }}>Mã lời mời: </span>
-                        <code
-                          style={{
-                            background: 'rgba(0,0,0,0.06)',
-                            padding: '1px 4px',
-                            borderRadius: '3px',
-                            wordBreak: 'break-all',
-                          }}
-                        >
-                          {item.invitationId}
-                        </code>
+                      <div className="text-2xs">
+                        <span>Mã lời mời: </span>
+                        <code className="font-mono break-all">{item.invitationId}</code>
                       </div>
                     ) : null}
                   </div>
-                ))}
-              </div>
+                );
+              })}
             </div>
           ) : null}
         </div>

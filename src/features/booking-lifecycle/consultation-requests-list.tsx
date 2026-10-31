@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { Badge } from '../../components/ui/badge';
 import { Button, buttonVariants } from '../../components/ui/button';
-import { bookingPhaseLabel } from './booking-helpers';
+import { bookingPhaseLabel, bookingPhaseTone, type BadgeTone } from './booking-helpers';
 import type { Item } from './use-consultation-requests';
 
 export interface ConsultationRequestsListProps {
@@ -13,16 +13,6 @@ export interface ConsultationRequestsListProps {
   nextCursor?: string | null;
   onLoadMore: (cursor: string) => void;
 }
-
-type BadgeTone = 'neutral' | 'brand' | 'success' | 'warning' | 'error' | 'info';
-
-const bookingPhaseTone: Record<string, BadgeTone> = {
-  DRAFT: 'neutral',
-  AWAITING_DEPOSIT: 'warning',
-  CONFIRMED: 'success',
-  CANCELLED: 'error',
-  COMPLETED: 'success',
-};
 
 function getDateRemainingText(dateStr: string): string | null {
   const target = new Date(dateStr);
@@ -42,7 +32,7 @@ function statusBadge(item: Item): { tone: BadgeTone; label: string } {
   if (item.status === 'CLOSED') return { tone: 'neutral', label: 'Lưu trữ' };
   if (item.bookingId) {
     return {
-      tone: bookingPhaseTone[item.bookingPhase ?? ''] ?? 'brand',
+      tone: bookingPhaseTone(item.bookingPhase ?? ''),
       label: bookingPhaseLabel(item.bookingPhase ?? ''),
     };
   }

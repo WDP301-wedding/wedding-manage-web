@@ -1,9 +1,13 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { Link2, LoaderCircle } from 'lucide-react';
+import { cn } from 'cn';
 import { ApiClientError, createApiClient } from '../../lib/api/client';
 import { sharedManagementSession } from '../identity-access/session';
 import { notify } from '../../design-system/notifications';
+import { Badge } from '../../components/ui/badge';
+import { Button } from '../../components/ui/button';
 import {
   activationSchema,
   getActivationCopy,
@@ -22,7 +26,14 @@ export function ActivationStatus({
   consultationId,
   disabled = false,
   reloadSignal = 0,
-}: Readonly<{ consultationId: string; disabled?: boolean; reloadSignal?: number }>) {
+  inset = false,
+}: Readonly<{
+  consultationId: string;
+  disabled?: boolean;
+  reloadSignal?: number;
+  /** Nằm trong một thẻ khác: dùng nền phụ thay cho thẻ lồng thẻ. */
+  inset?: boolean;
+}>) {
   const [retrying, setRetrying] = useState(false);
   const [value, setValue] = useState<Activation | null>(null);
   const [pending, setPending] = useState(false);
@@ -163,81 +174,92 @@ export function ActivationStatus({
     }
   };
 
+  const box = cn(
+    'flex gap-4 rounded-xl p-5',
+    inset ? 'bg-muted' : 'border border-border bg-card shadow-hy-1',
+  );
+
   if (value?.state === 'ACTIVATED')
     return (
-      <section className="hy-activation-card" aria-label="Tài khoản khách đã liên kết">
-        <div className="hy-activation-header">
-          <div>
-            <h4 className="hy-activation-heading">Đã liên kết với tài khoản khách</h4>
-            <p className="hy-activation-subheading">
-              {value.recipientEmail} · Khách dùng tài khoản hiện có để mở tiệc trên web hoặc app.
-            </p>
-            <small>Các chức năng vẫn theo quyền và tiến độ riêng của tiệc này.</small>
-          </div>
+      <section
+        data-ui-v3
+        className={cn(box, 'flex-wrap items-start')}
+        aria-label="Tài khoản khách đã liên kết"
+      >
+        <span
+          aria-hidden
+          className="flex size-10 shrink-0 items-center justify-center rounded-full bg-hy-success-bg text-hy-success"
+        >
+          <Link2 className="size-5" />
+        </span>
+        <div className="flex min-w-0 flex-[1_1_280px] flex-col gap-1">
+          <h4 className="text-base font-semibold">Đã liên kết với tài khoản khách</h4>
+          <p className="[overflow-wrap:anywhere]">
+            {value.recipientEmail} · Khách dùng tài khoản hiện có để mở tiệc trên web hoặc app.
+          </p>
+          <small className="text-xs text-muted-foreground">
+            Các chức năng vẫn theo quyền và tiến độ riêng của tiệc này.
+          </small>
         </div>
       </section>
     );
   if (value?.accountState === 'ACTIVE' && value.linkSourceConsultationId)
     return (
       <section
-        className="hy-activation-card"
+        data-ui-v3
+        className={cn(box, 'flex-wrap items-start justify-between')}
         aria-label="Liên kết tài khoản khách hiện có"
         aria-busy={pending}
       >
-        <div className="hy-activation-header">
-          <div>
-            <h4 className="hy-activation-heading">Khách đã có tài khoản</h4>
-            <p className="hy-activation-subheading">
-              {value.recipientEmail} · Hồ sơ này được tạo trước khi có cơ chế liên kết tự động.
-            </p>
-            <small>
-              Liên kết trực tiếp để khách thấy tiệc mới; không gửi email kích hoạt hoặc thay đổi mật
-              khẩu.
-            </small>
-          </div>
-          <button
-            type="button"
-            className="hy-action-btn-primary"
-            disabled={disabled || pending}
-            onClick={() => void linkAccess()}
-          >
-            {pending ? 'Đang liên kết…' : 'Liên kết với khách này'}
-          </button>
+        <div className="flex min-w-0 flex-[1_1_280px] flex-col gap-1">
+          <h4 className="text-base font-semibold">Khách đã có tài khoản</h4>
+          <p className="[overflow-wrap:anywhere]">
+            {value.recipientEmail} · Hồ sơ này được tạo trước khi có cơ chế liên kết tự động.
+          </p>
+          <small className="text-xs text-muted-foreground">
+            Liên kết trực tiếp để khách thấy tiệc mới; không gửi email kích hoạt hoặc thay đổi mật
+            khẩu.
+          </small>
         </div>
+        <Button type="button" disabled={disabled || pending} onClick={() => void linkAccess()}>
+          {pending ? 'Đang liên kết…' : 'Liên kết với khách này'}
+        </Button>
       </section>
     );
 
+  const badgeVariant = value ? getActivationBadgeVariant(value.state) : 'neutral';
+
   return (
     <section
-      className="hy-activation-card"
+      data-ui-v3
+      className={cn(box, 'flex-col')}
       aria-label="Trạng thái tài khoản và quyền truy cập tiệc"
       aria-busy={pending}
     >
-      <div className="hy-activation-header">
-        <div className="hy-activation-header-info">
-          <div>
-            <h4 className="hy-activation-heading">{copy.heading}</h4>
-            <span className="hy-activation-subheading">
-              Cổng thông tin duyệt kịch bản &amp; theo dõi hợp đồng
-            </span>
-          </div>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <h4 className="text-base font-semibold">{copy.heading}</h4>
+          <span className="text-xs text-muted-foreground">
+            Cổng thông tin duyệt kịch bản &amp; theo dõi hợp đồng
+          </span>
         </div>
 
-        <div className="hy-activation-actions">
-          <button
+        <div className="flex flex-wrap gap-2">
+          <Button
             type="button"
-            className="hy-action-btn-secondary"
+            variant="outline"
+            size="sm"
             disabled={pending}
             onClick={() => void load()}
             title="Tải lại trạng thái mới nhất"
           >
-            {pending ? <span className="hy-button-spinner" aria-hidden="true" /> : null}
+            {pending ? <LoaderCircle aria-hidden className="motion-safe:animate-spin" /> : null}
             <span>Cập nhật trạng thái</span>
-          </button>
+          </Button>
           {value?.canSend ? (
-            <button
+            <Button
               type="button"
-              className="hy-action-btn-primary"
+              size="sm"
               disabled={disabled || pending}
               onClick={() => {
                 if (key.current) void send();
@@ -253,56 +275,59 @@ export function ActivationStatus({
                       ? copy.sendLabel
                       : 'Gửi lại lời mời'}
               </span>
-            </button>
+            </Button>
           ) : null}
         </div>
       </div>
 
       {value ? (
-        <div className="hy-activation-body">
-          <div className="hy-activation-status-row">
-            <div
-              role="status"
-              className={`hy-activation-badge hy-activation-badge-${getActivationBadgeVariant(value.state)}`}
-            >
-              <span className="hy-activation-status-dot" aria-hidden="true" />
-              <strong>{copy.statusLabel}</strong>
-            </div>
-          </div>
+        <>
+          <Badge
+            role="status"
+            variant={badgeVariant === 'danger' ? 'error' : badgeVariant}
+            className="h-auto text-left whitespace-normal"
+          >
+            <strong className="font-semibold">{copy.statusLabel}</strong>
+          </Badge>
 
-          <div className="hy-activation-meta-grid">
+          <dl
+            className={cn(
+              'grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-x-6 gap-y-3 rounded-lg p-4',
+              inset ? 'bg-card' : 'bg-muted',
+            )}
+          >
             {copy.accountLabel ? (
-              <div className="hy-activation-meta-item">
-                <div className="hy-activation-meta-label">Tài khoản khách</div>
-                <div className="hy-activation-meta-value">{copy.accountLabel}</div>
+              <div className="flex flex-col gap-0.5">
+                <dt className="text-xs text-muted-foreground">Tài khoản khách</dt>
+                <dd>{copy.accountLabel}</dd>
               </div>
             ) : null}
-            <div className="hy-activation-meta-item">
-              <div className="hy-activation-meta-label">Email nhận</div>
-              <div className="hy-activation-meta-value">{value.recipientEmail}</div>
+            <div className="flex flex-col gap-0.5">
+              <dt className="text-xs text-muted-foreground">Email nhận</dt>
+              <dd className="[overflow-wrap:anywhere]">{value.recipientEmail}</dd>
             </div>
 
             {value.acceptedAt ? (
-              <div className="hy-activation-meta-item">
-                <div className="hy-activation-meta-label">Khách nhận lời mời</div>
-                <div className="hy-activation-meta-value">
+              <div className="flex flex-col gap-0.5">
+                <dt className="text-xs text-muted-foreground">Khách nhận lời mời</dt>
+                <dd className="tabular-nums">
                   {new Date(value.acceptedAt).toLocaleString('vi-VN')}
-                </div>
+                </dd>
               </div>
             ) : null}
 
             {value.expiresAt ? (
-              <div className="hy-activation-meta-item">
-                <div className="hy-activation-meta-label">Hạn lời mời</div>
-                <div className="hy-activation-meta-value">
+              <div className="flex flex-col gap-0.5">
+                <dt className="text-xs text-muted-foreground">Hạn lời mời</dt>
+                <dd className="tabular-nums">
                   {new Date(value.expiresAt).toLocaleString('vi-VN')}
-                </div>
+                </dd>
               </div>
             ) : null}
 
-            <div className="hy-activation-meta-item">
-              <div className="hy-activation-meta-label">Quyền truy cập</div>
-              <div className="hy-activation-meta-value">
+            <div className="flex flex-col gap-0.5">
+              <dt className="text-xs text-muted-foreground">Quyền truy cập</dt>
+              <dd>
                 {value.accessState === 'GRANTED'
                   ? 'Đã có quyền · Chức năng theo tiến độ tiệc'
                   : value.accessState === 'NOT_GRANTED'
@@ -310,14 +335,12 @@ export function ActivationStatus({
                     : value.accessState === 'UNAVAILABLE'
                       ? 'Quyền truy cập cần được kiểm tra'
                       : 'Theo lời mời và tiến độ tiệc'}
-              </div>
+              </dd>
             </div>
-          </div>
+          </dl>
 
-          <div className="hy-activation-hint-box">
-            <p className="hy-activation-hint">{copy.hint}</p>
-          </div>
-        </div>
+          <p className="text-xs text-muted-foreground">{copy.hint}</p>
+        </>
       ) : null}
 
       <ActivationConfirmDialog

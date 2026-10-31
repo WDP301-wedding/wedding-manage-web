@@ -470,25 +470,12 @@
   resize: none;
 }
 
-.booking-state {
-  display: grid;
-  place-content: center;
-  justify-items: start;
-  gap: 1rem;
-  padding: 2rem;
-}
-
-.booking-state p {
-  max-width: 36rem;
-}
-
 @media (max-width: 960px) {
   .booking-grid,
   .proposal-layout {
     grid-template-columns: 1fr;
   }
 
-  .booking-header,
   .booking-section-heading {
     align-items: flex-start;
     flex-direction: column;
@@ -504,14 +491,8 @@
     padding: 1rem;
   }
 
-  .booking-fields-inline,
   .booking-actions,
   .booking-lookup {
     grid-template-columns: 1fr;
-  }
-
-  .booking-header nav {
-    width: 100%;
-    justify-content: space-between;
   }
 }
