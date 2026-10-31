@@ -280,8 +280,6 @@ export function ConsultationPanel({
                     fontSize: '0.72rem',
                     fontWeight: 700,
                     color: '#475569',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
                   }}
                 >
                   Nhật ký gửi lời mời

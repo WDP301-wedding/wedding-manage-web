@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap&subset=vietnamese');
-
 :root {
   /* Hỷ Yến Design System Palette - Legacy variables mapped for continuous compatibility */
   --navy: #7a1f3d;
@@ -23,6 +21,8 @@
   --hy-wine: #7a1f3d;
   --hy-wine-pressed: #5c1430;
   --hy-wine-soft: #f5e4e9;
+  --hy-on-wine: #ffffff;
+  --hy-focus: var(--hy-wine);
   --hy-peach: #f4b9a7;
   --hy-cream: #fff8f1;
   --hy-champagne: #c9a46a;

@@ -41,8 +41,6 @@ export function CreatedBookingNoticeBanner({
               fontSize: '0.75rem',
               fontWeight: 700,
               color: '#15803d',
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
             }}
           >
             ✓ Khởi tạo tiệc cưới nháp thành công

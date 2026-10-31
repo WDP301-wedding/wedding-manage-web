@@ -1,0 +1,150 @@
+/*
+ * Hỷ Yến v3 trên Tailwind v4 + shadcn/ui.
+ * Một nguồn màu: token --hy-* trong styles/globals/tokens.css; tên của shadcn chỉ trỏ về đó.
+ */
+@import 'tailwindcss/theme.css' layer(theme);
+/* shortcut: chỉ quét thư mục đã sang v3 để class cũ trùng tên utility (vd. "hidden", "table")
+   không bị Tailwind ghi đè; khi chuyển một màn, thêm @source cho file của màn đó. */
+@import 'tailwindcss/utilities.css' layer(utilities) source(none);
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+
+@source '../src/components/ui';
+
+/* Sản phẩm chỉ có giao diện sáng: khoá biến thể dark: vào class .dark không bao giờ được gắn. */
+@custom-variant dark (&:is(.dark *));
+
+/* Thang chữ Hỷ Yến v3 gán vào tên của Tailwind để component shadcn tự theo Design System. */
+@theme {
+  --text-2xs: 12px; /* hy-caption */
+  --text-2xs--line-height: 16px;
+  --text-xs: 13px; /* hy-small */
+  --text-xs--line-height: 20px;
+  --text-sm: 15px; /* hy-body: chữ mặc định của component */
+  --text-sm--line-height: 24px;
+  --text-base: 17px; /* hy-h4 */
+  --text-base--line-height: 24px;
+  --text-lg: 20px; /* hy-h3, hy-money */
+  --text-lg--line-height: 28px;
+  --text-xl: 24px; /* hy-h2 */
+  --text-xl--line-height: 32px;
+  --text-2xl: 32px; /* hy-h1 */
+  --text-2xl--line-height: 42px;
+  --text-3xl: 40px; /* hy-display */
+  --text-3xl--line-height: 52px;
+}
+
+@theme inline {
+  --font-sans: var(--font-body);
+  --font-heading: var(--font-display);
+  --font-mono: var(--font-code);
+
+  /* Tên màu của shadcn trỏ thẳng vào --hy-*; không khai báo --muted, --primary… ở :root vì CSS cũ
+     dùng chung tên (vd. --muted là màu chữ) và biến ngoài layer sẽ đè lên CSS cũ. */
+  --color-background: var(--hy-cream);
+  --color-foreground: var(--hy-ink);
+  --color-card: var(--hy-surface);
+  --color-card-foreground: var(--hy-ink);
+  --color-popover: var(--hy-surface);
+  --color-popover-foreground: var(--hy-ink);
+  --color-primary: var(--hy-wine);
+  --color-primary-foreground: var(--hy-on-wine);
+  --color-secondary: var(--hy-surface-container);
+  --color-secondary-foreground: var(--hy-ink);
+  --color-muted: var(--hy-surface-warm);
+  --color-muted-foreground: var(--hy-ink-muted);
+  --color-accent: var(--hy-wine-soft);
+  --color-accent-foreground: var(--hy-wine);
+  --color-destructive: var(--hy-error);
+  --color-border: var(--hy-outline);
+  --color-input: var(--hy-outline-strong);
+  --color-ring: var(--hy-focus);
+
+  --color-hy-wine: var(--hy-wine);
+  --color-hy-wine-pressed: var(--hy-wine-pressed);
+  --color-hy-wine-soft: var(--hy-wine-soft);
+  --color-hy-on-wine: var(--hy-on-wine);
+  --color-hy-cream: var(--hy-cream);
+  --color-hy-surface: var(--hy-surface);
+  --color-hy-surface-warm: var(--hy-surface-warm);
+  --color-hy-surface-container: var(--hy-surface-container);
+  --color-hy-ink: var(--hy-ink);
+  --color-hy-ink-muted: var(--hy-ink-muted);
+  --color-hy-outline: var(--hy-outline);
+  --color-hy-outline-strong: var(--hy-outline-strong);
+  --color-hy-champagne: var(--hy-champagne);
+  --color-hy-peach: var(--hy-peach);
+  --color-hy-success: var(--hy-success);
+  --color-hy-success-bg: var(--hy-success-bg);
+  --color-hy-warning: var(--hy-warning);
+  --color-hy-warning-bg: var(--hy-warning-bg);
+  --color-hy-error: var(--hy-error);
+  --color-hy-error-bg: var(--hy-error-bg);
+  --color-hy-info: var(--hy-info);
+  --color-hy-info-bg: var(--hy-info-bg);
+
+  /* Thang bo góc của shadcn rơi đúng vào Hỷ Yến: lg = ô nhập/nút, xl = thẻ/dialog, 2xl = sheet. */
+  --radius-lg: var(--hy-radius-sm);
+  --radius-xl: var(--hy-radius-md);
+  --radius-2xl: var(--hy-radius-lg);
+  --radius-hy-sm: var(--hy-radius-sm);
+  --radius-hy-md: var(--hy-radius-md);
+  --radius-hy-lg: var(--hy-radius-lg);
+
+  --shadow-hy-1: var(--hy-shadow-1);
+  --shadow-hy-2: var(--hy-shadow-2);
+
+  --ease-hy-emphasized: var(--hy-ease-emphasized);
+  --ease-hy-decelerate: var(--hy-ease-decelerate);
+  --ease-hy-accelerate: var(--hy-ease-accelerate);
+}
+
+@layer base {
+  /* shortcut: reset kiểu preflight chỉ trong vùng [data-ui-v3] để màn cũ giữ nguyên giao diện;
+     bỏ scope và dùng preflight đầy đủ khi mọi màn đã sang v3. */
+  :where([data-ui-v3], [data-ui-v3] *, [data-ui-v3] ::before, [data-ui-v3] ::after) {
+    margin: 0;
+    padding: 0;
+    border: 0 solid var(--hy-outline);
+  }
+  :where([data-ui-v3]) {
+    color: var(--hy-ink);
+    font-family: var(--font-body);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  :where([data-ui-v3]) :where(h1, h2, h3, h4, h5, h6) {
+    font-size: inherit;
+    font-weight: inherit;
+  }
+  :where([data-ui-v3]) :where(ol, ul, menu) {
+    list-style: none;
+  }
+  :where([data-ui-v3]) :where(img, svg, video, canvas) {
+    display: block;
+    vertical-align: middle;
+  }
+  :where([data-ui-v3]) :where(img, video) {
+    max-width: 100%;
+    height: auto;
+  }
+  :where([data-ui-v3]) :where(button, input, select, optgroup, textarea) {
+    font-family: inherit;
+    font-size: inherit;
+    font-weight: inherit;
+    line-height: inherit;
+    color: inherit;
+    background-color: transparent;
+    border-radius: 0;
+  }
+  :where([data-ui-v3]) :where(button, [role='button']) {
+    cursor: pointer;
+  }
+  :where([data-ui-v3]) :where(a) {
+    color: inherit;
+    text-decoration: inherit;
+  }
+  :where([data-ui-v3] *) {
+    outline-color: color-mix(in oklab, var(--hy-focus) 50%, transparent);
+  }
+}
