@@ -337,7 +337,7 @@ export function ManagementBillingWorkspace({
       <header className="billing-header">
         <div className="billing-header-title-group">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-            <span className="section-kicker" style={{ margin: 0 }}>Wedding Estate · Operations</span>
+            <span className="section-kicker" style={{ margin: 0 }}>Hỷ Yến · Quản trị nhà hàng</span>
             {view !== null && (
               <Link className="billing-back-link" href={`/bookings/${encodeURIComponent(view.bookingId)}`}>
                 ← Về hồ sơ tiệc

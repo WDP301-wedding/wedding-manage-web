@@ -1,6 +1,6 @@
 'use client';
 
-import { intakeStyles } from './intake.styles';
+import { cn } from 'cn';
 import type { StatusFilter } from './use-consultation-requests';
 
 export interface ConsultationKpiBarProps {
@@ -19,51 +19,40 @@ export function ConsultationKpiBar({
   onFilterChange,
   stats,
 }: Readonly<ConsultationKpiBarProps>) {
+  const cards: readonly {
+    filter: StatusFilter;
+    label: string;
+    value: number;
+    valueClass?: string;
+  }[] = [
+    { filter: 'ALL', label: 'Tổng yêu cầu', value: stats.total },
+    { filter: 'NEW', label: 'Chờ tiếp nhận', value: stats.newCount, valueClass: 'text-primary' },
+    {
+      filter: 'CONVERTED',
+      label: 'Đã mở tư vấn',
+      value: stats.convertedCount,
+      valueClass: 'text-hy-success',
+    },
+    { filter: 'CLOSED', label: 'Đã kết thúc', value: stats.closedCount },
+  ];
+
   return (
-    <div style={intakeStyles.kpiGrid}>
-      <div
-        style={intakeStyles.kpiCard(statusFilter === 'ALL')}
-        onClick={() => onFilterChange('ALL')}
-        role="button"
-        tabIndex={0}
-        aria-label={`Thẻ thống kê: Tổng yêu cầu (${stats.total})`}
-      >
-        <span style={intakeStyles.kpiLabel}>TỔNG YÊU CẦU</span>
-        <span style={intakeStyles.kpiValue}>{stats.total}</span>
-      </div>
-
-      <div
-        style={intakeStyles.kpiCard(statusFilter === 'NEW', '#7a1f3d')}
-        onClick={() => onFilterChange('NEW')}
-        role="button"
-        tabIndex={0}
-        aria-label={`Thẻ thống kê: Chờ tiếp nhận (${stats.newCount})`}
-      >
-        <span style={intakeStyles.kpiLabel}>CHỜ TIẾP NHẬN</span>
-        <span style={{ ...intakeStyles.kpiValue, color: '#7a1f3d' }}>{stats.newCount}</span>
-      </div>
-
-      <div
-        style={intakeStyles.kpiCard(statusFilter === 'CONVERTED', '#2f6b4f')}
-        onClick={() => onFilterChange('CONVERTED')}
-        role="button"
-        tabIndex={0}
-        aria-label={`Thẻ thống kê: Đã mở tư vấn (${stats.convertedCount})`}
-      >
-        <span style={intakeStyles.kpiLabel}>ĐÃ MỞ TƯ VẤN</span>
-        <span style={{ ...intakeStyles.kpiValue, color: '#2f6b4f' }}>{stats.convertedCount}</span>
-      </div>
-
-      <div
-        style={intakeStyles.kpiCard(statusFilter === 'CLOSED', '#94a3b8')}
-        onClick={() => onFilterChange('CLOSED')}
-        role="button"
-        tabIndex={0}
-        aria-label={`Thẻ thống kê: Đã kết thúc (${stats.closedCount})`}
-      >
-        <span style={intakeStyles.kpiLabel}>ĐÃ KẾT THÚC</span>
-        <span style={{ ...intakeStyles.kpiValue, color: '#64748b' }}>{stats.closedCount}</span>
-      </div>
+    <div className="grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-2 sm:gap-4">
+      {cards.map((card) => (
+        <button
+          key={card.filter}
+          type="button"
+          onClick={() => onFilterChange(card.filter)}
+          aria-pressed={statusFilter === card.filter}
+          aria-label={`Thẻ thống kê: ${card.label} (${card.value})`}
+          className="flex flex-col gap-1 rounded-xl border border-border bg-card px-3 py-2.5 text-left sm:px-5 sm:py-4 transition-colors hover:border-input focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none aria-pressed:border-primary aria-pressed:bg-accent"
+        >
+          <span className="text-xs text-muted-foreground">{card.label}</span>
+          <span className={cn('text-xl font-bold tabular-nums', card.valueClass)}>
+            {card.value}
+          </span>
+        </button>
+      ))}
     </div>
   );
 }

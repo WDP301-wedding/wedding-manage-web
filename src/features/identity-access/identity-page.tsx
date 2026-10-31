@@ -1,6 +1,6 @@
 'use client';
-import fieldStyles from './identity-field.module.css';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { type FormEvent, useEffect, useLayoutEffect, useState } from 'react';
 
@@ -16,6 +16,12 @@ import {
   type ManagementSessionSnapshot,
 } from './session';
 import { notify } from '../../design-system/notifications';
+import { BrandMark } from '../../design-system/brand-mark';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Label } from '../../components/ui/label';
+
+const BRAND_KICKER = 'Hỷ Yến · Quản trị nhà hàng';
 
 const browserResetToken =
   typeof window === 'undefined'
@@ -110,14 +116,19 @@ export function ManagementIdentityExperience({
 
   if (snapshot.status === 'authenticated' && snapshot.presentation === 'denied') {
     return (
-      <main className="permission-page">
-        <section className="permission-panel">
-          <span className="preview-label">Wedding Estate · Operations</span>
-          <h1>Không có quyền vào khu vực vận hành</h1>
-          <p>Phiên đăng nhập hợp lệ nhưng máy chủ không trả về vai trò Quản lý hoặc Nhân viên.</p>
-          <button type="button" className="primary-button" onClick={logout} disabled={pending}>
+      <main
+        data-ui-v3=""
+        className="flex min-h-screen items-center justify-center bg-background p-6"
+      >
+        <section className="flex w-full max-w-[480px] flex-col gap-4 rounded-xl border border-border bg-card p-8 shadow-hy-1">
+          <span className="text-xs font-semibold text-primary">{BRAND_KICKER}</span>
+          <h1 className="text-xl font-semibold">Không có quyền vào khu vực vận hành</h1>
+          <p className="text-muted-foreground">
+            Phiên đăng nhập hợp lệ nhưng máy chủ không trả về vai trò Quản lý hoặc Nhân viên.
+          </p>
+          <Button className="self-start" type="button" onClick={logout} disabled={pending}>
             Đăng xuất
-          </button>
+          </Button>
         </section>
       </main>
     );
@@ -140,57 +151,89 @@ export function ManagementIdentityExperience({
   };
 
   return (
-    <main className="operations-auth-page">
-      <section className="operations-auth-brand" aria-label="Wedding Estate Operations">
-        <span className="admin-brand-mark" aria-hidden="true">
-          W
-        </span>
-        <p className="script-label">Wedding Estate · Operations</p>
-        <h1>Điều hành ngày trọng đại</h1>
-        <p>Không gian đăng nhập riêng dành cho quản lý và nhân viên nhà hàng.</p>
+    <main data-ui-v3="" className="flex min-h-screen flex-wrap bg-background">
+      <section
+        className="relative isolate flex min-h-[360px] min-w-0 flex-[1_1_560px] flex-col justify-between gap-12 overflow-hidden bg-hy-ink px-6 py-10 text-white sm:px-16 sm:py-14"
+        aria-label="Hỷ Yến Quản trị nhà hàng"
+      >
+        <Image
+          src="/images/hero-sanh-tiec.webp"
+          alt=""
+          fill
+          priority
+          sizes="(min-width: 1040px) 50vw, 100vw"
+          className="-z-20 object-cover object-[78%_center]"
+        />
+        {/* Below ~0.62 white body text drops under 4.5:1 over the brightest flowers. */}
+        <div className="absolute inset-0 -z-10 bg-hy-ink/[0.66]" aria-hidden="true" />
+        <div className="self-start rounded-xl bg-background py-2 pr-4 pl-2">
+          <BrandMark />
+        </div>
+        <div className="flex max-w-[520px] flex-col gap-4">
+          <p className="text-xs font-semibold">{BRAND_KICKER}</p>
+          <h1 className="text-3xl font-bold">Điều hành ngày trọng đại</h1>
+          <p className="text-base">
+            Không gian đăng nhập riêng dành cho quản lý và nhân viên nhà hàng.
+          </p>
+        </div>
       </section>
-      <section className="operations-auth-panel">
-        {view === 'restoring' ? (
-          <div role="status" aria-busy="true">
-            <span className="section-kicker">Phiên làm việc</span>
-            <h2>Đang khôi phục phiên an toàn</h2>
-          </div>
-        ) : null}
-        {view === 'login' ? (
-          <AuthForm
-            title="Đăng nhập vận hành"
-            submitLabel="Đăng nhập"
-            pending={pending}
-            onSubmit={handleLogin}
-          >
-            <Field label="Email công việc" name="email" type="email" autoComplete="email" />
-            <Field
-              label="Mật khẩu"
-              name="password"
-              type="password"
-              autoComplete="current-password"
+      <section className="flex min-w-0 flex-[1_1_480px] items-center justify-center px-4 py-14 sm:px-8">
+        <div className="flex w-full max-w-[440px] flex-col gap-6 rounded-xl border border-border bg-card p-6 shadow-hy-1 sm:p-8">
+          {view === 'restoring' ? (
+            <div className="flex flex-col gap-1" role="status" aria-busy="true">
+              <span className="text-xs text-muted-foreground">Phiên làm việc</span>
+              <h2 className="text-xl font-semibold">Đang khôi phục phiên an toàn</h2>
+            </div>
+          ) : null}
+          {view === 'login' ? (
+            <AuthForm
+              title="Đăng nhập vận hành"
+              submitLabel="Đăng nhập"
+              pending={pending}
+              onSubmit={handleLogin}
+            >
+              <Field label="Email công việc" name="email" type="email" autoComplete="email" />
+              <Field
+                label="Mật khẩu"
+                name="password"
+                type="password"
+                autoComplete="current-password"
+              />
+            </AuthForm>
+          ) : null}
+          {view === 'reset-request' ? (
+            <PasswordResetOtpForm
+              onCompleted={() => {
+                setView('login');
+                notify.success('Mật khẩu đã được cập nhật. Hãy đăng nhập lại.');
+              }}
             />
-          </AuthForm>
-        ) : null}
-        {view === 'reset-request' ? (
-          <PasswordResetOtpForm
-            onCompleted={() => {
-              setView('login');
-              notify.success('Mật khẩu đã được cập nhật. Hãy đăng nhập lại.');
-            }}
-          />
-        ) : null}
+          ) : null}
 
-        {view === 'login' ? (
-          <button className="text-button" type="button" onClick={() => setView('reset-request')}>
-            Quên mật khẩu?
-          </button>
-        ) : null}
-        {view === 'reset-request' ? (
-          <button className="text-button" type="button" onClick={() => setView('login')}>
-            Quay lại đăng nhập
-          </button>
-        ) : null}
+          {view === 'login' || view === 'reset-request' ? (
+            <div className="border-t border-border pt-4">
+              {view === 'login' ? (
+                <Button
+                  variant="link"
+                  className="h-auto px-0"
+                  type="button"
+                  onClick={() => setView('reset-request')}
+                >
+                  Quên mật khẩu?
+                </Button>
+              ) : (
+                <Button
+                  variant="link"
+                  className="h-auto px-0"
+                  type="button"
+                  onClick={() => setView('login')}
+                >
+                  Quay lại đăng nhập
+                </Button>
+              )}
+            </div>
+          ) : null}
+        </div>
       </section>
     </main>
   );
@@ -224,7 +267,7 @@ function OperationsDashboard({
       <main id="dashboard-content" className="admin-main">
         <header className="dashboard-header" id="overview">
           <div>
-            <span className="preview-label">Wedding Estate · Operations</span>
+            <span className="preview-label">{BRAND_KICKER}</span>
             <p>Hệ thống vận hành tiệc cưới</p>
             <h1>Tổng quan hôm nay</h1>
           </div>
@@ -258,14 +301,20 @@ function AuthForm({
   title: string;
 }>) {
   return (
-    <form className="operations-auth-form" onSubmit={onSubmit}>
-      <span className="section-kicker">Phiên làm việc</span>
-      <h2>{title}</h2>
-      <div className="auth-fields">{children}</div>
-      <button className="primary-button" type="submit" disabled={pending}>
-        {pending ? 'Đang xử lý…' : submitLabel}
-      </button>
-      <small>Access token chỉ tồn tại trong bộ nhớ của trang này.</small>
+    <form className="flex flex-col gap-6" onSubmit={onSubmit}>
+      <div className="flex flex-col gap-1">
+        <span className="text-xs text-muted-foreground">Phiên làm việc</span>
+        <h2 className="text-xl font-semibold">{title}</h2>
+      </div>
+      <div className="flex flex-col gap-4">{children}</div>
+      <div className="flex flex-col gap-2">
+        <Button type="submit" disabled={pending}>
+          {pending ? 'Đang xử lý…' : submitLabel}
+        </Button>
+        <small className="text-xs text-muted-foreground">
+          Access token chỉ tồn tại trong bộ nhớ của trang này.
+        </small>
+      </div>
     </form>
   );
 }
@@ -321,22 +370,20 @@ function Field({
   const password = input.type === 'password';
   const id = `operations-${name}`;
   return (
-    <div className="auth-field">
-      <label htmlFor={id}>{label}</label>
-      <div className={fieldStyles.inputWrap}>
-        <input
+    <div className="flex flex-col gap-1">
+      <Label htmlFor={id}>{label}</Label>
+      <div className="relative">
+        <Input
           {...input}
           type={password && visible ? 'text' : input.type}
           id={id}
           name={name}
-          className={
-            `${className ?? ''} ${password ? fieldStyles.passwordInput : ''}`.trim() || undefined
-          }
+          className={`${className ?? ''} ${password ? 'pr-12' : ''}`.trim() || undefined}
           required
         />
         {password ? (
           <button
-            className={fieldStyles.toggle}
+            className="absolute top-0.5 right-0.5 flex size-10 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
             type="button"
             aria-label={visible ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
             title={visible ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}

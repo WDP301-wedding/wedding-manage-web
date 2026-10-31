@@ -75,7 +75,7 @@ export function ManagementBookingWorkspace({
           }}
         >
           <div>
-            <p className="section-kicker">Wedding Estate · Operations</p>
+            <p className="section-kicker">Hỷ Yến · Quản trị nhà hàng</p>
             <h1>Điều phối đặt tiệc</h1>
             <p>Mỗi hồ sơ tư vấn gắn với một tiệc. Mở lại hồ sơ để tiếp tục đúng tiến trình.</p>
           </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { cn } from 'cn';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import type { ManagementSessionSnapshot } from './session';
 import { BrandMark } from '../../design-system/brand-mark';
@@ -16,6 +17,13 @@ import {
   UsersIcon,
   XIcon,
 } from '../print-orders/icons';
+
+// The outer admin-shell / operations-shell / operations-main-container classes stay: legacy page
+// CSS still lays out and targets content through them until every screen is on Hỷ Yến v3.
+const navItemClass =
+  'flex h-11 items-center gap-3 rounded-lg px-3 text-sm text-muted-foreground no-underline transition-colors duration-150 hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none aria-[current=page]:bg-accent aria-[current=page]:font-semibold aria-[current=page]:text-accent-foreground';
+const iconButtonClass =
+  'flex size-11 items-center justify-center rounded-lg text-foreground hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none';
 
 export function OperationsShell({
   children,
@@ -50,9 +58,6 @@ export function OperationsShell({
       ? snapshot.actor
       : null;
   const manager = snapshot?.status === 'authenticated' && snapshot.presentation === 'manager';
-
-  const navClass = (page: typeof activePage) =>
-    `nav-item${activePage === page ? ' nav-item-active' : ''}`;
 
   // Complete Tab Focus Trap & Keyboard Escape & Scroll Lock
   useEffect(() => {
@@ -127,7 +132,7 @@ export function OperationsShell({
     <>
       <Link
         id="ops-nav-overview"
-        className={navClass('overview')}
+        className={navItemClass}
         href="/"
         prefetch={false}
         aria-current={activePage === 'overview' ? 'page' : undefined}
@@ -135,16 +140,14 @@ export function OperationsShell({
         title="Tổng quan"
         onClick={() => setMobileDrawerOpen(false)}
       >
-        <span className="nav-icon" aria-hidden="true">
-          <LayoutDashboardIcon width={18} height={18} />
-        </span>
+        <LayoutDashboardIcon width={18} height={18} aria-hidden="true" />
         <span>Tổng quan</span>
       </Link>
       {manager ? (
         <>
           <Link
             id="ops-nav-bookings"
-            className={navClass('bookings')}
+            className={navItemClass}
             href="/bookings"
             prefetch={false}
             aria-current={activePage === 'bookings' ? 'page' : undefined}
@@ -152,14 +155,12 @@ export function OperationsShell({
             title="Đặt tiệc"
             onClick={() => setMobileDrawerOpen(false)}
           >
-            <span className="nav-icon" aria-hidden="true">
-              <CalendarIcon width={18} height={18} />
-            </span>
+            <CalendarIcon width={18} height={18} aria-hidden="true" />
             <span>Đặt tiệc</span>
           </Link>
           <Link
             id="ops-nav-billing"
-            className={navClass('billing')}
+            className={navItemClass}
             href="/billing"
             prefetch={false}
             aria-current={activePage === 'billing' ? 'page' : undefined}
@@ -167,14 +168,12 @@ export function OperationsShell({
             title="Quản lý thanh toán"
             onClick={() => setMobileDrawerOpen(false)}
           >
-            <span className="nav-icon" aria-hidden="true">
-              <CreditCardIcon width={18} height={18} />
-            </span>
+            <CreditCardIcon width={18} height={18} aria-hidden="true" />
             <span>Quản lý thanh toán</span>
           </Link>
           <Link
             id="ops-nav-consultations"
-            className={navClass('consultations')}
+            className={navItemClass}
             href="/consultation-requests"
             prefetch={false}
             aria-current={activePage === 'consultations' ? 'page' : undefined}
@@ -182,14 +181,12 @@ export function OperationsShell({
             title="Yêu cầu tư vấn"
             onClick={() => setMobileDrawerOpen(false)}
           >
-            <span className="nav-icon" aria-hidden="true">
-              <ClipboardListIcon width={18} height={18} />
-            </span>
+            <ClipboardListIcon width={18} height={18} aria-hidden="true" />
             <span>Yêu cầu tư vấn</span>
           </Link>
           <Link
             id="ops-nav-print-orders"
-            className={navClass('print-orders')}
+            className={navItemClass}
             href="/print-orders"
             prefetch={false}
             aria-current={activePage === 'print-orders' ? 'page' : undefined}
@@ -197,14 +194,12 @@ export function OperationsShell({
             title="Thiệp và in ấn"
             onClick={() => setMobileDrawerOpen(false)}
           >
-            <span className="nav-icon" aria-hidden="true">
-              <PrinterIcon width={18} height={18} />
-            </span>
+            <PrinterIcon width={18} height={18} aria-hidden="true" />
             <span>Thiệp và in ấn</span>
           </Link>
           <Link
             id="ops-nav-staff"
-            className={navClass('staff')}
+            className={navItemClass}
             href="/staff"
             prefetch={false}
             aria-current={activePage === 'staff' ? 'page' : undefined}
@@ -212,14 +207,12 @@ export function OperationsShell({
             title="Nhân sự"
             onClick={() => setMobileDrawerOpen(false)}
           >
-            <span className="nav-icon" aria-hidden="true">
-              <UsersIcon width={18} height={18} />
-            </span>
+            <UsersIcon width={18} height={18} aria-hidden="true" />
             <span>Nhân sự</span>
           </Link>
           <Link
             id="ops-nav-catalog"
-            className={navClass('catalog')}
+            className={navItemClass}
             href="/catalog"
             prefetch={false}
             aria-current={activePage === 'catalog' ? 'page' : undefined}
@@ -227,16 +220,14 @@ export function OperationsShell({
             title="Danh mục"
             onClick={() => setMobileDrawerOpen(false)}
           >
-            <span className="nav-icon" aria-hidden="true">
-              <Settings2Icon width={18} height={18} />
-            </span>
+            <Settings2Icon width={18} height={18} aria-hidden="true" />
             <span>Danh mục</span>
           </Link>
         </>
       ) : actor ? (
         <Link
           id="ops-nav-staff-checkin"
-          className={navClass('staff')}
+          className={navItemClass}
           href="/staff"
           prefetch={false}
           aria-current={activePage === 'staff' ? 'page' : undefined}
@@ -244,9 +235,7 @@ export function OperationsShell({
           title="Bàn đón khách"
           onClick={() => setMobileDrawerOpen(false)}
         >
-          <span className="nav-icon" aria-hidden="true">
-            <UsersIcon width={18} height={18} />
-          </span>
+          <UsersIcon width={18} height={18} aria-hidden="true" />
           <span>Bàn đón khách</span>
         </Link>
       ) : null}
@@ -254,17 +243,20 @@ export function OperationsShell({
   );
 
   const footerProfile = (
-    <div className="sidebar-footer">
+    <div className="flex flex-col gap-2 border-t border-border pt-4">
       {actor ? (
-        <div className="profile-block">
+        <>
           <Link
-            className="operations-account-link"
+            className="flex items-center gap-3 rounded-lg p-2 text-foreground no-underline hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none aria-[current=page]:bg-accent"
             href="/account"
             aria-current={activePage === 'account' ? 'page' : undefined}
             aria-label={`Quản lý tài khoản ${actor.displayEmail}`}
             onClick={() => setMobileDrawerOpen(false)}
           >
-            <span className="operations-account-icon" aria-hidden="true">
+            <span
+              className="flex size-9 shrink-0 items-center justify-center rounded-full bg-accent text-accent-foreground"
+              aria-hidden="true"
+            >
               <svg
                 viewBox="0 0 24 24"
                 fill="none"
@@ -272,19 +264,21 @@ export function OperationsShell({
                 strokeWidth="1.6"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                style={{ width: 22, height: 22, flexShrink: 0 }}
+                className="size-5"
               >
                 <circle cx="12" cy="8" r="4" />
                 <path d="M4 21v-2a8 8 0 0 1 16 0v2" />
               </svg>
             </span>
-            <span className="operations-account-label">
-              <strong>{actor.displayEmail}</strong>
-              <small>{manager ? 'Quản lý nhà hàng' : 'Nhân viên vận hành'}</small>
+            <span className="flex min-w-0 flex-col">
+              <strong className="truncate text-xs font-semibold">{actor.displayEmail}</strong>
+              <small className="text-2xs text-muted-foreground">
+                {manager ? 'Quản lý nhà hàng' : 'Nhân viên vận hành'}
+              </small>
             </span>
           </Link>
           <button
-            className="operations-logout"
+            className="h-9 rounded-lg px-2 text-left text-xs font-semibold text-primary hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:opacity-50"
             type="button"
             onClick={() => {
               setMobileDrawerOpen(false);
@@ -294,9 +288,9 @@ export function OperationsShell({
           >
             Đăng xuất
           </button>
-        </div>
+        </>
       ) : (
-        <Link className="nav-item" href="/" onClick={() => setMobileDrawerOpen(false)}>
+        <Link className={navItemClass} href="/" onClick={() => setMobileDrawerOpen(false)}>
           Đăng nhập
         </Link>
       )}
@@ -310,27 +304,29 @@ export function OperationsShell({
       </a>
 
       {/* Mobile Header Bar with Hamburger */}
-      <div className="operations-mobile-header" aria-label="Thanh điều hướng di động">
+      <div
+        data-ui-v3=""
+        className="sticky top-0 z-50 flex h-14 items-center gap-2 border-b border-border bg-card px-2 min-[1025px]:hidden"
+        aria-label="Thanh điều hướng di động"
+      >
         <button
           ref={triggerRef}
           type="button"
-          className="operations-hamburger"
+          className={iconButtonClass}
           aria-label="Mở bảng điều hướng"
           aria-expanded={mobileDrawerOpen}
           aria-controls="operations-mobile-drawer"
           onClick={() => setMobileDrawerOpen(true)}
         >
-          <MenuIcon width={22} height={22} />
+          <MenuIcon width={22} height={22} aria-hidden="true" />
         </button>
-        <div className="admin-brand operations-mobile-brand">
-          <BrandMark compact tagline="Quản trị nhà hàng" />
-        </div>
+        <BrandMark compact tagline="Quản trị nhà hàng" />
       </div>
 
       {/* Mobile Drawer Backdrop & Dialog */}
       {mobileDrawerOpen ? (
         <div
-          className="operations-drawer-backdrop"
+          className="fixed inset-0 z-[999] bg-hy-ink/40 min-[1025px]:hidden"
           onClick={handleCloseDrawer}
           aria-hidden="true"
         />
@@ -339,27 +335,34 @@ export function OperationsShell({
       <aside
         ref={drawerRef}
         id="operations-mobile-drawer"
-        className={`admin-sidebar${mobileDrawerOpen ? ' operations-drawer-open' : ''}`}
+        data-ui-v3=""
+        className={cn(
+          'flex flex-col gap-6 border-r border-border bg-card px-4 py-6',
+          'min-[1025px]:sticky min-[1025px]:top-0 min-[1025px]:h-screen min-[1025px]:overflow-y-auto',
+          mobileDrawerOpen
+            ? 'max-[1024px]:fixed max-[1024px]:inset-y-0 max-[1024px]:left-0 max-[1024px]:z-[1000] max-[1024px]:w-[280px] max-[1024px]:overflow-y-auto max-[1024px]:shadow-hy-2 motion-safe:max-[1024px]:animate-in motion-safe:max-[1024px]:slide-in-from-left'
+            : 'max-[1024px]:hidden',
+        )}
         role={mobileDrawerOpen ? 'dialog' : undefined}
         aria-modal={mobileDrawerOpen ? 'true' : undefined}
         aria-label="Bảng điều hướng quản trị"
       >
-        <div className="admin-brand">
+        <div className="flex items-center justify-between gap-2 px-2">
           <BrandMark tagline="Quản trị nhà hàng" />
           {mobileDrawerOpen ? (
             <button
               ref={closeButtonRef}
               type="button"
-              className="operations-drawer-close"
+              className={iconButtonClass}
               aria-label="Đóng bảng điều hướng"
               onClick={handleCloseDrawer}
             >
-              <XIcon width={20} height={20} />
+              <XIcon width={20} height={20} aria-hidden="true" />
             </button>
           ) : null}
         </div>
 
-        <nav className="admin-navigation" aria-label="Điều hướng vận hành">
+        <nav className="flex grow flex-col gap-1" aria-label="Điều hướng vận hành">
           {navLinks}
         </nav>
 

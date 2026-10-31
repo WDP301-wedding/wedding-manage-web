@@ -13,7 +13,6 @@
 @import './styles/globals/booking-activation.css' layer(legacy);
 @import './styles/globals/booking-modals.css' layer(legacy);
 @import './styles/globals/admin-shell-account.css' layer(legacy);
-@import './styles/globals/admin-sidebar.css' layer(legacy);
 @import './styles/globals/dashboard-metrics.css' layer(legacy);
 @import './styles/globals/tables-timeline.css' layer(legacy);
 @import './styles/globals/operations-auth-responsive.css' layer(legacy);
