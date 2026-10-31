@@ -1,7 +1,10 @@
 'use client';
 
+import { ChevronDown } from 'lucide-react';
 import { field } from './booking-helpers';
 import type { ManagementBookingGateway, ProposalView } from './booking-api';
+import { Button } from '../../components/ui/button';
+import { Textarea } from '../../components/ui/textarea';
 
 export interface ProposalLifecycleClosureProps {
   proposal: ProposalView;
@@ -14,6 +17,8 @@ export interface ProposalLifecycleClosureProps {
   ) => Promise<boolean>;
 }
 
+const fieldLabelClass = 'flex flex-col gap-1 text-xs font-semibold';
+
 export function ProposalLifecycleClosure({
   proposal,
   disabled,
@@ -21,16 +26,17 @@ export function ProposalLifecycleClosure({
   command,
 }: Readonly<ProposalLifecycleClosureProps>) {
   return (
-    <article className="proposal-danger" style={{ gridColumn: '1 / -1' }}>
-      <div className="proposal-danger-header">
-        <h3>Hủy booking</h3>
-        <p className="proposal-danger-desc">
+    <article className="flex flex-col gap-4 rounded-xl border border-border bg-card p-6">
+      <div className="flex flex-col gap-0.5">
+        <h3 className="text-base font-semibold text-hy-error">Hủy booking</h3>
+        <p className="text-xs text-muted-foreground">
           Khu vực xử lý yêu cầu hủy từ khách hoặc hủy bỏ booking. Thao tác này không thể hoàn tác.
         </p>
       </div>
       {(proposal.cancellationRequests ?? []).map((request) => (
         <form
           key={request.requestId}
+          className="flex flex-col gap-3 rounded-lg bg-hy-warning-bg p-4"
           onSubmit={(event) => {
             event.preventDefault();
             const form = event.currentTarget;
@@ -54,25 +60,36 @@ export function ProposalLifecycleClosure({
             );
           }}
         >
-          <h4>Yêu cầu hủy từ cặp đôi</h4>
+          <h4 className="font-semibold">Yêu cầu hủy từ cặp đôi</h4>
           <p>{request.reason}</p>
-          <label>
+          <label className={fieldLabelClass}>
             Lý do quyết định
-            <textarea name="decisionReason" required minLength={1} maxLength={500} rows={2} />
+            <Textarea
+              className="bg-card font-normal"
+              name="decisionReason"
+              required
+              minLength={1}
+              maxLength={500}
+              rows={2}
+            />
           </label>
-          <div className="booking-actions">
-            <button type="submit" value="APPROVE" disabled={disabled}>
+          <div className="flex flex-wrap gap-2">
+            <Button type="submit" variant="destructive" value="APPROVE" disabled={disabled}>
               Chấp nhận yêu cầu hủy
-            </button>
-            <button type="submit" value="REJECT" disabled={disabled}>
+            </Button>
+            <Button type="submit" variant="outline" value="REJECT" disabled={disabled}>
               Từ chối yêu cầu hủy
-            </button>
+            </Button>
           </div>
         </form>
       ))}
-      <details className="proposal-cancel-details">
-        <summary>Hủy booking</summary>
+      <details className="group rounded-lg border border-border">
+        <summary className="flex h-11 cursor-pointer list-none items-center gap-2 px-4 font-semibold text-hy-error focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none [&::-webkit-details-marker]:hidden">
+          <ChevronDown aria-hidden className="size-4 transition-transform group-open:rotate-180" />
+          Hủy booking
+        </summary>
         <form
+          className="flex flex-col gap-3 border-t border-border p-4"
           onSubmit={(event) => {
             event.preventDefault();
             const reason = field(new FormData(event.currentTarget), 'reason');
@@ -85,16 +102,25 @@ export function ProposalLifecycleClosure({
             );
           }}
         >
-          <label>
+          <label className={fieldLabelClass}>
             Lý do hủy
-            <textarea name="reason" required minLength={1} maxLength={500} rows={3} />
+            <Textarea
+              className="font-normal"
+              name="reason"
+              required
+              minLength={1}
+              maxLength={500}
+              rows={3}
+            />
           </label>
-          <button
+          <Button
+            variant="destructive"
+            className="self-start"
             disabled={disabled || ['CANCELLED', 'COMPLETED'].includes(proposal.phase)}
             type="submit"
           >
             Hủy booking
-          </button>
+          </Button>
         </form>
       </details>
     </article>

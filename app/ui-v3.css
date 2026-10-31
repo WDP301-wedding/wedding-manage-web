@@ -35,6 +35,19 @@
 @source '../src/features/booking-lifecycle/booking-create-form-fields.tsx';
 @source '../src/features/booking-lifecycle/booking-create-catalog-bar.tsx';
 @source '../src/features/booking-lifecycle/booking-create-summary.tsx';
+@source '../src/features/booking-lifecycle/booking-workspace-tab-manage.tsx';
+@source '../src/features/booking-lifecycle/booking-lifecycle-stepper.tsx';
+@source '../src/features/booking-lifecycle/created-booking-notice-banner.tsx';
+@source '../src/features/booking-lifecycle/booking-unauthorized-hint.tsx';
+@source '../src/features/booking-lifecycle/proposal-panel.tsx';
+@source '../src/features/booking-lifecycle/timeline-editor.tsx';
+@source '../src/features/booking-lifecycle/timeline-template-picker.tsx';
+@source '../src/features/booking-lifecycle/contract-panel.tsx';
+@source '../src/features/booking-lifecycle/contract-lines-table.tsx';
+@source '../src/features/booking-lifecycle/contract-draft-composer.tsx';
+@source '../src/features/booking-lifecycle/appendix-panel.tsx';
+@source '../src/features/booking-lifecycle/appendix-detail-view.tsx';
+@source '../src/features/booking-lifecycle/proposal-lifecycle-closure.tsx';
 
 /* Sản phẩm chỉ có giao diện sáng: khoá biến thể dark: vào class .dark không bao giờ được gắn. */
 @custom-variant dark (&:is(.dark *));

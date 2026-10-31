@@ -3,7 +3,7 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from 'cn';
 
 // Hỷ Yến v3: default = primary, outline = secondary, destructive = danger (Design System "Button").
-const buttonVariants = cva(
+const buttonVariantStyles = cva(
   "group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-semibold whitespace-nowrap transition-all duration-150 ease-hy-emphasized outline-none select-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:not-aria-[haspopup]:scale-[0.97] motion-reduce:transition-none motion-reduce:active:not-aria-[haspopup]:scale-100 disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
@@ -36,12 +36,17 @@ const buttonVariants = cva(
   },
 );
 
+// Gộp qua cn để class biến thể (vd. border-input) thắng class gốc trùng thuộc tính (border-transparent)
+// cả khi gắn thẳng lên Link.
+const buttonVariants = (...args: Parameters<typeof buttonVariantStyles>) =>
+  cn(buttonVariantStyles(...args));
+
 function Button({
   className,
   variant = 'default',
   size = 'default',
   ...props
-}: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
+}: ButtonPrimitive.Props & VariantProps<typeof buttonVariantStyles>) {
   return (
     <ButtonPrimitive
       data-slot="button"

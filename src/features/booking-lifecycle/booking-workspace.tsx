@@ -68,9 +68,12 @@ export function ManagementBookingWorkspace({
   const isPendingOrLoading = pending !== null || contextStatus !== 'ready';
 
   return (
-    // shortcut: booking-shell giữ nền và lề cũ cho tab 3 (chưa sang v3); bỏ khi làm M3.
-    <main className="booking-shell" id="booking-main">
-      <div data-ui-v3 className="mb-6 flex flex-col gap-6">
+    <main
+      data-ui-v3
+      id="booking-main"
+      className="min-h-screen bg-background p-[clamp(1rem,3vw,3.25rem)]"
+    >
+      <div className="mb-6 flex flex-col gap-6">
         <header className="flex flex-wrap items-start justify-between gap-6">
           <div className="flex max-w-xl min-w-0 flex-[1_1_360px] flex-col gap-1">
             <p className="text-xs font-semibold text-primary">Hỷ Yến · Quản trị nhà hàng</p>

@@ -1,7 +1,12 @@
 'use client';
 
-import type { ContractRevisionItem } from '../../services/contract.service';
+import { Check } from 'lucide-react';
+import { cn } from 'cn';
 import { formatVnd } from '../../lib/formatters';
+import { Badge } from '../../components/ui/badge';
+
+export const categoryLabels = { MENU: 'Thực đơn', SERVICE: 'Dịch vụ', PRINT: 'Thiệp in' } as const;
+const categoryTones = { MENU: 'warning', SERVICE: 'info', PRINT: 'brand' } as const;
 
 export interface ContractLinesTableProps {
   lines: readonly {
@@ -18,84 +23,46 @@ export interface ContractLinesTableProps {
   title?: string;
 }
 
+const cellClass = 'px-3 py-2 align-top';
+
 export function ContractLinesTable({ lines, title }: Readonly<ContractLinesTableProps>) {
   return (
-    <div>
-      <h4 style={{ fontSize: '0.95rem', color: 'var(--hy-wine, #7a1f3d)', marginBottom: '0.5rem' }}>
+    <div className="flex flex-col gap-2">
+      <h4 className="font-semibold">
         {title ?? `Chi tiết dịch vụ trong hợp đồng (${lines.length})`}
       </h4>
-      <div className="table-scroll" style={{ marginBottom: '1.25rem' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
-          <thead>
-            <tr
-              style={{
-                background: 'var(--hy-surface-container, #fdf6ee)',
-                textAlign: 'left',
-                borderBottom: '1px solid var(--hy-outline, #eadfd6)',
-              }}
-            >
-              <th style={{ padding: '0.5rem', color: 'var(--hy-text, #2b1d22)' }}>Phân loại</th>
-              <th style={{ padding: '0.5rem', color: 'var(--hy-text, #2b1d22)' }}>Hạng mục</th>
-              <th style={{ padding: '0.5rem', color: 'var(--hy-text, #2b1d22)' }}>Số lượng</th>
-              <th style={{ padding: '0.5rem', color: 'var(--hy-text, #2b1d22)' }}>Đơn giá</th>
-              <th
-                style={{ padding: '0.5rem', textAlign: 'right', color: 'var(--hy-text, #2b1d22)' }}
-              >
-                Thành tiền
-              </th>
+      <div className="overflow-x-auto rounded-lg border border-border bg-card">
+        <table className="w-full min-w-[600px] border-collapse text-left">
+          <thead className="bg-muted text-xs">
+            <tr>
+              <th className={cn(cellClass, 'font-semibold')}>Phân loại</th>
+              <th className={cn(cellClass, 'font-semibold')}>Hạng mục</th>
+              <th className={cn(cellClass, 'font-semibold')}>Số lượng</th>
+              <th className={cn(cellClass, 'font-semibold')}>Đơn giá</th>
+              <th className={cn(cellClass, 'text-right font-semibold')}>Thành tiền</th>
             </tr>
           </thead>
-              <tbody>
-                {lines.map((line, idx) => (
-                  <tr
-                    key={`${line.sourceId}-${idx}`}
-                    style={{ borderBottom: '1px solid var(--hy-outline, #eadfd6)' }}
-                  >
-                    <td style={{ padding: '0.45rem 0.5rem' }}>
-                      <span
-                        style={{
-                          display: 'inline-block',
-                          padding: '0.15rem 0.5rem',
-                          borderRadius: '4px',
-                          fontSize: '0.74rem',
-                          fontWeight: 600,
-                          background:
-                            line.category === 'MENU'
-                              ? '#fef3c7'
-                              : line.category === 'SERVICE'
-                                ? '#eff6ff'
-                                : '#f5e4e9',
-                          color:
-                            line.category === 'MENU'
-                              ? '#92400e'
-                              : line.category === 'SERVICE'
-                                ? '#1e40af'
-                                : 'var(--hy-wine, #7a1f3d)',
-                          border: `1px solid ${
-                            line.category === 'MENU'
-                              ? '#fde68a'
-                              : line.category === 'SERVICE'
-                                ? '#bfdbfe'
-                                : '#eadfd6'
-                          }`,
-                        }}
-                      >
-                        {line.category}
-                      </span>
-                    </td>
-                    <td style={{ padding: '0.45rem 0.5rem' }}>
-                      <strong>{line.name}</strong>
-                      {line.description || line.note ? (
-                        <div style={{ fontSize: '0.75rem', color: 'var(--hy-text-muted, #6e5d63)' }}>
-                          {line.description || line.note}
-                        </div>
-                      ) : null}
-                    </td>
-                <td style={{ padding: '0.5rem' }}>
+          <tbody>
+            {lines.map((line, idx) => (
+              <tr key={`${line.sourceId}-${idx}`} className="border-t border-border">
+                <td className={cellClass}>
+                  <Badge variant={categoryTones[line.category]}>
+                    {categoryLabels[line.category]}
+                  </Badge>
+                </td>
+                <td className={cellClass}>
+                  <strong className="font-semibold">{line.name}</strong>
+                  {line.description || line.note ? (
+                    <div className="text-xs text-muted-foreground">
+                      {line.description || line.note}
+                    </div>
+                  ) : null}
+                </td>
+                <td className={cn(cellClass, 'tabular-nums')}>
                   {line.quantity} {line.unit}
                 </td>
-                <td style={{ padding: '0.5rem' }}>{formatVnd(line.unitPriceVnd)}</td>
-                <td style={{ padding: '0.5rem', textAlign: 'right', fontWeight: 600 }}>
+                <td className={cn(cellClass, 'tabular-nums')}>{formatVnd(line.unitPriceVnd)}</td>
+                <td className={cn(cellClass, 'text-right font-semibold tabular-nums')}>
                   {formatVnd(line.lineTotalVnd)}
                 </td>
               </tr>
@@ -103,6 +70,38 @@ export function ContractLinesTable({ lines, title }: Readonly<ContractLinesTable
           </tbody>
         </table>
       </div>
+    </div>
+  );
+}
+
+/** Trạng thái duyệt của hai bên, dùng chung cho hợp đồng và phụ lục. */
+export function ApprovalStatus({
+  managerApproved,
+  coupleApproved,
+}: Readonly<{ managerApproved: boolean; coupleApproved: boolean }>) {
+  const pill = (party: string, approved: boolean) => (
+    <span
+      className={cn(
+        'inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs',
+        approved ? 'bg-hy-success-bg text-hy-success' : 'bg-secondary',
+      )}
+    >
+      <span>{party}</span>
+      <strong
+        className={cn(
+          'inline-flex items-center gap-1 font-semibold',
+          approved ? undefined : 'text-muted-foreground',
+        )}
+      >
+        {approved ? <Check aria-hidden className="size-3.5" strokeWidth={2.5} /> : null}
+        {approved ? 'Đã phê duyệt' : 'Chưa duyệt'}
+      </strong>
+    </span>
+  );
+  return (
+    <div className="flex flex-wrap gap-2">
+      {pill('Quản lý', managerApproved)}
+      {pill('Cặp đôi', coupleApproved)}
     </div>
   );
 }

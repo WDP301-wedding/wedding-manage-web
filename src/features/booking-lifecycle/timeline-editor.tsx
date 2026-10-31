@@ -1,83 +1,13 @@
 'use client';
 
 import { useState } from 'react';
+import { ChevronDown, ChevronUp, Plus, Trash2 } from 'lucide-react';
 
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Textarea } from '../../components/ui/textarea';
 import type { TimelineItemInput } from './booking-api';
 import { TimelineTemplatePicker, type TimelineTemplateSource } from './timeline-template-picker';
-
-function ArrowUpIcon() {
-  return (
-    <svg
-      width="13"
-      height="13"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <polyline points="18 15 12 9 6 15" />
-    </svg>
-  );
-}
-
-function ArrowDownIcon() {
-  return (
-    <svg
-      width="13"
-      height="13"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <polyline points="6 9 12 15 18 9" />
-    </svg>
-  );
-}
-
-function TrashIcon() {
-  return (
-    <svg
-      width="13"
-      height="13"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <polyline points="3 6 5 6 21 6" />
-      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-    </svg>
-  );
-}
-
-function PlusIcon() {
-  return (
-    <svg
-      width="13"
-      height="13"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <line x1="12" y1="5" x2="12" y2="19" />
-      <line x1="5" y1="12" x2="19" y2="12" />
-    </svg>
-  );
-}
 
 type Draft = Readonly<{
   key: string;
@@ -131,7 +61,6 @@ export function TimelineEditor({
 
   return (
     <form
-      className="timeline-editor"
       onSubmit={(event) => {
         event.preventDefault();
         const items = drafts.map((item, order) => ({
@@ -144,8 +73,8 @@ export function TimelineEditor({
         void onSave(items, reason);
       }}
     >
-      <fieldset disabled={disabled}>
-        <legend>Chỉnh sửa các mốc chương trình</legend>
+      <fieldset disabled={disabled} className="flex min-w-0 flex-col gap-4">
+        <legend className="mb-3 text-base font-semibold">Chỉnh sửa các mốc chương trình</legend>
         {templateSource !== undefined ? (
           <TimelineTemplatePicker
             disabled={disabled}
@@ -163,94 +92,104 @@ export function TimelineEditor({
             }
           />
         ) : null}
-        {drafts.length === 0 ? <p>Chưa có mốc. Thêm nội dung hoặc lưu bản nháp trống.</p> : null}
-        <div className="timeline-editor-items-container">
+        {drafts.length === 0 ? (
+          <p className="text-muted-foreground">
+            Chưa có mốc. Thêm nội dung hoặc lưu bản nháp trống.
+          </p>
+        ) : null}
+        <div className="flex flex-col gap-2">
           {drafts.map((item, index) => (
-            <div className="timeline-editor-item" key={item.key}>
-              <div className="timeline-editor-item-main-row">
-                <span className="timeline-milestone-chip" aria-hidden="true">
+            <div
+              className="flex flex-col gap-2 rounded-lg border border-border bg-card p-3"
+              key={item.key}
+            >
+              <div className="flex flex-wrap items-center gap-2">
+                <span
+                  className="min-w-8 rounded-full bg-secondary px-2 py-0.5 text-center text-2xs font-semibold text-muted-foreground"
+                  aria-hidden="true"
+                >
                   #{index + 1}
                 </span>
-                <strong className="visually-hidden">Mốc {index + 1}</strong>
-                <div className="timeline-editor-fields-row">
-                  <label className="timeline-field-time">
-                    <span className="visually-hidden">Giờ bắt đầu mốc {index + 1}</span>
-                    <input
-                      type="time"
-                      required
-                      aria-label={`Giờ bắt đầu mốc ${index + 1}`}
-                      value={item.startTime}
-                      onChange={(event) => update(item.key, { startTime: event.target.value })}
-                    />
-                  </label>
-                  <label className="timeline-field-title">
-                    <span className="visually-hidden">Nội dung mốc {index + 1}</span>
-                    <input
-                      required
-                      maxLength={120}
-                      aria-label={`Nội dung mốc ${index + 1}`}
-                      placeholder={`Nội dung mốc ${index + 1}...`}
-                      value={item.title}
-                      onChange={(event) => update(item.key, { title: event.target.value })}
-                    />
-                  </label>
-                </div>
-                <div className="timeline-editor-actions timeline-editor-item-actions">
-                  <button
+                <strong className="sr-only">Mốc {index + 1}</strong>
+                <label className="shrink-0">
+                  <span className="sr-only">Giờ bắt đầu mốc {index + 1}</span>
+                  <Input
+                    type="time"
+                    required
+                    className="w-36 tabular-nums"
+                    aria-label={`Giờ bắt đầu mốc ${index + 1}`}
+                    value={item.startTime}
+                    onChange={(event) => update(item.key, { startTime: event.target.value })}
+                  />
+                </label>
+                <label className="min-w-40 flex-1">
+                  <span className="sr-only">Nội dung mốc {index + 1}</span>
+                  <Input
+                    required
+                    maxLength={120}
+                    aria-label={`Nội dung mốc ${index + 1}`}
+                    placeholder={`Nội dung mốc ${index + 1}...`}
+                    value={item.title}
+                    onChange={(event) => update(item.key, { title: event.target.value })}
+                  />
+                </label>
+                <div className="flex">
+                  <Button
                     type="button"
-                    className="timeline-action-btn"
+                    variant="ghost"
+                    size="icon-sm"
                     disabled={index === 0}
                     onClick={() => move(index, -1)}
                     title={`Đưa mốc ${index + 1} lên`}
                     aria-label={`Đưa mốc ${index + 1} lên`}
                   >
-                    <ArrowUpIcon />
-                    <span className="visually-hidden">Đưa mốc {index + 1} lên</span>
-                  </button>
-                  <button
+                    <ChevronUp aria-hidden />
+                  </Button>
+                  <Button
                     type="button"
-                    className="timeline-action-btn"
+                    variant="ghost"
+                    size="icon-sm"
                     disabled={index === drafts.length - 1}
                     onClick={() => move(index, 1)}
                     title={`Đưa mốc ${index + 1} xuống`}
                     aria-label={`Đưa mốc ${index + 1} xuống`}
                   >
-                    <ArrowDownIcon />
-                    <span className="visually-hidden">Đưa mốc ${index + 1} xuống</span>
-                  </button>
-                  <button
+                    <ChevronDown aria-hidden />
+                  </Button>
+                  <Button
                     type="button"
-                    className="timeline-action-btn timeline-action-delete"
+                    variant="ghost"
+                    size="icon-sm"
+                    className="text-hy-error hover:bg-hy-error-bg"
                     onClick={() =>
                       setDrafts((current) => current.filter((row) => row.key !== item.key))
                     }
                     title={`Xóa mốc ${index + 1}`}
                     aria-label={`Xóa mốc ${index + 1}`}
                   >
-                    <TrashIcon />
-                    <span className="visually-hidden">Xóa mốc {index + 1}</span>
-                  </button>
+                    <Trash2 aria-hidden />
+                  </Button>
                 </div>
               </div>
-              <div className="timeline-editor-note-row">
-                <label className="timeline-field-desc">
-                  <span className="visually-hidden">Ghi chú mốc {index + 1}</span>
-                  <textarea
-                    rows={1}
-                    maxLength={2000}
-                    aria-label={`Ghi chú mốc ${index + 1}`}
-                    placeholder="Ghi chú chi tiết (nếu có)"
-                    value={item.description}
-                    onChange={(event) => update(item.key, { description: event.target.value })}
-                  />
-                </label>
-              </div>
+              <label className="sm:pl-10">
+                <span className="sr-only">Ghi chú mốc {index + 1}</span>
+                <Textarea
+                  rows={1}
+                  maxLength={2000}
+                  className="min-h-10 bg-muted text-xs"
+                  aria-label={`Ghi chú mốc ${index + 1}`}
+                  placeholder="Ghi chú chi tiết (nếu có)"
+                  value={item.description}
+                  onChange={(event) => update(item.key, { description: event.target.value })}
+                />
+              </label>
             </div>
           ))}
         </div>
-        <button
+        <Button
           type="button"
-          className="timeline-add-button"
+          variant="outline"
+          className="w-full border-dashed bg-transparent"
           disabled={drafts.length >= 100}
           onClick={() =>
             setDrafts((current) => [
@@ -259,13 +198,14 @@ export function TimelineEditor({
             ])
           }
         >
-          <PlusIcon />
+          <Plus aria-hidden />
           <span>Thêm mốc chương trình</span>
-        </button>
+        </Button>
         {needsReason ? (
-          <label>
+          <label className="flex flex-col gap-1 text-xs font-semibold">
             Lý do thay đổi
-            <textarea
+            <Textarea
+              className="font-normal"
               required
               maxLength={500}
               rows={2}
@@ -274,17 +214,12 @@ export function TimelineEditor({
             />
           </label>
         ) : null}
-        <div className="timeline-editor-submit-actions">
-          <button type="submit">{needsReason ? 'Gửi yêu cầu thay đổi' : 'Lưu kịch bản mới'}</button>
+        <div className="flex flex-wrap justify-end gap-2 border-t border-border pt-4">
+          <Button type="submit">{needsReason ? 'Gửi yêu cầu thay đổi' : 'Lưu kịch bản mới'}</Button>
           {onCancel ? (
-            <button
-              type="button"
-              className="booking-secondary"
-              disabled={disabled}
-              onClick={onCancel}
-            >
+            <Button type="button" variant="outline" disabled={disabled} onClick={onCancel}>
               Hủy
-            </button>
+            </Button>
           ) : null}
         </div>
       </fieldset>

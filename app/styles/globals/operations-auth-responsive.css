@@ -82,16 +82,6 @@
     grid-template-columns: 220px minmax(0, 1fr);
   }
 
-  .operations-shell .booking-grid,
-  .operations-shell .proposal-layout {
-    grid-template-columns: 1fr;
-  }
-
-  .operations-shell .booking-section-heading {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
   .dashboard-grid {
     grid-template-columns: 1fr;
   }

@@ -1,9 +1,12 @@
 'use client';
 
 import { useState } from 'react';
+import { CircleCheck } from 'lucide-react';
+import { cn } from 'cn';
 import { formatVnd } from '../../lib/formatters';
-import { ContractLinesTable } from './contract-lines-table';
-import { contractStyles } from './contract.styles';
+import { ApprovalStatus, ContractLinesTable } from './contract-lines-table';
+import { Badge } from '../../components/ui/badge';
+import { Button } from '../../components/ui/button';
 import type { AppendixRevisionItem } from '../../services/contract.service';
 
 export interface AppendixDetailViewProps {
@@ -17,6 +20,11 @@ export interface AppendixDetailViewProps {
   handleSubmitAppendix: (revisionId: string) => Promise<void>;
 }
 
+const stateTone: Record<string, 'neutral' | 'info' | 'success'> = {
+  AWAITING_APPROVAL: 'info',
+  APPROVED: 'success',
+};
+
 export function AppendixDetailView({
   activeAppendix,
   disabled,
@@ -28,268 +36,139 @@ export function AppendixDetailView({
   handleSubmitAppendix,
 }: Readonly<AppendixDetailViewProps>) {
   const [confirmingApproval, setConfirmingApproval] = useState(false);
+  const delta = activeAppendix.document.deltaVnd;
+  const signedDelta = (
+    <>
+      {delta > 0 ? '+' : ''}
+      {formatVnd(delta)}
+    </>
+  );
 
   return (
-    <div
-      style={{
-        background: 'var(--hy-surface-container, #fdf6ee)',
-        border: '1px solid var(--hy-outline, #eadfd6)',
-        borderRadius: 8,
-        padding: '1.25rem',
-      }}
-    >
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-start',
-          flexWrap: 'wrap',
-          gap: '0.75rem',
-          marginBottom: '1rem',
-        }}
-      >
-        <div>
-          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-            <h5
-              style={{
-                margin: 0,
-                fontFamily: 'var(--font-display)',
-                fontSize: '1.05rem',
-                fontWeight: 600,
-                color: 'var(--hy-ink, #2b1d22)',
-                lineHeight: 1.3,
-              }}
-            >
-              Phụ lục số {activeAppendix.revisionNumber}
-            </h5>
-            <span style={contractStyles.statusBadge(activeAppendix.state)}>
+    <div className="flex flex-col gap-4 rounded-lg bg-muted p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex flex-col gap-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h5 className="text-base font-semibold">Phụ lục số {activeAppendix.revisionNumber}</h5>
+            <Badge variant={stateTone[activeAppendix.state] ?? 'neutral'}>
               {appendixStateLabels[activeAppendix.state] ?? activeAppendix.state}
-            </span>
+            </Badge>
           </div>
-          <p
-            style={{
-              margin: '0.25rem 0 0',
-              fontSize: '0.85rem',
-              color: 'var(--hy-text-muted, #6e5d63)',
-            }}
-          >
-            Lý do điều chỉnh: <strong>{activeAppendix.document.reason}</strong>
+          <p className="text-xs text-muted-foreground">
+            Lý do điều chỉnh:{' '}
+            <strong className="text-foreground">{activeAppendix.document.reason}</strong>
           </p>
         </div>
 
-        <div style={{ textAlign: 'right' }}>
-          <small
-            style={{
-              color: 'var(--hy-text-muted, #6e5d63)',
-              display: 'block',
-              fontSize: '0.75rem',
-            }}
-          >
-            Chênh lệch thoả thuận
-          </small>
+        <div className="flex flex-col items-end">
+          <small className="text-2xs text-muted-foreground">Chênh lệch thoả thuận</small>
           <strong
-            style={{
-              fontSize: '1.15rem',
-              color:
-                activeAppendix.document.deltaVnd > 0
-                  ? 'var(--hy-wine, #7a1f3d)'
-                  : activeAppendix.document.deltaVnd < 0
-                    ? 'var(--hy-status-success, #2f6b4f)'
-                    : 'var(--hy-text, #2b1d22)',
-              fontFamily: 'var(--font-display)',
-            }}
+            className={cn(
+              'text-lg font-bold tabular-nums',
+              delta > 0 ? 'text-primary' : delta < 0 ? 'text-hy-success' : undefined,
+            )}
           >
-            {activeAppendix.document.deltaVnd > 0 ? '+' : ''}
-            {formatVnd(activeAppendix.document.deltaVnd)}
+            {signedDelta}
           </strong>
         </div>
       </div>
 
       {/* Thông số tài chính phụ lục */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-          gap: '0.75rem',
-          background: '#ffffff',
-          border: '1px solid var(--hy-outline, #eadfd6)',
-          borderRadius: 6,
-          padding: '0.75rem 1rem',
-          marginBottom: '1rem',
-          fontSize: '0.85rem',
-        }}
-      >
-        <div>
-          <span style={{ color: 'var(--hy-text-muted, #6e5d63)', display: 'block' }}>
-            Tổng trước điều chỉnh:
-          </span>
-          <strong>{formatVnd(activeAppendix.document.beforeTotalVnd)}</strong>
+      <dl className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-3 rounded-lg bg-card px-4 py-3">
+        <div className="flex flex-col">
+          <dt className="text-xs text-muted-foreground">Tổng trước điều chỉnh:</dt>
+          <dd className="font-semibold tabular-nums">
+            {formatVnd(activeAppendix.document.beforeTotalVnd)}
+          </dd>
         </div>
-        <div>
-          <span style={{ color: 'var(--hy-text-muted, #6e5d63)', display: 'block' }}>
-            Tổng sau điều chỉnh:
-          </span>
-          <strong style={{ color: 'var(--hy-wine, #7a1f3d)' }}>
+        <div className="flex flex-col">
+          <dt className="text-xs text-muted-foreground">Tổng sau điều chỉnh:</dt>
+          <dd className="font-bold text-primary tabular-nums">
             {formatVnd(activeAppendix.document.afterTotalVnd)}
-          </strong>
+          </dd>
         </div>
-        <div>
-          <span style={{ color: 'var(--hy-text-muted, #6e5d63)', display: 'block' }}>
-            Ngày lập phụ lục:
-          </span>
-          <span>{new Date(activeAppendix.createdAt).toLocaleDateString('vi-VN')}</span>
+        <div className="flex flex-col">
+          <dt className="text-xs text-muted-foreground">Ngày lập phụ lục:</dt>
+          <dd className="tabular-nums">
+            {new Date(activeAppendix.createdAt).toLocaleDateString('vi-VN')}
+          </dd>
         </div>
-      </div>
+      </dl>
 
       {/* Chi tiết bảng dịch vụ sau điều chỉnh */}
-      <div
-        style={{
-          background: '#ffffff',
-          padding: '0.75rem',
-          borderRadius: 6,
-          marginBottom: '1rem',
-        }}
-      >
-        <ContractLinesTable
-          lines={activeAppendix.document.afterLines}
-          title={`Chi tiết các hạng mục sau điều chỉnh (${activeAppendix.document.afterLines.length})`}
-        />
-      </div>
+      <ContractLinesTable
+        lines={activeAppendix.document.afterLines}
+        title={`Chi tiết các hạng mục sau điều chỉnh (${activeAppendix.document.afterLines.length})`}
+      />
 
-      {/* Trạng thái phê duyệt 2 bên */}
-      <div style={contractStyles.approvalStatusBox}>
-        <div>
-          <span>Quản lý (Manager): </span>
-          <strong style={contractStyles.approvalStatusText(Boolean(managerApproved))}>
-            {managerApproved ? '✓ Đã phê duyệt' : 'Chưa duyệt'}
-          </strong>
-        </div>
-        <div>
-          <span>Cặp đôi (Couple): </span>
-          <strong style={contractStyles.approvalStatusText(Boolean(coupleApproved))}>
-            {coupleApproved ? '✓ Đã phê duyệt' : 'Chưa duyệt'}
-          </strong>
-        </div>
-      </div>
+      <ApprovalStatus managerApproved={managerApproved} coupleApproved={coupleApproved} />
 
       {/* Hộp xác nhận phê duyệt nếu đang bấm nút */}
       {confirmingApproval ? (
         <div
-          style={{
-            background: '#ffffff',
-            border: '1.5px solid var(--hy-wine, #7a1f3d)',
-            borderRadius: 8,
-            padding: '1rem',
-            marginBottom: '1rem',
-          }}
+          role="group"
+          aria-labelledby="appendix-approval-title"
+          className="flex flex-col gap-3 rounded-lg border-2 border-primary bg-card p-4"
         >
-          <h6
-            style={{
-              margin: '0 0 0.5rem',
-              fontFamily: 'var(--font-display)',
-              fontSize: '0.95rem',
-              color: 'var(--hy-wine, #7a1f3d)',
-              fontWeight: 600,
-              lineHeight: 1.3,
-            }}
-          >
+          <h6 id="appendix-approval-title" className="font-semibold text-primary">
             Xác nhận phê duyệt phụ lục số {activeAppendix.revisionNumber}
           </h6>
-          <p
-            style={{
-              margin: '0 0 0.75rem',
-              fontSize: '0.85rem',
-              color: 'var(--hy-ink, #2b1d22)',
-            }}
-          >
+          <p className="text-xs">
             Bạn đang đồng ý thay đổi tổng thoả thuận tiệc từ{' '}
             <strong>{formatVnd(activeAppendix.document.beforeTotalVnd)}</strong> thành{' '}
             <strong>{formatVnd(activeAppendix.document.afterTotalVnd)}</strong> (chênh lệch:{' '}
-            <strong>
-              {activeAppendix.document.deltaVnd > 0 ? '+' : ''}
-              {formatVnd(activeAppendix.document.deltaVnd)}
-            </strong>
-            ). Thao tác phê duyệt mang tính pháp lý và không thể thu hồi.
+            <strong>{signedDelta}</strong>). Thao tác phê duyệt mang tính pháp lý và không thể thu
+            hồi.
           </p>
-          <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
-            <button
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button
               type="button"
+              variant="outline"
               disabled={disabled || loading}
               onClick={() => setConfirmingApproval(false)}
-              style={{
-                padding: '0.45rem 1rem',
-                borderRadius: 6,
-                border: '1px solid var(--hy-outline, #eadfd6)',
-                background: '#ffffff',
-                cursor: 'pointer',
-                fontSize: '0.85rem',
-                fontWeight: 600,
-              }}
             >
               Huỷ bỏ
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
               disabled={disabled || loading}
               onClick={async () => {
                 await handleApproveAppendix(activeAppendix.revisionId);
                 setConfirmingApproval(false);
               }}
-              style={{
-                padding: '0.45rem 1.25rem',
-                borderRadius: 6,
-                border: 'none',
-                background: 'var(--hy-status-success, #2f6b4f)',
-                color: '#ffffff',
-                cursor: disabled || loading ? 'not-allowed' : 'pointer',
-                fontSize: '0.85rem',
-                fontWeight: 600,
-              }}
             >
               {loading ? 'Đang duyệt…' : 'Xác nhận duyệt phụ lục'}
-            </button>
+            </Button>
           </div>
         </div>
       ) : null}
 
       {/* Các nút hành động cho phụ lục */}
-      <div style={contractStyles.actionsRow}>
+      <div className="flex flex-wrap justify-end gap-2">
         {activeAppendix.state === 'DRAFT' ? (
-          <button
+          <Button
             type="button"
             disabled={disabled || loading}
             onClick={() => void handleSubmitAppendix(activeAppendix.revisionId)}
-            style={contractStyles.submitDraftButton(disabled || loading)}
           >
             {loading ? 'Đang gửi…' : 'Gửi duyệt phụ lục'}
-          </button>
+          </Button>
         ) : null}
 
-        {activeAppendix.state === 'AWAITING_APPROVAL' &&
-        !managerApproved &&
-        !confirmingApproval ? (
-          <button
+        {activeAppendix.state === 'AWAITING_APPROVAL' && !managerApproved && !confirmingApproval ? (
+          <Button
             type="button"
             disabled={disabled || loading}
             onClick={() => setConfirmingApproval(true)}
-            style={contractStyles.approveButton(disabled || loading)}
           >
             Phê duyệt phụ lục (Quản lý)
-          </button>
+          </Button>
         ) : null}
 
         {activeAppendix.state === 'APPROVED' ? (
-          <span
-            style={{
-              color: 'var(--hy-status-success, #2f6b4f)',
-              fontSize: '0.875rem',
-              fontWeight: 600,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.35rem',
-            }}
-          >
-            ✓ Phụ lục đã có hiệu lực thi hành đầy đủ giữa hai bên.
+          <span className="flex items-center gap-1.5 font-semibold text-hy-success">
+            <CircleCheck aria-hidden className="size-4" />
+            Phụ lục đã có hiệu lực thi hành đầy đủ giữa hai bên.
           </span>
         ) : null}
       </div>

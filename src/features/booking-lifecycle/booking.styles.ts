@@ -29,13 +29,6 @@ export const bookingStyles = {
     };
   },
 
-  stepContainerVisible: (maxWidth = '780px'): CSSProperties => ({
-    display: 'block',
-    maxWidth,
-    margin: '0 auto',
-    width: '100%',
-  }),
-
   // Tab ẩn vẫn nằm trong cây trợ năng (không dùng display: none) để giữ hành vi cũ.
   stepContainerHidden: {
     position: 'absolute',
