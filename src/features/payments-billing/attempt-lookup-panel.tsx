@@ -2,6 +2,8 @@
 
 import type { AttemptView } from './billing-api';
 import { AttemptStatus } from './billing-display';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
 
 export interface AttemptLookupPanelProps {
   disabled: boolean;
@@ -19,27 +21,34 @@ export function AttemptLookupPanel({
   onLookup,
 }: Readonly<AttemptLookupPanelProps>) {
   return (
-    <section className="billing-panel billing-attempt-card">
-      <h2>Tra cứu trạng thái giao dịch</h2>
-      <p>Nhập mã giao dịch thanh toán để xem kết quả và tình trạng cập nhật hồ sơ.</p>
+    <section className="flex min-w-0 flex-[1_1_340px] flex-col gap-3 rounded-xl border border-border bg-card p-5 shadow-hy-1">
+      <div className="flex flex-col gap-0.5">
+        <h2 className="text-base font-semibold">Tra cứu trạng thái giao dịch</h2>
+        <p className="text-xs text-muted-foreground">
+          Nhập mã giao dịch thanh toán để xem kết quả và tình trạng cập nhật hồ sơ.
+        </p>
+      </div>
       <form
-        className="billing-lookup billing-attempt-form"
+        className="flex flex-col gap-2"
         onSubmit={(event) => {
           event.preventDefault();
           onLookup();
         }}
       >
-        <label>
+        <label className="flex flex-col gap-1 text-xs font-semibold">
           Mã giao dịch thanh toán
-          <input
+          <Input
+            className="font-normal"
             value={attemptId}
             onChange={(event) => setAttemptId(event.target.value)}
             required
             disabled={disabled}
-            placeholder="Nhập mã payment attempt..."
+            placeholder="Nhập mã giao dịch thanh toán…"
           />
         </label>
-        <button disabled={disabled}>Tra cứu giao dịch</button>
+        <Button type="submit" variant="outline" className="self-start" disabled={disabled}>
+          Tra cứu giao dịch
+        </Button>
       </form>
       {attempt !== null && <AttemptStatus attempt={attempt} />}
     </section>

@@ -1,6 +1,9 @@
 'use client';
 
 import Link from 'next/link';
+import { ArrowLeft, Heart, LoaderCircle } from 'lucide-react';
+import { Button, buttonVariants } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
 import { useLiveRefresh } from '../realtime/use-live-refresh';
 import { useEffect, useRef, useState } from 'react';
 import { ApiClientError } from '../../lib/api/client';
@@ -46,6 +49,10 @@ type MutationResult =
 const identity = sharedManagementSession;
 const billing = createManagementBillingGateway();
 
+const stateClass = 'flex min-h-[60vh] flex-col items-start gap-3 bg-background p-6 sm:p-10';
+const panelClass =
+  'flex min-w-0 flex-col gap-4 rounded-xl border border-border bg-card p-6 shadow-hy-1';
+
 export function ManagementBillingPage({
   session = identity,
   gateway = billing,
@@ -68,19 +75,21 @@ export function ManagementBillingPage({
   let content;
   if (snapshot === null) {
     content = (
-      <main className="billing-shell" id="billing-content">
-        <h1>Đang xác minh quyền quản lý…</h1>
-        <p role="status">Đang kiểm tra phiên đăng nhập.</p>
+      <main data-ui-v3 className={stateClass} id="billing-content">
+        <h1 className="text-2xl font-bold">Đang xác minh quyền quản lý…</h1>
+        <p role="status" className="text-muted-foreground">
+          Đang kiểm tra phiên đăng nhập.
+        </p>
       </main>
     );
   } else if (snapshot.status !== 'authenticated' || snapshot.presentation !== 'manager') {
     content = (
-      <main className="billing-shell" id="billing-content">
-        <h1>
+      <main data-ui-v3 className={stateClass} id="billing-content">
+        <h1 className="text-2xl font-bold">
           {snapshot.status === 'anonymous' ? 'Cần đăng nhập' : 'Không có quyền xem thanh toán'}
         </h1>
-        <p>Khu vực này dành cho tài khoản Quản lý.</p>
-        <Link className="billing-primary-link" href="/">
+        <p className="text-muted-foreground">Khu vực này dành cho tài khoản Quản lý.</p>
+        <Link className={buttonVariants()} href="/">
           Về trang đăng nhập
         </Link>
       </main>
@@ -333,22 +342,32 @@ export function ManagementBillingWorkspace({
   };
 
   return (
-    <main className="billing-shell" id="billing-content">
-      <header className="billing-header">
-        <div className="billing-header-title-group">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-            <span className="section-kicker" style={{ margin: 0 }}>Hỷ Yến · Quản trị nhà hàng</span>
+    <main
+      data-ui-v3
+      className="flex min-h-screen flex-col gap-6 bg-background p-[clamp(1rem,3vw,3.25rem)]"
+      id="billing-content"
+    >
+      <header className="flex flex-wrap items-start justify-between gap-6">
+        <div className="flex max-w-xl min-w-0 flex-[1_1_360px] flex-col gap-1">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span className="text-xs font-semibold text-primary">Hỷ Yến · Quản trị nhà hàng</span>
             {view !== null && (
-              <Link className="billing-back-link" href={`/bookings/${encodeURIComponent(view.bookingId)}`}>
-                ← Về hồ sơ tiệc
+              <Link
+                className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+                href={`/bookings?bookingId=${encodeURIComponent(view.bookingId)}`}
+              >
+                <ArrowLeft aria-hidden className="size-3.5" />
+                Về hồ sơ tiệc
               </Link>
             )}
           </div>
-          <h1>Quản lý thanh toán</h1>
-          <p>Theo dõi tiền đặt tiệc, ghi nhận khoản thu và hoàn tiền.</p>
+          <h1 className="text-2xl font-bold">Quản lý thanh toán</h1>
+          <p className="text-muted-foreground">
+            Theo dõi tiền đặt tiệc, ghi nhận khoản thu và hoàn tiền.
+          </p>
         </div>
         <form
-          className="billing-lookup"
+          className="flex w-full min-w-0 flex-col gap-1.5 sm:w-[480px] sm:max-w-full"
           onSubmit={(event) => {
             event.preventDefault();
             setShowDropdown(false);
@@ -391,143 +410,160 @@ export function ManagementBillingWorkspace({
             });
           }}
         >
-          <div className="billing-lookup-field">
-            <label>
-              Mã hồ sơ đặt tiệc
-              <input
-                value={bookingId}
-                onChange={(event) => handleBookingInputChange(event.target.value)}
-                onFocus={() => {
-                  if (searchMatches.length > 0) setShowDropdown(true);
-                }}
-                placeholder="Mã HY, tên cô dâu chú rể, người đặt, SĐT, email…"
-                required
-                disabled={pending || uncertain !== null}
-              />
-            </label>
-            {showDropdown && searchMatches.length > 0 && (
-              <div className="billing-lookup-dropdown" role="listbox">
-                {searchMatches.map((item) => {
-                  const couple = [item.groomName, item.brideName].filter(Boolean).join(' & ');
-                  const contactInfo = [item.phone ? `SĐT: ${item.phone}` : null, item.email]
-                    .filter(Boolean)
-                    .join(' · ');
-                  const dateStr = item.eventDate.split('-').reverse().join('/');
-                  return (
-                    <button
-                      key={item.bookingId}
-                      type="button"
-                      className="billing-lookup-item"
-                      onClick={() => selectLookupBooking(item)}
-                    >
-                      <strong style={{ fontSize: '13.5px' }}>
-                        {item.bookingCode} · {item.customerName}
-                      </strong>
-                      {couple && couple !== item.customerName && (
-                        <span style={{ fontSize: '12.5px', color: 'var(--burgundy)', fontWeight: 500 }}>
-                          👰🤵 {couple}
+          <div className="flex items-end gap-2">
+            <div className="relative min-w-0 flex-1">
+              <label className="flex flex-col gap-1 text-xs font-semibold">
+                Mã hồ sơ đặt tiệc
+                <Input
+                  className="font-normal"
+                  value={bookingId}
+                  onChange={(event) => handleBookingInputChange(event.target.value)}
+                  onFocus={() => {
+                    if (searchMatches.length > 0) setShowDropdown(true);
+                  }}
+                  placeholder="Mã HY, tên cô dâu chú rể, người đặt, SĐT, email…"
+                  required
+                  disabled={pending || uncertain !== null}
+                />
+              </label>
+              {showDropdown && searchMatches.length > 0 && (
+                <div
+                  className="absolute inset-x-0 top-full z-20 mt-1 flex max-h-80 flex-col gap-1 overflow-y-auto rounded-xl border border-border bg-popover p-2 shadow-hy-2"
+                  role="listbox"
+                >
+                  {searchMatches.map((item) => {
+                    const couple = [item.groomName, item.brideName].filter(Boolean).join(' & ');
+                    const contactInfo = [item.phone ? `SĐT: ${item.phone}` : null, item.email]
+                      .filter(Boolean)
+                      .join(' · ');
+                    const dateStr = item.eventDate.split('-').reverse().join('/');
+                    return (
+                      <button
+                        key={item.bookingId}
+                        type="button"
+                        className="flex w-full flex-col items-start gap-0.5 rounded-lg p-3 text-left [overflow-wrap:anywhere] hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                        onClick={() => selectLookupBooking(item)}
+                      >
+                        <strong className="font-semibold">
+                          {item.bookingCode} · {item.customerName}
+                        </strong>
+                        {couple && couple !== item.customerName && (
+                          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-primary">
+                            <Heart aria-hidden className="size-3.5" />
+                            {couple}
+                          </span>
+                        )}
+                        <span className="text-xs">
+                          {[
+                            dateStr,
+                            item.hallName,
+                            item.shiftCode === 'LUNCH' ? 'Ca trưa' : 'Ca tối',
+                          ]
+                            .filter(Boolean)
+                            .join(' · ')}
                         </span>
-                      )}
-                      <span style={{ fontSize: '12px', color: 'var(--muted)' }}>
-                        {[dateStr, item.hallName, item.shiftCode === 'LUNCH' ? 'Ca trưa' : 'Ca tối']
-                          .filter(Boolean)
-                          .join(' · ')}
-                      </span>
-                      {contactInfo && (
-                        <small style={{ fontSize: '11.5px', color: 'var(--muted)' }}>
-                          {contactInfo}
-                        </small>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
+                        {contactInfo && (
+                          <small className="text-2xs text-muted-foreground">{contactInfo}</small>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+            <Button type="submit" disabled={pending || uncertain !== null}>
+              Xem thanh toán
+            </Button>
           </div>
-          <button disabled={pending || uncertain !== null}>Xem thanh toán</button>
         </form>
       </header>
 
-      <div className="billing-live" aria-live="polite">
-        {pending && <p role="status">Đang xử lý yêu cầu…</p>}
-      </div>
-
-      <div className="billing-workspace-body">
-        {view !== null && (
-          <>
-            <div className="billing-section-heading">
-              <h2>Tổng hợp tiền đặt tiệc</h2>
-              <button
-                className="billing-secondary"
-                disabled={pending}
-                onClick={() => {
-                  void run(() => load(view.bookingId));
-                }}
-              >
-                Cập nhật thông tin
-              </button>
-            </div>
-
-            {/* ROW 1: TỔNG HỢP TÀI CHÍNH (6 CHỈ SỐ) & TRA CỨU GIAO DỊCH */}
-            <div className="billing-two-col-top">
-              <BillingSummary view={view} />
-              <AttemptLookupPanel
-                disabled={pending}
-                attemptId={attemptId}
-                setAttemptId={setAttemptId}
-                attempt={attempt}
-                onLookup={() => {
-                  void run(async () => {
-                    setAttempt(
-                      await authorize((token) =>
-                        gateway.loadAttempt(token, view.bookingId, attemptId.trim()),
-                      ),
-                    );
-                  });
-                }}
-              />
-            </div>
-
-            {/* ROW 2: THAO TÁC NGHIỆP VỤ (TABBED) & LỊCH SỬ GIAO DỊCH */}
-            <div className="billing-two-col-main">
-              <BillingMutationsSection
-                view={view}
-                pending={pending}
-                uncertain={uncertain}
-                refundRevision={refundRevision}
-                approvalRevision={approvalRevision}
-                onMutate={mutate}
-              />
-
-              <div className="billing-history-col">
-                <BillingHistory view={view} />
-                {view.nextCursor !== null && (
-                  <button
-                    className="billing-secondary"
-                    style={{ marginTop: '12px' }}
-                    disabled={pending}
-                    onClick={() => {
-                      void run(() => load(view.bookingId, true));
-                    }}
-                  >
-                    Tải thêm lịch sử
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* ROW 3: PHÁT SINH & HOÁ ĐƠN QUYẾT TOÁN CUỐI */}
-            <IncidentalsPanel
-              bookingId={view.bookingId}
-              billingRevision={view.billingRevision}
-              disabled={pending}
-              onRefresh={() => {
-                void run(() => load(view.bookingId));
-              }}
-            />
-          </>
+      {/* empty:sr-only giữ vùng thông báo trong cây trợ năng nhưng không chiếm chỗ khi trống. */}
+      <div className="empty:sr-only" aria-live="polite">
+        {pending && (
+          <p
+            role="status"
+            className="flex items-center gap-2 rounded-lg bg-secondary px-4 py-3 text-muted-foreground"
+          >
+            <LoaderCircle aria-hidden className="size-4 motion-safe:animate-spin" />
+            Đang xử lý yêu cầu…
+          </p>
         )}
       </div>
+
+      {view !== null && (
+        <>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-xl font-semibold">Tổng hợp tiền đặt tiệc</h2>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={pending}
+              onClick={() => {
+                void run(() => load(view.bookingId));
+              }}
+            >
+              Cập nhật thông tin
+            </Button>
+          </div>
+
+          <div className="flex flex-wrap items-stretch gap-6">
+            <BillingSummary view={view} />
+            <AttemptLookupPanel
+              disabled={pending}
+              attemptId={attemptId}
+              setAttemptId={setAttemptId}
+              attempt={attempt}
+              onLookup={() => {
+                void run(async () => {
+                  setAttempt(
+                    await authorize((token) =>
+                      gateway.loadAttempt(token, view.bookingId, attemptId.trim()),
+                    ),
+                  );
+                });
+              }}
+            />
+          </div>
+
+          <div className="flex flex-wrap items-start gap-6">
+            <BillingMutationsSection
+              view={view}
+              pending={pending}
+              uncertain={uncertain}
+              refundRevision={refundRevision}
+              approvalRevision={approvalRevision}
+              onMutate={mutate}
+            />
+
+            <div className={`${panelClass} flex-[1_1_440px]`}>
+              <BillingHistory view={view} />
+              {view.nextCursor !== null && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="self-start"
+                  disabled={pending}
+                  onClick={() => {
+                    void run(() => load(view.bookingId, true));
+                  }}
+                >
+                  Tải thêm lịch sử
+                </Button>
+              )}
+            </div>
+          </div>
+
+          <IncidentalsPanel
+            bookingId={view.bookingId}
+            billingRevision={view.billingRevision}
+            disabled={pending}
+            onRefresh={() => {
+              void run(() => load(view.bookingId));
+            }}
+          />
+        </>
+      )}
     </main>
   );
 }

@@ -48,6 +48,17 @@
 @source '../src/features/booking-lifecycle/appendix-panel.tsx';
 @source '../src/features/booking-lifecycle/appendix-detail-view.tsx';
 @source '../src/features/booking-lifecycle/proposal-lifecycle-closure.tsx';
+@source '../src/features/payments-billing/billing-page.tsx';
+@source '../src/features/payments-billing/billing-display.tsx';
+@source '../src/features/payments-billing/billing-form-classes.ts';
+@source '../src/features/payments-billing/billing-mutations-section.tsx';
+@source '../src/features/payments-billing/attempt-lookup-panel.tsx';
+@source '../src/features/payments-billing/payment-forms.tsx';
+@source '../src/features/payments-billing/refund-approval-form.tsx';
+@source '../src/features/payments-billing/incidentals-panel.tsx';
+@source '../src/features/payments-billing/incidental-create-form.tsx';
+@source '../src/features/payments-billing/incidental-table.tsx';
+@source '../src/features/payments-billing/final-invoices-list.tsx';
 
 /* Sản phẩm chỉ có giao diện sáng: khoá biến thể dark: vào class .dark không bao giờ được gắn. */
 @custom-variant dark (&:is(.dark *));

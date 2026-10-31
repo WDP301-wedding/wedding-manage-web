@@ -1,7 +1,9 @@
 'use client';
 
+import { Trash2 } from 'lucide-react';
 import type { IncidentalExpensesResponse } from '../../services/billing.service';
 import { formatVnd } from '../../lib/formatters';
+import { Button } from '../../components/ui/button';
 
 export function IncidentalTable({
   incidentals,
@@ -16,125 +18,54 @@ export function IncidentalTable({
 }>) {
   if (!incidentals || incidentals.lines.length === 0) {
     return (
-      <div
-        style={{
-          color: 'var(--hy-ink-muted)',
-          fontSize: '0.875rem',
-          padding: '1.5rem',
-          background: 'var(--hy-surface-warm)',
-          borderRadius: 'var(--hy-radius-sm)',
-          textAlign: 'center',
-          border: '1px dashed var(--hy-outline)',
-        }}
-      >
+      <div className="rounded-lg border border-dashed border-input p-6 text-center text-xs text-muted-foreground">
         Chưa có dòng chi phí phát sinh nào được ghi nhận cho tiệc này.
       </div>
     );
   }
 
   return (
-    <div className="table-scroll">
-      <table
-        style={{
-          width: '100%',
-          borderCollapse: 'collapse',
-          fontSize: '0.875rem',
-          background: 'var(--hy-surface)',
-          borderRadius: 'var(--hy-radius-sm)',
-          overflow: 'hidden',
-          border: '1px solid var(--hy-outline)',
-        }}
-      >
-        <thead>
-          <tr
-            style={{
-              background: 'var(--hy-surface-container)',
-              textAlign: 'left',
-              borderBottom: '1px solid var(--hy-outline)',
-            }}
-          >
-            <th style={{ padding: '0.75rem 1rem', color: 'var(--hy-ink-muted)', fontWeight: 600 }}>
-              Hạng mục
-            </th>
-            <th style={{ padding: '0.75rem 1rem', color: 'var(--hy-ink-muted)', fontWeight: 600 }}>
-              Ghi chú
-            </th>
-            <th style={{ padding: '0.75rem 1rem', color: 'var(--hy-ink-muted)', fontWeight: 600 }}>
-              Số lượng
-            </th>
-            <th style={{ padding: '0.75rem 1rem', color: 'var(--hy-ink-muted)', fontWeight: 600 }}>
-              Đơn giá
-            </th>
-            <th
-              style={{
-                padding: '0.75rem 1rem',
-                textAlign: 'right',
-                color: 'var(--hy-ink-muted)',
-                fontWeight: 600,
-              }}
-            >
-              Thành tiền
-            </th>
-            <th
-              style={{
-                padding: '0.75rem 1rem',
-                textAlign: 'center',
-                color: 'var(--hy-ink-muted)',
-                fontWeight: 600,
-              }}
-            >
-              Xoá
-            </th>
+    <div className="overflow-x-auto rounded-lg border border-border">
+      <table className="w-full min-w-[480px] border-collapse text-left">
+        <thead className="bg-muted text-xs">
+          <tr>
+            <th className="px-3 py-2 font-semibold">Hạng mục</th>
+            <th className="px-3 py-2 font-semibold">Số lượng</th>
+            <th className="px-3 py-2 font-semibold">Đơn giá</th>
+            <th className="px-3 py-2 text-right font-semibold">Thành tiền</th>
+            <th className="px-3 py-2 text-center font-semibold">Xoá</th>
           </tr>
         </thead>
         <tbody>
           {incidentals.lines.map((line) => (
-            <tr
-              key={line.id}
-              style={{
-                borderBottom: '1px solid var(--hy-outline)',
-                transition: 'background-color 150ms ease',
-              }}
-            >
-              <td style={{ padding: '0.75rem 1rem', fontWeight: 600, color: 'var(--hy-ink)' }}>
-                {line.name}
+            <tr key={line.id} className="border-t border-border align-top">
+              <td className="px-3 py-2">
+                <strong className="block font-semibold">{line.name}</strong>
+                <small className="text-2xs text-muted-foreground">
+                  <span className="sr-only">Ghi chú: </span>
+                  {line.note || '—'}
+                </small>
               </td>
-              <td style={{ padding: '0.75rem 1rem', color: 'var(--hy-ink-muted)' }}>
-                {line.note || '—'}
-              </td>
-              <td style={{ padding: '0.75rem 1rem' }}>
+              <td className="px-3 py-2 tabular-nums">
                 {line.quantity} {line.unit}
               </td>
-              <td style={{ padding: '0.75rem 1rem' }}>{formatVnd(line.unitPriceVnd)}</td>
-              <td
-                style={{
-                  padding: '0.75rem 1rem',
-                  textAlign: 'right',
-                  fontWeight: 600,
-                  color: 'var(--hy-wine)',
-                }}
-              >
+              <td className="px-3 py-2 tabular-nums">{formatVnd(line.unitPriceVnd)}</td>
+              <td className="px-3 py-2 text-right font-semibold text-primary tabular-nums">
                 {formatVnd(line.totalVnd)}
               </td>
-              <td style={{ padding: '0.75rem 1rem', textAlign: 'center' }}>
-                <button
+              <td className="px-3 py-1.5 text-center">
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  className="text-hy-error hover:bg-hy-error-bg"
                   disabled={disabled || loading}
                   onClick={() => void onDeleteLine(line.id)}
                   aria-label={`Xoá ${line.name}`}
                   title={`Xoá ${line.name}`}
-                  style={{
-                    color: 'var(--hy-error)',
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    fontSize: '1rem',
-                    padding: '4px 8px',
-                    borderRadius: '4px',
-                  }}
                 >
-                  ✕
-                </button>
+                  <Trash2 aria-hidden />
+                </Button>
               </td>
             </tr>
           ))}
