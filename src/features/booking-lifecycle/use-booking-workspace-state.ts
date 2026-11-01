@@ -2,7 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiClientError } from '../../lib/api/client';
-import { addMyManagedBookingId, getMyManagedBookingIds } from '../identity-access/dashboard-live';
+import {
+  addMyManagedBookingId,
+  getMyManagedBookingIds,
+} from '../identity-access/booking-assignments';
 import type {
   Authorize,
   ManagementBookingGateway,

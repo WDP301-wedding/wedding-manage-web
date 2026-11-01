@@ -67,58 +67,60 @@ export function useBookingSearch(query: string) {
         .then((res) => res.data?.data ?? [])
         .catch(() => [] as LookupItem[]);
 
-      void Promise.allSettled([analyticsPromise, lookupsPromise]).then(([analyticsRes, lookupsRes]) => {
-        if (generation.current !== current || controller.signal.aborted) return;
-        const analyticsData = analyticsRes.status === 'fulfilled' ? analyticsRes.value : null;
-        const lookups = lookupsRes.status === 'fulfilled' ? lookupsRes.value : [];
-        const lookupMap = new Map(lookups.map((l) => [l.bookingId, l]));
+      void Promise.allSettled([analyticsPromise, lookupsPromise]).then(
+        ([analyticsRes, lookupsRes]) => {
+          if (generation.current !== current || controller.signal.aborted) return;
+          const analyticsData = analyticsRes.status === 'fulfilled' ? analyticsRes.value : null;
+          const lookups = lookupsRes.status === 'fulfilled' ? lookupsRes.value : [];
+          const lookupMap = new Map(lookups.map((l) => [l.bookingId, l]));
 
-        const mergedItems = (analyticsData?.items ?? []).map((item) => {
-          const l = lookupMap.get(item.bookingId);
-          if (!l) return item;
-          return {
-            ...item,
-            brideName: l.brideName ?? null,
-            groomName: l.groomName ?? null,
-            phone: l.phone ?? null,
-            email: l.email ?? null,
-          };
-        });
-
-        const existingIds = new Set(mergedItems.map((i) => i.bookingId));
-        for (const l of lookups) {
-          if (!existingIds.has(l.bookingId)) {
-            const extraItem: AnalyticsBookingsData['items'][number] = {
-              bookingId: l.bookingId,
-              bookingCode: l.bookingCode,
-              customerName: l.customerName,
+          const mergedItems = (analyticsData?.items ?? []).map((item) => {
+            const l = lookupMap.get(item.bookingId);
+            if (!l) return item;
+            return {
+              ...item,
               brideName: l.brideName ?? null,
               groomName: l.groomName ?? null,
               phone: l.phone ?? null,
               email: l.email ?? null,
-              alias: l.alias,
-              eventDate: l.eventDate,
-              hallId: '',
-              hallNameSnapshot: l.hallName,
-              shiftCode: l.shiftCode,
-              phase: 'CONFIRMED',
-              tableCount: 1,
             };
-            mergedItems.push(extraItem);
-          }
-        }
+          });
 
-        setResult({
-          query,
-          items: mergedItems,
-          cursor: analyticsData?.nextCursor ?? null,
-          pending: false,
-          error:
-            analyticsRes.status === 'rejected' && lookups.length === 0
-              ? describeApiError(analyticsRes.reason).message
-              : null,
-        });
-      });
+          const existingIds = new Set(mergedItems.map((i) => i.bookingId));
+          for (const l of lookups) {
+            if (!existingIds.has(l.bookingId)) {
+              const extraItem: AnalyticsBookingsData['items'][number] = {
+                bookingId: l.bookingId,
+                bookingCode: l.bookingCode,
+                customerName: l.customerName,
+                brideName: l.brideName ?? null,
+                groomName: l.groomName ?? null,
+                phone: l.phone ?? null,
+                email: l.email ?? null,
+                alias: l.alias,
+                eventDate: l.eventDate,
+                hallId: '',
+                hallNameSnapshot: l.hallName,
+                shiftCode: l.shiftCode,
+                phase: 'CONFIRMED',
+                tableCount: 1,
+              };
+              mergedItems.push(extraItem);
+            }
+          }
+
+          setResult({
+            query,
+            items: mergedItems,
+            cursor: analyticsData?.nextCursor ?? null,
+            pending: false,
+            error:
+              analyticsRes.status === 'rejected' && lookups.length === 0
+                ? describeApiError(analyticsRes.reason).message
+                : null,
+          });
+        },
+      );
     }, 300);
     return () => {
       clearTimeout(timer);

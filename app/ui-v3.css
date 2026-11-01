@@ -12,12 +12,7 @@
 @source '../src/components/ui';
 /* Màn đã chuyển sang v3 (thêm từng file khi chuyển). */
 @source '../src/design-system/brand-mark.tsx';
-@source '../src/features/identity-access/operations-shell.tsx';
-@source '../src/features/identity-access/identity-page.tsx';
-@source '../src/features/identity-access/password-reset-otp-form.tsx';
-@source '../src/features/identity-access/account-page.tsx';
-@source '../src/features/identity-access/account-settings.tsx';
-@source '../src/features/identity-access/copy-button.tsx';
+@source '../src/features/identity-access';
 @source '../src/features/booking-lifecycle/intake-page.tsx';
 @source '../src/features/booking-lifecycle/consultation-kpi-bar.tsx';
 @source '../src/features/booking-lifecycle/consultation-requests-list.tsx';

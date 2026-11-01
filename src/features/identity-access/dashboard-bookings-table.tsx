@@ -1,19 +1,34 @@
 'use client';
 
 import Link from 'next/link';
+import { Lock, Star } from 'lucide-react';
+import { cn } from 'cn';
 import type { AnalyticsBookingsData } from '../../services/analytics.service';
+import { Badge } from '../../components/ui/badge';
+import { Button } from '../../components/ui/button';
 import type { BookingAssignmentsRegistry } from './booking-assignments';
-import { dashboardStyles } from './dashboard.styles';
-import { CopyButton } from './dashboard-bookings-section';
+import { CopyButton } from './copy-button';
+import {
+  linkActionClass,
+  rowClass,
+  subTextClass,
+  tableClass,
+  tableWrapClass,
+  tdClass,
+  theadClass,
+  thClass,
+} from './dashboard-classes';
+import { SortHeader } from './table-controls';
 
 export type DashboardBookingItem = AnalyticsBookingsData['items'][number];
 
-const PHASE_LABELS: Record<string, string> = {
-  DRAFT: 'Bản nháp',
-  AWAITING_DEPOSIT: 'Chờ cọc',
-  CONFIRMED: 'Đã xác nhận',
-  COMPLETED: 'Hoàn thành',
-  CANCELLED: 'Đã hủy',
+type BadgeVariant = 'neutral' | 'success' | 'warning' | 'error' | 'info';
+const PHASES: Record<string, { label: string; variant: BadgeVariant }> = {
+  DRAFT: { label: 'Bản nháp', variant: 'neutral' },
+  AWAITING_DEPOSIT: { label: 'Chờ cọc', variant: 'warning' },
+  CONFIRMED: { label: 'Đã xác nhận', variant: 'success' },
+  COMPLETED: { label: 'Hoàn thành', variant: 'info' },
+  CANCELLED: { label: 'Đã hủy', variant: 'error' },
 };
 
 export type BookingSortField = 'eventDate' | 'hallName' | 'shiftCode' | 'tableCount' | 'phase';
@@ -29,87 +44,75 @@ export interface DashboardBookingsTableProps {
   onSortChange?: (field: BookingSortField) => void;
 }
 
+const sortColumns: { field: BookingSortField; label: string; title: string }[] = [
+  { field: 'eventDate', label: 'Ngày tổ chức', title: 'Sắp xếp theo ngày tổ chức' },
+  { field: 'hallName', label: 'Sảnh tiệc', title: 'Sắp xếp theo sảnh tiệc' },
+  { field: 'shiftCode', label: 'Ca', title: 'Sắp xếp theo ca tiệc' },
+  { field: 'tableCount', label: 'Quy mô', title: 'Sắp xếp theo quy mô số bàn' },
+];
+
+function BookingProfile({ booking }: Readonly<{ booking: DashboardBookingItem }>) {
+  const couple = [booking.groomName, booking.brideName].filter(Boolean).join(' & ');
+  const contact = [booking.phone, booking.email].filter(Boolean).join(', ');
+  return (
+    <div className="flex flex-col gap-0.5">
+      <div className="flex items-center gap-1">
+        {booking.bookingCode ? (
+          <>
+            <strong className="font-semibold">{booking.bookingCode}</strong>
+            <CopyButton text={booking.bookingCode} />
+          </>
+        ) : (
+          <span className={subTextClass}>Mã hồ sơ chưa đồng bộ</span>
+        )}
+      </div>
+      <span>{booking.customerName || 'Chưa có tên khách'}</span>
+      {couple && <small className="text-xs font-medium text-primary">{couple}</small>}
+      {contact && <small className={subTextClass}>{contact}</small>}
+      {booking.alias && booking.alias !== booking.customerName && (
+        <small className={subTextClass}>{booking.alias}</small>
+      )}
+    </div>
+  );
+}
+
 export function DashboardBookingsTable({
   bookings,
   assignments,
   resolvedAccountId,
   onClaim,
   sortField,
-  sortOrder,
+  sortOrder = 'asc',
   onSortChange,
 }: Readonly<DashboardBookingsTableProps>) {
   return (
-    <div className="table-scroll">
-      <table aria-label="Lịch tiệc và sự kiện đã đặt">
-        <thead>
+    <div className={tableWrapClass}>
+      <table aria-label="Lịch tiệc và sự kiện đã đặt" className={cn(tableClass, 'min-w-[960px]')}>
+        <thead className={theadClass}>
           <tr>
-            <th scope="col">
-              <button
-                type="button"
-                onClick={() => onSortChange?.('eventDate')}
-                style={dashboardStyles.thSortButton}
-                title="Sắp xếp theo ngày tổ chức"
-              >
-                <span>Ngày tổ chức</span>
-                <span style={dashboardStyles.sortIcon(sortField === 'eventDate')}>
-                  {sortField === 'eventDate' ? (sortOrder === 'asc' ? '↑' : '↓') : '↕'}
-                </span>
-              </button>
+            {sortColumns.map((column) => (
+              <SortHeader
+                key={column.field}
+                label={column.label}
+                title={column.title}
+                active={sortField === column.field}
+                order={sortOrder}
+                onSort={() => onSortChange?.(column.field)}
+              />
+            ))}
+            <th scope="col" className={thClass}>
+              Hồ sơ tiệc
             </th>
-            <th scope="col">
-              <button
-                type="button"
-                onClick={() => onSortChange?.('hallName')}
-                style={dashboardStyles.thSortButton}
-                title="Sắp xếp theo sảnh tiệc"
-              >
-                <span>Sảnh tiệc</span>
-                <span style={dashboardStyles.sortIcon(sortField === 'hallName')}>
-                  {sortField === 'hallName' ? (sortOrder === 'asc' ? '↑' : '↓') : '↕'}
-                </span>
-              </button>
+            <SortHeader
+              label="Trạng thái"
+              title="Sắp xếp theo trạng thái"
+              active={sortField === 'phase'}
+              order={sortOrder}
+              onSort={() => onSortChange?.('phase')}
+            />
+            <th scope="col" className={cn(thClass, 'text-right')}>
+              Thao tác
             </th>
-            <th scope="col">
-              <button
-                type="button"
-                onClick={() => onSortChange?.('shiftCode')}
-                style={dashboardStyles.thSortButton}
-                title="Sắp xếp theo ca tiệc"
-              >
-                <span>Ca</span>
-                <span style={dashboardStyles.sortIcon(sortField === 'shiftCode')}>
-                  {sortField === 'shiftCode' ? (sortOrder === 'asc' ? '↑' : '↓') : '↕'}
-                </span>
-              </button>
-            </th>
-            <th scope="col">
-              <button
-                type="button"
-                onClick={() => onSortChange?.('tableCount')}
-                style={dashboardStyles.thSortButton}
-                title="Sắp xếp theo quy mô số bàn"
-              >
-                <span>Quy mô</span>
-                <span style={dashboardStyles.sortIcon(sortField === 'tableCount')}>
-                  {sortField === 'tableCount' ? (sortOrder === 'asc' ? '↑' : '↓') : '↕'}
-                </span>
-              </button>
-            </th>
-            <th scope="col">Hồ sơ tiệc</th>
-            <th scope="col">
-              <button
-                type="button"
-                onClick={() => onSortChange?.('phase')}
-                style={dashboardStyles.thSortButton}
-                title="Sắp xếp theo trạng thái"
-              >
-                <span>Trạng thái</span>
-                <span style={dashboardStyles.sortIcon(sortField === 'phase')}>
-                  {sortField === 'phase' ? (sortOrder === 'asc' ? '↑' : '↓') : '↕'}
-                </span>
-              </button>
-            </th>
-            <th scope="col">Thao tác</th>
           </tr>
         </thead>
         <tbody>
@@ -120,127 +123,91 @@ export function DashboardBookingsTable({
               assignment && assignment.assignedAccountId !== resolvedAccountId,
             );
             const assignedEmail = assignment?.assignedEmail ?? 'Quản lý khác';
+            const phase = PHASES[booking.phase];
 
             return (
-              <tr key={booking.bookingId}>
-                <td>
-                  <strong>{new Date(booking.eventDate).toLocaleDateString('vi-VN')}</strong>
+              <tr key={booking.bookingId} className={rowClass}>
+                <td className={cn(tdClass, 'font-semibold whitespace-nowrap tabular-nums')}>
+                  {new Date(booking.eventDate).toLocaleDateString('vi-VN')}
                 </td>
-                <td>
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.35rem',
-                      flexWrap: 'wrap',
-                    }}
-                  >
-                    <strong>{booking.hallNameSnapshot || 'Sảnh tiệc'}</strong>
+                <td className={tdClass}>
+                  <div className="flex flex-col gap-0.5">
+                    <span className="font-semibold">{booking.hallNameSnapshot || 'Sảnh tiệc'}</span>
                     {mine ? (
-                      <span style={dashboardStyles.mineBadge} title="Bạn đang phụ trách tiệc này">
+                      <small className="text-xs text-primary" title="Bạn đang phụ trách tiệc này">
                         Của bạn
-                      </span>
+                      </small>
                     ) : assignedToOther ? (
-                      <span
-                        style={dashboardStyles.assignedBadge}
+                      <small
+                        className={cn(subTextClass, 'break-all')}
                         title={`Tiệc đã được tiếp nhận và khóa bởi: ${assignedEmail}`}
                       >
                         {assignedEmail}
-                      </span>
+                      </small>
                     ) : null}
                   </div>
                 </td>
-                <td>
-                  <span className="shift-badge">
-                    {booking.shiftCode === 'LUNCH' ? 'Trưa' : 'Tối'}
-                  </span>
+                <td className={tdClass}>{booking.shiftCode === 'LUNCH' ? 'Trưa' : 'Tối'}</td>
+                <td className={cn(tdClass, 'whitespace-nowrap tabular-nums')}>
+                  {booking.tableCount} bàn
                 </td>
-                <td>{booking.tableCount} bàn</td>
-                <td>
-                  <div style={{ display: 'grid', gap: 4 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      {booking.bookingCode ? (
-                        <strong>{booking.bookingCode}</strong>
-                      ) : (
-                        <span className="muted">Mã hồ sơ chưa đồng bộ</span>
-                      )}
-                      {booking.bookingCode && <CopyButton text={booking.bookingCode} />}
-                    </div>
-                    <span>{booking.customerName || 'Chưa có tên khách'}</span>
-                    {Boolean(booking.brideName || booking.groomName) && (
-                      <small style={{ color: 'var(--hy-wine, #7a1f3d)', fontWeight: 500 }}>
-                        👰🤵 {[booking.groomName, booking.brideName].filter(Boolean).join(' & ')}
-                      </small>
-                    )}
-                    {Boolean(booking.phone || booking.email) && (
-                      <small style={{ color: 'var(--hy-text-muted, #6e5d63)' }}>
-                        {[booking.phone, booking.email].filter(Boolean).join(' · ')}
-                      </small>
-                    )}
-                    {booking.alias && booking.alias !== booking.customerName && (
-                      <small>{booking.alias}</small>
-                    )}
-                  </div>
+                <td className={tdClass}>
+                  <BookingProfile booking={booking} />
                 </td>
-                <td>
-                  <span
-                    className={`status ${
-                      booking.phase === 'CONFIRMED' || booking.phase === 'COMPLETED'
-                        ? 'status-ready'
-                        : booking.phase === 'CANCELLED'
-                          ? 'status-closed'
-                          : 'status-review'
-                    }`}
-                  >
-                    {PHASE_LABELS[booking.phase] ?? booking.phase}
-                  </span>
+                <td className={tdClass}>
+                  <Badge variant={phase?.variant ?? 'neutral'}>
+                    {phase?.label ?? booking.phase}
+                  </Badge>
                 </td>
-                <td>
-                  <div style={dashboardStyles.actionGroup}>
+                <td className={tdClass}>
+                  <div className="flex flex-wrap justify-end gap-1">
                     <Link
-                      className="booking-primary-link"
+                      className={cn(
+                        linkActionClass,
+                        'bg-accent text-accent-foreground hover:bg-hy-wine-soft/70',
+                      )}
                       href={`/bookings?bookingId=${booking.bookingId}`}
                       prefetch={false}
-                      style={dashboardStyles.actionLink}
                     >
-                      Xem hồ sơ →
+                      Xem hồ sơ
                     </Link>
                     <Link
-                      className="booking-secondary"
+                      className={cn(linkActionClass, 'text-foreground hover:bg-muted')}
                       href={`/billing?bookingId=${booking.bookingId}`}
                       prefetch={false}
-                      style={dashboardStyles.actionLink}
                     >
                       Thanh toán
                     </Link>
                     <Link
-                      className="booking-secondary"
+                      className={cn(linkActionClass, 'text-foreground hover:bg-muted')}
                       href={`/staff?bookingId=${booking.bookingId}`}
                       prefetch={false}
-                      style={dashboardStyles.actionLink}
                     >
                       Nhân sự
                     </Link>
                     {mine ? null : assignedToOther ? (
-                      <button
-                        type="button"
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         disabled
                         title={`Tiệc này đã được ${assignedEmail} tiếp nhận và đang khóa`}
-                        style={dashboardStyles.lockedButton}
+                        className="text-muted-foreground"
                       >
+                        <Lock aria-hidden className="size-3.5" />
                         Đã có người nhận
-                      </button>
+                      </Button>
                     ) : (
-                      <button
-                        type="button"
+                      <Button
+                        variant="outline"
+                        size="sm"
                         title="Tiếp nhận phụ trách tiệc này và khóa với các quản lý khác"
                         onClick={() =>
                           onClaim(booking.bookingId, booking.hallNameSnapshot || undefined)
                         }
-                        style={dashboardStyles.claimActiveButton}
                       >
-                        ☆ Nhận tiệc
-                      </button>
+                        <Star aria-hidden className="size-3.5" />
+                        Nhận tiệc
+                      </Button>
                     )}
                   </div>
                 </td>
