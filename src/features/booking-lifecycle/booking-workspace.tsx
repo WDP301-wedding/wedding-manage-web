@@ -1,13 +1,18 @@
 'use client';
 
+import { LoaderCircle } from 'lucide-react';
+import { Badge } from '../../components/ui/badge';
+import { Button } from '../../components/ui/button';
 import { BookingLookupBar } from './booking-lookup-bar';
-import { bookingStyles } from './booking.styles';
-import { bookingPhaseLabel } from './booking-helpers';
+import { bookingPhaseLabel, bookingPhaseTone } from './booking-helpers';
 import type { Authorize, ManagementBookingGateway } from './booking-api';
 import { useBookingWorkspaceState } from './use-booking-workspace-state';
 import { BookingWorkspaceTabConsultation } from './booking-workspace-tab-consultation';
 import { BookingWorkspaceTabBooking } from './booking-workspace-tab-booking';
 import { BookingWorkspaceTabManage } from './booking-workspace-tab-manage';
+
+const tabClass =
+  'inline-flex h-12 shrink-0 items-center gap-2 border-b-2 border-transparent px-4 font-semibold whitespace-nowrap text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none aria-selected:border-primary aria-selected:text-primary';
 
 export interface ManagementBookingWorkspaceProps {
   authorize: Authorize;
@@ -63,21 +68,18 @@ export function ManagementBookingWorkspace({
   const isPendingOrLoading = pending !== null || contextStatus !== 'ready';
 
   return (
-    <main className="booking-shell" id="booking-main">
-      <header className="booking-header">
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'flex-start',
-            flexWrap: 'wrap',
-            gap: '1rem',
-          }}
-        >
-          <div>
-            <p className="section-kicker">Wedding Estate · Operations</p>
-            <h1>Điều phối đặt tiệc</h1>
-            <p>Mỗi hồ sơ tư vấn gắn với một tiệc. Mở lại hồ sơ để tiếp tục đúng tiến trình.</p>
+    <main
+      data-ui-v3
+      id="booking-main"
+      className="min-h-screen bg-background p-[clamp(1rem,3vw,3.25rem)]"
+    >
+      <div className="mb-6 flex flex-col gap-6">
+        <header className="flex flex-wrap items-start justify-between gap-6">
+          <div className="flex max-w-xl min-w-0 flex-[1_1_360px] flex-col gap-1">
+            <h1 className="text-2xl font-bold">Điều phối đặt tiệc</h1>
+            <p className="text-muted-foreground">
+              Mỗi hồ sơ tư vấn gắn với một tiệc. Mở lại hồ sơ để tiếp tục đúng tiến trình.
+            </p>
           </div>
           <BookingLookupBar
             key={currentAccountId ?? 'manager'}
@@ -90,69 +92,96 @@ export function ManagementBookingWorkspace({
             pending={pending}
             recentBookingIds={recentBookingIds}
           />
-        </div>
-      </header>
+        </header>
 
-      {consultation ? (
-        <p role="status">
-          <strong>{prefill.displayName}</strong> · {prefill.email}
-          {proposal ? (
-            <>
-              {' '}
-              · Ngày: {proposal.eventDate.split('-').reverse().join('/')} ·{' '}
-              {bookingPhaseLabel(proposal.phase)}
-            </>
-          ) : (
-            ' · Chưa tạo tiệc'
-          )}
-        </p>
-      ) : null}
-      <div className="booking-live" aria-live="polite">
-        {pending === null ? null : <span role="status">Đang xử lý yêu cầu…</span>}
-        {message === null ? null : <span role="status">{message}</span>}
-        {error === null ? null : <span role="alert">{error}</span>}
-        {contextStatus === 'error' ? (
-          <button type="button" onClick={retryContext}>
-            Tải lại hồ sơ
-          </button>
+        {consultation ? (
+          <p
+            role="status"
+            className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-border bg-card px-4 py-3"
+          >
+            <strong className="font-semibold">{prefill.displayName}</strong>
+            <span className="text-muted-foreground [overflow-wrap:anywhere]">{prefill.email}</span>
+            {proposal ? (
+              <>
+                <span className="tabular-nums">
+                  Ngày: {proposal.eventDate.split('-').reverse().join('/')}
+                </span>
+                <Badge variant={bookingPhaseTone(proposal.phase)}>
+                  {bookingPhaseLabel(proposal.phase)}
+                </Badge>
+              </>
+            ) : (
+              <Badge>Chưa tạo tiệc</Badge>
+            )}
+          </p>
         ) : null}
-      </div>
+        {/* empty:sr-only giữ vùng thông báo trong cây trợ năng nhưng không chiếm chỗ khi trống. */}
+        <div className="flex flex-col gap-2 empty:sr-only" aria-live="polite">
+          {pending === null ? null : (
+            <span
+              role="status"
+              className="flex items-center gap-2 rounded-lg bg-secondary px-4 py-3 text-muted-foreground"
+            >
+              <LoaderCircle aria-hidden className="size-4 motion-safe:animate-spin" />
+              Đang xử lý yêu cầu…
+            </span>
+          )}
+          {message === null ? null : (
+            <span role="status" className="rounded-lg bg-hy-info-bg px-4 py-3 text-hy-info">
+              {message}
+            </span>
+          )}
+          {error === null ? null : (
+            <span role="alert" className="rounded-lg bg-hy-error-bg px-4 py-3 text-hy-error">
+              {error}
+            </span>
+          )}
+          {contextStatus === 'error' ? (
+            <Button variant="outline" size="sm" className="self-start" onClick={retryContext}>
+              Tải lại hồ sơ
+            </Button>
+          ) : null}
+        </div>
 
-      {/* 3 Phân hệ tách biệt hoàn toàn theo tiêu chuẩn Hỷ Yến */}
-      <div role="tablist" aria-label="Phân hệ điều phối tiệc" style={bookingStyles.tabList}>
-        <button
-          type="button"
-          role="tab"
-          id="tab-consultation"
-          aria-selected={activeTab === 'consultation'}
-          onClick={() => switchTab('consultation')}
-          style={bookingStyles.tabButton(activeTab === 'consultation')}
+        <div
+          role="tablist"
+          aria-label="Phân hệ điều phối tiệc"
+          className="flex gap-1 overflow-x-auto shadow-[inset_0_-1px_0_var(--hy-outline)]"
         >
-          <span>1. Hồ sơ tư vấn</span>
-          {consultation ? <span style={bookingStyles.badgeActive}>Đã có mã</span> : null}
-        </button>
-        <button
-          type="button"
-          role="tab"
-          id="tab-booking"
-          aria-selected={activeTab === 'booking'}
-          onClick={() => switchTab('booking')}
-          style={bookingStyles.tabButton(activeTab === 'booking')}
-        >
-          <span>2. Khảo sát sảnh &amp; Đặt tiệc</span>
-          {consultation ? <span style={bookingStyles.badgeDraft}>Đã liên kết tư vấn</span> : null}
-        </button>
-        <button
-          type="button"
-          role="tab"
-          id="tab-manage"
-          aria-selected={activeTab === 'manage'}
-          onClick={() => switchTab('manage')}
-          style={bookingStyles.tabButton(activeTab === 'manage')}
-        >
-          <span>3. Tiệc đang xử lý</span>
-          {proposal ? <span style={bookingStyles.badgeActive}>Đang mở</span> : null}
-        </button>
+          <button
+            type="button"
+            role="tab"
+            id="tab-consultation"
+            aria-selected={activeTab === 'consultation'}
+            onClick={() => switchTab('consultation')}
+            className={tabClass}
+          >
+            <span>1. Hồ sơ tư vấn</span>
+            {consultation ? <Badge variant="success">Đã có mã</Badge> : null}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            id="tab-booking"
+            aria-selected={activeTab === 'booking'}
+            onClick={() => switchTab('booking')}
+            className={tabClass}
+          >
+            <span>2. Khảo sát sảnh &amp; Đặt tiệc</span>
+            {consultation ? <Badge>Đã liên kết tư vấn</Badge> : null}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            id="tab-manage"
+            aria-selected={activeTab === 'manage'}
+            onClick={() => switchTab('manage')}
+            className={tabClass}
+          >
+            <span>3. Tiệc đang xử lý</span>
+            {proposal ? <Badge variant="success">Đang mở</Badge> : null}
+          </button>
+        </div>
       </div>
 
       <BookingWorkspaceTabConsultation

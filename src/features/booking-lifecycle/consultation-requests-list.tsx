@@ -1,8 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { bookingPhaseLabel } from './booking-helpers';
-import { intakeStyles } from './intake.styles';
+import { Badge } from '../../components/ui/badge';
+import { Button, buttonVariants } from '../../components/ui/button';
+import { bookingPhaseLabel, bookingPhaseTone, type BadgeTone } from './booking-helpers';
 import type { Item } from './use-consultation-requests';
 
 export interface ConsultationRequestsListProps {
@@ -26,6 +27,33 @@ function getDateRemainingText(dateStr: string): string | null {
   return null;
 }
 
+function statusBadge(item: Item): { tone: BadgeTone; label: string } {
+  if (item.status === 'NEW') return { tone: 'warning', label: 'Mới' };
+  if (item.status === 'CLOSED') return { tone: 'neutral', label: 'Lưu trữ' };
+  if (item.bookingId) {
+    return {
+      tone: bookingPhaseTone(item.bookingPhase ?? ''),
+      label: bookingPhaseLabel(item.bookingPhase ?? ''),
+    };
+  }
+  return { tone: 'info', label: 'Đang tư vấn · Chưa lập tiệc' };
+}
+
+function bookingHref(item: Item & { consultationId: string }): string {
+  const params = new URLSearchParams({ consultationId: item.consultationId });
+  if (item.displayName) params.set('displayName', item.displayName);
+  if (item.email) params.set('email', item.email);
+  if (item.preferredDate) params.set('preferredDate', item.preferredDate);
+  if (item.expectedGuests !== undefined && item.expectedGuests !== null) {
+    params.set('expectedGuests', String(item.expectedGuests));
+  }
+  if (item.preferredShift) params.set('preferredShift', item.preferredShift);
+  if (item.preferredHallId) params.set('preferredHall', item.preferredHallId);
+  if (item.preferredMenuVersionId) params.set('preferredMenu', item.preferredMenuVersionId);
+  if (item.message) params.set('note', item.message);
+  return `/bookings?${params.toString()}`;
+}
+
 export function ConsultationRequestsList({
   items,
   pending,
@@ -35,197 +63,166 @@ export function ConsultationRequestsList({
 }: Readonly<ConsultationRequestsListProps>) {
   return (
     <>
-      <div className="intake-list">
-        {items.map((item) => (
-          <article
-            className="intake-item"
-            key={item.id}
-            style={intakeStyles.intakeItem(item.status)}
-          >
-            <div className="intake-card-header" style={intakeStyles.cardHeader}>
-              <div className="intake-header-main">
-                <div style={intakeStyles.kickerRow}>
-                  <p className="section-kicker" style={{ margin: 0 }}>
-                    {
+      <div className="flex flex-col gap-4">
+        {items.map((item) => {
+          const badge = statusBadge(item);
+          const dateTag = item.preferredDate ? getDateRemainingText(item.preferredDate) : null;
+          return (
+            <article
+              key={item.id}
+              className="flex flex-col gap-4 rounded-xl border border-border bg-card px-6 py-5 shadow-hy-1"
+            >
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div className="flex min-w-0 flex-col gap-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-xs text-muted-foreground">
                       {
-                        NEW: 'Cần tiếp nhận',
-                        CONVERTED: 'Đã mở hồ sơ',
-                        CLOSED: 'Đã đóng',
-                      }[item.status]
-                    }
-                  </p>
-                  <span style={intakeStyles.statusBadge(item.status)}>
-                    {item.status === 'NEW' && 'Mới'}
-                    {item.status === 'CONVERTED' &&
-                      (item.bookingId
-                        ? bookingPhaseLabel(item.bookingPhase ?? '')
-                        : 'Đang tư vấn · Chưa lập tiệc')}
-                    {item.status === 'CLOSED' && 'Lưu trữ'}
-                  </span>
-                </div>
-                <h2>{item.displayName}</h2>
-                <p style={intakeStyles.contactChips}>
-                  <a href={`mailto:${item.email}`} style={intakeStyles.contactLink}>
-                    <span>{item.email}</span>
-                  </a>
-                  {item.phone && (
-                    <>
-                      <span style={{ color: 'var(--hy-outline, #eadfd6)' }}>·</span>
-                      <a href={`tel:${item.phone}`} style={intakeStyles.contactLink}>
-                        <span>{item.phone}</span>
-                      </a>
-                    </>
-                  )}
-                </p>
-              </div>
-
-              {item.status === 'NEW' && (
-                <div className="intake-header-actions" style={intakeStyles.headerActions}>
-                  <button
-                    type="button"
-                    disabled={pending}
-                    onClick={() => void onAction(item, 'closure')}
-                    style={intakeStyles.secondaryActionBtn}
-                  >
-                    Đóng yêu cầu
-                  </button>
-                  <button
-                    className="booking-primary-link"
-                    type="button"
-                    disabled={pending}
-                    onClick={() => void onAction(item, 'conversion')}
-                    style={intakeStyles.primaryActionBtn}
-                    aria-label="Mở hồ sơ tư vấn"
-                  >
-                    Duyệt hồ sơ và mời khách truy cập
-                  </button>
-                </div>
-              )}
-
-              {item.status === 'CONVERTED' && item.consultationId && (
-                <div className="intake-header-actions" style={intakeStyles.headerActions}>
-                  <div
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '0.45rem',
-                    }}
-                  >
-                    <small
-                      style={{
-                        color: 'var(--hy-text-muted, #6e5d63)',
-                        fontWeight: 600,
-                      }}
-                    >
-                      Mã hồ sơ tư vấn:
-                    </small>
-                    <code style={intakeStyles.consultationCode}>{item.consultationId}</code>
+                        {
+                          NEW: 'Cần tiếp nhận',
+                          CONVERTED: 'Đã mở hồ sơ',
+                          CLOSED: 'Đã đóng',
+                        }[item.status]
+                      }
+                    </p>
+                    <Badge variant={badge.tone}>{badge.label}</Badge>
                   </div>
-                  {(() => {
-                    const params = new URLSearchParams({ consultationId: item.consultationId });
-                    if (item.displayName) params.set('displayName', item.displayName);
-                    if (item.email) params.set('email', item.email);
-                    if (item.preferredDate) params.set('preferredDate', item.preferredDate);
-                    if (item.expectedGuests !== undefined && item.expectedGuests !== null) {
-                      params.set('expectedGuests', String(item.expectedGuests));
-                    }
-                    if (item.preferredShift) params.set('preferredShift', item.preferredShift);
-                    if (item.preferredHallId) params.set('preferredHall', item.preferredHallId);
-                    if (item.preferredMenuVersionId) {
-                      params.set('preferredMenu', item.preferredMenuVersionId);
-                    }
-                    if (item.message) params.set('note', item.message);
-                    return (
-                      <Link
-                        className="booking-primary-link"
-                        href={`/bookings?${params.toString()}`}
-                        style={intakeStyles.primaryActionBtn}
-                      >
-                        {item.bookingId ? 'Mở hồ sơ đặt tiệc' : 'Tiếp tục tư vấn & lập tiệc'}
-                      </Link>
-                    );
-                  })()}
+                  <h2 className="text-lg font-semibold">{item.displayName}</h2>
+                  <p className="flex flex-wrap gap-2 text-xs">
+                    <a className="text-primary hover:underline" href={`mailto:${item.email}`}>
+                      <span>{item.email}</span>
+                    </a>
+                    {item.phone && (
+                      <>
+                        <span className="text-input" aria-hidden="true">
+                          ·
+                        </span>
+                        <a className="text-primary hover:underline" href={`tel:${item.phone}`}>
+                          <span>{item.phone}</span>
+                        </a>
+                      </>
+                    )}
+                  </p>
+                </div>
+
+                {item.status === 'NEW' && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      className="text-destructive hover:bg-hy-error-bg"
+                      type="button"
+                      disabled={pending}
+                      onClick={() => void onAction(item, 'closure')}
+                    >
+                      Đóng yêu cầu
+                    </Button>
+                    <Button
+                      type="button"
+                      disabled={pending}
+                      onClick={() => void onAction(item, 'conversion')}
+                      aria-label="Mở hồ sơ tư vấn"
+                    >
+                      Duyệt hồ sơ và mời khách truy cập
+                    </Button>
+                  </div>
+                )}
+
+                {item.status === 'CONVERTED' && item.consultationId && (
+                  <div className="flex flex-wrap items-center gap-3">
+                    <div className="inline-flex items-center gap-2">
+                      <small className="text-xs font-semibold text-muted-foreground">
+                        Mã hồ sơ tư vấn:
+                      </small>
+                      <code className="rounded-md bg-secondary px-2 py-1 font-mono text-2xs text-muted-foreground">
+                        {item.consultationId}
+                      </code>
+                    </div>
+                    <Link
+                      className={buttonVariants({
+                        variant: item.bookingId ? 'outline' : 'default',
+                      })}
+                      href={bookingHref({ ...item, consultationId: item.consultationId })}
+                    >
+                      {item.bookingId ? 'Mở hồ sơ đặt tiệc' : 'Tiếp tục tư vấn & lập tiệc'}
+                    </Link>
+                  </div>
+                )}
+              </div>
+
+              <dl className="grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-x-6 gap-y-3 rounded-lg bg-muted p-4">
+                <div className="flex flex-col gap-0.5">
+                  <dt className="text-xs text-muted-foreground">
+                    <span>Ngày mong muốn</span>
+                  </dt>
+                  <dd className="flex flex-wrap items-center gap-2 font-semibold tabular-nums">
+                    <span>{item.preferredDate ?? 'Chưa chọn'}</span>
+                    {dateTag ? (
+                      <span className="rounded-full border border-input px-2 text-2xs leading-5 font-medium">
+                        {dateTag}
+                      </span>
+                    ) : null}
+                  </dd>
+                </div>
+
+                <div className="flex flex-col gap-0.5">
+                  <dt className="text-xs text-muted-foreground">
+                    <span>Ca mong muốn</span>
+                  </dt>
+                  <dd className="font-semibold">
+                    <span>
+                      {item.preferredShift === 'LUNCH'
+                        ? 'Ca trưa'
+                        : item.preferredShift === 'DINNER'
+                          ? 'Ca tối'
+                          : 'Chưa chọn'}
+                    </span>
+                  </dd>
+                </div>
+
+                <div className="flex flex-col gap-0.5">
+                  <dt className="text-xs text-muted-foreground">
+                    <span>Số khách dự kiến</span>
+                  </dt>
+                  <dd className="font-semibold tabular-nums">
+                    <span>{item.expectedGuests ?? 'Chưa cung cấp'}</span>
+                    {item.expectedGuests ? (
+                      <span className="text-xs font-normal text-muted-foreground">
+                        {` khách (~${Math.ceil(item.expectedGuests / 10)} bàn)`}
+                      </span>
+                    ) : null}
+                  </dd>
+                </div>
+
+                <div className="flex flex-col gap-0.5">
+                  <dt className="text-xs text-muted-foreground">
+                    <span>Đã nhận</span>
+                  </dt>
+                  <dd className="tabular-nums">
+                    <span>{new Date(item.createdAt).toLocaleDateString('vi-VN')}</span>
+                  </dd>
+                </div>
+              </dl>
+
+              {item.message && (
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs text-muted-foreground">Lời nhắn từ khách hàng:</span>
+                  <p>{item.message}</p>
                 </div>
               )}
-            </div>
-
-            <dl className="intake-data-ribbon" style={intakeStyles.dataRibbon}>
-              <div style={intakeStyles.ribbonItem}>
-                <dt style={intakeStyles.ribbonDt}>
-                  <span>Ngày mong muốn</span>
-                </dt>
-                <dd style={intakeStyles.ribbonDd}>
-                  <span>{item.preferredDate ?? 'Chưa chọn'}</span>
-                  {item.preferredDate && getDateRemainingText(item.preferredDate) ? (
-                    <span style={intakeStyles.contextTag(item.preferredDate)}>
-                      {getDateRemainingText(item.preferredDate)}
-                    </span>
-                  ) : null}
-                </dd>
-              </div>
-
-              <div style={intakeStyles.ribbonItem}>
-                <dt style={intakeStyles.ribbonDt}>
-                  <span>Ca mong muốn</span>
-                </dt>
-                <dd style={intakeStyles.ribbonDd}>
-                  <span>
-                    {item.preferredShift === 'LUNCH'
-                      ? 'Ca trưa'
-                      : item.preferredShift === 'DINNER'
-                        ? 'Ca tối'
-                        : 'Chưa chọn'}
-                  </span>
-                </dd>
-              </div>
-
-              <div style={intakeStyles.ribbonItem}>
-                <dt style={intakeStyles.ribbonDt}>
-                  <span>Số khách dự kiến</span>
-                </dt>
-                <dd style={intakeStyles.ribbonDd}>
-                  <span>{item.expectedGuests ?? 'Chưa cung cấp'}</span>
-                  {item.expectedGuests ? (
-                    <span style={intakeStyles.subDetail}>
-                      {` khách (~${Math.ceil(item.expectedGuests / 10)} bàn)`}
-                    </span>
-                  ) : null}
-                </dd>
-              </div>
-
-              <div style={intakeStyles.ribbonItem}>
-                <dt style={intakeStyles.ribbonDt}>
-                  <span>Đã nhận</span>
-                </dt>
-                <dd style={intakeStyles.ribbonDd}>
-                  <span>{new Date(item.createdAt).toLocaleDateString('vi-VN')}</span>
-                </dd>
-              </div>
-            </dl>
-
-            {item.message && (
-              <div className="intake-message-callout" style={intakeStyles.messageCallout}>
-                <div style={intakeStyles.messageHeader}>
-                  <span style={intakeStyles.messageLabel}>Lời nhắn từ khách hàng:</span>
-                </div>
-                <p className="intake-message" style={intakeStyles.messageText}>
-                  {item.message}
-                </p>
-              </div>
-            )}
-          </article>
-        ))}
+            </article>
+          );
+        })}
       </div>
 
       {nextCursor ? (
-        <button
+        <Button
+          variant="outline"
+          className="self-center"
           type="button"
           disabled={pending}
           onClick={() => void onLoadMore(nextCursor)}
-          style={intakeStyles.loadMoreBtn}
         >
           Xem thêm yêu cầu
-        </button>
+        </Button>
       ) : null}
     </>
   );

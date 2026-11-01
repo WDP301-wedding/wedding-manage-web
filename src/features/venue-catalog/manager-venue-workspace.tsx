@@ -25,81 +25,16 @@ import { TimelinePanel } from './timeline-panel';
 import { VenueHallsSection } from './venue-halls-section';
 import { notify } from '../../design-system/notifications';
 
-export type Authorize = <T>(operation: (accessToken: string) => Promise<T>) => Promise<T>;
-
-export const catalogTabs = [
-  { id: 'venue', label: 'Nhà hàng & sảnh' },
-  { id: 'food', label: 'Món & thực đơn' },
-  { id: 'timeline', label: 'Kịch bản tiệc' },
-  { id: 'layout', label: 'Bố cục bàn' },
-] as const;
-export type CatalogTab = (typeof catalogTabs)[number]['id'];
-
-export function CatalogTabs({
-  active,
-  onChange,
-}: {
-  active: CatalogTab;
-  onChange: (tab: CatalogTab) => void;
-}) {
-  return (
-    <div className="catalog-tabs" role="tablist" aria-label="Danh mục vận hành">
-      {catalogTabs.map((tab, index) => (
-        <button
-          key={tab.id}
-          id={`catalog-tab-${tab.id}`}
-          type="button"
-          role="tab"
-          aria-selected={active === tab.id}
-          aria-controls={`catalog-panel-${tab.id}`}
-          tabIndex={active === tab.id ? 0 : -1}
-          onClick={() => onChange(tab.id)}
-          onKeyDown={(event) => {
-            let next: number;
-            if (event.key === 'ArrowRight') next = (index + 1) % catalogTabs.length;
-            else if (event.key === 'ArrowLeft')
-              next = (index + catalogTabs.length - 1) % catalogTabs.length;
-            else if (event.key === 'Home') next = 0;
-            else if (event.key === 'End') next = catalogTabs.length - 1;
-            else return;
-            event.preventDefault();
-            const selected = catalogTabs[next];
-            if (selected === undefined) return;
-            onChange(selected.id);
-            document.getElementById(`catalog-tab-${selected.id}`)?.focus();
-          }}
-        >
-          {tab.label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-export function supportsFood(
-  gateway: VenueCatalogGateway | CatalogGateway,
-): gateway is CatalogGateway {
-  return 'loadFood' in gateway;
-}
-
-export function supportsTimeline(
-  gateway: VenueCatalogGateway | CatalogGateway,
-): gateway is CatalogGateway {
-  return 'loadTimelines' in gateway;
-}
-
-export function supportsLayout(
-  gateway: VenueCatalogGateway | CatalogGateway,
-): gateway is CatalogGateway {
-  return 'loadLayouts' in gateway;
-}
-
-export function supportsMedia(
-  gateway: VenueCatalogGateway | CatalogGateway,
-): gateway is CatalogGateway {
-  return 'loadMediaResources' in gateway;
-}
-
+import { cx } from './catalog-classes';
+import {
+  type Authorize,
+  type CatalogTab,
+  CatalogTabs,
+  supportsFood,
+  supportsLayout,
+  supportsMedia,
+  supportsTimeline,
+} from './catalog-tabs';
 export function ManagerVenueWorkspace({
   authorize,
   catalogContractDigest,
@@ -153,7 +88,6 @@ export function ManagerVenueWorkspace({
   const [snapshot, setSnapshot] = useState<VenueCatalogSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [pending, setPending] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [hallFilter, setHallFilter] = useState<'ACTIVE' | 'ALL' | 'RETIRED'>('ALL');
   const [editingHall, setEditingHall] = useState<CatalogHall | null>(null);
@@ -186,7 +120,6 @@ export function ManagerVenueWorkspace({
   const run = async (successMessage: string, operation: (token: string) => Promise<void>) => {
     setPending(true);
     setError(null);
-    setMessage(null);
     const focused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     try {
       await authorize(operation);
@@ -210,45 +143,38 @@ export function ManagerVenueWorkspace({
     return (
       <CatalogAccessPanel title="Không thể tải danh mục">
         <p>{error ?? 'Máy chủ không trả về dữ liệu danh mục.'}</p>
-        <button className="catalog-primary-button" type="button" onClick={() => void load()}>
+        <button className={cx.primaryButton} type="button" onClick={() => void load()}>
           Thử lại
         </button>
       </CatalogAccessPanel>
     );
   }
 
-  const halls = snapshot.halls.filter(
-    ({ lifecycle }) => hallFilter === 'ALL' || lifecycle === hallFilter,
-  );
-
   return (
-    <main id="catalog-content" className="catalog-main">
-      <header className="catalog-header">
-        <div>
-          <span className="preview-label" style={{ color: 'var(--hy-wine)' }}>
-            Hỷ Yến · Quản trị nhà hàng
-          </span>
-          <p className="section-kicker">Danh mục vận hành</p>
-          <h1>Danh mục địa điểm</h1>
-        </div>
+    <main id="catalog-content" data-ui-v3 className={cx.main}>
+      <header className={cx.header}>
+        <h1 className="text-2xl font-bold">Danh mục địa điểm</h1>
         {catalogContractDigest ? (
-          <div className="catalog-contract-mark">
-            <span>Contract lock</span>
-            <strong>{catalogContractDigest}</strong>
-          </div>
+          <p className="flex items-center gap-2 text-xs text-muted-foreground">
+            Khoá hợp đồng
+            <code className="rounded-md bg-secondary px-2 py-0.5 font-mono text-foreground">
+              {catalogContractDigest}
+            </code>
+          </p>
         ) : null}
       </header>
 
       <CatalogTabs active={activeTab} onChange={handleTabChange} />
       <div
+        className={cx.tabPanel}
         role="tabpanel"
         id="catalog-panel-venue"
         aria-labelledby="catalog-tab-venue"
         hidden={activeTab !== 'venue'}
       >
-        <section className="catalog-section" id="venue" aria-labelledby="restaurant-title">
+        <section className={cx.section} id="venue" aria-labelledby="restaurant-title">
           <SectionHeading
-            eyebrow={`Revision ${snapshot.restaurant.revision}`}
+            meta={`Phiên bản ${snapshot.restaurant.revision}`}
             title="Hồ sơ nhà hàng"
           />
           <RestaurantForm
@@ -260,9 +186,9 @@ export function ManagerVenueWorkspace({
           />
         </section>
 
-        <section className="catalog-section" aria-labelledby="shift-title">
-          <SectionHeading eyebrow="LUNCH · DINNER" title="Khung giờ phục vụ" />
-          <div className="shift-grid">
+        <section className={cx.section} aria-labelledby="shift-title">
+          <SectionHeading title="Khung giờ phục vụ" />
+          <div className={cx.shiftGrid}>
             {snapshot.shifts.map((shift) => (
               <ShiftForm
                 key={shift.code}
@@ -328,13 +254,13 @@ export function ManagerVenueWorkspace({
             authorize={authorize}
             active={activeTab === 'venue'}
             allowedTypes={['HALL', 'RESTAURANT_PROFILE']}
-            sectionKicker="Hình ảnh sảnh tiệc"
             heading="Thư viện ảnh sảnh tiệc"
             description="Quản lý hình ảnh thực tế và phối cảnh của từng sảnh tiệc. Ảnh sẽ hiển thị cho khách hàng khi chọn sảnh."
           />
         ) : null}
       </div>
       <div
+        className={cx.tabPanel}
         role="tabpanel"
         id="catalog-panel-food"
         aria-labelledby="catalog-tab-food"
@@ -350,18 +276,18 @@ export function ManagerVenueWorkspace({
                   authorize={authorize}
                   active={activeTab === 'food'}
                   allowedTypes={['MENU_PACKAGE_VERSION', 'DISH_VERSION']}
-                  sectionKicker="Hình ảnh món & thực đơn"
                   heading="Thư viện ảnh món ăn & thực đơn"
                   description="Quản lý hình ảnh của từng món ăn và ảnh bìa các gói thực đơn tiệc cưới."
                 />
               ) : null}
             </>
           ) : (
-            <p className="catalog-empty">Không hỗ trợ quản lý món ăn.</p>
+            <p className={cx.empty}>Không hỗ trợ quản lý món ăn.</p>
           )
         ) : null}
       </div>
       <div
+        className={cx.tabPanel}
         role="tabpanel"
         id="catalog-panel-timeline"
         aria-labelledby="catalog-tab-timeline"
@@ -377,18 +303,18 @@ export function ManagerVenueWorkspace({
                   authorize={authorize}
                   active={activeTab === 'timeline'}
                   allowedTypes={['TIMELINE_TEMPLATE_VERSION']}
-                  sectionKicker="Hình ảnh kịch bản"
                   heading="Thư viện ảnh kịch bản tiệc"
                   description="Quản lý ảnh minh họa cho các mẫu kịch bản chương trình tiệc cưới."
                 />
               ) : null}
             </>
           ) : (
-            <p className="catalog-empty">Không hỗ trợ quản lý kịch bản.</p>
+            <p className={cx.empty}>Không hỗ trợ quản lý kịch bản.</p>
           )
         ) : null}
       </div>
       <div
+        className={cx.tabPanel}
         role="tabpanel"
         id="catalog-panel-layout"
         aria-labelledby="catalog-tab-layout"
@@ -404,14 +330,13 @@ export function ManagerVenueWorkspace({
                   authorize={authorize}
                   active={activeTab === 'layout'}
                   allowedTypes={['LAYOUT_TEMPLATE_VERSION']}
-                  sectionKicker="Hình ảnh sơ đồ bố trí"
                   heading="Thư viện ảnh mẫu sơ đồ bàn"
                   description="Quản lý ảnh chụp thực tế hoặc phối cảnh của các mẫu sơ đồ sắp xếp bàn tiệc."
                 />
               ) : null}
             </>
           ) : (
-            <p className="catalog-empty">Không hỗ trợ quản lý sơ đồ bàn.</p>
+            <p className={cx.empty}>Không hỗ trợ quản lý sơ đồ bàn.</p>
           )
         ) : null}
       </div>

@@ -1,5 +1,5 @@
-import type React from 'react';
-import { Clock3Icon } from './icons';
+import { cn } from 'cn';
+import { cardClass, cardTitleClass } from './print-order-classes';
 import {
   formatVietnameseDateTime,
   formatVnd,
@@ -11,115 +11,110 @@ export interface PrintOrderTimelineCardProps {
   selectedOrder: PrintOrderView;
 }
 
-export function PrintOrderTimelineCard({ selectedOrder }: Readonly<PrintOrderTimelineCardProps>) {
+type StepState = 'done' | 'current' | 'pending' | 'cancelled';
+
+const markerClass: Record<StepState, string> = {
+  done: 'border-primary bg-primary',
+  current: 'border-primary bg-card ring-4 ring-accent',
+  pending: 'border-input bg-card',
+  cancelled: 'border-hy-error bg-hy-error-bg',
+};
+
+function Step({
+  state,
+  title,
+  when,
+  note,
+}: Readonly<{ state: StepState; title: string; when: string; note: string }>) {
   return (
-    <div className="v0-detail-card v0-timeline-card">
-      <div className="v0-card-head">
-        <Clock3Icon width={18} height={18} />
-        <h3>Dòng thời gian đơn in</h3>
+    <li className="relative flex gap-3 pb-5 before:absolute before:top-4 before:bottom-0 before:left-[5px] before:w-px before:bg-border last:pb-0 last:before:hidden">
+      <span
+        aria-hidden="true"
+        className={cn('mt-1 size-3 shrink-0 rounded-full border-2', markerClass[state])}
+      />
+      <div className="flex min-w-0 flex-col gap-0.5">
+        <strong className={cn('font-semibold', state === 'pending' && 'text-muted-foreground')}>
+          {title}
+        </strong>
+        <span className="text-xs text-muted-foreground tabular-nums">{when}</span>
+        <p className="text-xs">{note}</p>
       </div>
+    </li>
+  );
+}
 
-      <ol className="v0-timeline">
-        {/* Step 1: Requested */}
-        <li className="v0-step step-done">
-          <div className="v0-step-marker" />
-          <div className="v0-step-body">
-            <strong>Yêu cầu đặt in</strong>
-            <span className="v0-step-date">
-              {formatVietnameseDateTime(selectedOrder.createdAt)}
-            </span>
-            <p>Couple đã khởi tạo yêu cầu in ấn từ ứng dụng.</p>
-          </div>
-        </li>
+export function PrintOrderTimelineCard({ selectedOrder }: Readonly<PrintOrderTimelineCardProps>) {
+  const { status } = selectedOrder;
+  const revision = selectedOrder.currentCommercialRevision;
+  const cancelled = status === 'CANCELLED';
+  const producing =
+    status === 'IN_PRODUCTION' || status === 'READY_FOR_HANDOVER' || status === 'HANDED_OVER';
 
-        {/* Step 2: Quotation Issued */}
-        <li
-          className={`v0-step ${
-            selectedOrder.currentCommercialRevision !== null ? 'step-done' : 'step-current'
-          }`}
-        >
-          <div className="v0-step-marker" />
-          <div className="v0-step-body">
-            <strong>Báo giá thương mại</strong>
-            <span className="v0-step-date">
-              {selectedOrder.currentCommercialRevision
-                ? formatVietnameseDateTime(selectedOrder.currentCommercialRevision.createdAt)
-                : 'Chờ Quản lý gửi báo giá'}
-            </span>
-            <p>
-              {selectedOrder.currentCommercialRevision
-                ? `Revision ${selectedOrder.currentCommercialRevision.revisionNumber} (${formatVnd(selectedOrder.currentCommercialRevision.orderTotalVnd)})`
-                : 'Đang chờ lập báo giá.'}
-            </p>
-          </div>
-        </li>
-
-        {/* Step 3: Approval or In Production */}
-        <li
-          className={`v0-step ${
-            isOrderApprovedOrBeyond(selectedOrder.status)
-              ? 'step-done'
-              : selectedOrder.status === 'CANCELLED'
-                ? 'step-cancelled'
-                : 'step-pending'
-          }`}
-        >
-          <div className="v0-step-marker" />
-          <div className="v0-step-body">
-            <strong>
-              {selectedOrder.status === 'CANCELLED' ? 'Đơn đã hủy' : 'Couple phê duyệt & Sản xuất'}
-            </strong>
-            <span className="v0-step-date">
-              {selectedOrder.status === 'CANCELLED'
-                ? 'Đã kết thúc'
-                : selectedOrder.status === 'IN_PRODUCTION' ||
-                    selectedOrder.status === 'READY_FOR_HANDOVER' ||
-                    selectedOrder.status === 'HANDED_OVER'
-                  ? 'Đang/đã hoàn tất sản xuất'
-                  : isOrderApprovedOrBeyond(selectedOrder.status)
-                    ? 'Đã duyệt · Chờ bắt đầu sản xuất'
-                    : 'Chưa diễn ra'}
-            </span>
-            <p>
-              {selectedOrder.status === 'CANCELLED'
-                ? 'Đơn in đã hủy, không thể tiếp tục sản xuất.'
-                : isOrderApprovedOrBeyond(selectedOrder.status)
-                  ? 'Couple đã chấp thuận điều khoản thương mại.'
-                  : 'Chờ Couple xem xét báo giá trên ứng dụng.'}
-            </p>
-          </div>
-        </li>
-
-        {/* Step 4: Handover */}
-        <li
-          className={`v0-step ${
-            selectedOrder.status === 'HANDED_OVER'
-              ? 'step-done'
-              : selectedOrder.status === 'READY_FOR_HANDOVER'
-                ? 'step-current'
-                : 'step-pending'
-          }`}
-        >
-          <div className="v0-step-marker" />
-          <div className="v0-step-body">
-            <strong>Bàn giao tại nhà hàng</strong>
-            <span className="v0-step-date">
-              {selectedOrder.handedOverAt
-                ? formatVietnameseDateTime(selectedOrder.handedOverAt)
-                : selectedOrder.status === 'READY_FOR_HANDOVER'
-                  ? 'Sẵn sàng giao nhận'
-                  : 'Chưa khả dụng'}
-            </span>
-            <p>
-              {selectedOrder.handedOverAt
-                ? `Đã bàn giao · Mã chứng từ: ${selectedOrder.evidenceReference ?? 'N/A'}`
-                : selectedOrder.status === 'READY_FOR_HANDOVER'
-                  ? 'Ấn phẩm đã xong, chờ xác nhận bàn giao tại kho.'
-                  : 'Chỉ khả dụng sau khi hoàn thành sản xuất.'}
-            </p>
-          </div>
-        </li>
+  return (
+    <section className={cardClass}>
+      <h3 className={cardTitleClass}>Dòng thời gian đơn in</h3>
+      <ol className="flex flex-col">
+        <Step
+          state="done"
+          title="Yêu cầu đặt in"
+          when={formatVietnameseDateTime(selectedOrder.createdAt)}
+          note="Couple đã khởi tạo yêu cầu in ấn từ ứng dụng."
+        />
+        <Step
+          state={revision !== null ? 'done' : 'current'}
+          title="Báo giá thương mại"
+          when={revision ? formatVietnameseDateTime(revision.createdAt) : 'Chờ Quản lý gửi báo giá'}
+          note={
+            revision
+              ? `Phiên bản ${revision.revisionNumber} (${formatVnd(revision.orderTotalVnd)})`
+              : 'Đang chờ lập báo giá.'
+          }
+        />
+        <Step
+          state={isOrderApprovedOrBeyond(status) ? 'done' : cancelled ? 'cancelled' : 'pending'}
+          title={cancelled ? 'Đơn đã hủy' : 'Couple phê duyệt & Sản xuất'}
+          when={
+            cancelled
+              ? 'Đã kết thúc'
+              : producing
+                ? 'Đang/đã hoàn tất sản xuất'
+                : isOrderApprovedOrBeyond(status)
+                  ? 'Đã duyệt, chờ bắt đầu sản xuất'
+                  : 'Chưa diễn ra'
+          }
+          note={
+            cancelled
+              ? 'Đơn in đã hủy, không thể tiếp tục sản xuất.'
+              : isOrderApprovedOrBeyond(status)
+                ? 'Couple đã chấp thuận điều khoản thương mại.'
+                : 'Chờ Couple xem xét báo giá trên ứng dụng.'
+          }
+        />
+        <Step
+          state={
+            status === 'HANDED_OVER'
+              ? 'done'
+              : status === 'READY_FOR_HANDOVER'
+                ? 'current'
+                : 'pending'
+          }
+          title="Bàn giao tại nhà hàng"
+          when={
+            selectedOrder.handedOverAt
+              ? formatVietnameseDateTime(selectedOrder.handedOverAt)
+              : status === 'READY_FOR_HANDOVER'
+                ? 'Sẵn sàng giao nhận'
+                : 'Chưa khả dụng'
+          }
+          note={
+            selectedOrder.handedOverAt
+              ? `Đã bàn giao, mã chứng từ: ${selectedOrder.evidenceReference ?? 'chưa có'}`
+              : status === 'READY_FOR_HANDOVER'
+                ? 'Ấn phẩm đã xong, chờ xác nhận bàn giao tại kho.'
+                : 'Chỉ khả dụng sau khi hoàn thành sản xuất.'
+          }
+        />
       </ol>
-    </div>
+    </section>
   );
 }

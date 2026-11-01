@@ -1,8 +1,10 @@
-import type React from 'react';
 import { useCallback, useRef, useState } from 'react';
+import { Clock3, Plus, RefreshCw } from 'lucide-react';
+import { cn } from 'cn';
+import { Badge } from '../../components/ui/badge';
+import { Button } from '../../components/ui/button';
 import { OperationsShell } from '../identity-access/operations-shell';
 import type { ManagementSessionSnapshot } from '../identity-access/session';
-import { CheckIcon, ChevronRightIcon, CircleAlertIcon, Clock3Icon, PlusIcon } from './icons';
 import {
   CancelOrderModal,
   CreateOrderNoticeModal,
@@ -27,6 +29,17 @@ export interface WorkspaceProps {
   authorize: <T>(operation: (token: string) => Promise<T>) => Promise<T>;
   isFixtureMode: boolean;
   onLogout: () => void;
+}
+
+// Dưới 1536px chi tiết đơn nằm dưới bảng: cuộn tới đó để người dùng thấy đơn vừa chọn.
+function revealDetailBelowTable() {
+  if (window.matchMedia?.('(min-width: 1536px)').matches) return;
+  const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  requestAnimationFrame(() =>
+    document
+      .getElementById('print-order-detail')
+      ?.scrollIntoView?.({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }),
+  );
 }
 
 export function PrintOrdersWorkspace({
@@ -161,70 +174,52 @@ export function PrintOrdersWorkspace({
       onLogout={handleLogout}
       pending={isSubmitting}
     >
-      <main id="print-orders-main-area" className="v0-main-area admin-main">
-        {/* Topbar */}
-        <header className="v0-topbar">
-          <div className="v0-breadcrumb">
-            <span>Vận hành</span>
-            <ChevronRightIcon />
-            <strong>Thiệp cưới &amp; In ấn</strong>
+      <main
+        id="print-orders-main-area"
+        data-ui-v3
+        className="flex min-h-screen flex-col gap-6 bg-background p-[clamp(1rem,3vw,3.25rem)]"
+      >
+        <header className="flex flex-wrap items-end justify-between gap-4">
+          <div className="flex flex-col gap-1">
+            <h1 className="text-2xl font-bold">Hàng đợi đơn in</h1>
+            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              {isFixtureMode ? <Badge variant="info">Dữ liệu mẫu</Badge> : null}
+              <span>Cập nhật lúc {lastRefreshed}</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  void handleManualRefresh();
+                }}
+                disabled={loading || isSubmitting}
+                title="Làm mới dữ liệu từ máy chủ"
+              >
+                <RefreshCw
+                  aria-hidden
+                  className={cn('size-3.5', loading && 'motion-safe:animate-spin')}
+                />
+                {loading ? 'Đang tải…' : 'Làm mới'}
+              </Button>
+            </div>
           </div>
-          <div className="v0-top-actions">
-            <button
-              className="v0-button v0-button-secondary"
-              type="button"
-              onClick={() => {
-                void handleManualRefresh();
-              }}
-              disabled={loading || isSubmitting}
-              title="Làm mới dữ liệu từ máy chủ"
-            >
-              {loading ? 'Đang tải…' : 'Làm mới'}
-            </button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={() => setHistoryModalOpen(true)}>
+              <Clock3 aria-hidden className="size-4" />
+              Xem lịch sử
+            </Button>
+            <Button onClick={() => setCreateOrderNoticeOpen(true)}>
+              <Plus aria-hidden className="size-4" />
+              Tạo đơn in
+            </Button>
           </div>
         </header>
 
-        {/* Content Body */}
-        <div className="v0-content">
-          {/* Header Title Strip */}
-          <div className="v0-page-heading">
-            <div>
-              <span className="v0-heading-kicker">Hàng đợi in ấn tiệc cưới</span>
-              <h1>Hàng đợi đơn in</h1>
-            </div>
-            <div className="v0-heading-actions">
-              <button
-                className="v0-button v0-button-secondary"
-                type="button"
-                onClick={() => setHistoryModalOpen(true)}
-              >
-                <Clock3Icon width={16} height={16} />
-                <span>Xem lịch sử</span>
-              </button>
-              <button
-                className="v0-button v0-button-primary"
-                type="button"
-                onClick={() => setCreateOrderNoticeOpen(true)}
-              >
-                <PlusIcon width={16} height={16} />
-                <span>Tạo đơn in</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Context Strip */}
-          <div className="v0-context-strip">
-            <div className="v0-context-info">
-              <span className="v0-context-source">
-                {isFixtureMode
-                  ? 'Bản xem trước có nhãn (Fixtures Giả lập Quản lý)'
-                  : 'Dữ liệu vận hành thực tế'}
-              </span>
-              <span className="v0-context-time">· Đồng bộ: {lastRefreshed}</span>
-            </div>
-          </div>
-
-          {/* Metric Summary, Filters, Table and Pagination */}
+        <div
+          className={cn(
+            'grid items-start gap-6',
+            selectedOrder && '2xl:grid-cols-[minmax(0,1fr)_minmax(360px,420px)]',
+          )}
+        >
           <PrintOrdersTable
             orders={orders}
             filteredOrders={filteredOrders}
@@ -232,6 +227,7 @@ export function PrintOrdersWorkspace({
             onSelectOrder={(order) => {
               if (isSubmittingRef.current) return;
               setSelectedOrder(order);
+              revealDetailBelowTable();
             }}
             loading={loading}
             loadError={loadError}
@@ -259,7 +255,6 @@ export function PrintOrdersWorkspace({
             isSubmitting={isSubmitting}
           />
 
-          {/* Details Section for Selected Order */}
           {selectedOrder ? (
             <PrintOrdersDetail
               selectedOrder={selectedOrder}

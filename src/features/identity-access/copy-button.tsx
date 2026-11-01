@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { dashboardStyles } from './dashboard.styles';
+import { Check, Copy } from 'lucide-react';
+import { cn } from 'cn';
 
 export function CopyButton({ text }: Readonly<{ text: string }>) {
   const [copied, setCopied] = useState(false);
@@ -17,10 +18,17 @@ export function CopyButton({ text }: Readonly<{ text: string }>) {
       type="button"
       onClick={handleCopy}
       title={copied ? 'Đã sao chép UUID!' : 'Sao chép mã UUID'}
-      style={dashboardStyles.copyButton(copied)}
       aria-label="Sao chép UUID"
+      className={cn(
+        'inline-flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+        copied && 'text-hy-success hover:text-hy-success',
+      )}
     >
-      {copied ? '✓' : '⧉'}
+      {copied ? (
+        <Check aria-hidden className="size-3.5 motion-safe:animate-in motion-safe:zoom-in-75" />
+      ) : (
+        <Copy aria-hidden className="size-3.5" />
+      )}
     </button>
   );
 }

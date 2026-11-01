@@ -85,6 +85,52 @@ describe('Vietnamese typography policy', () => {
     expect(violations).toEqual([]);
   });
 
+  it('rejects Tailwind classes for case conversion, tracking, serif or cramped line height', () => {
+    // CSS scanning above cannot see utility classes, so check every string in source files.
+    const banned =
+      /^(?:uppercase|lowercase|capitalize|font-serif|leading-none|tracking-(?!normal$).+)$/;
+    const violations: string[] = [];
+    const files = ['app', 'src']
+      .flatMap((directory) => [
+        ...filesWithExtension(join(process.cwd(), directory), '.tsx'),
+        ...filesWithExtension(join(process.cwd(), directory), '.ts'),
+      ])
+      .filter((file) => !/\.test\.tsx?$/.test(file));
+    expect(files.length).toBeGreaterThan(0);
+    for (const file of files) {
+      const source = ts.createSourceFile(
+        file,
+        readFileSync(file, 'utf8'),
+        ts.ScriptTarget.Latest,
+        true,
+        ts.ScriptKind.TSX,
+      );
+      const visit = (node: ts.Node) => {
+        if (
+          ts.isStringLiteralLike(node) ||
+          ts.isTemplateHead(node) ||
+          ts.isTemplateMiddle(node) ||
+          ts.isTemplateTail(node)
+        ) {
+          for (const token of node.text.split(/\s+/)) {
+            const utility = token.slice(token.lastIndexOf(':') + 1).replace(/^!|!$/g, '');
+            if (banned.test(utility))
+              violations.push(
+                relative(process.cwd(), file) +
+                  ':' +
+                  (source.getLineAndCharacterOfPosition(node.getStart()).line + 1) +
+                  ' → ' +
+                  token,
+              );
+          }
+        }
+        ts.forEachChild(node, visit);
+      };
+      visit(source);
+    }
+    expect(violations).toEqual([]);
+  });
+
   it('keeps Vietnamese font tokens on a complete sans-serif fallback stack', () => {
     const element = document.createElement('style');
     element.textContent = readFileSync(join(process.cwd(), 'app/globals.css'), 'utf8');

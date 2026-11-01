@@ -1,5 +1,5 @@
-import type React from 'react';
-import { FileTextIcon } from './icons';
+import { Badge } from '../../components/ui/badge';
+import { cardClass, cardTitleClass, hintClass } from './print-order-classes';
 import { formatVnd, type PrintOrderView } from './print-orders-types';
 
 export interface PrintOrderSpecsCardProps {
@@ -7,64 +7,62 @@ export interface PrintOrderSpecsCardProps {
 }
 
 export function PrintOrderSpecsCard({ selectedOrder }: Readonly<PrintOrderSpecsCardProps>) {
+  const first = selectedOrder.lines[0];
   return (
-    <div className="v0-detail-card">
-      <div className="v0-card-head">
-        <FileTextIcon width={18} height={18} />
-        <h3>Dòng thiết kế đã chốt</h3>
-        <span className="v0-badge">{selectedOrder.lines.length} dòng</span>
+    <section className={cardClass}>
+      <div className="flex items-center justify-between gap-2">
+        <h3 className={cardTitleClass}>Dòng thiết kế đã chốt</h3>
+        <Badge variant="neutral">{selectedOrder.lines.length} dòng</Badge>
       </div>
 
-      {/* Render All Lines */}
-      <div className="v0-lines-list">
+      <ul className="flex flex-col">
         {selectedOrder.lines.map((line, idx) => {
           const quotedLine = selectedOrder.currentCommercialRevision?.lines.find(
             (ql) => ql.lineId === line.lineId,
           );
           return (
-            <div key={line.lineId} className="v0-line-item-box">
-              <div className="v0-line-item-header">
-                <strong>
-                  #{idx + 1}: {line.displayVariant ?? `Bản in ${line.designId}`}
+            <li
+              key={line.lineId}
+              className="flex flex-col gap-1 border-t border-border py-3 first:border-t-0 first:pt-0"
+            >
+              <div className="flex items-baseline justify-between gap-3">
+                <strong className="font-semibold">
+                  {idx + 1}. {line.displayVariant ?? `Bản in ${line.designId}`}
                 </strong>
-                <span className="v0-line-qty-badge">{line.quantity} bản in</span>
-              </div>
-              <div className="v0-line-item-meta">
-                <span>
-                  Mã thiết kế: <code>{line.designId}</code>
+                <span className="text-xs whitespace-nowrap tabular-nums">
+                  {line.quantity} bản in
                 </span>
-                <span>
-                  Bản in (Rev):{' '}
-                  <code>{line.printableRevisionId ?? 'Chưa gán phiên bản in ấn'}</code>
-                </span>
-                {quotedLine ? (
-                  <span>
-                    Đơn giá: {formatVnd(quotedLine.unitPriceVnd)}/bản (
-                    {formatVnd(quotedLine.lineTotalVnd)})
-                  </span>
-                ) : null}
               </div>
-            </div>
+              <span className={hintClass}>
+                Mã thiết kế: <code className="font-mono">{line.designId}</code>
+              </span>
+              <span className={hintClass}>
+                Phiên bản bản in:{' '}
+                <code className="font-mono">
+                  {line.printableRevisionId ?? 'Chưa gán phiên bản in ấn'}
+                </code>
+              </span>
+              {quotedLine ? (
+                <span className="text-xs tabular-nums">
+                  Đơn giá: {formatVnd(quotedLine.unitPriceVnd)}/bản (
+                  {formatVnd(quotedLine.lineTotalVnd)})
+                </span>
+              ) : null}
+            </li>
           );
         })}
-      </div>
+      </ul>
 
-      {/* Neutral Digital Preview Placeholder */}
-      <div className="v0-design-preview-container">
-        <div className="v0-design-preview-frame">
-          <div className="v0-design-preview-icon" aria-hidden="true">
-            <FileTextIcon width={24} height={24} />
-          </div>
-          <div className="v0-design-preview-title">Chưa có bản xem trước kỹ thuật số</div>
-          <div className="v0-design-preview-caption">
-            Mã thiết kế: {selectedOrder.lines[0]?.designId ?? 'Chưa xác định'} · Phiên bản in:{' '}
-            {selectedOrder.lines[0]?.printableRevisionId ?? 'Chưa gán phiên bản in ấn'}
-          </div>
-          <small className="v0-design-preview-note">
-            Bản vẽ in ấn số hóa sẽ được đồng bộ khi studio thiệp cưới xuất bản bản in chính thức.
-          </small>
-        </div>
+      <div className="flex flex-col gap-1 rounded-lg border border-dashed border-input px-4 py-5 text-center">
+        <strong className="text-sm font-semibold">Chưa có bản xem trước kỹ thuật số</strong>
+        <span className={hintClass}>
+          Mã thiết kế: {first?.designId ?? 'Chưa xác định'}, phiên bản in:{' '}
+          {first?.printableRevisionId ?? 'Chưa gán phiên bản in ấn'}
+        </span>
+        <small className={hintClass}>
+          Bản vẽ in ấn số hóa sẽ được đồng bộ khi studio thiệp cưới xuất bản bản in chính thức.
+        </small>
       </div>
-    </div>
+    </section>
   );
 }

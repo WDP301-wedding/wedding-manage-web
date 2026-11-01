@@ -1,14 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect } from 'react';
 import { AccountSettings } from './account-settings';
 import { OperationsShell } from './operations-shell';
-import {
-  createIdentityApi,
-  type ManagementIdentitySession,
-  sharedManagementSession,
-} from './session';
+import { buttonVariants } from '../../components/ui/button';
+import { type ManagementIdentitySession, sharedManagementSession } from './session';
 import { useManagementSession } from './use-management-session';
 import { notify } from '../../design-system/notifications';
 
@@ -47,15 +44,18 @@ export function ManagementAccountExperience({ session }: { session: ManagementId
       onLogout={logout}
       pending={pending}
     >
-      <main id="account-content" className="admin-main operations-account-page">
-        <header className="dashboard-header">
-          <div>
-            <p className="section-kicker">Thông tin và bảo mật</p>
-            <h1>Quản lý tài khoản</h1>
-          </div>
+      <main
+        id="account-content"
+        data-ui-v3=""
+        className="flex flex-col gap-6 px-4 pt-8 pb-14 sm:px-10"
+      >
+        <header className="flex flex-col gap-1">
+          <h1 className="text-2xl font-bold">Quản lý tài khoản</h1>
         </header>
         {snapshot === null ? (
-          <p role="status">Đang khôi phục phiên làm việc…</p>
+          <p className="text-muted-foreground" role="status">
+            Đang khôi phục phiên làm việc…
+          </p>
         ) : authenticated ? (
           <AccountSettings
             key={snapshot.actor.sessionId}
@@ -67,10 +67,14 @@ export function ManagementAccountExperience({ session }: { session: ManagementId
             }}
           />
         ) : (
-          <section className="operations-account-access">
-            <h2>{snapshot.status === 'anonymous' ? 'Cần đăng nhập' : 'Không có quyền truy cập'}</h2>
-            <p>Đăng nhập bằng tài khoản Quản lý hoặc Nhân viên để quản lý hồ sơ và mật khẩu.</p>
-            <Link className="catalog-primary-link" href="/">
+          <section className="flex max-w-[560px] flex-col items-start gap-3 rounded-xl border border-border bg-card p-6 shadow-hy-1">
+            <h2 className="text-lg font-semibold">
+              {snapshot.status === 'anonymous' ? 'Cần đăng nhập' : 'Không có quyền truy cập'}
+            </h2>
+            <p className="text-muted-foreground">
+              Đăng nhập bằng tài khoản Quản lý hoặc Nhân viên để quản lý hồ sơ và mật khẩu.
+            </p>
+            <Link className={buttonVariants()} href="/">
               Về trang đăng nhập
             </Link>
           </section>

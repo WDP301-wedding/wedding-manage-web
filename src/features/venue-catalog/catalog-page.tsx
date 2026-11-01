@@ -28,12 +28,12 @@ import {
   type CatalogTab,
   catalogTabs,
   CatalogTabs,
-  ManagerVenueWorkspace,
   supportsFood,
   supportsLayout,
   supportsMedia,
   supportsTimeline,
-} from './manager-venue-workspace';
+} from './catalog-tabs';
+import { ManagerVenueWorkspace } from './manager-venue-workspace';
 
 export {
   CatalogAccessPanel,
@@ -62,6 +62,7 @@ export {
 
 import { useManagementSession } from '../identity-access/use-management-session';
 
+import { cx } from './catalog-classes';
 const catalogSession = sharedManagementSession;
 const catalogGateway = createVenueCatalogGateway();
 const catalogContractDigest = apiContractLock.source.sha256.slice(0, 8);
@@ -98,7 +99,7 @@ export function VenueCatalogPage() {
     ) : state === 'anonymous' ? (
       <CatalogAccessPanel title="Cần đăng nhập">
         <p>Hãy đăng nhập bằng tài khoản Quản lý để mở danh mục địa điểm.</p>
-        <Link className="catalog-primary-link" href="/">
+        <Link className={cx.primaryLink} href="/">
           Về trang đăng nhập
         </Link>
       </CatalogAccessPanel>

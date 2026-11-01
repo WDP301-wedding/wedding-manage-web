@@ -2,40 +2,23 @@
 
 import { hasDirtyCatalogForms, useCatalogLiveRefresh } from './use-catalog-live-refresh';
 
-import { type FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import { type FormEvent, useCallback, useEffect, useState } from 'react';
 
-import { ApiClientError } from '../../lib/api/client';
 import type {
   Authorize,
   CatalogGateway,
   CatalogHall,
   CatalogLayout,
   LayoutCatalogSnapshot,
-  LayoutTableWrite,
   LayoutWrite,
 } from './catalog-types';
 import { notify } from '../../design-system/notifications';
-import {
-  CANVAS_SIZE,
-  defaultTable,
-  LayoutCanvas,
-  LayoutDraftEditor,
-  type LayoutVersion,
-  TableEditor,
-  TableNumber,
-  validateLayout,
-} from './layout-draft-editor';
+import { defaultTable, LayoutDraftEditor, type LayoutVersion } from './layout-draft-editor';
 
-export {
-  CANVAS_SIZE,
-  defaultTable,
-  LayoutCanvas,
-  LayoutDraftEditor,
-  type LayoutVersion,
-  TableEditor,
-  TableNumber,
-  validateLayout,
-};
+import { cx } from './catalog-classes';
+import { integer, layoutErrorMessage, text } from './layout-helpers';
+import { Badge } from '../../components/ui/badge';
+import { cn } from 'cn';
 
 export function LayoutPanel({
   authorize,
@@ -92,8 +75,8 @@ export function LayoutPanel({
 
   if (loading && snapshot === null) {
     return (
-      <section className="catalog-section" aria-busy="true">
-        <p className="catalog-empty">Đang tải mẫu bố trí…</p>
+      <section className={cx.section} aria-busy="true">
+        <p className={cx.empty}>Đang tải mẫu bố trí…</p>
       </section>
     );
   }
@@ -101,9 +84,8 @@ export function LayoutPanel({
   const halls = snapshot?.halls ?? [];
   const layouts = snapshot?.layouts ?? [];
   return (
-    <section className="catalog-section layout-section" aria-labelledby="layout-heading">
-      <div className="catalog-section-heading">
-        <p className="section-kicker">Sức chứa &amp; hình học</p>
+    <section className={cn(cx.section, cx.layoutSection)} aria-labelledby="layout-heading">
+      <div className={cx.sectionHeading}>
         <h2 id="layout-heading">Mẫu bố trí bàn</h2>
         <p>
           Tọa độ chuẩn hóa giúp cùng một sơ đồ hiển thị nhất quán. Giá dịch vụ không được tính theo
@@ -126,11 +108,9 @@ export function LayoutPanel({
         }
       />
       {layouts.length === 0 ? (
-        <p className="catalog-empty">
-          Chưa có mẫu bố trí. Tạo mẫu đầu tiên cho một sảnh hoạt động.
-        </p>
+        <p className={cx.empty}>Chưa có mẫu bố trí. Tạo mẫu đầu tiên cho một sảnh hoạt động.</p>
       ) : (
-        <div className="catalog-aggregate-list">
+        <div className={cx.aggregateList}>
           {layouts.map((layout) => (
             <LayoutAggregate
               key={layout.id}
@@ -175,12 +155,11 @@ function CreateLayoutForm({
     });
   };
   return (
-    <form className="catalog-editor layout-create" aria-label="Tạo mẫu bố trí" onSubmit={submit}>
-      <div className="catalog-editor-heading">
-        <span className="section-kicker">Bản nháp mới</span>
+    <form className={cn(cx.editor, cx.layoutCreate)} aria-label="Tạo mẫu bố trí" onSubmit={submit}>
+      <div className={cx.editorHeading}>
         <h3>Khởi tạo bố trí theo sảnh</h3>
       </div>
-      <label className="catalog-field">
+      <label className={cx.field}>
         <span>Sảnh áp dụng</span>
         <select name="hallId" required defaultValue="">
           <option value="" disabled>
@@ -197,11 +176,7 @@ function CreateLayoutForm({
       <LayoutTextField label="Mô tả" name="description" />
       <LayoutNumberField label="Khách tối thiểu" name="minGuests" min={1} defaultValue={1} />
       <LayoutNumberField label="Khách tối đa" name="maxGuests" min={1} defaultValue={10} />
-      <button
-        className="catalog-primary-button"
-        type="submit"
-        disabled={pending || halls.length === 0}
-      >
+      <button className={cx.primaryButton} type="submit" disabled={pending || halls.length === 0}>
         Tạo với một bàn mẫu
       </button>
     </form>
@@ -232,18 +207,17 @@ function LayoutAggregate({
     layout.versions[0]?.name ??
     'Bố trí chưa đặt tên';
   return (
-    <article className="catalog-aggregate">
-      <header className="catalog-aggregate-header">
+    <article className={cx.aggregate}>
+      <header className={cx.aggregateHeader}>
         <div>
-          <span
-            className={`status ${layout.lifecycle === 'ACTIVE' ? 'status-ready' : 'status-retired'}`}
-          >
+          <Badge variant={layout.lifecycle === 'ACTIVE' ? 'success' : 'neutral'}>
             {layout.lifecycle === 'ACTIVE' ? 'Đang hoạt động' : 'Đã ngừng'}
-          </span>
+          </Badge>
           <h3>{label}</h3>
           <small>{hall?.name ?? 'Sảnh không còn khả dụng'}</small>
         </div>
         <button
+          className={cx.secondaryButton}
           type="button"
           disabled={pending}
           onClick={() =>
@@ -261,7 +235,7 @@ function LayoutAggregate({
           {layout.lifecycle === 'ACTIVE' ? 'Ngừng' : 'Khôi phục'}
         </button>
       </header>
-      <div className="catalog-history" role="region" aria-label={`Lịch sử ${label}`}>
+      <div className={cx.history} role="region" aria-label={`Lịch sử ${label}`}>
         {layout.versions.map((version) =>
           version.state === 'DRAFT' ? (
             <LayoutDraftEditor
@@ -307,9 +281,9 @@ function LayoutVersionSummary({
   version: LayoutVersion;
 }>) {
   return (
-    <div className="catalog-version-row layout-version-summary">
+    <div className={cn(cx.versionRow, cx.layoutVersionSummary)}>
       <div>
-        <span className="catalog-version-state">
+        <span className={cx.versionState}>
           {version.state === 'PUBLISHED' ? 'Đã công bố' : 'Đã thay thế'} · v
           {version.versionNumber ?? '—'}
         </span>
@@ -320,7 +294,7 @@ function LayoutVersionSummary({
       </div>
       {canClone ? (
         <button
-          className="catalog-secondary-button"
+          className={cx.secondaryButton}
           type="button"
           disabled={pending}
           aria-label={`Nhân bản phiên bản ${version.versionNumber ?? ''}`}
@@ -348,7 +322,7 @@ function LayoutTextField({
 }: Readonly<{ label: string; name: string; defaultValue?: string }>) {
   const id = `layout-${name}-${label.replaceAll(/\s+/gu, '-').toLocaleLowerCase('vi-VN')}`;
   return (
-    <label className="catalog-field" htmlFor={id}>
+    <label className={cx.field} htmlFor={id}>
       <span>{label}</span>
       <input id={id} name={name} defaultValue={defaultValue} required={name === 'name'} />
     </label>
@@ -362,7 +336,7 @@ function LayoutNumberField({
   defaultValue,
 }: Readonly<{ label: string; name: string; min: number; defaultValue: number }>) {
   return (
-    <label className="catalog-field">
+    <label className={cx.field}>
       <span>{label}</span>
       <input name={name} type="number" min={min} step={1} defaultValue={defaultValue} required />
     </label>
@@ -386,25 +360,4 @@ function PanelMessages({
   }, [message]);
 
   return null;
-}
-
-function text(data: FormData, name: string): string {
-  const value = data.get(name);
-  return typeof value === 'string' ? value.trim() : '';
-}
-
-function integer(data: FormData, name: string): number {
-  return Number.parseInt(text(data, name), 10);
-}
-
-function layoutErrorMessage(error: unknown): string {
-  if (error instanceof ApiClientError) {
-    if (error.status === 409) return 'Bố trí đã thay đổi. Hãy tải lại lịch sử trước khi thử lại.';
-    if (error.status === 422)
-      return (
-        error.details?.map(({ message }) => message).join(' ') || 'Dữ liệu bố trí chưa hợp lệ.'
-      );
-    if (error.status === 403 || error.status === 404) return 'Máy chủ từ chối thao tác bố trí này.';
-  }
-  return 'Không thể hoàn tất thao tác bố trí.';
 }

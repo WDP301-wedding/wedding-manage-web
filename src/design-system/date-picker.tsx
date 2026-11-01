@@ -1,7 +1,10 @@
 'use client';
 
-import React, { useId, useMemo, useRef, useState, useEffect } from 'react';
-import styles from './date-picker.module.css';
+import { type CSSProperties, useId, useRef } from 'react';
+import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { cn } from 'cn';
+import { WEEKDAYS } from './date-picker-utils';
+import { useDatePicker } from './use-date-picker';
 
 export interface DatePickerProps {
   name?: string | undefined;
@@ -15,68 +18,15 @@ export interface DatePickerProps {
   disabled?: boolean | undefined;
   hasError?: boolean | undefined;
   className?: string | undefined;
-  style?: React.CSSProperties | undefined;
+  style?: CSSProperties | undefined;
   ariaDescribedby?: string | undefined;
   ariaLabelledby?: string | undefined;
   ariaLabel?: string | undefined;
   onChange?: ((isoDate: string) => void) | undefined;
 }
 
-interface DateParts {
-  year: number;
-  month: number; // 1-12
-  day: number; // 1-31
-}
-
-function isValidDate(year: number, month: number, day: number): boolean {
-  if (year < 1900 || year > 2150 || month < 1 || month > 12 || day < 1 || day > 31) {
-    return false;
-  }
-  const date = new Date(year, month - 1, day);
-  return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
-}
-
-function parseDateParts(val?: string | null): DateParts | null {
-  if (!val) return null;
-  const trimmed = val.trim();
-  // Format YYYY-MM-DD
-  const isoMatch = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(trimmed);
-  if (isoMatch) {
-    const year = Number(isoMatch[1]);
-    const month = Number(isoMatch[2]);
-    const day = Number(isoMatch[3]);
-    if (isValidDate(year, month, day)) {
-      return { year, month, day };
-    }
-  }
-  // Format DD/MM/YYYY
-  const vnMatch = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(trimmed);
-  if (vnMatch) {
-    const day = Number(vnMatch[1]);
-    const month = Number(vnMatch[2]);
-    const year = Number(vnMatch[3]);
-    if (isValidDate(year, month, day)) {
-      return { year, month, day };
-    }
-  }
-  return null;
-}
-
-function toIsoString(parts: DateParts): string {
-  const y = String(parts.year).padStart(4, '0');
-  const m = String(parts.month).padStart(2, '0');
-  const d = String(parts.day).padStart(2, '0');
-  return `${y}-${m}-${d}`;
-}
-
-function toVnString(parts: DateParts): string {
-  const y = String(parts.year).padStart(4, '0');
-  const m = String(parts.month).padStart(2, '0');
-  const d = String(parts.day).padStart(2, '0');
-  return `${d}/${m}/${y}`;
-}
-
-const WEEKDAYS = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'] as const;
+const navButtonClass =
+  'inline-flex size-9 items-center justify-center rounded-lg text-foreground hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none';
 
 export function DatePicker({
   name,
@@ -99,381 +49,146 @@ export function DatePicker({
   const generatedId = useId();
   const inputId = id ?? `hy-date-input-${generatedId}`;
   const containerRef = useRef<HTMLDivElement>(null);
-
-  const isControlled = value !== undefined;
-
-  const [uncontrolledIso, setUncontrolledIso] = useState<string>(() => {
-    const parts = parseDateParts(value ?? defaultValue ?? '');
-    return parts ? toIsoString(parts) : '';
-  });
-  const [uncontrolledDisplay, setUncontrolledDisplay] = useState<string>(() => {
-    const parts = parseDateParts(value ?? defaultValue ?? '');
-    return parts ? toVnString(parts) : '';
-  });
-  const [isOpen, setIsOpen] = useState(false);
-
-  const controlledParts = isControlled ? parseDateParts(value) : null;
-  const selectedIso = isControlled
-    ? controlledParts
-      ? toIsoString(controlledParts)
-      : ''
-    : uncontrolledIso;
-  const displayValue = isControlled
-    ? controlledParts
-      ? toVnString(controlledParts)
-      : (value ?? '')
-    : uncontrolledDisplay;
-
-  // View year and month for calendar navigation
-  const [viewYear, setViewYear] = useState<number>(() => {
-    const parts = parseDateParts(value ?? defaultValue ?? '');
-    if (parts) return parts.year;
-    const minParts = parseDateParts(min);
-    if (minParts) return minParts.year;
-    return new Date().getFullYear();
-  });
-
-  const [viewMonth, setViewMonth] = useState<number>(() => {
-    const parts = parseDateParts(value ?? defaultValue ?? '');
-    if (parts) return parts.month - 1; // 0-indexed
-    const minParts = parseDateParts(min);
-    if (minParts) return minParts.month - 1;
-    return new Date().getMonth();
-  });
-
-  const [prevControlledValue, setPrevControlledValue] = useState(value);
-  if (isControlled && value !== prevControlledValue) {
-    setPrevControlledValue(value);
-    if (controlledParts) {
-      setViewYear(controlledParts.year);
-      setViewMonth(controlledParts.month - 1);
-    }
-  }
-
-  // Handle outside click to close dropdown
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleOutsideClick = (e: MouseEvent | TouchEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleOutsideClick);
-    document.addEventListener('touchstart', handleOutsideClick);
-    return () => {
-      document.removeEventListener('mousedown', handleOutsideClick);
-      document.removeEventListener('touchstart', handleOutsideClick);
-    };
-  }, [isOpen]);
-
-  const handleToggle = () => {
-    if (disabled) return;
-    setIsOpen((prev) => !prev);
-  };
-
-  const handlePrevMonth = () => {
-    if (viewMonth === 0) {
-      setViewYear((y) => y - 1);
-      setViewMonth(11);
-    } else {
-      setViewMonth((m) => m - 1);
-    }
-  };
-
-  const handleNextMonth = () => {
-    if (viewMonth === 11) {
-      setViewYear((y) => y + 1);
-      setViewMonth(0);
-    } else {
-      setViewMonth((m) => m + 1);
-    }
-  };
-
-  const handleDaySelect = (day: number) => {
-    const parts: DateParts = { year: viewYear, month: viewMonth + 1, day };
-    const iso = toIsoString(parts);
-    if (!isControlled) {
-      setUncontrolledIso(iso);
-      setUncontrolledDisplay(toVnString(parts));
-    }
-    onChange?.(iso);
-    setIsOpen(false);
-  };
-
-  const handleClear = () => {
-    if (!isControlled) {
-      setUncontrolledIso('');
-      setUncontrolledDisplay('');
-    }
-    onChange?.('');
-    setIsOpen(false);
-  };
-
-  // User typing support
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let inputVal = e.target.value;
-    inputVal = inputVal.replace(/[^\d/-]/g, '');
-
-    // Auto add slashes for pure digits input: 25102026 -> 25/10/2026
-    if (!inputVal.includes('/') && !inputVal.includes('-') && inputVal.length > 2) {
-      if (inputVal.length <= 4) {
-        inputVal = `${inputVal.slice(0, 2)}/${inputVal.slice(2)}`;
-      } else {
-        inputVal = `${inputVal.slice(0, 2)}/${inputVal.slice(2, 4)}/${inputVal.slice(4, 8)}`;
-      }
-    }
-
-    if (!isControlled) {
-      setUncontrolledDisplay(inputVal);
-    }
-
-    const parts = parseDateParts(inputVal);
-    if (parts) {
-      const iso = toIsoString(parts);
-      if (!isControlled) {
-        setUncontrolledIso(iso);
-      }
-      setViewYear(parts.year);
-      setViewMonth(parts.month - 1);
-      onChange?.(iso);
-    } else if (inputVal === '') {
-      if (!isControlled) {
-        setUncontrolledIso('');
-      }
-      onChange?.('');
-    }
-  };
-
-  const handleBlur = () => {
-    if (!displayValue.trim()) {
-      if (!isControlled) {
-        setUncontrolledIso('');
-        setUncontrolledDisplay('');
-      }
-      onChange?.('');
-      return;
-    }
-    const parts = parseDateParts(displayValue);
-    if (parts) {
-      const iso = toIsoString(parts);
-      if (!isControlled) {
-        setUncontrolledIso(iso);
-        setUncontrolledDisplay(toVnString(parts));
-      }
-      onChange?.(iso);
-    } else if (selectedIso) {
-      const prevParts = parseDateParts(selectedIso);
-      if (!isControlled) {
-        setUncontrolledDisplay(prevParts ? toVnString(prevParts) : '');
-      }
-    } else {
-      if (!isControlled) {
-        setUncontrolledDisplay('');
-      }
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Escape') {
-      setIsOpen(false);
-    } else if (e.key === 'ArrowDown' && !isOpen) {
-      setIsOpen(true);
-    }
-  };
-
-  // Calendar math
-  const { emptyCells, dayCells } = useMemo(() => {
-    // 0 = Monday, 6 = Sunday
-    const firstDayIndex = (new Date(viewYear, viewMonth, 1).getDay() + 6) % 7;
-    const totalDays = new Date(viewYear, viewMonth + 1, 0).getDate();
-
-    const today = new Date();
-    const todayIso = toIsoString({
-      year: today.getFullYear(),
-      month: today.getMonth() + 1,
-      day: today.getDate(),
-    });
-
-    const minIso = min ? (parseDateParts(min) ? toIsoString(parseDateParts(min)!) : min) : null;
-    const maxIso = max ? (parseDateParts(max) ? toIsoString(parseDateParts(max)!) : max) : null;
-
-    const days = [];
-    for (let day = 1; day <= totalDays; day++) {
-      const currentIso = toIsoString({ year: viewYear, month: viewMonth + 1, day });
-      const isDisabled =
-        (minIso !== null && currentIso < minIso) || (maxIso !== null && currentIso > maxIso);
-      const isSelected = selectedIso === currentIso;
-      const isToday = todayIso === currentIso;
-
-      days.push({
-        day,
-        iso: currentIso,
-        isDisabled,
-        isSelected,
-        isToday,
-      });
-    }
-
-    return {
-      emptyCells: Array.from({ length: firstDayIndex }),
-      dayCells: days,
-    };
-  }, [viewYear, viewMonth, selectedIso, min, max]);
+  const picker = useDatePicker({ value, defaultValue, min, max, disabled, onChange, containerRef });
 
   return (
-    <div ref={containerRef} className={`${styles.container} ${className ?? ''}`} style={style}>
-      {name ? <input type="hidden" name={name} value={selectedIso} /> : null}
+    <div
+      ref={containerRef}
+      data-ui-v3
+      className={cn('relative w-full min-w-0', className)}
+      style={style}
+    >
+      {name ? <input type="hidden" name={name} value={picker.selectedIso} /> : null}
 
-      <div className={styles.trigger}>
+      <div className="relative">
         <input
           id={inputId}
           type="text"
           inputMode="numeric"
           autoComplete="off"
-          className={`${styles.input} ${isOpen ? styles.isOpen : ''} ${hasError ? styles.hasError : ''}`}
-          value={displayValue}
+          className={cn(
+            'h-11 w-full min-w-0 rounded-lg border border-input bg-card pr-11 pl-3 text-sm font-normal text-foreground tabular-nums focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:opacity-50',
+            picker.isOpen && 'border-primary',
+            hasError && 'border-destructive',
+          )}
+          value={picker.displayValue}
           placeholder={placeholder}
-          required={required && !selectedIso}
+          required={required && !picker.selectedIso}
           disabled={disabled}
           min={min}
           max={max}
           aria-describedby={ariaDescribedby}
           aria-labelledby={ariaLabelledby}
           aria-label={ariaLabel}
-          aria-expanded={isOpen}
+          aria-expanded={picker.isOpen}
           aria-haspopup="dialog"
-          onClick={handleToggle}
-          onChange={handleInputChange}
-          onBlur={handleBlur}
-          onKeyDown={handleKeyDown}
+          onClick={picker.handleToggle}
+          onChange={picker.handleInputChange}
+          onBlur={picker.handleBlur}
+          onKeyDown={picker.handleKeyDown}
         />
-
         <button
           type="button"
           tabIndex={-1}
           aria-label="Chọn ngày từ lịch"
           disabled={disabled}
-          className={styles.calendarIconBtn}
-          onClick={handleToggle}
+          className="absolute top-1 right-1 inline-flex size-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
+          onClick={picker.handleToggle}
         >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-            <line x1="16" y1="2" x2="16" y2="6" />
-            <line x1="8" y1="2" x2="8" y2="6" />
-            <line x1="3" y1="10" x2="21" y2="10" />
-          </svg>
+          <Calendar aria-hidden className="size-[18px]" />
         </button>
       </div>
 
-      {isOpen && (
-        <div role="dialog" aria-modal="false" aria-label="Chọn ngày" className={styles.popover}>
-          <div className={styles.header}>
-            <span className={styles.monthTitle}>
-              Tháng {viewMonth + 1}/{viewYear}
+      {picker.isOpen && (
+        <div
+          role="dialog"
+          aria-modal="false"
+          aria-label="Chọn ngày"
+          className="absolute top-full left-0 z-50 mt-1.5 flex w-[300px] max-w-[calc(100vw-2rem)] flex-col gap-3 rounded-xl border border-border bg-popover p-3 shadow-hy-2 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:zoom-in-95"
+        >
+          <div className="flex items-center justify-between gap-2">
+            <span className="pl-1 text-sm font-semibold tabular-nums">
+              Tháng {picker.viewMonth + 1}/{picker.viewYear}
             </span>
-            <div className={styles.navGroup}>
+            <div className="flex gap-1">
               <button
                 type="button"
                 aria-label="Tháng trước"
-                className={styles.navBtn}
-                onClick={handlePrevMonth}
+                className={navButtonClass}
+                onClick={picker.handlePrevMonth}
               >
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <polyline points="15 18 9 12 15 6" />
-                </svg>
+                <ChevronLeft aria-hidden className="size-4" />
               </button>
               <button
                 type="button"
                 aria-label="Tháng sau"
-                className={styles.navBtn}
-                onClick={handleNextMonth}
+                className={navButtonClass}
+                onClick={picker.handleNextMonth}
               >
-                <svg
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <polyline points="9 18 15 12 9 6" />
-                </svg>
+                <ChevronRight aria-hidden className="size-4" />
               </button>
             </div>
           </div>
 
-          <div className={styles.weekdaysGrid}>
+          <div className="grid grid-cols-7 text-center text-2xs font-semibold text-muted-foreground">
             {WEEKDAYS.map((w) => (
-              <span key={w} className={styles.weekday}>
+              <span key={w} className="py-1">
                 {w}
               </span>
             ))}
           </div>
 
-          <div className={styles.daysGrid}>
-            {emptyCells.map((_, i) => (
-              <div key={`empty-${i}`} className={styles.dayEmpty} />
+          <div className="grid grid-cols-7 gap-0.5">
+            {picker.emptyCells.map((_, i) => (
+              <div key={`empty-${i}`} />
             ))}
-            {dayCells.map((cell) => {
-              const classNames = [styles.dayBtn];
-              if (cell.isSelected) classNames.push(styles.selectedDay);
-              if (cell.isToday) classNames.push(styles.todayDay);
-              if (cell.isDisabled) classNames.push(styles.disabledDay);
-
-              return (
-                <button
-                  key={cell.iso}
-                  type="button"
-                  disabled={cell.isDisabled}
-                  className={classNames.join(' ')}
-                  onClick={() => handleDaySelect(cell.day)}
-                  aria-label={`${cell.day}/${viewMonth + 1}/${viewYear}`}
-                >
-                  {cell.day}
-                </button>
-              );
-            })}
+            {picker.dayCells.map((cell) => (
+              <button
+                key={cell.iso}
+                type="button"
+                disabled={cell.isDisabled}
+                className={cn(
+                  'inline-flex aspect-square items-center justify-center rounded-lg text-sm tabular-nums transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+                  cell.isToday && 'font-semibold text-primary ring-1 ring-primary/40 ring-inset',
+                  cell.isSelected &&
+                    'bg-primary font-semibold text-primary-foreground hover:bg-primary',
+                  cell.isDisabled &&
+                    'pointer-events-none text-muted-foreground/50 line-through hover:bg-transparent',
+                )}
+                onClick={() => picker.handleDaySelect(cell.day)}
+                aria-label={`${cell.day}/${picker.viewMonth + 1}/${picker.viewYear}`}
+              >
+                {cell.day}
+              </button>
+            ))}
           </div>
 
-          <div className={styles.legend}>
-            <div className={styles.legendItem}>
-              <span className={styles.selectedDot} />
-              <span>Đã chọn</span>
-            </div>
-            <div className={styles.legendItem}>
-              <span className={styles.disabledText}>12</span>
-              <span>Không khả dụng</span>
-            </div>
+          <div className="flex flex-wrap gap-4 border-t border-border pt-2 text-2xs text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5">
+              <span aria-hidden className="size-2.5 rounded-full bg-primary" />
+              Đã chọn
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span aria-hidden className="text-muted-foreground/50 line-through">
+                12
+              </span>
+              Không khả dụng
+            </span>
           </div>
 
-          <div className={styles.footer}>
-            <button type="button" className={styles.cancelBtn} onClick={handleClear}>
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              className="h-9 rounded-lg px-3 text-xs font-semibold text-muted-foreground hover:bg-muted"
+              onClick={picker.handleClear}
+            >
               Xoá
             </button>
-            <button type="button" className={styles.confirmBtn} onClick={() => setIsOpen(false)}>
+            <button
+              type="button"
+              className="h-9 rounded-lg bg-primary px-3 text-xs font-semibold text-primary-foreground hover:bg-hy-wine-pressed"
+              onClick={() => picker.setIsOpen(false)}
+            >
               Đóng
             </button>
           </div>

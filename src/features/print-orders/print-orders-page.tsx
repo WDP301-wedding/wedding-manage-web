@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
+import { Button, buttonVariants } from '../../components/ui/button';
 import type {
   ManagementIdentitySession,
   ManagementSessionSnapshot,
@@ -16,22 +17,10 @@ import {
   DEMO_MANAGER_SNAPSHOT,
   DEMO_PRINT_ORDERS,
 } from './print-orders-fixtures';
-import { printOrderStyles } from './print-orders.styles';
 import type { PrintOrderView } from './print-orders-types';
-import { PrintOrdersWorkspace, type WorkspaceProps } from './print-orders-workspace';
-import '../../../app/print-orders/print-orders.css';
+import { PrintOrdersWorkspace } from './print-orders-workspace';
 
-export { DEMO_MANAGER_SNAPSHOT } from './print-orders-fixtures';
-export { PrintOrdersWorkspace, type WorkspaceProps } from './print-orders-workspace';
-export { QuoteDrawer } from './quote-drawer';
-export {
-  HandoverModal,
-  CancelOrderModal,
-  CreateOrderNoticeModal,
-  HistoryModal,
-} from './print-order-modals';
-export { PrintOrdersTable } from './print-orders-table';
-export { PrintOrdersDetail } from './print-orders-detail';
+export { PrintOrdersWorkspace };
 
 const defaultIdentity = sharedManagementSession;
 const defaultGateway = createManagementPrintOrdersGateway();
@@ -41,6 +30,16 @@ export interface ManagementPrintOrdersPageProps {
   gateway?: ManagementPrintOrdersGateway;
   initialOrders?: readonly PrintOrderView[];
   useFixtures?: boolean;
+}
+
+function AccessNotice({ children }: Readonly<{ children: ReactNode }>) {
+  return (
+    <main data-ui-v3 className="flex min-h-screen items-center justify-center bg-background p-6">
+      <section className="flex w-full max-w-[520px] flex-col items-start gap-3 rounded-xl border border-border bg-card p-8 shadow-hy-1">
+        {children}
+      </section>
+    </main>
+  );
 }
 
 export function ManagementPrintOrdersPage({
@@ -54,9 +53,7 @@ export function ManagementPrintOrdersPage({
   );
 
   useEffect(() => {
-    if (useFixtures) {
-      return;
-    }
+    if (useFixtures) return;
     let active = true;
     void session.restore().then((res) => {
       if (active) setSnapshot(res);
@@ -75,9 +72,7 @@ export function ManagementPrintOrdersPage({
 
   const handleAuthorize = useCallback(
     async <T,>(op: (token: string) => Promise<T>): Promise<T> => {
-      if (useFixtures) {
-        return op('demo-mock-token');
-      }
+      if (useFixtures) return op('demo-mock-token');
       try {
         return await session.authorize(op);
       } catch (err) {
@@ -90,9 +85,7 @@ export function ManagementPrintOrdersPage({
 
   const handleLogout = useCallback(async () => {
     try {
-      if (!useFixtures) {
-        await session.logout();
-      }
+      if (!useFixtures) await session.logout();
     } finally {
       setSnapshot({ status: 'anonymous', denial: null });
     }
@@ -100,64 +93,48 @@ export function ManagementPrintOrdersPage({
 
   if (snapshot === null && !useFixtures) {
     return (
-      <div className="v0-shell">
-        <main className="v0-content" style={printOrderStyles.centeredNotice}>
-          <p role="status">Đang xác thực quyền truy cập quản lý…</p>
-        </main>
-      </div>
+      <AccessNotice>
+        <p role="status" className="text-muted-foreground">
+          Đang xác thực quyền truy cập quản lý…
+        </p>
+      </AccessNotice>
     );
   }
 
-  // Auth gate 1: Anonymous users
   if (!useFixtures && snapshot?.status === 'anonymous') {
     return (
-      <div className="v0-shell">
-        <main className="v0-content" style={printOrderStyles.centeredNotice}>
-          <h1>Yêu cầu đăng nhập</h1>
-          <p>
-            Bạn cần đăng nhập bằng tài khoản Quản lý (Manager) để truy cập phân hệ in ấn thiệp cưới.
-          </p>
-          <Link
-            href="/"
-            className="v0-button v0-button-primary"
-            style={printOrderStyles.primaryActionWithMargin}
-          >
-            Đăng nhập ngay
-          </Link>
-        </main>
-      </div>
+      <AccessNotice>
+        <h1 className="text-xl font-semibold">Yêu cầu đăng nhập</h1>
+        <p className="text-muted-foreground">
+          Bạn cần đăng nhập bằng tài khoản Quản lý (Manager) để truy cập phân hệ in ấn thiệp cưới.
+        </p>
+        <Link href="/" className={buttonVariants()}>
+          Đăng nhập ngay
+        </Link>
+      </AccessNotice>
     );
   }
 
-  // Auth gate 2: Non-manager authenticated users (Staff, Couple, etc.)
   const isManager = snapshot?.status === 'authenticated' && snapshot.presentation === 'manager';
   if (!useFixtures && snapshot?.status === 'authenticated' && !isManager) {
     const roleLabel =
       snapshot.presentation === 'staff' ? 'Nhân viên vận hành (Staff)' : 'không được phân quyền';
     return (
-      <div className="v0-shell">
-        <main className="v0-content" style={printOrderStyles.centeredNotice}>
-          <h1>Truy cập bị từ chối</h1>
-          <p>
-            Tài khoản {snapshot.actor.displayEmail} thuộc vai trò {roleLabel}. Phân hệ Quản lý Đơn
-            in ấn yêu cầu quyền Quản lý (Manager).
-          </p>
-          <div style={printOrderStyles.authDeniedButtons}>
-            <Link href="/" className="v0-button v0-button-secondary">
-              Về trang chủ
-            </Link>
-            <button
-              type="button"
-              className="v0-button v0-button-primary"
-              onClick={() => {
-                void handleLogout();
-              }}
-            >
-              Đăng xuất
-            </button>
-          </div>
-        </main>
-      </div>
+      <AccessNotice>
+        <h1 className="text-xl font-semibold">Truy cập bị từ chối</h1>
+        <p className="text-muted-foreground">
+          Tài khoản {snapshot.actor.displayEmail} thuộc vai trò {roleLabel}. Phân hệ Quản lý Đơn in
+          ấn yêu cầu quyền Quản lý (Manager).
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/" className={buttonVariants({ variant: 'outline' })}>
+            Về trang chủ
+          </Link>
+          <Button type="button" onClick={() => void handleLogout()}>
+            Đăng xuất
+          </Button>
+        </div>
+      </AccessNotice>
     );
   }
 
@@ -167,9 +144,7 @@ export function ManagementPrintOrdersPage({
       gateway={resolvedGateway}
       authorize={handleAuthorize}
       isFixtureMode={useFixtures || initialOrders !== undefined}
-      onLogout={() => {
-        void handleLogout();
-      }}
+      onLogout={() => void handleLogout()}
     />
   );
 }

@@ -2,26 +2,26 @@
 
 import { useRef, useState, type FormEvent } from 'react';
 import type { BillingView, ManualPaymentBody, RefundBody } from './billing-api';
+import { Info } from 'lucide-react';
 import { notify } from '../../design-system/notifications';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Textarea } from '../../components/ui/textarea';
+
+import {
+  confirmClass,
+  fieldsetClass,
+  inputClass,
+  labelClass,
+  panelClass,
+  rowClass,
+  selectClass,
+} from './billing-form-classes';
 
 export type CommandOutcome = 'succeeded' | 'retry' | 'failed';
 const money = (value: number) =>
   new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
 
-function EvidenceFields({ refund = false }: Readonly<{ refund?: boolean }>) {
-  return (
-    <>
-      <label>
-        {refund ? 'Mã chứng từ hoàn' : 'Mã chứng từ'}
-        <input name="evidence" required maxLength={120} autoComplete="off" />
-      </label>
-      <label>
-        {refund ? 'Lý do hoàn tiền' : 'Lý do ghi nhận'}
-        <textarea name="reason" required maxLength={500} rows={3} />
-      </label>
-    </>
-  );
-}
 function field(data: FormData, name: string): string {
   const value = data.get(name);
   return typeof value === 'string' ? value : '';
@@ -53,35 +53,32 @@ function ConfirmPayment({
 }>) {
   return (
     <section
-      className="billing-confirm"
+      className={confirmClass}
       aria-label={refund ? 'Xác nhận khoản hoàn' : 'Xác nhận khoản thu'}
     >
-      <h3>{refund ? 'Kiểm tra trước khi ghi nhận hoàn tiền' : 'Kiểm tra chứng từ nhận tiền'}</h3>
-      <strong>{money(amount)}</strong>
+      <h3 className="font-semibold text-primary">
+        {refund ? 'Kiểm tra trước khi ghi nhận hoàn tiền' : 'Kiểm tra chứng từ nhận tiền'}
+      </h3>
+      <strong className="text-xl font-bold tabular-nums">{money(amount)}</strong>
       <p>{reason}</p>
-      <p>Chứng từ: {evidence}</p>
-      <p>
+      <p className="text-xs text-muted-foreground">Chứng từ: {evidence}</p>
+      <p className="rounded-lg bg-hy-warning-bg px-3 py-2 text-xs">
         {refund
           ? 'Chỉ ghi nhận khoản hoàn đã thực hiện theo quyết định được duyệt. Thao tác này không chuyển tiền tự động.'
           : 'Chỉ xác nhận khi nhà hàng đã thực nhận và kiểm tra chứng từ.'}
       </p>
       {retry && (
-        <p role="status">
+        <p role="status" className="rounded-lg bg-hy-info-bg px-3 py-2 text-xs text-hy-info">
           Chưa rõ kết quả. Giữ nguyên nội dung và thử lại yêu cầu này để kiểm tra kết quả.
         </p>
       )}
-      <div className="billing-actions">
-        <button type="button" disabled={disabled} onClick={onConfirm}>
+      <div className="flex flex-wrap gap-2 pt-1">
+        <Button type="button" disabled={disabled} onClick={onConfirm}>
           {retry ? 'Thử lại yêu cầu này' : refund ? 'Xác nhận hoàn tiền' : 'Xác nhận ghi nhận'}
-        </button>
-        <button
-          className="billing-secondary"
-          type="button"
-          disabled={disabled || retry}
-          onClick={onCancel}
-        >
+        </Button>
+        <Button variant="outline" type="button" disabled={disabled || retry} onClick={onCancel}>
           Quay lại chỉnh sửa
-        </button>
+        </Button>
       </div>
     </section>
   );
@@ -99,7 +96,6 @@ export function ManualPaymentForm({
   const form = useRef<HTMLFormElement>(null);
   const [draft, setDraft] = useState<ManualPaymentBody | null>(null);
   const [retry, setRetry] = useState(false);
-  const [invalid, setInvalid] = useState(false);
   const review = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
@@ -132,22 +128,27 @@ export function ManualPaymentForm({
     if (result !== 'retry') setDraft(null);
   };
   return (
-    <section className="billing-panel">
-      <h2>Ghi nhận tiền đã nhận</h2>
-      <p>Ghi nhận tiền mặt hoặc chuyển khoản mà nhà hàng đã nhận và kiểm tra chứng từ.</p>
+    <section className={panelClass}>
+      <div className="flex flex-col gap-0.5">
+        <h2 className="text-base font-semibold">Ghi nhận tiền đã nhận</h2>
+        <p className="text-xs text-muted-foreground">
+          Ghi nhận tiền mặt hoặc chuyển khoản mà nhà hàng đã nhận và kiểm tra chứng từ.
+        </p>
+      </div>
       <form ref={form} onSubmit={review}>
-        <fieldset disabled={disabled || draft !== null}>
-          <div className="billing-field-row">
-            <label>
+        <fieldset disabled={disabled || draft !== null} className={fieldsetClass}>
+          <div className={rowClass}>
+            <label className={labelClass}>
               Loại khoản thu
-              <select name="purpose">
+              <select name="purpose" className={selectClass}>
                 <option value="DEPOSIT">Đặt cọc</option>
                 <option value="BALANCE">Thanh toán còn lại</option>
               </select>
             </label>
-            <label>
+            <label className={labelClass}>
               Số tiền thực nhận (VND)
-              <input
+              <Input
+                className={inputClass}
                 name="amount"
                 type="number"
                 min={1}
@@ -157,40 +158,42 @@ export function ManualPaymentForm({
               />
             </label>
           </div>
-          <small
-            style={{
-              color: '#64748b',
-              fontSize: '0.78rem',
-              marginTop: '-0.25rem',
-              marginBottom: '0.5rem',
-              display: 'block',
-              lineHeight: 1.4,
-            }}
-          >
-            ℹ <strong>Lưu ý:</strong> Đối với loại &quot;Đặt cọc&quot;, số tiền thực nhận bắt buộc
-            phải khớp chính xác số tiền cọc quy định trên hồ sơ tiệc (xem tại mục &quot;Tiền
-            cọc&quot;).
+          <small className="flex items-start gap-2 rounded-lg bg-hy-info-bg px-3 py-2 text-xs text-hy-info">
+            <Info aria-hidden className="mt-0.5 size-4 shrink-0" />
+            <span>
+              <strong>Lưu ý:</strong> Đối với loại &quot;Đặt cọc&quot;, số tiền thực nhận bắt buộc
+              phải khớp chính xác số tiền cọc quy định trên hồ sơ tiệc (xem tại mục &quot;Tiền
+              cọc&quot;).
+            </span>
           </small>
-          <div className="billing-field-row">
-            <label>
+          <div className={rowClass}>
+            <label className={labelClass}>
               Thời điểm nhận tiền
-              <input name="settledAt" type="datetime-local" required />
+              <Input className={inputClass} name="settledAt" type="datetime-local" required />
             </label>
-            <label>
+            <label className={labelClass}>
               Mã chứng từ
-              <input name="evidence" required maxLength={120} autoComplete="off" />
+              <Input
+                className={inputClass}
+                name="evidence"
+                required
+                maxLength={120}
+                autoComplete="off"
+              />
             </label>
           </div>
-          <label>
+          <label className={labelClass}>
             Lý do ghi nhận
-            <textarea name="reason" required maxLength={500} rows={2} />
+            <Textarea className={inputClass} name="reason" required maxLength={500} rows={2} />
           </label>
-          <button type="submit">Kiểm tra khoản thu</button>
+          <Button type="submit" className="self-start">
+            Kiểm tra khoản thu
+          </Button>
         </fieldset>
       </form>
       {draft !== null && (
         <>
-          <p>
+          <p className="text-xs">
             Khoản thu: {draft.purpose === 'DEPOSIT' ? 'Đặt cọc' : 'Thanh toán còn lại'} ·{' '}
             {new Date(draft.settledAt).toLocaleString('vi-VN')}
           </p>
@@ -224,7 +227,6 @@ export function RefundForm({
   const form = useRef<HTMLFormElement>(null);
   const [draft, setDraft] = useState<RefundBody | null>(null);
   const [retry, setRetry] = useState(false);
-  const [invalid, setInvalid] = useState(false);
   const payments = booking.history.filter((entry) => entry.kind === 'PAYMENT');
   const review = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -257,21 +259,24 @@ export function RefundForm({
     if (result !== 'retry') setDraft(null);
   };
   return (
-    <section className="billing-panel">
-      <h2>Ghi nhận hoàn tiền</h2>
-      <p>
-        Chọn khoản thanh toán gốc. Hệ thống kiểm tra quyết định đã duyệt và hạn mức còn được hoàn.
-      </p>
+    <section className={panelClass}>
+      <div className="flex flex-col gap-0.5">
+        <h2 className="text-base font-semibold">Ghi nhận hoàn tiền</h2>
+        <p className="text-xs text-muted-foreground">
+          Chọn khoản thanh toán gốc. Hệ thống kiểm tra quyết định đã duyệt và hạn mức còn được hoàn.
+        </p>
+      </div>
       <form ref={form} onSubmit={review}>
         <fieldset
+          className={fieldsetClass}
           disabled={
             disabled || draft !== null || payments.length === 0 || booking.billingRevision === 0
           }
         >
-          <div className="billing-field-row">
-            <label>
+          <div className={rowClass}>
+            <label className={labelClass}>
               Khoản thanh toán gốc
-              <select name="source" required defaultValue="">
+              <select name="source" required defaultValue="" className={selectClass}>
                 <option value="">Chọn khoản thanh toán</option>
                 {payments.map((entry) => (
                   <option key={entry.ledgerEntryId} value={entry.ledgerEntryId}>
@@ -281,9 +286,10 @@ export function RefundForm({
                 ))}
               </select>
             </label>
-            <label>
+            <label className={labelClass}>
               Số tiền hoàn (VND)
-              <input
+              <Input
+                className={inputClass}
                 name="amount"
                 type="number"
                 min={1}
@@ -293,24 +299,37 @@ export function RefundForm({
               />
             </label>
           </div>
-          <label>
+          <label className={labelClass}>
             Mã chứng từ hoàn
-            <input name="evidence" required maxLength={120} autoComplete="off" />
+            <Input
+              className={inputClass}
+              name="evidence"
+              required
+              maxLength={120}
+              autoComplete="off"
+            />
           </label>
-          <label>
+          <label className={labelClass}>
             Lý do hoàn tiền
-            <textarea name="reason" required maxLength={500} rows={2} />
+            <Textarea className={inputClass} name="reason" required maxLength={500} rows={2} />
           </label>
-          <button type="submit">Kiểm tra khoản hoàn</button>
+          <Button type="submit" className="self-start">
+            Kiểm tra khoản hoàn
+          </Button>
         </fieldset>
       </form>
       {payments.length === 0 && (
-        <p>Chưa có khoản thanh toán trong các trang đã tải. Tải thêm lịch sử để tìm khoản gốc.</p>
+        <p className="text-xs text-muted-foreground">
+          Chưa có khoản thanh toán trong các trang đã tải. Tải thêm lịch sử để tìm khoản gốc.
+        </p>
       )}
       {draft !== null && (
         <>
-          <p>
-            Khoản gốc: <code>{draft.sourcePaymentId}</code>
+          <p className="text-xs">
+            Khoản gốc:{' '}
+            <code className="rounded-md bg-secondary px-1.5 py-0.5 font-mono break-all">
+              {draft.sourcePaymentId}
+            </code>
           </p>
           <ConfirmPayment
             amount={draft.amountVnd}

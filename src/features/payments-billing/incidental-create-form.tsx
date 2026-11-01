@@ -1,6 +1,12 @@
 'use client';
 
 import { type FormEvent, useState } from 'react';
+import { formatVnd } from '../../lib/formatters';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+
+const fieldClass = 'flex min-w-0 flex-col gap-1';
+const labelClass = 'text-xs font-semibold';
 
 export interface IncidentalFormData {
   name: string;
@@ -45,229 +51,91 @@ export function IncidentalCreateForm({
   return (
     <form
       onSubmit={(e) => void handleSubmit(e)}
-      className="incidental-form"
-      style={{
-        background: 'var(--hy-surface-warm)',
-        padding: '1.25rem',
-        borderRadius: 'var(--hy-radius-md)',
-        border: '1px solid var(--hy-outline)',
-        marginTop: '0.75rem',
-      }}
+      className="flex flex-col gap-3 rounded-lg bg-muted p-4"
     >
-      <h4
-        style={{
-          margin: '0 0 1rem',
-          fontFamily: 'var(--font-display)',
-          fontSize: '1rem',
-          fontWeight: 600,
-          color: 'var(--hy-ink)',
-        }}
-      >
-        Ghi nhận chi phí phát sinh mới
-      </h4>
+      <h4 className="font-semibold">Ghi nhận chi phí phát sinh mới</h4>
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-          gap: '0.85rem',
-        }}
-      >
-        <div>
-          <label
-            htmlFor="inc-name"
-            style={{
-              display: 'block',
-              fontSize: '0.8rem',
-              fontWeight: 600,
-              marginBottom: 4,
-              color: 'var(--hy-ink)',
-            }}
-          >
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className={fieldClass}>
+          <label htmlFor="inc-name" className={labelClass}>
             Tên hạng mục *
           </label>
-          <input
+          <Input
             id="inc-name"
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
             placeholder="VD: Nước ngọt phát sinh"
-            style={{
-              width: '100%',
-              padding: '0.5rem 0.75rem',
-              borderRadius: 'var(--hy-radius-sm)',
-              border: '1px solid var(--hy-outline-strong)',
-              background: 'var(--hy-surface)',
-              fontFamily: 'var(--font-body)',
-              fontSize: '0.9rem',
-            }}
           />
         </div>
 
-        <div>
-          <label
-            htmlFor="inc-qty"
-            style={{
-              display: 'block',
-              fontSize: '0.8rem',
-              fontWeight: 600,
-              marginBottom: 4,
-              color: 'var(--hy-ink)',
-            }}
-          >
+        <div className={fieldClass}>
+          <label htmlFor="inc-qty" className={labelClass}>
             Số lượng *
           </label>
-          <input
+          <Input
             id="inc-qty"
             type="number"
             min={1}
+            className="tabular-nums"
             value={quantity}
             onChange={(e) => setQuantity(Number(e.target.value))}
             required
-            style={{
-              width: '100%',
-              padding: '0.5rem 0.75rem',
-              borderRadius: 'var(--hy-radius-sm)',
-              border: '1px solid var(--hy-outline-strong)',
-              background: 'var(--hy-surface)',
-              fontFamily: 'var(--font-body)',
-              fontSize: '0.9rem',
-            }}
           />
         </div>
 
-        <div>
-          <label
-            htmlFor="inc-unit"
-            style={{
-              display: 'block',
-              fontSize: '0.8rem',
-              fontWeight: 600,
-              marginBottom: 4,
-              color: 'var(--hy-ink)',
-            }}
-          >
+        <div className={fieldClass}>
+          <label htmlFor="inc-unit" className={labelClass}>
             Đơn vị tính *
           </label>
-          <input
-            id="inc-unit"
-            value={unit}
-            onChange={(e) => setUnit(e.target.value)}
-            required
-            style={{
-              width: '100%',
-              padding: '0.5rem 0.75rem',
-              borderRadius: 'var(--hy-radius-sm)',
-              border: '1px solid var(--hy-outline-strong)',
-              background: 'var(--hy-surface)',
-              fontFamily: 'var(--font-body)',
-              fontSize: '0.9rem',
-            }}
-          />
+          <Input id="inc-unit" value={unit} onChange={(e) => setUnit(e.target.value)} required />
         </div>
 
-        <div>
-          <label
-            htmlFor="inc-price"
-            style={{
-              display: 'block',
-              fontSize: '0.8rem',
-              fontWeight: 600,
-              marginBottom: 4,
-              color: 'var(--hy-ink)',
-            }}
-          >
+        <div className={fieldClass}>
+          <label htmlFor="inc-price" className={labelClass}>
             Đơn giá (VND) *
           </label>
-          <input
+          <Input
             id="inc-price"
             type="number"
             min={0}
             step={1}
+            className="tabular-nums"
             value={unitPriceVnd || ''}
             onChange={(e) => setUnitPriceVnd(Number(e.target.value))}
             required
             placeholder="VD: 300000"
-            style={{
-              width: '100%',
-              padding: '0.5rem 0.75rem',
-              borderRadius: 'var(--hy-radius-sm)',
-              border: '1px solid var(--hy-outline-strong)',
-              background: 'var(--hy-surface)',
-              fontFamily: 'var(--font-body)',
-              fontSize: '0.9rem',
-            }}
           />
         </div>
       </div>
 
-      <div style={{ marginTop: '0.85rem' }}>
-        <label
-          htmlFor="inc-note"
-          style={{
-            display: 'block',
-            fontSize: '0.8rem',
-            fontWeight: 600,
-            marginBottom: 4,
-            color: 'var(--hy-ink)',
-          }}
-        >
+      <div className={fieldClass}>
+        <label htmlFor="inc-note" className={labelClass}>
           Ghi chú / Biên bản bàn giao
         </label>
-        <input
+        <Input
           id="inc-note"
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder="VD: Theo yêu cầu của gia đình cô dâu / chú rể"
-          style={{
-            width: '100%',
-            padding: '0.5rem 0.75rem',
-            borderRadius: 'var(--hy-radius-sm)',
-            border: '1px solid var(--hy-outline-strong)',
-            background: 'var(--hy-surface)',
-            fontFamily: 'var(--font-body)',
-            fontSize: '0.9rem',
-          }}
         />
       </div>
 
-      <div
-        style={{
-          marginTop: '1rem',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '0.75rem',
-          borderTop: '1px solid var(--hy-outline)',
-          paddingTop: '0.75rem',
-        }}
-      >
-        <div style={{ fontSize: '0.875rem', color: 'var(--hy-ink-muted)' }}>
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3">
+        <div className="text-xs text-muted-foreground">
           Thành tiền ước tính:{' '}
-          <strong style={{ color: 'var(--hy-wine)', fontSize: '1rem' }}>
-            {totalCalculated.toLocaleString('vi-VN')} đ
+          <strong className="text-base text-primary tabular-nums">
+            {formatVnd(totalCalculated)}
           </strong>
         </div>
 
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button
-            type="submit"
-            disabled={disabled || loading}
-            className="hy-btn hy-btn-primary"
-            style={{ minHeight: '38px', padding: '0 16px' }}
-          >
+        <div className="flex gap-2">
+          <Button type="submit" disabled={disabled || loading}>
             {loading ? 'Đang lưu…' : 'Lưu phát sinh'}
-          </button>
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={loading}
-            className="hy-btn hy-btn-secondary"
-            style={{ minHeight: '38px', padding: '0 16px' }}
-          >
+          </Button>
+          <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>
             Huỷ
-          </button>
+          </Button>
         </div>
       </div>
     </form>

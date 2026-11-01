@@ -1,3 +1,5 @@
+import { CircleCheck, CircleX, Clock } from 'lucide-react';
+import { cn } from 'cn';
 import { ApiClientError } from '../../lib/api/client';
 import type { AttemptView, BillingView } from './billing-api';
 import { BillingIntentMismatchError } from './billing-intents';
@@ -71,14 +73,33 @@ const sources: Record<BillingView['history'][number]['sourceType'], string> = {
   PRINT_CREDIT: 'Điều chỉnh đơn in',
   MANUAL_REFUND: 'Hoàn theo chứng từ',
 };
+const kindDot: Record<keyof typeof kinds, string> = {
+  CHARGE: 'bg-hy-warning',
+  PAYMENT: 'bg-hy-success',
+  REFUND: 'bg-hy-error',
+  CREDIT_ADJUSTMENT: 'bg-hy-info',
+};
 export function BillingSummary({ view }: Readonly<{ view: BillingView }>) {
   return (
-    <section aria-label="Tổng hợp tiền đặt tiệc" className="billing-summary">
-      <dl>
+    <section aria-label="Tổng hợp tiền đặt tiệc" className="min-w-0 flex-[2_1_560px]">
+      <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         {Object.entries(view.totals).map(([key, value]) => (
-          <div key={key}>
-            <dt>{totalLabels[key as keyof typeof totalLabels]}</dt>
-            <dd className={key === 'outstandingVnd' ? 'is-outstanding' : undefined}>
+          <div
+            key={key}
+            className={cn(
+              'flex flex-col gap-1 rounded-xl border px-4 py-3 sm:px-5 sm:py-4',
+              key === 'outstandingVnd' ? 'border-primary bg-accent' : 'border-border bg-card',
+            )}
+          >
+            <dt className="text-xs text-muted-foreground">
+              {totalLabels[key as keyof typeof totalLabels]}
+            </dt>
+            <dd
+              className={cn(
+                'font-bold tabular-nums sm:text-lg',
+                key === 'outstandingVnd' ? 'text-primary' : undefined,
+              )}
+            >
               {money(value)}
             </dd>
           </div>
@@ -89,37 +110,52 @@ export function BillingSummary({ view }: Readonly<{ view: BillingView }>) {
 }
 export function BillingHistory({ view }: Readonly<{ view: BillingView }>) {
   return (
-    <section className="billing-panel">
-      <h2>Lịch sử giao dịch</h2>
+    <section className="flex flex-col gap-3">
+      <h2 className="text-lg font-semibold">Lịch sử giao dịch</h2>
       {view.history.length === 0 ? (
-        <p>Chưa có giao dịch</p>
+        <p className="rounded-lg border border-dashed border-input p-4 text-center text-xs text-muted-foreground">
+          Chưa có giao dịch
+        </p>
       ) : (
-        <div className="billing-table-scroll">
-          <table>
-            <caption>Chi tiết giao dịch</caption>
-            <thead>
+        <div className="overflow-x-auto rounded-lg border border-border">
+          <table className="w-full min-w-[520px] border-collapse text-left">
+            <caption className="sr-only">Chi tiết giao dịch</caption>
+            <thead className="bg-muted text-xs">
               <tr>
-                <th>Thời điểm</th>
-                <th>Loại / nguồn</th>
-                <th>Số tiền</th>
-                <th>Mã tham chiếu</th>
+                <th className="px-3 py-2 font-semibold">Thời điểm</th>
+                <th className="px-3 py-2 font-semibold">Loại / nguồn</th>
+                <th className="px-3 py-2 text-right font-semibold">Số tiền</th>
+                <th className="px-3 py-2 font-semibold">Mã tham chiếu</th>
               </tr>
             </thead>
             <tbody>
               {view.history.map((entry) => (
-                <tr key={entry.ledgerEntryId}>
-                  <td style={{ whiteSpace: 'nowrap' }}>
+                <tr key={entry.ledgerEntryId} className="border-t border-border align-top">
+                  <td className="px-3 py-2 text-xs whitespace-nowrap tabular-nums">
                     {new Date(entry.occurredAt).toLocaleString('vi-VN')}
                   </td>
-                  <td>
-                    {kinds[entry.kind]}
-                    <small>{sources[entry.sourceType]}</small>
+                  <td className="px-3 py-2">
+                    <span className="inline-flex items-center gap-1.5 font-semibold">
+                      <span
+                        aria-hidden
+                        className={cn('size-1.5 rounded-full', kindDot[entry.kind])}
+                      />
+                      {kinds[entry.kind]}
+                    </span>
+                    <small className="block text-2xs text-muted-foreground">
+                      {sources[entry.sourceType]}
+                    </small>
                   </td>
-                  <td style={{ whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums', fontWeight: 600 }}>
+                  <td className="px-3 py-2 text-right font-semibold whitespace-nowrap tabular-nums">
                     {money(entry.amountVnd)}
                   </td>
-                  <td>
-                    <code title={entry.ledgerEntryId}>{entry.ledgerEntryId}</code>
+                  <td className="px-3 py-2">
+                    <code
+                      title={entry.ledgerEntryId}
+                      className="block max-w-40 truncate rounded-md bg-secondary px-1.5 py-0.5 font-mono text-2xs text-muted-foreground"
+                    >
+                      {entry.ledgerEntryId}
+                    </code>
                   </td>
                 </tr>
               ))}
@@ -130,6 +166,13 @@ export function BillingHistory({ view }: Readonly<{ view: BillingView }>) {
     </section>
   );
 }
+const attemptTone = {
+  SUCCEEDED: { box: 'bg-hy-success-bg', title: 'text-hy-success', Icon: CircleCheck },
+  FAILED: { box: 'bg-hy-error-bg', title: 'text-hy-error', Icon: CircleX },
+  CREATED: { box: 'bg-hy-warning-bg', title: 'text-hy-warning', Icon: Clock },
+  PENDING: { box: 'bg-hy-warning-bg', title: 'text-hy-warning', Icon: Clock },
+  UNKNOWN: { box: 'bg-hy-warning-bg', title: 'text-hy-warning', Icon: Clock },
+} as const;
 export function AttemptStatus({ attempt }: Readonly<{ attempt: AttemptView }>) {
   const labels = {
     CREATED: 'Đã tạo · chờ thanh toán',
@@ -138,25 +181,33 @@ export function AttemptStatus({ attempt }: Readonly<{ attempt: AttemptView }>) {
     UNKNOWN: 'Chưa rõ kết quả · đang kiểm tra',
     SUCCEEDED: 'Đã xác minh nhận tiền',
   };
+  const tone = attemptTone[attempt.status];
   return (
-    <section className="billing-attempt" aria-label="Trạng thái thanh toán">
-      <h3>{labels[attempt.status]}</h3>
-      <p>
+    <section
+      className={cn('flex flex-col gap-1.5 rounded-lg p-4', tone.box)}
+      aria-label="Trạng thái thanh toán"
+    >
+      <h3 className={cn('flex items-center gap-1.5 font-semibold', tone.title)}>
+        <tone.Icon aria-hidden className="size-[18px]" />
+        {labels[attempt.status]}
+      </h3>
+      <p className="tabular-nums">
         {attempt.purpose === 'DEPOSIT' ? 'Đặt cọc' : 'Thanh toán còn lại'} ·{' '}
         {money(attempt.amountVnd)}
       </p>
-      <p>
-        Mã giao dịch thanh toán: <code>{attempt.paymentAttemptId}</code>
+      <p className="text-xs">
+        Mã giao dịch thanh toán:{' '}
+        <code className="font-mono break-all">{attempt.paymentAttemptId}</code>
       </p>
       {attempt.status === 'SUCCEEDED' && (
-        <p>
+        <p className="text-xs">
           {attempt.applicationStatus === 'SUCCEEDED'
             ? 'Đã hoàn tất cập nhật hồ sơ.'
             : 'Tiền đã được xác minh; hồ sơ đang chờ cập nhật.'}
         </p>
       )}
       {attempt.status !== 'FAILED' && attempt.status !== 'SUCCEEDED' && (
-        <p>
+        <p className="text-xs">
           Không tạo lần thanh toán khác khi chưa xác minh kết quả. Hết hạn đường dẫn không chứng
           minh thanh toán thất bại.
         </p>

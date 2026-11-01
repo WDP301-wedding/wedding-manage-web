@@ -246,7 +246,9 @@ describe('Management booking lifecycle workspace', () => {
       target: { value: '2026-10-11' },
     });
     fireEvent.change(screen.getByLabelText('Số bàn'), { target: { value: '12' } });
-    fireEvent.change(screen.getByLabelText(/Tên (khách|cặp đôi)/), { target: { value: 'Minh & An' } });
+    fireEvent.change(screen.getByLabelText(/Tên (khách|cặp đôi)/), {
+      target: { value: 'Minh & An' },
+    });
     fireEvent.change(screen.getByLabelText('Email liên hệ'), {
       target: { value: 'couple@example.com' },
     });
@@ -365,7 +367,9 @@ describe('Management booking lifecycle workspace', () => {
   it('keeps a newly created consultation attached and prevents creating it again accidentally', async () => {
     const gateway = fakeGateway();
     render(<ManagementBookingWorkspace authorize={authorize} gateway={gateway} />);
-    fireEvent.change(screen.getByLabelText(/Tên (khách|cặp đôi)/), { target: { value: 'Minh & An' } });
+    fireEvent.change(screen.getByLabelText(/Tên (khách|cặp đôi)/), {
+      target: { value: 'Minh & An' },
+    });
     fireEvent.change(screen.getByLabelText('Email liên hệ'), {
       target: { value: 'couple@example.com' },
     });
@@ -385,7 +389,9 @@ describe('Management booking lifecycle workspace', () => {
   it('uses catalog choices and sends the selected immutable menu version', async () => {
     const gateway = fakeGateway();
     render(<ManagementBookingWorkspace authorize={authorize} gateway={gateway} />);
-    fireEvent.change(screen.getByLabelText(/Tên (khách|cặp đôi)/), { target: { value: 'Minh & An' } });
+    fireEvent.change(screen.getByLabelText(/Tên (khách|cặp đôi)/), {
+      target: { value: 'Minh & An' },
+    });
     fireEvent.change(screen.getByLabelText('Email liên hệ'), {
       target: { value: 'couple@example.com' },
     });

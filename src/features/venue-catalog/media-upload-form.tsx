@@ -4,6 +4,8 @@ import { type FormEvent, useState } from 'react';
 import type { CatalogMedia } from './catalog-api';
 import { notify } from '../../design-system/notifications';
 
+import { cx } from './catalog-classes';
+import { cn } from 'cn';
 function value(data: FormData, name: string): string {
   const item = data.get(name);
   return typeof item === 'string' ? item.trim() : '';
@@ -53,15 +55,15 @@ export function MediaUploadForm({ assets, onSubmit, pending }: Readonly<MediaUpl
 
   return (
     <form
-      className="catalog-editor media-upload-form"
+      className={cn(cx.editor, cx.mediaUploadForm)}
       aria-label="Tải ảnh danh mục"
       onSubmit={submit}
     >
-      <div className="catalog-editor-heading">
-        <span className="section-kicker">JPEG · PNG · WebP, tối đa 10 MB</span>
+      <div className={cx.editorHeading}>
         <h3>Tải lên hoặc thay thế ảnh</h3>
+        <p className={cx.help}>JPEG, PNG hoặc WebP, tối đa 10 MB</p>
       </div>
-      <label className="catalog-field">
+      <label className={cx.field}>
         <span>Ảnh JPEG, PNG hoặc WebP</span>
         <input
           name="file"
@@ -71,11 +73,11 @@ export function MediaUploadForm({ assets, onSubmit, pending }: Readonly<MediaUpl
           onChange={(event) => setSelectedFile(event.currentTarget.files?.[0] ?? null)}
         />
       </label>
-      <label className="catalog-field">
+      <label className={cx.field}>
         <span>Văn bản thay thế</span>
         <input name="alternativeText" maxLength={250} required />
       </label>
-      <label className="catalog-field">
+      <label className={cx.field}>
         <span>Chế độ tải lên</span>
         <select name="oldAssetId" defaultValue="">
           <option value="">Thêm ảnh mới</option>
@@ -86,7 +88,7 @@ export function MediaUploadForm({ assets, onSubmit, pending }: Readonly<MediaUpl
           ))}
         </select>
       </label>
-      <button className="catalog-primary-button" type="submit" disabled={pending}>
+      <button className={cx.primaryButton} type="submit" disabled={pending}>
         Tải ảnh lên
       </button>
     </form>

@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 
 import './globals.css';
-import './select.css';
 import { SessionRevocationBoundary } from '../src/features/identity-access/session-revocation-boundary';
 import { NotificationProvider } from '../src/design-system/notifications';
 

@@ -2,19 +2,17 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ApiClientError } from '../../lib/api/client';
-import { addMyManagedBookingId, getMyManagedBookingIds } from '../identity-access/dashboard-live';
+import {
+  addMyManagedBookingId,
+  getMyManagedBookingIds,
+} from '../identity-access/booking-assignments';
 import type {
   Authorize,
   ManagementBookingGateway,
   ProposalView,
   ConsultationWorkspace,
 } from './booking-api';
-import {
-  type BookingPrefill,
-  errorMessage,
-  type InviteLogEntry,
-  parseConsultationChoices,
-} from './booking-helpers';
+import { type BookingPrefill, errorMessage, parseConsultationChoices } from './booking-helpers';
 import { useRealtimeSubscription } from '../realtime/use-realtime';
 import { useRefreshQueue } from '../realtime/refresh-queue';
 import { notify } from '../../design-system/notifications';
@@ -35,19 +33,10 @@ export function useBookingWorkspaceState({
   currentEmail,
 }: UseBookingWorkspaceStateOptions) {
   const [activeTab, setActiveTab] = useState<'manage' | 'consultation' | 'booking'>('consultation');
-  const [visitedTabs, setVisitedTabs] = useState<Set<'manage' | 'consultation' | 'booking'>>(
-    () => new Set([activeTab]),
+  const switchTab = useCallback(
+    (tab: 'manage' | 'consultation' | 'booking') => setActiveTab(tab),
+    [],
   );
-
-  const switchTab = useCallback((tab: 'manage' | 'consultation' | 'booking') => {
-    setActiveTab(tab);
-    setVisitedTabs((prev) => {
-      if (prev.has(tab)) return prev;
-      const next = new Set(prev);
-      next.add(tab);
-      return next;
-    });
-  }, []);
 
   const [consultation, setConsultation] = useState<{ id: string; revision: number } | null>(null);
   const contextSequence = useRef(0);

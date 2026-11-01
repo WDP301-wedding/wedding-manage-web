@@ -1,10 +1,13 @@
 'use client';
 
+import { ArrowLeft } from 'lucide-react';
+import { Button } from '../../components/ui/button';
 import { notify } from '../../design-system/notifications';
 import { ActivationStatus } from './activation-status';
 import { BookingCreatePanel } from './booking-create-panel';
 import { CoupleAccountCard } from './couple-account-card';
-import { bookingStyles } from './booking.styles';
+import { stepHiddenClass } from './booking-classes';
+import { cn } from 'cn';
 import type { Authorize, ManagementBookingGateway, ProposalView } from './booking-api';
 import type { InviteLogEntry, BookingPrefill } from './booking-helpers';
 
@@ -25,7 +28,9 @@ export interface BookingWorkspaceTabBookingProps {
   switchTab: (tab: 'consultation' | 'booking' | 'manage') => void;
   setBookingId: (id: string) => void;
   setConsultation: (c: { id: string; revision: number } | null) => void;
-  setCreatedBookingNotice: (notice: { bookingId: string; consultationId: string; email?: string | undefined } | null) => void;
+  setCreatedBookingNotice: (
+    notice: { bookingId: string; consultationId: string; email?: string | undefined } | null,
+  ) => void;
   setMessage: (msg: string | null) => void;
   loadProposal: (id: string, force?: boolean) => Promise<void>;
   recordMyBooking: (id: string) => void;
@@ -57,42 +62,21 @@ export function BookingWorkspaceTabBooking({
 }: Readonly<BookingWorkspaceTabBookingProps>) {
   return (
     <section
+      data-ui-v3
       aria-label="Khảo sát sảnh &amp; Tạo booking"
-      style={
-        active
-          ? bookingStyles.stepContainerVisible('1060px')
-          : bookingStyles.stepContainerHidden
-      }
+      className={cn('flex flex-col gap-5', !active && stepHiddenClass)}
     >
-      <div
-        style={{
-          marginBottom: '1rem',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '0.5rem',
-        }}
-      >
-        <button
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <Button
           type="button"
+          variant="ghost"
+          size="sm"
+          className="-ml-3"
           onClick={() => switchTab('consultation')}
-          style={{
-            background: 'none',
-            border: 'none',
-            color: 'var(--hy-wine, #7a1f3d)',
-            cursor: 'pointer',
-            fontSize: '0.88rem',
-            fontWeight: 600,
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px',
-            padding: '4px 0',
-          }}
         >
-          <span>←</span>
-          <span>Quay lại Bước 01: Hồ sơ tư vấn</span>
-        </button>
+          <ArrowLeft aria-hidden />
+          Quay lại Bước 01: Hồ sơ tư vấn
+        </Button>
         {consultation ? (
           <ActivationStatus
             key={consultation.id}
@@ -104,12 +88,14 @@ export function BookingWorkspaceTabBooking({
         ) : null}
       </div>
       {proposal ? (
-        <article className="booking-card">
-          <h2>Hồ sơ tư vấn này đã có tiệc</h2>
-          <p>Tiếp tục trong hồ sơ đã lưu để xem và chỉnh sửa theo trạng thái hiện tại.</p>
-          <button type="button" onClick={() => switchTab('manage')}>
+        <article className="flex flex-col items-start gap-3 rounded-xl border border-border bg-card p-6 shadow-hy-1">
+          <h2 className="text-lg font-semibold">Hồ sơ tư vấn này đã có tiệc</h2>
+          <p className="text-muted-foreground">
+            Tiếp tục trong hồ sơ đã lưu để xem và chỉnh sửa theo trạng thái hiện tại.
+          </p>
+          <Button type="button" onClick={() => switchTab('manage')}>
             Mở tiệc đang xử lý
-          </button>
+          </Button>
         </article>
       ) : (
         <BookingCreatePanel
@@ -142,18 +128,16 @@ export function BookingWorkspaceTabBooking({
         />
       )}
       {active && consultation && !proposal ? (
-        <div style={{ marginTop: '1.5rem' }}>
-          <CoupleAccountCard
-            consultationId={consultation.id}
-            email={prefill.email}
-            canInvite
-            pending={disabled}
-            inviteLogs={inviteLogs}
-            onInvite={() => void sendWorkspaceInvite()}
-            onClearLogs={() => setInviteLogs([])}
-            hideIfActivated
-          />
-        </div>
+        <CoupleAccountCard
+          consultationId={consultation.id}
+          email={prefill.email}
+          canInvite
+          pending={disabled}
+          inviteLogs={inviteLogs}
+          onInvite={() => void sendWorkspaceInvite()}
+          onClearLogs={() => setInviteLogs([])}
+          hideIfActivated
+        />
       ) : null}
     </section>
   );

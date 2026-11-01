@@ -69,7 +69,7 @@ describe('VC-22 shared catalog media', () => {
     expect(screen.getAllByText('URL ký số · 5 phút')).toHaveLength(2);
     expect(document.body.textContent).not.toMatch(/objectKey|checksumSha256/u);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Làm mới URL ký số' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Làm mới đường dẫn ảnh' }));
     await waitFor(() => expect(loadMedia).toHaveBeenCalledTimes(2));
   });
 

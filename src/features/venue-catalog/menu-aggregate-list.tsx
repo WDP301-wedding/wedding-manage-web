@@ -12,6 +12,7 @@ import {
 } from './food-catalog-shared';
 import { OrderedVersionList, CreateMenuForm } from './create-menu-form';
 
+import { cx } from './catalog-classes';
 export { OrderedVersionList, CreateMenuForm };
 
 export function MenuDraftEditor({
@@ -59,8 +60,8 @@ export function MenuDraftEditor({
   };
 
   return (
-    <form className="catalog-draft-form" aria-label={`Bản nháp ${version.name}`} onSubmit={submit}>
-      <span className="catalog-version-state">Bản nháp · revision {version.revision}</span>
+    <form className={cx.draftForm} aria-label={`Bản nháp ${version.name}`} onSubmit={submit}>
+      <span className={cx.versionState}>Bản nháp · revision {version.revision}</span>
       <LabeledInput label="Tên gói bản nháp" name="name" defaultValue={version.name} />
       <LabeledInput
         label="Mô tả gói bản nháp"
@@ -76,7 +77,7 @@ export function MenuDraftEditor({
         step={1}
         defaultValue={version.priceVndPerTable}
       />
-      <div className="catalog-inline-control">
+      <div className={cx.inlineControl}>
         <select
           aria-label="Thêm phiên bản món vào bản nháp"
           value={selected}
@@ -90,7 +91,7 @@ export function MenuDraftEditor({
           ))}
         </select>
         <button
-          className="catalog-secondary-button"
+          className={cx.secondaryButton}
           type="button"
           disabled={selected === ''}
           onClick={() => {
@@ -102,16 +103,16 @@ export function MenuDraftEditor({
         </button>
       </div>
       <OrderedVersionList items={items} options={options} onChange={setItems} />
-      <div className="catalog-form-actions">
+      <div className={cx.formActions}>
         <button
-          className="catalog-secondary-button"
+          className={cx.secondaryButton}
           type="submit"
           disabled={pending || items.length === 0}
         >
           Lưu bản nháp
         </button>
         <button
-          className="catalog-primary-button"
+          className={cx.primaryButton}
           type="button"
           disabled={pending}
           onClick={() =>
@@ -149,11 +150,11 @@ export function MenuVersionRow({
 }>) {
   if (version.state !== 'DRAFT') {
     return (
-      <div className="catalog-version-row">
+      <div className={cx.versionRow}>
         <VersionSummary version={version} price={version.priceVndPerTable} />
         {canClone ? (
           <button
-            className="catalog-secondary-button"
+            className={cx.secondaryButton}
             type="button"
             disabled={pending}
             onClick={() =>
@@ -201,7 +202,7 @@ export function MenuAggregate({
     menu.versions[0]?.name ??
     'Gói chưa đặt tên';
   return (
-    <article className="catalog-aggregate">
+    <article className={cx.aggregate}>
       <AggregateHeader
         label={label}
         lifecycle={menu.lifecycle}
@@ -217,7 +218,7 @@ export function MenuAggregate({
           )
         }
       />
-      <div className="catalog-history" role="region" aria-label={`Lịch sử ${label}`}>
+      <div className={cx.history} role="region" aria-label={`Lịch sử ${label}`}>
         {menu.versions.map((version) => (
           <MenuVersionRow
             key={version.id}

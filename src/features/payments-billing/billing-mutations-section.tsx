@@ -17,6 +17,9 @@ export interface BillingMutationsSectionProps {
   ) => Promise<CommandOutcome>;
 }
 
+const tabClass =
+  'inline-flex h-10 items-center justify-center rounded-md text-xs font-semibold text-muted-foreground transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none aria-selected:bg-card aria-selected:text-foreground aria-selected:shadow-hy-1';
+
 export function BillingMutationsSection({
   view,
   pending,
@@ -37,44 +40,54 @@ export function BillingMutationsSection({
     }
   }, [uncertain, approvalRevision, refundRevision]);
 
+  // Tab ẩn bằng class (không dùng thuộc tính hidden) để giữ hành vi cũ.
+  const pane = (tab: typeof activeTab) =>
+    activeTab === tab ? 'block motion-safe:animate-in motion-safe:fade-in-0' : 'hidden';
+
   return (
-    <div className="billing-mutations-wrapper">
-      <div className="billing-mutations-header">
-        <h2>Thao tác nghiệp vụ thanh toán</h2>
-        <p>Chọn nghiệp vụ thu tiền, hoàn tiền hoặc phê duyệt theo chứng từ.</p>
+    <div className="flex min-w-0 flex-[1_1_440px] flex-col gap-4 rounded-xl border border-border bg-card p-6 shadow-hy-1">
+      <div className="flex flex-col gap-0.5">
+        <h2 className="text-lg font-semibold">Thao tác nghiệp vụ thanh toán</h2>
+        <p className="text-xs text-muted-foreground">
+          Chọn nghiệp vụ thu tiền, hoàn tiền hoặc phê duyệt theo chứng từ.
+        </p>
       </div>
 
-      <div className="billing-tabs-nav" role="tablist" aria-label="Nghiệp vụ thanh toán">
+      <div
+        className="grid grid-cols-3 gap-1 rounded-lg bg-secondary p-1"
+        role="tablist"
+        aria-label="Nghiệp vụ thanh toán"
+      >
         <button
           type="button"
           role="tab"
           aria-selected={activeTab === 'manual'}
-          className={`billing-tab-btn ${activeTab === 'manual' ? 'is-active' : ''}`}
+          className={tabClass}
           onClick={() => setActiveTab('manual')}
         >
-          💵 Thu tiền
+          Thu tiền
         </button>
         <button
           type="button"
           role="tab"
           aria-selected={activeTab === 'refund'}
-          className={`billing-tab-btn ${activeTab === 'refund' ? 'is-active' : ''}`}
+          className={tabClass}
           onClick={() => setActiveTab('refund')}
         >
-          ↩️ Hoàn tiền
+          Hoàn tiền
         </button>
         <button
           type="button"
           role="tab"
           aria-selected={activeTab === 'approval'}
-          className={`billing-tab-btn ${activeTab === 'approval' ? 'is-active' : ''}`}
+          className={tabClass}
           onClick={() => setActiveTab('approval')}
         >
-          ⚖️ Duyệt hoàn
+          Duyệt hoàn
         </button>
       </div>
 
-      <div className={`billing-tab-pane ${activeTab === 'manual' ? 'is-active' : ''}`}>
+      <div className={pane('manual')}>
         <ManualPaymentForm
           key={`manual:${view.bookingId}`}
           bookingId={view.bookingId}
@@ -83,7 +96,7 @@ export function BillingMutationsSection({
         />
       </div>
 
-      <div className={`billing-tab-pane ${activeTab === 'refund' ? 'is-active' : ''}`}>
+      <div className={pane('refund')}>
         <RefundForm
           key={`refund:${view.bookingId}`}
           booking={refundRevision === null ? view : { ...view, billingRevision: refundRevision }}
@@ -92,10 +105,12 @@ export function BillingMutationsSection({
         />
       </div>
 
-      <div className={`billing-tab-pane ${activeTab === 'approval' ? 'is-active' : ''}`}>
+      <div className={pane('approval')}>
         <RefundApprovalForm
           key={`approval:${view.bookingId}`}
-          booking={approvalRevision === null ? view : { ...view, billingRevision: approvalRevision }}
+          booking={
+            approvalRevision === null ? view : { ...view, billingRevision: approvalRevision }
+          }
           disabled={pending || (uncertain !== null && uncertain !== 'approval')}
           onConfirm={(body) => onMutate('approval', body)}
         />

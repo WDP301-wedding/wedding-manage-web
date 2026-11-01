@@ -1,21 +1,10 @@
+/* Phải đứng đầu file: trình duyệt bỏ qua @import url() đặt sau rule khác. */
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap&subset=vietnamese');
+
+@layer theme, base, components, utilities;
+
 @import './styles/globals/tokens.css';
-@import './styles/globals/booking-lifecycle.css';
-@import './styles/globals/booking-create.css';
-@import './styles/globals/booking-summary.css';
-@import './styles/globals/booking-proposal.css';
-@import './styles/globals/booking-activation.css';
-@import './styles/globals/booking-modals.css';
-@import './styles/globals/admin-shell-account.css';
-@import './styles/globals/admin-sidebar.css';
-@import './styles/globals/dashboard-metrics.css';
-@import './styles/globals/tables-timeline.css';
-@import './styles/globals/operations-auth-responsive.css';
-@import './styles/globals/catalog-base-forms.css';
-@import './styles/globals/catalog-tables-versions.css';
-@import './styles/globals/catalog-timeline-editor.css';
-@import './styles/globals/layout-media-intake.css';
-@import './styles/globals/operations-drawer.css';
-@import './styles/globals/hy-core-components.css';
+@import './ui-v3.css';
 
 :root {
   --font-display: 'Be Vietnam Pro', 'Segoe UI', Arial, sans-serif;

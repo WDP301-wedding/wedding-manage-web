@@ -5,6 +5,7 @@ import { useState } from 'react';
 import type { CatalogTimeline, TimelineCatalogSnapshot } from '../venue-catalog/catalog-api';
 import type { TimelineItemInput } from './booking-api';
 import { notify } from '../../design-system/notifications';
+import { Button } from '../../components/ui/button';
 
 export type TimelineTemplateSource = Readonly<{
   load: () => Promise<TimelineCatalogSnapshot>;
@@ -87,63 +88,89 @@ export function TimelineTemplatePicker({
   };
 
   return (
-    <div className="timeline-template-picker">
-      <p>
+    <div className="flex flex-col gap-3 rounded-lg bg-muted p-4">
+      <p className="text-xs text-muted-foreground">
         Chọn mẫu đã công bố hoặc tự chỉnh các mốc bên dưới. Đổi mẫu chỉ thay bản đang soạn, chưa lưu
         hay phê duyệt kịch bản.
       </p>
-      <button type="button" disabled={disabled || loading} onClick={() => void load()}>
-        {replaceExisting ? 'Đổi mẫu kịch bản' : 'Tải mẫu kịch bản'}
-      </button>
-      {loading ? <p role="status">Đang tải mẫu kịch bản…</p> : null}
-      {versions === null ? null : versions.length === 0 ? (
-        <p role="status">Chưa có mẫu kịch bản đang công bố.</p>
-      ) : (
-        <>
-          <label>
-            Mẫu kịch bản đã công bố
-            <select
-              disabled={disabled || loading}
-              value={selectedId}
-              onChange={(event) => {
-                setSelectedId(event.target.value);
-                setReplacement(null);
-              }}
+      <div className="flex flex-wrap items-end gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          disabled={disabled || loading}
+          onClick={() => void load()}
+        >
+          {replaceExisting ? 'Đổi mẫu kịch bản' : 'Tải mẫu kịch bản'}
+        </Button>
+        {versions !== null && versions.length > 0 ? (
+          <>
+            <label className="flex min-w-0 flex-[1_1_240px] flex-col gap-1 text-xs font-semibold">
+              Mẫu kịch bản đã công bố
+              <select
+                className="h-11 w-full min-w-0 rounded-lg border border-input bg-card px-3 text-sm font-normal text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                disabled={disabled || loading}
+                value={selectedId}
+                onChange={(event) => {
+                  setSelectedId(event.target.value);
+                  setReplacement(null);
+                }}
+              >
+                <option value="">Chọn mẫu kịch bản</option>
+                {versions.map((version) => (
+                  <option key={version.id} value={version.id}>
+                    {version.name} · phiên bản {version.versionNumber}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <Button
+              type="button"
+              disabled={disabled || loading || selectedId === ''}
+              onClick={copy}
             >
-              <option value="">Chọn mẫu kịch bản</option>
-              {versions.map((version) => (
-                <option key={version.id} value={version.id}>
-                  {version.name} · phiên bản {version.versionNumber}
-                </option>
-              ))}
-            </select>
-          </label>
-          <button type="button" disabled={disabled || loading || selectedId === ''} onClick={copy}>
-            Dùng mẫu này
-          </button>
-        </>
-      )}
+              Dùng mẫu này
+            </Button>
+          </>
+        ) : null}
+      </div>
+      {loading ? (
+        <p role="status" className="text-xs text-muted-foreground">
+          Đang tải mẫu kịch bản…
+        </p>
+      ) : null}
+      {versions !== null && versions.length === 0 ? (
+        <p role="status" className="text-xs text-muted-foreground">
+          Chưa có mẫu kịch bản đang công bố.
+        </p>
+      ) : null}
       {replacement !== null ? (
         <div
-          className="timeline-template-confirmation"
+          className="flex flex-col gap-3 rounded-lg bg-hy-warning-bg px-4 py-3"
           role="group"
           aria-label="Xác nhận đổi mẫu kịch bản"
         >
-          <p role="alert">
+          <p role="alert" className="text-xs">
             Thay toàn bộ mốc đang soạn bằng mẫu đã chọn? Các chỉnh sửa chưa lưu sẽ được thay thế.
             Kịch bản đã lưu vẫn được giữ cho đến khi bạn lưu bản mới.
           </p>
-          <div className="timeline-editor-actions">
-            <button
+          <div className="flex flex-wrap gap-2">
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               disabled={disabled || loading}
               onClick={() => setReplacement(null)}
             >
               Giữ bản đang soạn
-            </button>
-            <button type="button" disabled={disabled || loading} onClick={() => apply(replacement)}>
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              disabled={disabled || loading}
+              onClick={() => apply(replacement)}
+            >
               Xác nhận thay các mốc
-            </button>
+            </Button>
           </div>
         </div>
       ) : null}

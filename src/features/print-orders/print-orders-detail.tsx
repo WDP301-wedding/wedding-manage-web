@@ -1,6 +1,4 @@
-import type React from 'react';
-import { ArchiveIcon, CheckIcon, PackageCheckIcon, Trash2Icon } from './icons';
-import { printOrderStyles } from './print-orders.styles';
+import { Button } from '../../components/ui/button';
 import {
   canCancelOrder,
   canMarkHandedOver,
@@ -34,97 +32,69 @@ export function PrintOrdersDetail({
   onOpenCancelModal,
 }: PrintOrdersDetailProps) {
   return (
-    <div className="v0-selected-details" style={printOrderStyles.selectedDetails}>
-      <div className="v0-details-header">
-        <div>
-          <span className="v0-heading-kicker">Chi tiết đơn in ấn được chọn</span>
-          <h2>
-            Đơn in: {selectedOrder.orderId}{' '}
-            <span className="v0-sub-id">(Hợp đồng: {selectedOrder.bookingId})</span>
+    <aside
+      id="print-order-detail"
+      aria-label="Chi tiết đơn in ấn được chọn"
+      className="flex min-w-0 flex-col gap-4 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-right-2"
+    >
+      <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-5 shadow-hy-2">
+        <div className="flex flex-col gap-0.5">
+          <h2 className="text-lg font-semibold [overflow-wrap:anywhere]">
+            Đơn in: {selectedOrder.orderId}
           </h2>
+          <span className="text-xs break-all text-muted-foreground">
+            (Hợp đồng: {selectedOrder.bookingId})
+          </span>
         </div>
-        <div className="v0-details-actions">
+        <div className="flex flex-wrap gap-2">
           {canStartProduction(selectedOrder) ? (
-            <button
-              type="button"
-              className="v0-button v0-button-primary"
-              onClick={onStartProduction}
-              disabled={isSubmitting}
-            >
-              <PackageCheckIcon width={16} height={16} />
-              <span>Bắt đầu sản xuất</span>
-            </button>
+            <Button onClick={onStartProduction} disabled={isSubmitting}>
+              Bắt đầu sản xuất
+            </Button>
           ) : null}
-
           {canMarkReady(selectedOrder) ? (
-            <button
-              type="button"
-              className="v0-button v0-button-primary"
-              onClick={onMarkReady}
-              disabled={isSubmitting}
-            >
-              <CheckIcon width={16} height={16} />
-              <span>Sẵn sàng bàn giao</span>
-            </button>
+            <Button onClick={onMarkReady} disabled={isSubmitting}>
+              Sẵn sàng bàn giao
+            </Button>
           ) : null}
-
           {canMarkHandedOver(selectedOrder) ? (
-            <button
-              type="button"
-              className="v0-button v0-button-primary"
-              onClick={onOpenHandoverModal}
-              disabled={isSubmitting}
-            >
-              <ArchiveIcon width={16} height={16} />
-              <span>Bàn giao đơn in</span>
-            </button>
+            <Button onClick={onOpenHandoverModal} disabled={isSubmitting}>
+              Bàn giao đơn in
+            </Button>
           ) : null}
-
           {canQuoteOrder(selectedOrder) ? (
-            <button
-              type="button"
-              className="v0-button v0-button-secondary"
+            <Button
+              variant="outline"
               onClick={() => onOpenQuoteDrawer(false)}
               disabled={isSubmitting}
             >
-              <span>
-                {selectedOrder.status === 'REQUESTED' ? 'Lập báo giá' : 'Gửi báo giá mới'}
-              </span>
-            </button>
+              {selectedOrder.status === 'REQUESTED' ? 'Lập báo giá' : 'Gửi báo giá mới'}
+            </Button>
           ) : null}
-
           {canProposeReplacement(selectedOrder) ? (
-            <button
-              type="button"
-              className="v0-button v0-button-secondary"
+            <Button
+              variant="outline"
               onClick={() => onOpenQuoteDrawer(true)}
               disabled={isSubmitting}
             >
-              <span>Đề xuất thay thế</span>
-            </button>
+              Đề xuất thay thế
+            </Button>
           ) : null}
-
           {canCancelOrder(selectedOrder) ? (
-            <button
-              type="button"
-              className="v0-button v0-button-danger"
+            <Button
+              variant="ghost"
+              className="text-destructive hover:bg-hy-error-bg"
               onClick={onOpenCancelModal}
               disabled={isSubmitting}
-              title="Hủy đơn in"
             >
-              <Trash2Icon width={16} height={16} />
-              <span>Hủy đơn in</span>
-            </button>
+              Hủy đơn in
+            </Button>
           ) : null}
         </div>
       </div>
-
-      {/* Three Detail Cards */}
-      <div className="v0-detail-grid">
-        <PrintOrderSpecsCard selectedOrder={selectedOrder} />
-        <PrintOrderCommercialCard selectedOrder={selectedOrder} />
-        <PrintOrderTimelineCard selectedOrder={selectedOrder} />
-      </div>
-    </div>
+      <PrintOrderSpecsCard selectedOrder={selectedOrder} />
+      <PrintOrderCommercialCard selectedOrder={selectedOrder} />
+      <PrintOrderTimelineCard selectedOrder={selectedOrder} />
+    </aside>
   );
 }

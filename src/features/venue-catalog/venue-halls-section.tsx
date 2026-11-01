@@ -3,6 +3,7 @@
 import type { CatalogHall } from './catalog-types';
 import { HallForm, SectionHeading, Status } from './catalog-forms';
 
+import { cx } from './catalog-classes';
 export function VenueHallsSection({
   halls,
   hallFilter,
@@ -36,10 +37,10 @@ export function VenueHallsSection({
   );
 
   return (
-    <section className="catalog-section" aria-labelledby="hall-title">
-      <div className="catalog-section-toolbar">
-        <SectionHeading eyebrow={`${halls.length} bản ghi`} title="Danh sách sảnh" />
-        <div className="catalog-toolbar-actions">
+    <section className={cx.section} aria-labelledby="hall-title">
+      <div className={cx.sectionToolbar}>
+        <SectionHeading meta={`${halls.length} bản ghi`} title="Danh sách sảnh" />
+        <div className={cx.toolbarActions}>
           <label>
             Lọc trạng thái sảnh
             <select
@@ -52,7 +53,7 @@ export function VenueHallsSection({
             </select>
           </label>
           <button
-            className="catalog-primary-button"
+            className={cx.primaryButton}
             type="button"
             onClick={() => {
               setEditingHall(null);
@@ -65,10 +66,10 @@ export function VenueHallsSection({
       </div>
 
       {filteredHalls.length === 0 ? (
-        <p className="catalog-empty">Không có sảnh phù hợp bộ lọc hiện tại.</p>
+        <p className={cx.empty}>Không có sảnh phù hợp bộ lọc hiện tại.</p>
       ) : (
-        <div className="catalog-table-scroll">
-          <table className="catalog-table">
+        <div className={cx.tableScroll}>
+          <table className={cx.table}>
             <caption className="sr-only">Danh sách sảnh theo trạng thái</caption>
             <thead>
               <tr>
@@ -83,8 +84,10 @@ export function VenueHallsSection({
               {filteredHalls.map((hall) => (
                 <tr key={hall.id}>
                   <td>
-                    <strong>{hall.name}</strong>
-                    <span>{hall.description || 'Chưa có mô tả'}</span>
+                    <strong className="block font-semibold">{hall.name}</strong>
+                    <span className="block text-xs text-muted-foreground">
+                      {hall.description || 'Chưa có mô tả'}
+                    </span>
                   </td>
                   <td>{hall.maxGuests.toLocaleString('vi-VN')} khách</td>
                   <td>{hall.displayOrder}</td>
@@ -92,8 +95,9 @@ export function VenueHallsSection({
                     <Status lifecycle={hall.lifecycle} />
                   </td>
                   <td>
-                    <div className="catalog-row-actions">
+                    <div className={cx.rowActions}>
                       <button
+                        className={cx.secondaryButton}
                         type="button"
                         onClick={() => {
                           setCreatingHall(false);
@@ -104,6 +108,7 @@ export function VenueHallsSection({
                         Chỉnh sửa
                       </button>
                       <button
+                        className={cx.dangerButton}
                         type="button"
                         disabled={pending}
                         onClick={() => onToggleLifecycle(hall)}

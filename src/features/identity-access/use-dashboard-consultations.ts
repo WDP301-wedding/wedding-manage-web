@@ -92,3 +92,23 @@ export function useDashboardConsultations(consultations: readonly ConsultationRe
     endIndex,
   };
 }
+
+/** Link mở bước Đặt tiệc với thông tin khách đã điền sẵn từ yêu cầu tư vấn đã chuyển đổi. */
+export function consultationBookingHref(item: ConsultationRequestItem): string | null {
+  if (item.status !== 'CONVERTED' || !item.consultationId) return null;
+  const params = new URLSearchParams({
+    consultationId: item.consultationId,
+    consultationRevision: String(item.consultationRevision ?? 1),
+  });
+  if (item.displayName) params.set('displayName', item.displayName);
+  if (item.email) params.set('email', item.email);
+  if (item.preferredDate) params.set('preferredDate', item.preferredDate);
+  if (item.expectedGuests !== undefined && item.expectedGuests !== null) {
+    params.set('expectedGuests', String(item.expectedGuests));
+  }
+  if (item.preferredShift) params.set('preferredShift', item.preferredShift);
+  if (item.preferredHallId) params.set('preferredHall', item.preferredHallId);
+  if (item.preferredMenuVersionId) params.set('preferredMenu', item.preferredMenuVersionId);
+  if (item.message) params.set('note', item.message);
+  return `/bookings?${params.toString()}`;
+}

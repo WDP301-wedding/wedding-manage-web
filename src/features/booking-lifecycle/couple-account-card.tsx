@@ -1,5 +1,7 @@
 'use client';
 
+import { cn } from 'cn';
+import { Button } from '../../components/ui/button';
 import { ActivationStatus } from './activation-status';
 import type { InviteLogEntry } from './booking-helpers';
 
@@ -13,6 +15,12 @@ export interface CoupleAccountCardProps {
   onClearLogs: () => void;
   hideIfActivated?: boolean;
 }
+
+const logTone = {
+  success: 'bg-hy-success-bg text-hy-success',
+  error: 'bg-hy-error-bg text-hy-error',
+  pending: 'bg-hy-warning-bg text-hy-warning',
+} as const;
 
 export function CoupleAccountCard({
   consultationId,
@@ -39,164 +47,63 @@ export function CoupleAccountCard({
   return (
     <article
       id="couple-account-card"
-      style={{
-        backgroundColor: '#ffffff',
-        border: '1px solid var(--hy-outline, #eadfd6)',
-        borderRadius: '14px',
-        padding: '1.35rem',
-        marginBottom: '1.5rem',
-        boxShadow: '0 2px 12px rgba(122, 31, 61, 0.04)',
-      }}
+      data-ui-v3
+      className="mb-6 flex flex-col gap-4 rounded-xl border border-border bg-card p-6 shadow-hy-1"
     >
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '0.85rem',
-          marginBottom: inviteLogs.length > 0 ? '0.85rem' : 0,
-        }}
-      >
-        <div>
-          <h3
-            style={{
-              margin: '0 0 0.35rem',
-              fontSize: '1rem',
-              fontWeight: 700,
-              fontFamily: 'var(--font-display)',
-              lineHeight: 1.35,
-              color: 'var(--hy-wine, #7a1f3d)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-            }}
-          >
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex min-w-0 flex-[1_1_320px] flex-col gap-1">
+          <h3 className="text-base font-semibold text-primary">
             Tài khoản &amp; Quyền truy cập hồ sơ tiệc
           </h3>
-          <p
-            style={{
-              margin: 0,
-              fontSize: '0.84rem',
-              lineHeight: 1.45,
-              color: 'var(--hy-ink-muted, #6e5d63)',
-              fontFamily: 'var(--font-body)',
-            }}
-          >
+          <p className="text-xs text-muted-foreground">
             Mỗi tiệc có quyền truy cập riêng. Khách đã có tài khoản nhận lời mời vào tiệc mới bằng
             tài khoản hiện có; khách mới thiết lập tài khoản khi nhận lời mời. Quyền sử dụng các
             chức năng vẫn theo tiến độ của từng tiệc.
             {email ? (
               <>
                 {' '}
-                · Email: <span className="hy-couple-email-pill">{email}</span>
+                · Email:{' '}
+                <span className="rounded-full bg-secondary px-2 py-0.5 font-medium text-foreground">
+                  {email}
+                </span>
               </>
             ) : null}
           </p>
         </div>
         {canInvite ? (
-          <button
-            type="button"
-            disabled={pending}
-            onClick={onInvite}
-            className="hy-action-btn-primary"
-            style={{
-              padding: '0.55rem 1.15rem',
-            }}
-          >
+          <Button type="button" disabled={pending} onClick={onInvite}>
             <span>
               {inviteLogs.some((l) => l.type === 'success')
                 ? 'Gửi lại lời mời truy cập'
                 : 'Gửi lời mời cộng tác'}
             </span>
-          </button>
+          </Button>
         ) : null}
       </div>
 
       {inviteLogs.length > 0 ? (
-        <div
-          style={{
-            marginTop: '0.85rem',
-            padding: '0.85rem 1rem',
-            backgroundColor: 'var(--hy-surface-warm, #fbf4ee)',
-            border: '1px solid var(--hy-outline, #eadfd6)',
-            borderRadius: '10px',
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: '0.6rem',
-            }}
-          >
-            <span
-              style={{
-                fontSize: '0.75rem',
-                fontWeight: 700,
-                color: 'var(--hy-ink, #2b1d22)',
-                fontFamily: 'var(--font-body)',
-              }}
-            >
-              Nhật ký gửi lời mời
-            </span>
-            <button
+        <div className="flex flex-col gap-2 rounded-lg bg-muted p-4">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs font-semibold">Nhật ký gửi lời mời</span>
+            <Button
               type="button"
+              variant="link"
+              size="xs"
+              className="text-muted-foreground"
               onClick={onClearLogs}
-              style={{
-                background: 'none',
-                border: 'none',
-                fontSize: '0.74rem',
-                color: 'var(--hy-ink-muted, #6e5d63)',
-                cursor: 'pointer',
-                padding: '2px 6px',
-                textDecoration: 'underline',
-                fontFamily: 'var(--font-body)',
-              }}
             >
               Xóa log
-            </button>
+            </Button>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
-            {inviteLogs.map((item) => (
-              <div
-                key={item.id}
-                style={{
-                  padding: '0.5rem 0.75rem',
-                  borderRadius: '6px',
-                  fontSize: '0.8rem',
-                  lineHeight: '1.4',
-                  fontFamily: 'var(--font-body)',
-                  backgroundColor:
-                    item.type === 'success'
-                      ? '#f0fdf4'
-                      : item.type === 'error'
-                        ? '#fef2f2'
-                        : '#fffbeb',
-                  border: `1px solid ${
-                    item.type === 'success'
-                      ? '#bbf7d0'
-                      : item.type === 'error'
-                        ? '#fecaca'
-                        : '#fde68a'
-                  }`,
-                  color:
-                    item.type === 'success'
-                      ? '#166534'
-                      : item.type === 'error'
-                        ? '#991b1b'
-                        : '#92400e',
-                }}
-              >
-                <span>[{item.time}] </span>
-                <span>{item.message}</span>
-                {item.invitationId && item.invitationId !== 'Đã phát hành (ISSUED)' ? (
-                  <span style={{ marginLeft: '6px', opacity: 0.8 }}>(ID: {item.invitationId})</span>
-                ) : null}
-              </div>
-            ))}
-          </div>
+          {inviteLogs.map((item) => (
+            <div key={item.id} className={cn('rounded-lg px-3 py-2 text-xs', logTone[item.type])}>
+              <span className="tabular-nums">[{item.time}] </span>
+              <span>{item.message}</span>
+              {item.invitationId && item.invitationId !== 'Đã phát hành (ISSUED)' ? (
+                <span className="ml-1.5 opacity-80">(ID: {item.invitationId})</span>
+              ) : null}
+            </div>
+          ))}
         </div>
       ) : null}
     </article>

@@ -247,7 +247,9 @@ describe('Management booking timeline, cancellation and access', () => {
     async (phase) => {
       const gateway = fakeGateway();
       await open(gateway, { ...proposal, phase });
-      expect(screen.getByRole('link', { name: /Mở thanh toán & Thu cọc tiệc này/ })).toBeInTheDocument();
+      expect(
+        screen.getByRole('link', { name: /Mở thanh toán & Thu cọc tiệc này/ }),
+      ).toBeInTheDocument();
     },
   );
 

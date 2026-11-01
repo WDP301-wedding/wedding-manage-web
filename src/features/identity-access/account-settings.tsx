@@ -5,6 +5,11 @@ import { ApiClientError } from '../../lib/api/client';
 import { createAccountGateway, type Profile } from './account-api';
 import type { ManagementIdentitySession } from './session';
 import { notify } from '../../design-system/notifications';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+
+const formCardClass = 'flex flex-col gap-4 rounded-xl border border-border bg-card p-6 shadow-hy-1';
+const fieldLabelClass = 'flex flex-col gap-1 text-xs font-semibold';
 
 const gateway = createAccountGateway();
 function waitLabel(seconds: number) {
@@ -22,7 +27,6 @@ export function AccountSettings({
   const [profile, setProfile] = useState<Profile | null>(null);
   const [name, setName] = useState('');
   const [pending, setPending] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [reload, setReload] = useState(0);
   const [challenge, setChallenge] = useState<OtpChallenge | null>(null);
@@ -37,7 +41,6 @@ export function AccountSettings({
     const value = await session.authorize((token) => gateway.requestPasswordChange(token, current));
     setChallenge(value);
     setRemaining(value.resendAfterSeconds);
-    setNotice('Mã OTP đã được gửi vào email của bạn. Mã có hiệu lực 10 phút.');
   }
   function requestFailed(caught: unknown) {
     let msg = 'Chưa gửi được mã xác nhận. Hãy kiểm tra kết nối rồi thử lại.';
@@ -67,7 +70,6 @@ export function AccountSettings({
     if (typeof current !== 'string') return;
     setPending(true);
     setError(null);
-    setNotice(null);
     try {
       await sendCode(current);
     } catch (caught) {
@@ -102,7 +104,6 @@ export function AccountSettings({
     if (pending || profile === null) return;
     setPending(true);
     setError(null);
-    setNotice(null);
     try {
       const next = await session.authorize((token) =>
         gateway.updateProfile(token, name.trim(), profile.revision),
@@ -134,7 +135,6 @@ export function AccountSettings({
     }
     setPending(true);
     setError(null);
-    setNotice(null);
     try {
       if (!challenge) {
         await sendCode(current);
@@ -193,28 +193,44 @@ export function AccountSettings({
     }
   }
   return (
-    <section className="operations-account-settings" aria-label="Cài đặt tài khoản">
-      <div className="operations-account-heading">
-        <div>
-          <span className="section-kicker">Thông tin của bạn</span>
-          <h2>Hồ sơ và bảo mật</h2>
+    <section className="flex flex-col gap-4" aria-label="Cài đặt tài khoản">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="flex flex-col gap-0.5">
+          <span className="text-xs text-muted-foreground">Thông tin của bạn</span>
+          <h2 className="text-xl font-semibold">Hồ sơ và bảo mật</h2>
         </div>
-        <button type="button" disabled={pending} onClick={() => setReload((value) => value + 1)}>
+        <Button
+          variant="outline"
+          size="sm"
+          type="button"
+          disabled={pending}
+          onClick={() => setReload((value) => value + 1)}
+        >
           Tải lại hồ sơ
-        </button>
+        </Button>
       </div>
-      {!profile && !error ? <p role="status">Đang tải hồ sơ…</p> : null}
+      {!profile && !error ? (
+        <p className="text-muted-foreground" role="status">
+          Đang tải hồ sơ…
+        </p>
+      ) : null}
       {profile ? (
-        <div className="operations-account-grid">
-          <form onSubmit={(event) => void save(event)}>
-            <h3>Hồ sơ</h3>
-            <label>
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] items-start gap-6">
+          <form className={formCardClass} onSubmit={(event) => void save(event)}>
+            <h3 className="text-lg font-semibold">Hồ sơ</h3>
+            <label className={fieldLabelClass}>
               Email
-              <input value={profile.displayEmail} readOnly autoComplete="email" />
+              <Input
+                className="bg-secondary font-normal text-muted-foreground"
+                value={profile.displayEmail}
+                readOnly
+                autoComplete="email"
+              />
             </label>
-            <label>
+            <label className={fieldLabelClass}>
               Tên hiển thị
-              <input
+              <Input
+                className="font-normal"
                 name="displayName"
                 value={name}
                 onChange={(event) => setName(event.target.value)}
@@ -223,15 +239,20 @@ export function AccountSettings({
                 autoComplete="name"
               />
             </label>
-            <button className="primary-button" disabled={pending} type="submit">
+            <Button className="self-start" disabled={pending} type="submit">
               Lưu thay đổi
-            </button>
+            </Button>
           </form>
-          <form ref={passwordForm} onSubmit={(event) => void change(event)}>
-            <h3>Đổi mật khẩu</h3>
-            <label>
+          <form
+            className={formCardClass}
+            ref={passwordForm}
+            onSubmit={(event) => void change(event)}
+          >
+            <h3 className="text-lg font-semibold">Đổi mật khẩu</h3>
+            <label className={fieldLabelClass}>
               Mật khẩu hiện tại
-              <input
+              <Input
+                className="font-normal"
                 name="currentPassword"
                 required
                 type="password"
@@ -240,9 +261,10 @@ export function AccountSettings({
                 readOnly={challenge !== null}
               />
             </label>
-            <label>
+            <label className={fieldLabelClass}>
               Mật khẩu mới
-              <input
+              <Input
+                className="font-normal"
                 name="newPassword"
                 required
                 type="password"
@@ -250,9 +272,10 @@ export function AccountSettings({
                 autoComplete="new-password"
               />
             </label>
-            <label>
+            <label className={fieldLabelClass}>
               Xác nhận mật khẩu mới
-              <input
+              <Input
+                className="font-normal"
                 name="confirmation"
                 required
                 type="password"
@@ -261,9 +284,10 @@ export function AccountSettings({
               />
             </label>
             {challenge && (
-              <label>
+              <label className={fieldLabelClass}>
                 Mã OTP
-                <input
+                <Input
+                  className="font-normal tabular-nums"
                   key={challenge.challengeId}
                   name="code"
                   type="text"
@@ -276,29 +300,28 @@ export function AccountSettings({
                 />
               </label>
             )}
-            <p className="operations-account-help">
+            <p className="text-xs text-muted-foreground">
               Mật khẩu tối đa 128 ký tự. Sau khi đổi, bạn cần đăng nhập lại trên các thiết bị.
             </p>
-            <button
-              className="primary-button"
-              disabled={pending || (!challenge && remaining > 0)}
-              type="submit"
-            >
-              {challenge
-                ? 'Xác nhận và cập nhật mật khẩu'
-                : remaining > 0
-                  ? `Thử lại sau ${waitLabel(remaining)}`
-                  : 'Gửi mã OTP'}
-            </button>
-            {challenge && (
-              <button
-                type="button"
-                disabled={pending || remaining > 0}
-                onClick={() => void resend()}
-              >
-                {remaining > 0 ? `Gửi lại sau ${remaining}s` : 'Gửi lại mã OTP'}
-              </button>
-            )}
+            <div className="flex flex-wrap gap-2">
+              <Button disabled={pending || (!challenge && remaining > 0)} type="submit">
+                {challenge
+                  ? 'Xác nhận và cập nhật mật khẩu'
+                  : remaining > 0
+                    ? `Thử lại sau ${waitLabel(remaining)}`
+                    : 'Gửi mã OTP'}
+              </Button>
+              {challenge && (
+                <Button
+                  variant="outline"
+                  type="button"
+                  disabled={pending || remaining > 0}
+                  onClick={() => void resend()}
+                >
+                  {remaining > 0 ? `Gửi lại sau ${remaining}s` : 'Gửi lại mã OTP'}
+                </Button>
+              )}
+            </div>
           </form>
         </div>
       ) : null}

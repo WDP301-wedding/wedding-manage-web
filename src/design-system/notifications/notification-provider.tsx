@@ -17,7 +17,6 @@ import type {
 } from './notification-types';
 import { notify } from './notification-service';
 import { NotificationToast } from './notification-toast';
-import styles from './notification.module.css';
 
 const NotificationContext = createContext<NotificationContextValue | null>(null);
 
@@ -93,7 +92,11 @@ export function NotificationProvider({ children }: Readonly<{ children: ReactNod
     <NotificationContext.Provider value={contextValue}>
       {children}
       {notifications.length > 0 && (
-        <div className={styles.container} aria-label="Khu vực thông báo hệ thống">
+        <div
+          data-ui-v3
+          className="pointer-events-none fixed top-4 right-4 left-4 z-[3000] flex flex-col gap-2 sm:left-auto sm:w-[420px]"
+          aria-label="Khu vực thông báo hệ thống"
+        >
           {notifications.map((item) => (
             <NotificationToast key={item.id} item={item} onDismiss={dismiss} />
           ))}

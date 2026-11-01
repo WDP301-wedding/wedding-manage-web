@@ -4,6 +4,8 @@ import { type FormEvent, useMemo, useState } from 'react';
 import type { CatalogGateway, CatalogLayout, LayoutTableWrite } from './catalog-api';
 import { CANVAS_SIZE, TableEditor, TableNumber } from './layout-table-editor';
 
+import { cx } from './catalog-classes';
+import { cn } from 'cn';
 export { CANVAS_SIZE, TableEditor, TableNumber };
 
 export type LayoutVersion = CatalogLayout['versions'][number];
@@ -52,11 +54,11 @@ export function validateLayout(
 
 export function LayoutCanvas({ tables }: Readonly<{ tables: readonly LayoutTableWrite[] }>) {
   return (
-    <div className="layout-canvas" role="img" aria-label="Xem trước bố trí bàn theo tỷ lệ canvas">
+    <div className={cx.layoutCanvas} role="img" aria-label="Xem trước bố trí bàn theo tỷ lệ canvas">
       {tables.map((table) => (
         <span
           key={table.tableId}
-          className={`layout-canvas-table ${table.shape === 'ROUND' ? 'is-round' : ''}`}
+          className={cn(cx.layoutCanvasTable, table.shape === 'ROUND' && 'rounded-full')}
           style={{
             left: `${(table.x / CANVAS_SIZE) * 100}%`,
             top: `${(table.y / CANVAS_SIZE) * 100}%`,
@@ -153,16 +155,16 @@ export function LayoutDraftEditor({
 
   return (
     <form
-      className="catalog-draft-form layout-draft"
+      className={cn(cx.draftForm, cx.layoutDraft)}
       aria-label={`Bản nháp ${version.name}`}
       onSubmit={submit}
     >
-      <div className="layout-draft-heading">
+      <div className={cx.layoutDraftHeading}>
         <div>
-          <span className="catalog-version-state">Bản nháp · revision {version.revision}</span>
+          <span className={cx.versionState}>Bản nháp · revision {version.revision}</span>
           <h4>Biên tập hình học bằng số</h4>
         </div>
-        <div className="layout-metrics" aria-label="Ràng buộc bố trí">
+        <div className={cx.layoutMetrics} aria-label="Ràng buộc bố trí">
           <span>Canvas 10.000 × 10.000</span>
           <span>
             {totalSeats.toLocaleString('vi-VN')} / {hallMaximum.toLocaleString('vi-VN')} ghế
@@ -172,8 +174,8 @@ export function LayoutDraftEditor({
           </span>
         </div>
       </div>
-      <div className="layout-meta-grid">
-        <label className="catalog-field" htmlFor={`layout-name-${version.id}`}>
+      <div className={cx.layoutMetaGrid}>
+        <label className={cx.field} htmlFor={`layout-name-${version.id}`}>
           <span>Tên bố trí bản nháp</span>
           <input
             id={`layout-name-${version.id}`}
@@ -182,7 +184,7 @@ export function LayoutDraftEditor({
             required
           />
         </label>
-        <label className="catalog-field" htmlFor={`layout-description-${version.id}`}>
+        <label className={cx.field} htmlFor={`layout-description-${version.id}`}>
           <span>Mô tả bản nháp</span>
           <input
             id={`layout-description-${version.id}`}
@@ -190,7 +192,7 @@ export function LayoutDraftEditor({
             defaultValue={version.description}
           />
         </label>
-        <label className="catalog-field">
+        <label className={cx.field}>
           <span>Khách tối thiểu</span>
           <input
             name="minGuests"
@@ -201,7 +203,7 @@ export function LayoutDraftEditor({
             required
           />
         </label>
-        <label className="catalog-field">
+        <label className={cx.field}>
           <span>Khách tối đa</span>
           <input
             name="maxGuests"
@@ -214,7 +216,7 @@ export function LayoutDraftEditor({
         </label>
       </div>
       <LayoutCanvas tables={tables} />
-      <div className="layout-table-list">
+      <div className={cx.layoutTableList}>
         {tables.map((table, index) => (
           <TableEditor
             key={table.tableId}
@@ -235,20 +237,15 @@ export function LayoutDraftEditor({
           />
         ))}
       </div>
-      <div className="catalog-form-actions">
-        <button
-          className="catalog-secondary-button"
-          type="button"
-          disabled={pending}
-          onClick={addTable}
-        >
+      <div className={cx.formActions}>
+        <button className={cx.secondaryButton} type="button" disabled={pending} onClick={addTable}>
           Thêm bàn với UUID mới
         </button>
-        <button className="catalog-secondary-button" type="submit" disabled={pending}>
+        <button className={cx.secondaryButton} type="submit" disabled={pending}>
           Lưu bố trí nháp
         </button>
         <button
-          className="catalog-primary-button"
+          className={cx.primaryButton}
           type="button"
           disabled={pending}
           onClick={() =>

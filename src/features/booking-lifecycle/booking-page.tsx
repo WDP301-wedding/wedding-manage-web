@@ -9,6 +9,7 @@ import { createManagementBookingGateway } from './booking-api';
 import { type BookingPrefill, type InviteLogEntry, PageState } from './booking-helpers';
 import { ManagementBookingWorkspace } from './booking-workspace';
 import { notify } from '../../design-system/notifications';
+import { buttonVariants } from '../../components/ui/button';
 
 // Re-export types and workspace component for full backward compatibility
 export type { BookingPrefill, InviteLogEntry };
@@ -44,12 +45,12 @@ export function ManagementBookingPage({
   else if (access !== 'manager') {
     content = (
       <PageState title={access === 'anonymous' ? 'Cần đăng nhập' : 'Không có quyền truy cập'}>
-        <p>
+        <p className="text-muted-foreground">
           {access === 'anonymous'
             ? 'Đăng nhập bằng tài khoản Quản lý để xử lý hồ sơ đặt tiệc.'
             : 'Tài khoản hiện tại không có quyền quản lý đặt tiệc.'}
         </p>
-        <Link className="booking-primary-link" href="/">
+        <Link className={buttonVariants()} href="/">
           Về trang đăng nhập
         </Link>
       </PageState>

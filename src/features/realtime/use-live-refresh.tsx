@@ -77,11 +77,3 @@ export function useLiveRefresh(
   });
   return { waiting, refresh: queue.refresh, schedule: queue.schedule };
 }
-
-export function LiveUpdateNotice({ waiting }: Readonly<{ waiting: boolean }>) {
-  return waiting ? (
-    <p role="status">
-      Có cập nhật mới. Dữ liệu sẽ được đồng bộ sau khi bạn hoàn tất hoặc hủy thao tác đang làm.
-    </p>
-  ) : null;
-}

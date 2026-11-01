@@ -1,15 +1,26 @@
 'use client';
 
 import { useState } from 'react';
+import { ChevronRight, Download } from 'lucide-react';
 import { formatVnd } from '../../lib/formatters';
 import { formatDate } from './booking-helpers';
-import { ContractLinesTable } from './contract-lines-table';
-import { contractStyles } from './contract.styles';
+import { ApprovalStatus, ContractLinesTable } from './contract-lines-table';
 import { ContractDraftComposer } from './contract-draft-composer';
 import type { ProposalView } from './booking-api';
 import type { useContractPanel } from './use-contract-panel';
 import { useAppendixPanel } from './use-appendix-panel';
 import { AppendixPanel } from './appendix-panel';
+import { Badge } from '../../components/ui/badge';
+import { Button } from '../../components/ui/button';
+import { Textarea } from '../../components/ui/textarea';
+
+const revisionStates = {
+  APPROVED: { tone: 'success', label: 'Đã duyệt 2 bên' },
+  AWAITING_APPROVAL: { tone: 'info', label: 'Đang chờ duyệt' },
+  SUPERSEDED: { tone: 'neutral', label: 'Đã thay thế' },
+} as const;
+const subTabClass =
+  'inline-flex h-9 items-center gap-2 rounded-md px-3 text-xs font-semibold text-muted-foreground transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none aria-selected:bg-card aria-selected:text-foreground aria-selected:shadow-hy-1';
 
 export function ContractPanel({
   panelState,
@@ -49,83 +60,50 @@ export function ContractPanel({
     disabled || loading || Boolean(error) || data?.bookingRevision !== bookingRevision;
 
   const appendixState = useAppendixPanel({ bookingId, bookingRevision, onRefresh });
+  const revisionState =
+    currentRevision?.state && currentRevision.state in revisionStates
+      ? revisionStates[currentRevision.state as keyof typeof revisionStates]
+      : { tone: 'neutral' as const, label: 'Bản nháp' };
 
   return (
-    <article className="proposal-summary" style={contractStyles.panelArticle}>
-      <div style={contractStyles.header}>
-        <div>
-          <span className="section-kicker">Pháp lý &amp; Cam kết</span>
-          <h3 style={contractStyles.heading}>Hồ sơ hợp đồng &amp; Phụ lục</h3>
+    <article className="flex flex-col gap-5 rounded-xl border border-border bg-card p-6 shadow-hy-1">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="flex flex-col gap-0.5">
+          <span className="text-xs text-muted-foreground">Pháp lý &amp; Cam kết</span>
+          <h3 className="text-lg font-semibold">Hồ sơ hợp đồng &amp; Phụ lục</h3>
         </div>
         {subTab === 'contract' && currentRevision ? (
-          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-            <span style={contractStyles.statusBadge(currentRevision.state)}>
-              {currentRevision.state === 'APPROVED'
-                ? 'Đã duyệt 2 bên'
-                : currentRevision.state === 'AWAITING_APPROVAL'
-                  ? 'Đang chờ duyệt'
-                  : currentRevision.state === 'SUPERSEDED'
-                    ? 'Đã thay thế'
-                    : 'Bản nháp (Draft)'}
-            </span>
-            <small style={{ color: 'var(--hy-text-muted, #6e5d63)' }}>
-              REV {currentRevision.revisionNumber}
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant={revisionState.tone}>{revisionState.label}</Badge>
+            <small className="text-2xs text-muted-foreground">
+              Phiên bản {currentRevision.revisionNumber}
             </small>
-            <button
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               disabled={disabled || downloadingPdf}
               onClick={() => void handleDownloadPdf()}
-              style={{
-                marginLeft: '0.25rem',
-                padding: '0.3rem 0.75rem',
-                borderRadius: 6,
-                border: '1px solid var(--hy-outline, #eadfd6)',
-                background: '#ffffff',
-                color: 'var(--hy-wine, #7a1f3d)',
-                cursor: disabled || downloadingPdf ? 'not-allowed' : 'pointer',
-                fontWeight: 600,
-                fontSize: '0.8rem',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '5px',
-                transition: 'all 0.15s ease',
-              }}
               title="Tải tệp PDF hợp đồng"
             >
+              <Download aria-hidden />
               <span>{downloadingPdf ? 'Đang tải PDF…' : 'Tải PDF'}</span>
-            </button>
+            </Button>
           </div>
         ) : null}
       </div>
 
-      {/* Phân hệ Tab: Hợp đồng chính vs Phụ lục */}
       <div
         role="tablist"
         aria-label="Phân hệ hợp đồng và phụ lục"
-        style={{
-          display: 'flex',
-          gap: '0.5rem',
-          marginBottom: '1.25rem',
-          borderBottom: '1px solid var(--hy-outline, #eadfd6)',
-          paddingBottom: '0.5rem',
-          flexWrap: 'wrap',
-        }}
+        className="flex flex-wrap gap-1 self-start rounded-lg bg-secondary p-1"
       >
         <button
           type="button"
           role="tab"
           aria-selected={subTab === 'contract'}
           onClick={() => setSubTab('contract')}
-          style={{
-            padding: '0.45rem 1rem',
-            borderRadius: 6,
-            fontSize: '0.875rem',
-            fontWeight: subTab === 'contract' ? 600 : 500,
-            border: 'none',
-            background: subTab === 'contract' ? 'var(--hy-wine, #7a1f3d)' : 'transparent',
-            color: subTab === 'contract' ? '#ffffff' : 'var(--hy-text, #2b1d22)',
-            cursor: 'pointer',
-          }}
+          className={subTabClass}
         >
           Hợp đồng chính {currentRevision ? `(Bản ${currentRevision.revisionNumber})` : ''}
         </button>
@@ -134,19 +112,7 @@ export function ContractPanel({
           role="tab"
           aria-selected={subTab === 'appendix'}
           onClick={() => setSubTab('appendix')}
-          style={{
-            padding: '0.45rem 1rem',
-            borderRadius: 6,
-            fontSize: '0.875rem',
-            fontWeight: subTab === 'appendix' ? 600 : 500,
-            border: 'none',
-            background: subTab === 'appendix' ? 'var(--hy-wine, #7a1f3d)' : 'transparent',
-            color: subTab === 'appendix' ? '#ffffff' : 'var(--hy-text, #2b1d22)',
-            cursor: 'pointer',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '0.4rem',
-          }}
+          className={subTabClass}
         >
           <span>
             Phụ lục hợp đồng
@@ -155,16 +121,7 @@ export function ContractPanel({
               : ''}
           </span>
           {appendixState.pendingApprovalsCount > 0 ? (
-            <span
-              style={{
-                padding: '2px 7px',
-                borderRadius: 9999,
-                background: subTab === 'appendix' ? '#ffffff' : 'var(--hy-wine, #7a1f3d)',
-                color: subTab === 'appendix' ? 'var(--hy-wine, #7a1f3d)' : '#ffffff',
-                fontSize: '0.75rem',
-                fontWeight: 600,
-              }}
-            >
+            <span className="rounded-full bg-primary px-2 py-0.5 text-2xs font-medium text-primary-foreground">
               {appendixState.pendingApprovalsCount} chờ duyệt
             </span>
           ) : null}
@@ -172,10 +129,15 @@ export function ContractPanel({
       </div>
 
       {error ? (
-        <p role="alert" className="booking-error">
+        <p
+          role="alert"
+          className="flex flex-wrap items-center gap-3 rounded-lg bg-hy-error-bg px-4 py-3 text-xs text-hy-error"
+        >
           {error}
-          <button
+          <Button
             type="button"
+            variant="outline"
+            size="sm"
             disabled={loading}
             onClick={() => {
               void panelState.loadContracts();
@@ -183,32 +145,57 @@ export function ContractPanel({
             }}
           >
             Tải lại hợp đồng
-          </button>
+          </Button>
         </p>
       ) : null}
-      {actionMessage ? <p role="status">{actionMessage}</p> : null}
+      {actionMessage ? (
+        <p role="status" className="rounded-lg bg-hy-info-bg px-4 py-3 text-xs text-hy-info">
+          {actionMessage}
+        </p>
+      ) : null}
       {subTab === 'contract' && data?.customerSelection ? (
-        <section className="booking-selection-summary">
-          <h4>
-            Lựa chọn của khách ·{' '}
-            {data.customerSelection.status === 'SUBMITTED'
-              ? 'Đã gửi, khách không tự sửa'
-              : data.customerSelection.status === 'DRAFT'
-                ? 'Khách đang chọn, chưa gửi'
-                : 'Khách chưa gửi lựa chọn'}
+        <section className="flex flex-col gap-2 rounded-lg bg-muted p-4">
+          <h4 className="flex flex-wrap items-center gap-2 font-semibold">
+            Lựa chọn của khách
+            <Badge
+              variant={
+                data.customerSelection.status === 'SUBMITTED'
+                  ? 'success'
+                  : data.customerSelection.status === 'DRAFT'
+                    ? 'warning'
+                    : 'neutral'
+              }
+            >
+              {data.customerSelection.status === 'SUBMITTED'
+                ? 'Đã gửi, khách không tự sửa'
+                : data.customerSelection.status === 'DRAFT'
+                  ? 'Khách đang chọn, chưa gửi'
+                  : 'Khách chưa gửi lựa chọn'}
+            </Badge>
           </h4>
-          <details>
-            <summary>Xem các hạng mục và số bàn</summary>
-            <ContractLinesTable
-              lines={data.customerSelection.lines}
-              title="Thông tin từ phía khách"
-            />
-            <p>
-              Tổng lựa chọn: <strong>{formatVnd(data.customerSelection.totalVnd)}</strong>
-            </p>
+          <details className="group">
+            <summary className="inline-flex h-9 cursor-pointer list-none items-center gap-1.5 rounded-lg text-xs font-semibold text-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none [&::-webkit-details-marker]:hidden">
+              <ChevronRight
+                aria-hidden
+                className="size-4 transition-transform group-open:rotate-90"
+              />
+              Xem các hạng mục và số bàn
+            </summary>
+            <div className="flex flex-col gap-2 pt-2">
+              <ContractLinesTable
+                lines={data.customerSelection.lines}
+                title="Thông tin từ phía khách"
+              />
+              <p>
+                Tổng lựa chọn:{' '}
+                <strong className="tabular-nums">
+                  {formatVnd(data.customerSelection.totalVnd)}
+                </strong>
+              </p>
+            </div>
           </details>
           {data.customerSelection.status !== 'SUBMITTED' && !currentRevision ? (
-            <p>
+            <p className="text-xs text-muted-foreground">
               Chờ khách lưu nháp và gửi lựa chọn ở Thoả thuận → Hợp đồng. Sau khi gửi, hệ thống mới
               mở lập hợp đồng và điền sẵn toàn bộ các hạng mục.
             </p>
@@ -216,16 +203,19 @@ export function ContractPanel({
         </section>
       ) : null}
       {subTab === 'contract' && data?.capabilities?.canManageDraft && !editing ? (
-        <div className="booking-actions">
-          <button
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
             type="button"
-            className="primary-button"
             disabled={commandsDisabled || !proposal.timeline}
             onClick={() => setEditing(true)}
           >
             {currentRevision ? 'Chỉnh sửa bản hợp đồng' : 'Lập hợp đồng từ lựa chọn khách'}
-          </button>
-          {!proposal.timeline ? <p>Cần lưu kịch bản tiệc trước khi lập hợp đồng.</p> : null}
+          </Button>
+          {!proposal.timeline ? (
+            <p className="text-xs text-muted-foreground">
+              Cần lưu kịch bản tiệc trước khi lập hợp đồng.
+            </p>
+          ) : null}
         </div>
       ) : null}
       {subTab === 'contract' && editing && data?.capabilities?.canManageDraft ? (
@@ -247,7 +237,7 @@ export function ContractPanel({
               quantity: menu.tableCount,
               name: menu.name,
               description: menu.description,
-              unit: 'table',
+              unit: 'bàn',
               unitPriceVnd: menu.priceVndPerTable,
               lineTotalVnd: menu.lineTotalVnd,
             }))
@@ -276,112 +266,72 @@ export function ContractPanel({
       ) : (
         <>
           {appendixState.pendingApprovalsCount > 0 ? (
-            <div
-              style={{
-                background: 'var(--hy-status-warning-bg, #fcefd6)',
-                border: '1px solid var(--hy-status-warning-border, #fde68a)',
-                borderRadius: 6,
-                padding: '0.6rem 0.85rem',
-                marginBottom: '1rem',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                flexWrap: 'wrap',
-                gap: '0.5rem',
-              }}
-            >
-              <span
-                style={{
-                  fontSize: '0.85rem',
-                  color: 'var(--hy-status-warning, #8a5300)',
-                  fontWeight: 500,
-                }}
-              >
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-hy-warning-bg px-4 py-3">
+              <span className="text-xs text-hy-warning">
                 Đang có {appendixState.pendingApprovalsCount} phụ lục hợp đồng chờ Quản lý phê
                 duyệt.
               </span>
-              <button
+              <Button
                 type="button"
+                variant="link"
+                size="sm"
+                className="h-auto px-0"
                 onClick={() => setSubTab('appendix')}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  color: 'var(--hy-wine, #7a1f3d)',
-                  fontWeight: 600,
-                  fontSize: '0.85rem',
-                  cursor: 'pointer',
-                  padding: 0,
-                  textDecoration: 'underline',
-                }}
               >
-                Xem và phê duyệt phụ lục →
-              </button>
+                Xem và phê duyệt phụ lục
+                <ChevronRight aria-hidden />
+              </Button>
             </div>
           ) : null}
 
           {loading && !currentRevision ? (
-            <p style={{ color: 'var(--hy-text-muted, #6e5d63)', fontSize: '0.875rem' }}>
-              Đang tải hợp đồng…
-            </p>
+            <p className="text-muted-foreground">Đang tải hợp đồng…</p>
           ) : !currentRevision ? (
-            <div style={contractStyles.emptyBox}>
-              <p style={{ color: 'var(--hy-text-muted, #6e5d63)', margin: 0 }}>
-                Chưa có hợp đồng. Quản lý lập hợp đồng từ đề xuất, kiểm tra các khoản phí rồi gửi
-                khách duyệt.
-              </p>
-            </div>
+            <p className="rounded-lg border border-dashed border-input p-4 text-muted-foreground">
+              Chưa có hợp đồng. Quản lý lập hợp đồng từ đề xuất, kiểm tra các khoản phí rồi gửi
+              khách duyệt.
+            </p>
           ) : (
-            <div>
-              <div style={contractStyles.metaGrid}>
-                <div>
-                  <small style={contractStyles.metaSmall}>Cô dâu &amp; Chú rể</small>
-                  <strong>
+            <div className="flex flex-col gap-5">
+              <dl className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-x-6 gap-y-3 rounded-lg border border-border p-4">
+                <div className="flex flex-col gap-0.5">
+                  <dt className="text-xs text-muted-foreground">Cô dâu &amp; Chú rể</dt>
+                  <dd className="font-semibold">
                     {currentRevision.document.brideName || '—'} &amp;{' '}
                     {currentRevision.document.groomName || '—'}
-                  </strong>
+                  </dd>
                 </div>
-                <div>
-                  <small style={contractStyles.metaSmall}>Sảnh &amp; Ngày tiệc</small>
-                  <strong>
+                <div className="flex flex-col gap-0.5">
+                  <dt className="text-xs text-muted-foreground">Sảnh &amp; Ngày tiệc</dt>
+                  <dd className="font-semibold">
                     {currentRevision.document.hallName} (
                     {formatDate(currentRevision.document.eventDate)})
-                  </strong>
+                  </dd>
                 </div>
-                <div>
-                  <small style={contractStyles.metaSmall}>Tổng giá trị hợp đồng</small>
-                  <strong style={{ color: 'var(--hy-wine, #7a1f3d)' }}>
+                <div className="flex flex-col gap-0.5">
+                  <dt className="text-xs text-muted-foreground">Tổng giá trị hợp đồng</dt>
+                  <dd className="text-lg font-bold text-primary tabular-nums">
                     {formatVnd(currentRevision.document.contractTotalVnd)}
-                  </strong>
+                  </dd>
                 </div>
-                <div>
-                  <small style={contractStyles.metaSmall}>Tiền cọc cam kết (30%)</small>
-                  <strong style={{ color: 'var(--hy-wine-bold, #5c1430)' }}>
+                <div className="flex flex-col gap-0.5">
+                  <dt className="text-xs text-muted-foreground">Tiền cọc cam kết (30%)</dt>
+                  <dd className="text-lg font-bold tabular-nums">
                     {formatVnd(currentRevision.document.depositAmountVnd)}
-                  </strong>
+                  </dd>
                 </div>
-              </div>
+              </dl>
 
               <ContractLinesTable lines={currentRevision.document.lines} />
 
-              {/* Trạng thái phê duyệt 2 bên */}
-              <div style={contractStyles.approvalStatusBox}>
-                <div>
-                  <span>Quản lý (Manager): </span>
-                  <strong style={contractStyles.approvalStatusText(Boolean(managerApproved))}>
-                    {managerApproved ? '✓ Đã phê duyệt' : 'Chưa duyệt'}
-                  </strong>
-                </div>
-                <div>
-                  <span>Cặp đôi (Couple): </span>
-                  <strong style={contractStyles.approvalStatusText(Boolean(coupleApproved))}>
-                    {coupleApproved ? '✓ Đã phê duyệt' : 'Chưa duyệt'}
-                  </strong>
-                </div>
-              </div>
+              <ApprovalStatus
+                managerApproved={Boolean(managerApproved)}
+                coupleApproved={Boolean(coupleApproved)}
+              />
 
               {data?.capabilities?.canWithdrawApproval ? (
                 <form
-                  className="booking-form"
+                  className="flex flex-col gap-2"
                   onSubmit={(event) => {
                     event.preventDefault();
                     const reason = String(
@@ -390,54 +340,52 @@ export function ContractPanel({
                     if (reason) void panelState.handleWithdraw(reason);
                   }}
                 >
-                  <label>
+                  <label className="flex flex-col gap-1 text-xs font-semibold">
                     Lý do cần thay đổi sau khi đã duyệt
-                    <textarea name="reason" required maxLength={500} />
+                    <Textarea className="font-normal" name="reason" required maxLength={500} />
                   </label>
-                  <button
-                    className="primary-button booking-secondary"
+                  <Button
+                    variant="outline"
+                    className="self-start"
                     disabled={commandsDisabled}
                     type="submit"
                   >
                     Rút duyệt để chuẩn bị bản mới
-                  </button>
+                  </Button>
                 </form>
               ) : null}
-              {/* Các nút hành động */}
-              <div style={contractStyles.actionsRow}>
-                <button
+              <div className="flex flex-wrap justify-end gap-2 border-t border-border pt-4">
+                <Button
                   type="button"
+                  variant="outline"
                   disabled={disabled || downloadingPdf}
                   onClick={() => void handleDownloadPdf()}
-                  style={contractStyles.downloadButton(disabled || downloadingPdf)}
                 >
                   {downloadingPdf ? 'Đang tải PDF…' : 'Tải PDF hợp đồng'}
-                </button>
+                </Button>
 
                 {currentRevision.state === 'DRAFT' &&
                 data?.capabilities?.canManageDraft &&
                 !editing ? (
-                  <button
+                  <Button
                     type="button"
                     disabled={commandsDisabled}
                     onClick={() => void handleSubmitDraft()}
-                    style={contractStyles.submitDraftButton(disabled || loading)}
                   >
                     Gửi duyệt hợp đồng
-                  </button>
+                  </Button>
                 ) : null}
 
                 {currentRevision.state === 'AWAITING_APPROVAL' &&
                 !managerApproved &&
                 data?.capabilities?.canApprove ? (
-                  <button
+                  <Button
                     type="button"
                     disabled={commandsDisabled}
                     onClick={() => void handleApprove()}
-                    style={contractStyles.approveButton(disabled || loading)}
                   >
                     Phê duyệt hợp đồng (Quản lý)
-                  </button>
+                  </Button>
                 ) : null}
               </div>
             </div>

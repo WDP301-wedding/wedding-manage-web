@@ -1,6 +1,9 @@
 'use client';
 
 import { DatePicker } from '../../design-system/date-picker';
+import { Badge } from '../../components/ui/badge';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
 import { money } from './booking-helpers';
 import type { BookingSelections } from './booking-api';
 
@@ -21,6 +24,11 @@ export interface BookingCreateFormFieldsProps {
   localAvailability: { checked: boolean; available?: boolean; message?: string };
   onCheckAvailability: (form: HTMLFormElement) => void;
 }
+
+const fieldLabelClass = 'flex flex-col gap-1 text-xs font-semibold';
+const selectClass =
+  'h-11 w-full min-w-0 rounded-lg border border-input bg-card px-3 text-sm font-normal text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none';
+const sectionClass = 'flex flex-col gap-3 border-t border-border pt-5';
 
 export function BookingCreateFormFields({
   consultation,
@@ -46,23 +54,11 @@ export function BookingCreateFormFields({
   };
 
   return (
-    <div className="booking-form-sections">
+    <div className="flex min-w-0 flex-[999_1_520px] flex-col gap-5 rounded-xl border border-border bg-card p-6 shadow-hy-1">
       {/* Consultation Code Box (hidden visually, preserved in DOM for form submission and test automation) */}
-      <div
-        style={{
-          position: 'absolute',
-          width: '1px',
-          height: '1px',
-          padding: 0,
-          margin: '-1px',
-          overflow: 'hidden',
-          clip: 'rect(0, 0, 0, 0)',
-          whiteSpace: 'nowrap',
-          border: 0,
-        }}
-      >
+      <div className="sr-only">
         <label htmlFor="consultation-id-input">Mã hồ sơ tư vấn</label>
-        <input
+        <Input
           id="consultation-id-input"
           key={consultation?.id ?? 'new'}
           name="consultationId"
@@ -70,23 +66,23 @@ export function BookingCreateFormFields({
           required
           defaultValue={consultation?.id ?? ''}
           placeholder="Tự động điền sau khi hoàn thành Bước 01"
-          className="booking-readonly-input"
-        />
-        <input
-          key={`${consultation?.id}:${consultation?.revision}`}
-          name="expectedRevision"
-          type="hidden"
-          value={consultation?.revision ?? 1}
+          className="border-border bg-secondary font-mono text-xs text-muted-foreground"
         />
       </div>
+      <input
+        key={`${consultation?.id}:${consultation?.revision}`}
+        name="expectedRevision"
+        type="hidden"
+        value={consultation?.revision ?? 1}
+      />
 
-      {/* Section 1: Venue & Time */}
-      <div className="booking-section-card">
-        <h3 className="booking-section-title">1. Địa điểm &amp; Lịch tổ chức</h3>
-        <label htmlFor="hallId-select">
+      <div className={sectionClass}>
+        <h3 className="text-base font-semibold">1. Địa điểm &amp; Lịch tổ chức</h3>
+        <label htmlFor="hallId-select" className={fieldLabelClass}>
           Sảnh tiệc
           <select
             id="hallId-select"
+            className={selectClass}
             key={`hallId-${matchedHall?.id ?? 'none'}`}
             name="hallId"
             required
@@ -105,8 +101,8 @@ export function BookingCreateFormFields({
           </select>
         </label>
 
-        <div className="booking-fields-inline">
-          <label>
+        <div className="grid gap-x-4 gap-y-3 sm:grid-cols-2">
+          <label className={fieldLabelClass}>
             <span id="booking-date-label">Ngày tổ chức</span>
             <DatePicker
               key={`eventDate-${prefillEventDate ?? ''}`}
@@ -117,14 +113,15 @@ export function BookingCreateFormFields({
               ariaDescribedby="booking-date-help"
               required
             />
-            <small id="booking-date-help">
+            <small id="booking-date-help" className="text-2xs font-normal text-muted-foreground">
               Chọn ngày mốt hoặc muộn hơn (theo giờ Việt Nam).
             </small>
           </label>
-          <label htmlFor="shiftCode-select">
+          <label htmlFor="shiftCode-select" className={fieldLabelClass}>
             <span>Ca</span>
             <select
               id="shiftCode-select"
+              className={selectClass}
               key={`shiftCode-${prefillShift ?? ''}-${selections ? 'loaded' : 'loading'}`}
               name="shiftCode"
               defaultValue={prefillShift ?? ''}
@@ -141,52 +138,51 @@ export function BookingCreateFormFields({
               ) : null}
               {selections?.shifts.map((shift) => (
                 <option key={shift.code} value={shift.code}>
-                  {shift.code === 'LUNCH' ? 'Trưa' : 'Tối'} · {shift.startTime}–
-                  {shift.endTime}
+                  {shift.code === 'LUNCH' ? 'Trưa' : 'Tối'} · {shift.startTime}–{shift.endTime}
                 </option>
               ))}
             </select>
           </label>
         </div>
 
-        {/* Inline Availability Action & Tag */}
-        <div className="booking-availability-inline">
-          <button
-            className="booking-secondary booking-check-btn"
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            variant="outline"
             disabled={disabled}
             type="button"
-            onClick={(event) => {
+            onClick={(event: React.MouseEvent<HTMLButtonElement>) => {
               const form = event.currentTarget.form;
               if (form) onCheckAvailability(form);
             }}
           >
             Kiểm tra lịch
-          </button>
+          </Button>
           {localAvailability.checked ? (
-            <div
-              className={`booking-avail-tag ${localAvailability.available ? 'is-available' : 'is-busy'}`}
+            <Badge
+              variant={localAvailability.available ? 'success' : 'warning'}
+              className="whitespace-normal"
             >
               <span>
                 {localAvailability.available
                   ? 'Sảnh đang trống (Sẵn sàng giữ chỗ)'
                   : 'Khung giờ này đang được bảo lưu'}
               </span>
-            </div>
+            </Badge>
           ) : (
-            <span className="booking-avail-hint">
+            <span className="text-xs text-muted-foreground">
               Kiểm tra tình trạng trống của sảnh trước khi tạo đề xuất
             </span>
           )}
         </div>
       </div>
 
-      {/* Section 2: Menu & Scale */}
-      <div className="booking-section-card">
-        <h3 className="booking-section-title">2. Thực đơn &amp; Quy mô bàn tiệc</h3>
-        <label htmlFor="menuPackageVersionId-select">
+      <div className={sectionClass}>
+        <h3 className="text-base font-semibold">2. Thực đơn &amp; Quy mô bàn tiệc</h3>
+        <label htmlFor="menuPackageVersionId-select" className={fieldLabelClass}>
           Thực đơn đặt tiệc
           <select
             id="menuPackageVersionId-select"
+            className={selectClass}
             key={`menuId-${matchedMenu?.versionId ?? 'none'}`}
             name="menuPackageVersionId"
             required
@@ -205,11 +201,12 @@ export function BookingCreateFormFields({
           </select>
         </label>
 
-        <div className="booking-fields-inline">
-          <label htmlFor="tableCount-input">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+          <label htmlFor="tableCount-input" className={fieldLabelClass}>
             <span>Số bàn</span>
-            <input
+            <Input
               id="tableCount-input"
+              className="font-normal tabular-nums"
               key={`tableCount-${prefillTableCount ?? ''}`}
               name="tableCount"
               type="number"
@@ -219,10 +216,11 @@ export function BookingCreateFormFields({
               required
             />
           </label>
-          <label htmlFor="planningHeadcount-input">
+          <label htmlFor="planningHeadcount-input" className={fieldLabelClass}>
             <span>Số khách dự kiến</span>
-            <input
+            <Input
               id="planningHeadcount-input"
+              className="font-normal tabular-nums"
               key={`planningHeadcount-${prefillExpectedGuests ?? ''}`}
               name="planningHeadcount"
               type="number"

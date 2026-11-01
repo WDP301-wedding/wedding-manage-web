@@ -5,6 +5,18 @@ import type { BillingView, RefundApprovalBody } from './billing-api';
 import { money } from './billing-display';
 import type { CommandOutcome } from './payment-forms';
 import { notify } from '../../design-system/notifications';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Textarea } from '../../components/ui/textarea';
+import {
+  confirmClass,
+  fieldsetClass,
+  inputClass,
+  labelClass,
+  panelClass,
+  rowClass,
+  selectClass,
+} from './billing-form-classes';
 
 function field(data: FormData, name: string): string {
   const value = data.get(name);
@@ -23,7 +35,6 @@ export function RefundApprovalForm({
   const form = useRef<HTMLFormElement>(null);
   const [draft, setDraft] = useState<RefundApprovalBody | null>(null);
   const [retry, setRetry] = useState(false);
-  const [invalid, setInvalid] = useState(false);
   const credits = booking.history.filter((entry) => entry.kind === 'CREDIT_ADJUSTMENT');
   const review = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -64,18 +75,23 @@ export function RefundApprovalForm({
     if (outcome !== 'retry') setDraft(null);
   };
   return (
-    <section className="billing-panel">
-      <h2>Phê duyệt hoàn tiền</h2>
-      <p>
-        Quản lý duyệt hạn mức dựa trên điều chỉnh giảm hoặc quyết định hủy tiệc đã chốt. Hệ thống
-        kiểm tra căn cứ và số tiền còn được hoàn.
-      </p>
+    <section className={panelClass}>
+      <div className="flex flex-col gap-0.5">
+        <h2 className="text-base font-semibold">Phê duyệt hoàn tiền</h2>
+        <p className="text-xs text-muted-foreground">
+          Quản lý duyệt hạn mức dựa trên điều chỉnh giảm hoặc quyết định hủy tiệc đã chốt. Hệ thống
+          kiểm tra căn cứ và số tiền còn được hoàn.
+        </p>
+      </div>
       <form ref={form} onSubmit={review}>
-        <fieldset disabled={disabled || draft !== null || booking.billingRevision === 0}>
-          <div className="billing-field-row">
-            <label>
+        <fieldset
+          className={fieldsetClass}
+          disabled={disabled || draft !== null || booking.billingRevision === 0}
+        >
+          <div className={rowClass}>
+            <label className={labelClass}>
               Căn cứ phê duyệt
-              <select name="basis" required defaultValue="">
+              <select name="basis" required defaultValue="" className={selectClass}>
                 <option value="">Chọn căn cứ</option>
                 <option value="CANCELLATION">Quyết định hủy tiệc đã chốt</option>
                 {credits.map((entry) => (
@@ -85,9 +101,10 @@ export function RefundApprovalForm({
                 ))}
               </select>
             </label>
-            <label>
+            <label className={labelClass}>
               Hạn mức hoàn được duyệt (VND)
-              <input
+              <Input
+                className={inputClass}
                 name="amount"
                 type="number"
                 min={1}
@@ -97,43 +114,55 @@ export function RefundApprovalForm({
               />
             </label>
           </div>
-          <label>
+          <label className={labelClass}>
             Mã chứng từ phê duyệt
-            <input name="evidence" required maxLength={120} autoComplete="off" />
+            <Input
+              className={inputClass}
+              name="evidence"
+              required
+              maxLength={120}
+              autoComplete="off"
+            />
           </label>
-          <label>
+          <label className={labelClass}>
             Lý do phê duyệt
-            <textarea name="reason" required maxLength={500} rows={2} />
+            <Textarea className={inputClass} name="reason" required maxLength={500} rows={2} />
           </label>
-          <button type="submit">Kiểm tra phê duyệt</button>
+          <Button type="submit" className="self-start">
+            Kiểm tra phê duyệt
+          </Button>
         </fieldset>
       </form>
       {credits.length === 0 && (
-        <p>
+        <p className="text-xs text-muted-foreground">
           Chưa có điều chỉnh giảm trong các trang đã tải. Tải thêm lịch sử nếu cần chọn căn cứ này.
         </p>
       )}
       {draft !== null && (
-        <section className="billing-confirm" aria-label="Xác nhận phê duyệt hoàn tiền">
-          <h3>Kiểm tra quyết định hoàn tiền</h3>
-          <strong>{money(draft.approvedRefundableVnd)}</strong>
-          <p>
+        <section className={confirmClass} aria-label="Xác nhận phê duyệt hoàn tiền">
+          <h3 className="font-semibold text-primary">Kiểm tra quyết định hoàn tiền</h3>
+          <strong className="text-xl font-bold tabular-nums">
+            {money(draft.approvedRefundableVnd)}
+          </strong>
+          <p className="text-xs">
             Căn cứ:{' '}
             {draft.basis.kind === 'CANCELLATION'
               ? 'Quyết định hủy tiệc đã chốt'
               : `Điều chỉnh giảm ${draft.basis.sourceEntryId}`}
           </p>
           <p>{draft.reason}</p>
-          <p>Chứng từ: {draft.evidenceReference}</p>
-          <p>
+          <p className="text-xs text-muted-foreground">Chứng từ: {draft.evidenceReference}</p>
+          <p className="rounded-lg bg-hy-warning-bg px-3 py-2 text-xs">
             Phê duyệt cho phép ghi nhận khoản hoàn theo hạn mức. Thao tác này không chuyển tiền tự
             động.
           </p>
           {retry && (
-            <p role="status">Chưa rõ kết quả. Thử lại cùng quyết định để kiểm tra kết quả.</p>
+            <p role="status" className="rounded-lg bg-hy-info-bg px-3 py-2 text-xs text-hy-info">
+              Chưa rõ kết quả. Thử lại cùng quyết định để kiểm tra kết quả.
+            </p>
           )}
-          <div className="billing-actions">
-            <button
+          <div className="flex flex-wrap gap-2 pt-1">
+            <Button
               type="button"
               disabled={disabled}
               onClick={() => {
@@ -141,15 +170,15 @@ export function RefundApprovalForm({
               }}
             >
               {retry ? 'Thử lại phê duyệt này' : 'Xác nhận phê duyệt hoàn tiền'}
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
-              className="billing-secondary"
+              variant="outline"
               disabled={disabled || retry}
               onClick={() => setDraft(null)}
             >
               Quay lại chỉnh sửa
-            </button>
+            </Button>
           </div>
         </section>
       )}

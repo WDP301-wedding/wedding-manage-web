@@ -166,8 +166,7 @@ class NotificationService {
       if (status === 403 || code === 'FORBIDDEN') {
         title = 'Từ chối quyền truy cập (403)';
         message =
-          options?.fallbackMessage ??
-          'Tài khoản của bạn không có quyền thực hiện thao tác này.';
+          options?.fallbackMessage ?? 'Tài khoản của bạn không có quyền thực hiện thao tác này.';
         return { title, message, requestId };
       }
 

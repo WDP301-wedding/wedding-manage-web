@@ -1,9 +1,11 @@
 'use client';
 
+import { ArrowDown, ArrowUp, X } from 'lucide-react';
 import { type FormEvent, useMemo, useState } from 'react';
 import type { CatalogDish, MenuWrite } from './catalog-api';
 import { EditorHeading, integer, LabeledInput, move, text } from './food-catalog-shared';
 
+import { cx } from './catalog-classes';
 export function OrderedVersionList({
   items,
   onChange,
@@ -14,33 +16,36 @@ export function OrderedVersionList({
   options: readonly { id: string; label: string }[];
 }>) {
   return (
-    <ol className="catalog-order-list" aria-label="Thứ tự món trong gói">
+    <ol className={cx.orderList} aria-label="Thứ tự món trong gói">
       {items.map((id, index) => (
         <li key={id}>
           <span>{options.find((option) => option.id === id)?.label ?? id}</span>
           <div>
             <button
               type="button"
+              className={cx.orderButton}
               aria-label={`Đưa món ${index + 1} lên`}
               disabled={index === 0}
               onClick={() => onChange(move(items, index, index - 1))}
             >
-              ↑
+              <ArrowUp aria-hidden className="size-4" />
             </button>
             <button
               type="button"
+              className={cx.orderButton}
               aria-label={`Đưa món ${index + 1} xuống`}
               disabled={index === items.length - 1}
               onClick={() => onChange(move(items, index, index + 1))}
             >
-              ↓
+              <ArrowDown aria-hidden className="size-4" />
             </button>
             <button
               type="button"
+              className={cx.orderButton}
               aria-label={`Bỏ món ${index + 1}`}
               onClick={() => onChange(items.filter((item) => item !== id))}
             >
-              ×
+              <X aria-hidden className="size-4" />
             </button>
           </div>
         </li>
@@ -93,8 +98,8 @@ export function CreateMenuForm({
   };
 
   return (
-    <form className="catalog-editor" aria-label="Tạo gói thực đơn" onSubmit={submit}>
-      <EditorHeading eyebrow="Giá theo bàn" title="Tạo gói thực đơn" />
+    <form className={cx.editor} aria-label="Tạo gói thực đơn" onSubmit={submit}>
+      <EditorHeading title="Tạo gói thực đơn" />
       <LabeledInput label="Tên gói" name="name" />
       <LabeledInput label="Mô tả gói" name="description" as="textarea" />
       <LabeledInput
@@ -104,9 +109,9 @@ export function CreateMenuForm({
         min={1}
         step={1}
       />
-      <div className="catalog-field">
+      <div className={cx.field}>
         <label htmlFor="menu-dish-version">Món phiên bản</label>
-        <div className="catalog-inline-control">
+        <div className={cx.inlineControl}>
           <select
             id="menu-dish-version"
             value={selectedVersionId}
@@ -121,7 +126,7 @@ export function CreateMenuForm({
           </select>
           <button
             type="button"
-            className="catalog-secondary-button"
+            className={cx.secondaryButton}
             disabled={selectedVersionId === ''}
             onClick={() => {
               if (selectedVersionId !== '' && !items.includes(selectedVersionId)) {
@@ -136,13 +141,9 @@ export function CreateMenuForm({
       </div>
       <OrderedVersionList items={items} options={options} onChange={setItems} />
       {items.length === 0 ? (
-        <p className="catalog-help">Thực đơn cần ít nhất một phiên bản món đã công bố.</p>
+        <p className={cx.help}>Thực đơn cần ít nhất một phiên bản món đã công bố.</p>
       ) : null}
-      <button
-        className="catalog-primary-button"
-        type="submit"
-        disabled={pending || items.length === 0}
-      >
+      <button className={cx.primaryButton} type="submit" disabled={pending || items.length === 0}>
         Tạo bản nháp thực đơn
       </button>
     </form>

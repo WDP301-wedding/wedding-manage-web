@@ -1,67 +1,27 @@
-'use client';
-
+import { cn } from 'cn';
 import type { AnalyticsOverviewData } from '../../services/analytics.service';
 import type { PublicHall, PublicRestaurant } from '../../services/catalog.service';
 import type { ConsultationRequestItem } from '../../services/consultation.service';
 import { formatVndNullable } from '../../lib/formatters';
 
-export function MetricCard({
-  attention = false,
-  detail,
+function Metric({
   label,
   value,
-}: Readonly<{
-  attention?: boolean;
-  detail: string;
-  label: string;
-  value: string;
-}>) {
+  detail,
+  attention = false,
+}: Readonly<{ label: string; value: string; detail: string; attention?: boolean }>) {
   return (
-    <div
-      className={`metric-card${attention ? ' metric-attention' : ''}`}
-      style={{
-        background: 'var(--hy-surface)',
-        border: attention ? '1.5px solid var(--hy-wine)' : '1px solid var(--hy-outline)',
-        borderRadius: 'var(--hy-radius-md)',
-        padding: '16px 20px',
-        boxShadow: 'var(--hy-shadow-1)',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '6px',
-      }}
-    >
-      <span
-        className="metric-label"
-        style={{
-          fontSize: '0.825rem',
-          fontWeight: 600,
-          color: 'var(--hy-ink-muted)',
-        }}
-      >
-        {label}
-      </span>
-      <span
-        className="metric-value"
-        style={{
-          fontFamily: 'var(--font-display)',
-          fontSize: '1.75rem',
-          fontWeight: 700,
-          color: attention ? 'var(--hy-wine)' : 'var(--hy-ink)',
-          fontVariantNumeric: 'tabular-nums lining-nums',
-          lineHeight: 1.25,
-        }}
+    <div className="flex min-w-0 flex-[1_1_13rem] flex-col gap-0.5 bg-card px-6 py-5">
+      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd
+        className={cn(
+          'text-xl font-bold tabular-nums [overflow-wrap:anywhere]',
+          attention && 'text-primary',
+        )}
       >
         {value}
-      </span>
-      <span
-        className="metric-detail"
-        style={{
-          fontSize: '0.8rem',
-          color: attention ? 'var(--hy-wine)' : 'var(--hy-ink-muted)',
-        }}
-      >
-        {detail}
-      </span>
+      </dd>
+      <dd className={cn('text-xs text-muted-foreground', attention && 'text-primary')}>{detail}</dd>
     </div>
   );
 }
@@ -81,55 +41,65 @@ export function DashboardKpiStrip({
   analytics: AnalyticsOverviewData | null;
   restaurant: PublicRestaurant | null;
 }>) {
-  const pendingConsultations = consultations.filter((c) => c.status === 'NEW');
+  const pending = consultations.filter((c) => c.status === 'NEW').length;
+  const syncing = 'Đang đồng bộ…';
 
   return (
-    <section className="metrics-strip" aria-label="Chỉ số vận hành">
-      <MetricCard
+    <dl
+      aria-label="Chỉ số vận hành"
+      className="flex flex-wrap gap-px overflow-hidden rounded-xl border border-border bg-border shadow-hy-1"
+    >
+      <Metric
         label="Không gian sẵn sàng"
-        value={isLoading ? '—' : String(halls.length).padStart(2, '0')}
-        detail={isLoading ? 'Đang đồng bộ…' : `${halls.length} sảnh tiệc trong danh mục`}
+        value={isLoading ? '…' : String(halls.length).padStart(2, '0')}
+        detail={isLoading ? syncing : `${halls.length} sảnh tiệc trong danh mục`}
       />
-      <MetricCard
+      <Metric
         label="Yêu cầu tư vấn"
-        value={isLoading ? '—' : String(consultations.length).padStart(2, '0')}
+        value={isLoading ? '…' : String(consultations.length).padStart(2, '0')}
         detail={
-          isLoading
-            ? 'Đang đồng bộ…'
-            : pendingConsultations.length > 0
-              ? `${pendingConsultations.length} yêu cầu chờ xử lý`
-              : 'Đã hoàn tất xử lý'
+          isLoading ? syncing : pending > 0 ? `${pending} yêu cầu chờ xử lý` : 'Đã hoàn tất xử lý'
         }
-        attention={pendingConsultations.length > 0}
+        attention={pending > 0}
       />
       {isManager ? (
         <>
-          <MetricCard
+          <Metric
             label="Tiền thực nhận tháng này"
-            value={isLoading || !analytics ? '—' : formatVndNullable(analytics.netCashRevenueVnd)}
+            value={
+              isLoading
+                ? '…'
+                : !analytics
+                  ? 'Chưa có'
+                  : formatVndNullable(analytics.netCashRevenueVnd)
+            }
             detail={isLoading ? 'Đang tổng hợp sổ cái…' : 'Thực thu tiền mặt/chuyển khoản (VND)'}
           />
-          <MetricCard
+          <Metric
             label="Tổng cọc đã thu"
             value={
-              isLoading || !analytics ? '—' : formatVndNullable(analytics.grossCashReceivedVnd)
+              isLoading
+                ? '…'
+                : !analytics
+                  ? 'Chưa có'
+                  : formatVndNullable(analytics.grossCashReceivedVnd)
             }
             detail={
               isLoading
                 ? 'Đang tính toán…'
                 : analytics?.meta.refreshedAt
-                  ? `Độ mới: ${new Date(analytics.meta.refreshedAt).toLocaleTimeString('vi-VN')}`
+                  ? `Cập nhật lúc ${new Date(analytics.meta.refreshedAt).toLocaleTimeString('vi-VN')}`
                   : 'Sổ cái đã chốt'
             }
           />
         </>
       ) : (
-        <MetricCard
+        <Metric
           label="Ca phục vụ"
-          value={isLoading ? '—' : String(restaurant?.shifts?.length || 2).padStart(2, '0')}
-          detail="Ca trưa & ca tối cố định"
+          value={isLoading ? '…' : String(restaurant?.shifts?.length || 2).padStart(2, '0')}
+          detail="Ca trưa và ca tối cố định"
         />
       )}
-    </section>
+    </dl>
   );
 }

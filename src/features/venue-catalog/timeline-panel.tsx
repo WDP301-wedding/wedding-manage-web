@@ -23,9 +23,11 @@ import {
   TimelineHistoryVersion,
   TimelineItemsEditor,
   TimelineTextField,
-  type TimelineVersion,
 } from './timeline-draft';
 
+import { cx } from './catalog-classes';
+import { Badge } from '../../components/ui/badge';
+import { cn } from 'cn';
 export {
   TimelineDraft,
   TimelineHistoryVersion,
@@ -43,7 +45,6 @@ export function TimelinePanel({
 }: Readonly<{ authorize: Authorize; gateway: CatalogGateway }>) {
   const [snapshot, setSnapshot] = useState<TimelineCatalogSnapshot | null>(null);
   const [pending, setPending] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(
@@ -67,7 +68,6 @@ export function TimelinePanel({
 
   const run = async (success: string, operation: (token: string) => Promise<void>) => {
     setPending(true);
-    setMessage(null);
     setError(null);
     try {
       await authorize(operation);
@@ -86,9 +86,9 @@ export function TimelinePanel({
 
   if (snapshot === null) {
     return (
-      <section className="catalog-section" aria-labelledby="timeline-title">
+      <section className={cx.section} aria-labelledby="timeline-title">
         <TimelineHeading />
-        <p className={error === null ? 'catalog-empty' : 'catalog-error'} role="status">
+        <p className={error === null ? cx.empty : cx.error} role="status">
           {error ?? 'Đang tải kịch bản tiệc…'}
         </p>
       </section>
@@ -96,7 +96,7 @@ export function TimelinePanel({
   }
 
   return (
-    <section className="catalog-section" id="timeline" aria-labelledby="timeline-title">
+    <section className={cx.section} id="timeline" aria-labelledby="timeline-title">
       <TimelineHeading />
       <NewTimelineForm
         pending={pending}
@@ -111,9 +111,9 @@ export function TimelinePanel({
           )
         }
       />
-      <div className="timeline-list">
+      <div className={cx.timelineList}>
         {snapshot.timelines.length === 0 ? (
-          <p className="catalog-empty">Chưa có kịch bản tiệc.</p>
+          <p className={cx.empty}>Chưa có kịch bản tiệc.</p>
         ) : (
           snapshot.timelines.map((timeline) => (
             <TimelineAggregate
@@ -132,8 +132,7 @@ export function TimelinePanel({
 
 function TimelineHeading() {
   return (
-    <div className="catalog-section-heading">
-      <p className="section-kicker">Thứ tự theo phút</p>
+    <div className={cx.sectionHeading}>
       <h2 id="timeline-title">Kịch bản tiệc</h2>
     </div>
   );
@@ -160,27 +159,26 @@ function NewTimelineForm({
     });
   };
   return (
-    <form className="timeline-editor" aria-label="Tạo kịch bản tiệc" onSubmit={submit}>
-      <div className="timeline-editor-heading">
+    <form className={cx.timelineEditor} aria-label="Tạo kịch bản tiệc" onSubmit={submit}>
+      <div className={cx.timelineEditorHeading}>
         <div>
-          <p className="section-kicker">Template mới</p>
           <h3>Tạo kịch bản</h3>
         </div>
         <button
-          className="catalog-secondary-button"
+          className={cx.secondaryButton}
           type="button"
           onClick={() => setItems([...items, newTimelineItem(items.length * 15)])}
         >
           Thêm mục
         </button>
       </div>
-      <div className="catalog-form-grid">
+      <div className={cx.formGrid}>
         <TimelineTextField label="Tên kịch bản" name="name" />
         <TimelineTextField label="Mô tả kịch bản" name="description" />
       </div>
       <TimelineItemsEditor items={items} onChange={setItems} />
-      <div className="catalog-form-actions timeline-actions">
-        <button className="catalog-primary-button" type="submit" disabled={pending}>
+      <div className={cn(cx.formActions, cx.timelineActions)}>
+        <button className={cx.primaryButton} type="submit" disabled={pending}>
           Tạo bản nháp kịch bản
         </button>
       </div>
@@ -204,17 +202,16 @@ function TimelineAggregate({
     timeline.versions[0]?.name ??
     'Kịch bản chưa đặt tên';
   return (
-    <article className="timeline-aggregate">
-      <header className="catalog-aggregate-header">
+    <article className={cx.timelineAggregate}>
+      <header className={cx.aggregateHeader}>
         <div>
-          <span
-            className={`status ${timeline.lifecycle === 'ACTIVE' ? 'status-ready' : 'status-retired'}`}
-          >
+          <Badge variant={timeline.lifecycle === 'ACTIVE' ? 'success' : 'neutral'}>
             {timeline.lifecycle === 'ACTIVE' ? 'Đang hoạt động' : 'Đã ngừng'}
-          </span>
+          </Badge>
           <h4>{label}</h4>
         </div>
         <button
+          className={cx.secondaryButton}
           type="button"
           onClick={() =>
             void run('Đã cập nhật trạng thái kịch bản.', (token) =>
@@ -229,7 +226,7 @@ function TimelineAggregate({
           {timeline.lifecycle === 'ACTIVE' ? 'Ngừng' : 'Khôi phục'}
         </button>
       </header>
-      <div className="catalog-history" role="region" aria-label={`Lịch sử ${label}`}>
+      <div className={cx.history} role="region" aria-label={`Lịch sử ${label}`}>
         {timeline.versions.map((version) =>
           version.state === 'DRAFT' ? (
             <TimelineDraft

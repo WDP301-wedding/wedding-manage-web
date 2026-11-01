@@ -3,11 +3,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   BOOKING_ASSIGNMENTS_REGISTRY_KEY,
   claimBookingAssignment,
-  DashboardLiveView,
   getBookingAssignments,
   releaseBookingAssignment,
   saveBookingAssignments,
-} from './dashboard-live';
+} from './booking-assignments';
+import { DashboardLiveView } from './dashboard-live';
 
 vi.mock('../../services/consultation.service', () => ({
   consultationService: {
@@ -127,7 +127,7 @@ describe('Booking assignment locking and synchronization', () => {
 
       // Booking 2 (unassigned):
       // Manager B sees "☆ Nhận tiệc" button
-      const claimBtn = screen.getByRole('button', { name: '☆ Nhận tiệc' });
+      const claimBtn = screen.getByRole('button', { name: 'Nhận tiệc' });
       expect(claimBtn).toBeEnabled();
 
       // Manager B clicks "☆ Nhận tiệc" on Booking 2
@@ -138,7 +138,7 @@ describe('Booking assignment locking and synchronization', () => {
 
       // Booking 2 now has "Của bạn" badge
       expect(screen.getByText('Của bạn')).toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: '★ Bỏ nhận' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Bỏ nhận' })).not.toBeInTheDocument();
     });
   });
 });

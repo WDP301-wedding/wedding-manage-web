@@ -71,7 +71,7 @@ describe('StaffOperationsPage (M6, S1, S2)', () => {
       expect(screen.getByText('Nhân sự & Tác nghiệp')).toBeDefined();
     });
 
-    const bookingInput = screen.getByLabelText('Mã tiệc (Booking ID)');
+    const bookingInput = screen.getByLabelText('Mã tiệc');
     fireEvent.change(bookingInput, { target: { value: 'booking-test-123' } });
 
     const searchBtn = screen.getByRole('button', { name: 'Tra cứu khách' });
@@ -108,7 +108,7 @@ describe('StaffOperationsPage (M6, S1, S2)', () => {
 
     render(<StaffOperationsPage session={mockSession} />);
 
-    const bookingInput = screen.getByLabelText('Mã tiệc (Booking ID)');
+    const bookingInput = screen.getByLabelText('Mã tiệc');
     fireEvent.change(bookingInput, { target: { value: 'booking-test-123' } });
 
     const searchBtn = screen.getByRole('button', { name: 'Tra cứu khách' });
@@ -149,7 +149,7 @@ describe('StaffOperationsPage (M6, S1, S2)', () => {
 
     render(<StaffOperationsPage session={mockSession} />);
 
-    const bookingInput = screen.getByLabelText('Mã tiệc (Booking ID)');
+    const bookingInput = screen.getByLabelText('Mã tiệc');
     fireEvent.change(bookingInput, { target: { value: 'booking-test-123' } });
 
     const searchBtn = screen.getByRole('button', { name: 'Tra cứu khách' });
