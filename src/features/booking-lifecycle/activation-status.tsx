@@ -22,7 +22,15 @@ export function ActivationStatus({
   consultationId,
   disabled = false,
   reloadSignal = 0,
-}: Readonly<{ consultationId: string; disabled?: boolean; reloadSignal?: number }>) {
+  compact = false,
+  hideIfActivated = false,
+}: Readonly<{
+  consultationId: string;
+  disabled?: boolean;
+  reloadSignal?: number;
+  compact?: boolean;
+  hideIfActivated?: boolean;
+}>) {
   const [retrying, setRetrying] = useState(false);
   const [value, setValue] = useState<Activation | null>(null);
   const [pending, setPending] = useState(false);
@@ -163,7 +171,31 @@ export function ActivationStatus({
     }
   };
 
-  if (value?.state === 'ACTIVATED')
+  if (value?.state === 'ACTIVATED') {
+    if (hideIfActivated) return null;
+    if (compact) {
+      return (
+        <div
+          className="hy-activation-badge hy-activation-badge-success"
+          aria-label="Tài khoản khách đã liên kết"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.45rem',
+            padding: '0.35rem 0.85rem',
+            borderRadius: '9999px',
+            fontSize: '0.82rem',
+            lineHeight: 1.35,
+            boxShadow: '0 1px 3px rgba(6, 95, 70, 0.08)',
+          }}
+          title={`${value.recipientEmail} · Khách dùng tài khoản hiện có để mở tiệc trên web hoặc app.`}
+        >
+          <span className="hy-activation-status-dot" aria-hidden="true" />
+          <span>Đã liên kết với tài khoản khách:</span>
+          <strong style={{ fontWeight: 600 }}>{value.recipientEmail}</strong>
+        </div>
+      );
+    }
     return (
       <section className="hy-activation-card" aria-label="Tài khoản khách đã liên kết">
         <div className="hy-activation-header">
@@ -177,6 +209,9 @@ export function ActivationStatus({
         </div>
       </section>
     );
+  }
+
+  if (compact) return null;
   if (value?.accountState === 'ACTIVE' && value.linkSourceConsultationId)
     return (
       <section

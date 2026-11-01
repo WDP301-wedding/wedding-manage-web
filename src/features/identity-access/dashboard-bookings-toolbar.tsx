@@ -100,6 +100,8 @@ export function DashboardBookingsToolbar({
           onChange={(e) => onQuickSortChange(e.target.value)}
           aria-label="Sắp xếp danh sách"
         >
+          <option value="recency-desc">Độ mới: Mới nhất trước</option>
+          <option value="recency-asc">Độ mới: Cũ nhất trước</option>
           <option value="eventDate-asc">Ngày tiệc: Gần nhất trước</option>
           <option value="eventDate-desc">Ngày tiệc: Xa nhất trước</option>
           <option value="tableCount-desc">Quy mô: Nhiều bàn nhất</option>

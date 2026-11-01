@@ -11,6 +11,7 @@ export interface CoupleAccountCardProps {
   inviteLogs: readonly InviteLogEntry[];
   onInvite: () => void;
   onClearLogs: () => void;
+  hideIfActivated?: boolean;
 }
 
 export function CoupleAccountCard({
@@ -21,6 +22,7 @@ export function CoupleAccountCard({
   inviteLogs,
   onInvite,
   onClearLogs,
+  hideIfActivated = false,
 }: Readonly<CoupleAccountCardProps>) {
   if (consultationId)
     return (
@@ -30,6 +32,7 @@ export function CoupleAccountCard({
           consultationId={consultationId}
           disabled={pending}
           reloadSignal={inviteLogs.length}
+          hideIfActivated={hideIfActivated}
         />
       </div>
     );

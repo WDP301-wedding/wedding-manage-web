@@ -16,7 +16,7 @@ const PHASE_LABELS: Record<string, string> = {
   CANCELLED: 'Đã hủy',
 };
 
-export type BookingSortField = 'eventDate' | 'hallName' | 'shiftCode' | 'tableCount' | 'phase';
+export type BookingSortField = 'recency' | 'eventDate' | 'hallName' | 'shiftCode' | 'tableCount' | 'phase';
 export type SortOrder = 'asc' | 'desc';
 
 export interface DashboardBookingsTableProps {
@@ -95,7 +95,19 @@ export function DashboardBookingsTable({
                 </span>
               </button>
             </th>
-            <th scope="col">Hồ sơ tiệc</th>
+            <th scope="col">
+              <button
+                type="button"
+                onClick={() => onSortChange?.('recency')}
+                style={dashboardStyles.thSortButton}
+                title="Sắp xếp theo độ mới của tiệc"
+              >
+                <span>Hồ sơ tiệc</span>
+                <span style={dashboardStyles.sortIcon(sortField === 'recency')}>
+                  {sortField === 'recency' ? (sortOrder === 'asc' ? '↑' : '↓') : '↕'}
+                </span>
+              </button>
+            </th>
             <th scope="col">
               <button
                 type="button"

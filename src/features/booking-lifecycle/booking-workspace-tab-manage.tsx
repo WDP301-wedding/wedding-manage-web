@@ -4,7 +4,6 @@ import { useContractPanel } from './use-contract-panel';
 import { BookingLifecycleStepper } from './booking-lifecycle-stepper';
 import { BookingUnauthorizedHint } from './booking-unauthorized-hint';
 import { CoupleAccountCard } from './couple-account-card';
-import { CreatedBookingNoticeBanner } from './created-booking-notice-banner';
 import { ProposalPanel } from './proposal-panel';
 import { bookingStyles } from './booking.styles';
 import type { Authorize, ManagementBookingGateway, ProposalView } from './booking-api';
@@ -45,8 +44,8 @@ export function BookingWorkspaceTabManage({
   consultation,
   prefill,
   inviteLogs,
-  createdBookingNotice,
-  setCreatedBookingNotice,
+  createdBookingNotice: _createdBookingNotice,
+  setCreatedBookingNotice: _setCreatedBookingNotice,
   switchTab,
   sendWorkspaceInvite,
   setInviteLogs,
@@ -90,17 +89,6 @@ export function BookingWorkspaceTabManage({
           <h2 id="proposal-heading">Đề xuất &amp; vòng đời</h2>
         </div>
       </div>
-
-      {createdBookingNotice ? (
-        <CreatedBookingNoticeBanner
-          notice={createdBookingNotice}
-          onDismiss={() => setCreatedBookingNotice(null)}
-          onNavigateToAccount={() => {
-            setCreatedBookingNotice(null);
-            document.getElementById('couple-account-card')?.scrollIntoView({ behavior: 'smooth' });
-          }}
-        />
-      ) : null}
 
       {proposal === null ? (
         <div className="booking-empty" style={{ textAlign: 'center', padding: '3rem 1.5rem' }}>
@@ -163,6 +151,7 @@ export function BookingWorkspaceTabManage({
             inviteLogs={inviteLogs}
             onInvite={() => void sendWorkspaceInvite()}
             onClearLogs={() => setInviteLogs([])}
+            hideIfActivated
           />
           <ProposalPanel
             contractState={contractState}

@@ -47,8 +47,20 @@ export function BookingCreateFormFields({
 
   return (
     <div className="booking-form-sections">
-      {/* Consultation Code Box */}
-      <div className="booking-section-card">
+      {/* Consultation Code Box (hidden visually, preserved in DOM for form submission and test automation) */}
+      <div
+        style={{
+          position: 'absolute',
+          width: '1px',
+          height: '1px',
+          padding: 0,
+          margin: '-1px',
+          overflow: 'hidden',
+          clip: 'rect(0, 0, 0, 0)',
+          whiteSpace: 'nowrap',
+          border: 0,
+        }}
+      >
         <label htmlFor="consultation-id-input">Mã hồ sơ tư vấn</label>
         <input
           id="consultation-id-input"
@@ -60,18 +72,6 @@ export function BookingCreateFormFields({
           placeholder="Tự động điền sau khi hoàn thành Bước 01"
           className="booking-readonly-input"
         />
-        <small
-          style={{
-            color: '#5d665f',
-            fontSize: '0.75rem',
-            marginTop: '-0.5rem',
-            display: 'block',
-          }}
-        >
-          {consultation
-            ? `✓ Đã kết nối hồ sơ tư vấn (Phiên bản ${consultation.revision})`
-            : 'Mã này sẽ tự động điền khi bạn bấm "Tạo hồ sơ tư vấn" ở Bước 01'}
-        </small>
         <input
           key={`${consultation?.id}:${consultation?.revision}`}
           name="expectedRevision"

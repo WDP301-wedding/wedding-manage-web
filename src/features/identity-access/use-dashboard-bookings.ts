@@ -15,6 +15,29 @@ import type { BookingSortField, SortOrder } from './dashboard-bookings-table';
 
 export type DashboardBookingItem = AnalyticsBookingsData['items'][number];
 
+export function getBookingRecency(item: {
+  bookingCode?: string | null | undefined;
+  eventDate?: string | undefined;
+  createdAt?: string | null | undefined;
+}): number {
+  if (item.createdAt) {
+    const t = new Date(item.createdAt).getTime();
+    if (!Number.isNaN(t) && t > 0) return t;
+  }
+  if (item.bookingCode) {
+    const match = item.bookingCode.match(/\d+/);
+    if (match) {
+      const num = parseInt(match[0], 10);
+      if (!Number.isNaN(num)) return num;
+    }
+  }
+  if (item.eventDate) {
+    const t = new Date(item.eventDate).getTime();
+    if (!Number.isNaN(t)) return t;
+  }
+  return 0;
+}
+
 export interface UseDashboardBookingsOptions {
   bookings: readonly DashboardBookingItem[];
   assignments: BookingAssignmentsRegistry;
@@ -29,8 +52,8 @@ export function useDashboardBookings({
   const [userSelectedTab, setUserSelectedTab] = useState<'mine' | 'all' | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [phaseFilter, setPhaseFilter] = useState('ALL');
-  const [sortField, setSortField] = useState<BookingSortField>('eventDate');
-  const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
+  const [sortField, setSortField] = useState<BookingSortField>('recency');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
@@ -53,7 +76,7 @@ export function useDashboardBookings({
         setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'));
         return currentField;
       }
-      setSortOrder(field === 'tableCount' ? 'desc' : 'asc');
+      setSortOrder(field === 'tableCount' || field === 'recency' ? 'desc' : 'asc');
       return field;
     });
     setCurrentPage(1);
@@ -115,7 +138,15 @@ export function useDashboardBookings({
   const sortedBookings = useMemo(() => {
     if (filteredBookings.length <= 1) return filteredBookings;
     const items = [...filteredBookings];
-    if (sortField === 'eventDate') {
+    if (sortField === 'recency') {
+      items.sort((a, b) => {
+        const recencyA = getBookingRecency(a);
+        const recencyB = getBookingRecency(b);
+        const cmp =
+          recencyA !== recencyB ? recencyA - recencyB : a.bookingId.localeCompare(b.bookingId);
+        return sortOrder === 'asc' ? cmp : -cmp;
+      });
+    } else if (sortField === 'eventDate') {
       const timestamps = new Map<string, number>();
       for (const b of items) {
         timestamps.set(b.bookingId, new Date(b.eventDate).getTime());

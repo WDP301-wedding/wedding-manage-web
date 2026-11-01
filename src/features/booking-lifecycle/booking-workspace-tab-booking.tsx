@@ -1,5 +1,7 @@
 'use client';
 
+import { notify } from '../../design-system/notifications';
+import { ActivationStatus } from './activation-status';
 import { BookingCreatePanel } from './booking-create-panel';
 import { CoupleAccountCard } from './couple-account-card';
 import { bookingStyles } from './booking.styles';
@@ -92,20 +94,13 @@ export function BookingWorkspaceTabBooking({
           <span>Quay lại Bước 01: Hồ sơ tư vấn</span>
         </button>
         {consultation ? (
-          <span
-            style={{
-              fontSize: '0.82rem',
-              color: 'var(--hy-status-success, #2f6b4f)',
-              background: 'var(--hy-status-success-bg, #e7f1ea)',
-              padding: '4px 10px',
-              borderRadius: '6px',
-              fontWeight: 600,
-              border: '1px solid var(--hy-status-success-border, #bbf7d0)',
-            }}
-          >
-            ✓ Đã kết nối mã tư vấn: {consultation.id.slice(0, 8)}… (Phiên bản{' '}
-            {consultation.revision})
-          </span>
+          <ActivationStatus
+            key={consultation.id}
+            consultationId={consultation.id}
+            disabled={disabled}
+            reloadSignal={inviteLogs.length}
+            compact
+          />
         ) : null}
       </div>
       {proposal ? (
@@ -129,11 +124,15 @@ export function BookingWorkspaceTabBooking({
           onCreated={(result, consultationId) => {
             setBookingId(result.bookingId);
             setConsultation({ id: consultationId, revision: result.consultationRevision });
-            setCreatedBookingNotice({
-              bookingId: result.bookingId,
-              consultationId,
-              email: prefill.email,
-            });
+            setCreatedBookingNotice(null);
+            notify.success(
+              prefill.email
+                ? `Hồ sơ tiệc mới đã sẵn sàng cho cặp đôi (${prefill.email}).`
+                : 'Hồ sơ tiệc mới đã sẵn sàng để xem đề xuất & duyệt kịch bản.',
+              {
+                title: 'Khởi tạo tiệc cưới thành công',
+              },
+            );
             setMessage('Đã tạo hồ sơ đặt tiệc.');
             void loadProposal(result.bookingId, true);
             recordMyBooking(result.bookingId);
@@ -152,6 +151,7 @@ export function BookingWorkspaceTabBooking({
             inviteLogs={inviteLogs}
             onInvite={() => void sendWorkspaceInvite()}
             onClearLogs={() => setInviteLogs([])}
+            hideIfActivated
           />
         </div>
       ) : null}
