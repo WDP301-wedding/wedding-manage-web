@@ -1,5 +1,6 @@
 'use client';
 
+import { ArrowDown, ArrowUp } from 'lucide-react';
 import { hasDirtyCatalogForms, useCatalogLiveRefresh } from './use-catalog-live-refresh';
 
 import Image from 'next/image';
@@ -15,6 +16,8 @@ import type {
 import { MediaUploadForm } from './media-upload-form';
 import { notify } from '../../design-system/notifications';
 
+import { cx } from './catalog-classes';
+import { cn } from 'cn';
 type Authorize = <T>(operation: (accessToken: string) => Promise<T>) => Promise<T>;
 
 export function MediaPanel({
@@ -22,7 +25,6 @@ export function MediaPanel({
   gateway,
   active = true,
   allowedTypes,
-  sectionKicker = 'Thư viện dùng chung',
   heading = 'Ảnh, lịch sử và vòng đời',
   description = 'Ảnh chỉ hiển thị qua URL ký số ngắn hạn. Khóa lưu trữ nội bộ không bao giờ được đưa ra giao diện.',
 }: Readonly<{
@@ -30,7 +32,6 @@ export function MediaPanel({
   gateway: CatalogGateway;
   active?: boolean;
   allowedTypes?: readonly CatalogMediaResourceType[];
-  sectionKicker?: string;
   heading?: string;
   description?: string;
 }>) {
@@ -194,15 +195,14 @@ export function MediaPanel({
   };
 
   return (
-    <section className="catalog-section media-section" aria-labelledby={headingId}>
-      <div className="catalog-section-heading">
-        <p className="section-kicker">{sectionKicker}</p>
+    <section className={cn(cx.section, cx.mediaSection)} aria-labelledby={headingId}>
+      <div className={cx.sectionHeading}>
         <h2 id={headingId}>{heading}</h2>
         <p>{description}</p>
       </div>
       <PanelMessages error={error} message={message} />
-      <div className="media-toolbar">
-        <label className="catalog-field">
+      <div className={cx.mediaToolbar}>
+        <label className={cx.field}>
           <span>Tài nguyên danh mục</span>
           <select
             value={selected === undefined ? '' : mediaResourceKey(selected)}
@@ -218,7 +218,7 @@ export function MediaPanel({
           </select>
         </label>
         <button
-          className="catalog-secondary-button"
+          className={cx.secondaryButton}
           type="button"
           disabled={selected === undefined || loading}
           onClick={() =>
@@ -229,19 +229,19 @@ export function MediaPanel({
                 )
           }
         >
-          Làm mới URL ký số
+          Làm mới đường dẫn ảnh
         </button>
       </div>
-      {loading && assets.length === 0 ? <p className="catalog-empty">Đang tải ảnh…</p> : null}
+      {loading && assets.length === 0 ? <p className={cx.empty}>Đang tải ảnh…</p> : null}
       {!loading && selected !== undefined && assets.length === 0 ? (
-        <p className="catalog-empty">Tài nguyên này chưa có ảnh.</p>
+        <p className={cx.empty}>Tài nguyên này chưa có ảnh.</p>
       ) : null}
       {selected === undefined ? null : (
         <>
-          <ol className="media-gallery" aria-label="Thứ tự ảnh danh mục">
+          <ol className={cx.mediaGallery} aria-label="Thứ tự ảnh danh mục">
             {assets.map((asset, index) => (
               <li key={asset.id}>
-                <div className="media-preview">
+                <div className={cx.mediaPreview}>
                   <Image
                     src={asset.signedUrl}
                     alt={asset.alternativeText}
@@ -251,38 +251,38 @@ export function MediaPanel({
                     unoptimized
                   />
                 </div>
-                <div className="media-card-copy">
+                <div className={cx.mediaCardCopy}>
                   <strong>{asset.alternativeText}</strong>
                   <span>
                     {formatBytes(asset.sizeBytes)} · {asset.contentType}
                   </span>
                   <small>URL ký số · {formatTtl(asset.signedUrlExpiresInSeconds)}</small>
                 </div>
-                <div className="media-order-actions">
+                <div className={cx.mediaOrderActions}>
                   <button
                     type="button"
+                    className={cx.orderButton}
                     aria-label={`Đưa ảnh ${index + 1} lên`}
                     disabled={pending || !selected.mutableOrder || index === 0}
                     onClick={() => reorder(index, index - 1)}
                   >
-                    ↑
+                    <ArrowUp aria-hidden className="size-4" />
                   </button>
                   <button
                     type="button"
+                    className={cx.orderButton}
                     aria-label={`Đưa ảnh ${index + 1} xuống`}
                     disabled={pending || !selected.mutableOrder || index === assets.length - 1}
                     onClick={() => reorder(index, index + 1)}
                   >
-                    ↓
+                    <ArrowDown aria-hidden className="size-4" />
                   </button>
                 </div>
               </li>
             ))}
           </ol>
           {!selected.mutableOrder && assets.length > 1 ? (
-            <p className="catalog-help">
-              Phiên bản lịch sử là chỉ đọc; thứ tự ảnh được giữ nguyên.
-            </p>
+            <p className={cx.help}>Phiên bản lịch sử là chỉ đọc; thứ tự ảnh được giữ nguyên.</p>
           ) : null}
           <MediaUploadForm
             assets={assets}

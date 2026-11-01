@@ -7,6 +7,8 @@ import { formatVnd } from '../../lib/formatters';
 import type { CatalogDish, CatalogMenu } from './catalog-api';
 import { notify } from '../../design-system/notifications';
 
+import { cx } from './catalog-classes';
+import { Badge } from '../../components/ui/badge';
 export type Authorize = <T>(operation: (accessToken: string) => Promise<T>) => Promise<T>;
 export type DishVersion = CatalogDish['versions'][number];
 export type MenuVersion = CatalogMenu['versions'][number];
@@ -23,7 +25,7 @@ export function VersionSummary({
         : 'Bản nháp';
   return (
     <div>
-      <span className="catalog-version-state">{state}</span>
+      <span className={cx.versionState}>{state}</span>
       <strong>{version.name}</strong>
       <small>{price === null ? 'Không niêm yết giá' : formatVnd(price)}</small>
     </div>
@@ -40,14 +42,14 @@ export function AggregateHeader({
   onLifecycle: () => Promise<boolean>;
 }>) {
   return (
-    <header className="catalog-aggregate-header">
+    <header className={cx.aggregateHeader}>
       <div>
-        <span className={`status ${lifecycle === 'ACTIVE' ? 'status-ready' : 'status-retired'}`}>
+        <Badge variant={lifecycle === 'ACTIVE' ? 'success' : 'neutral'}>
           {lifecycle === 'ACTIVE' ? 'Đang hoạt động' : 'Đã ngừng'}
-        </span>
+        </Badge>
         <h4>{label}</h4>
       </div>
-      <button type="button" onClick={() => void onLifecycle()}>
+      <button type="button" className={cx.secondaryButton} onClick={() => void onLifecycle()}>
         {lifecycle === 'ACTIVE' ? 'Ngừng' : 'Khôi phục'}
       </button>
     </header>
@@ -68,7 +70,7 @@ export function LabeledInput({
 >) {
   const id = `food-${name}-${label.replaceAll(/\s+/gu, '-').toLocaleLowerCase('vi-VN')}`;
   return (
-    <div className="catalog-field">
+    <div className={cx.field}>
       <label htmlFor={id}>{label}</label>
       {as === 'textarea' ? (
         <textarea id={id} name={name} required defaultValue={String(props.defaultValue ?? '')} />
@@ -79,10 +81,9 @@ export function LabeledInput({
   );
 }
 
-export function EditorHeading({ eyebrow, title }: Readonly<{ eyebrow: string; title: string }>) {
+export function EditorHeading({ title }: Readonly<{ title: string }>) {
   return (
-    <div className="catalog-editor-heading">
-      <span className="section-kicker">{eyebrow}</span>
+    <div className={cx.editorHeading}>
       <h3>{title}</h3>
     </div>
   );

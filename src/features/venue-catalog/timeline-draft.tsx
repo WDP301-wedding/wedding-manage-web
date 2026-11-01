@@ -1,8 +1,11 @@
 'use client';
 
+import { ArrowDown, ArrowUp } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
 import type { CatalogGateway, CatalogTimeline, TimelineItemWrite } from './catalog-api';
 
+import { cx } from './catalog-classes';
+import { cn } from 'cn';
 export type TimelineVersion = CatalogTimeline['versions'][number];
 
 export function newTimelineItem(offsetMinutes: number): TimelineItemWrite {
@@ -39,7 +42,7 @@ export function TimelineTextField({
 }: Readonly<{ defaultValue?: string; label: string; name: string }>) {
   const id = `timeline-${name}-${label.replaceAll(/\s+/gu, '-').toLocaleLowerCase('vi-VN')}`;
   return (
-    <div className="catalog-field">
+    <div className={cx.field}>
       <label htmlFor={id}>{label}</label>
       <input id={id} name={name} defaultValue={defaultValue} required />
     </div>
@@ -56,29 +59,31 @@ export function TimelineItemsEditor({
   const update = (index: number, patch: Partial<TimelineItemWrite>) =>
     onChange(items.map((item, itemIndex) => (itemIndex === index ? { ...item, ...patch } : item)));
   return (
-    <ol className="timeline-items" aria-label="Các mục kịch bản theo thứ tự">
+    <ol className={cx.timelineItems} aria-label="Các mục kịch bản theo thứ tự">
       {items.map((item, index) => (
         <li key={item.id}>
-          <div className="timeline-item-order">
+          <div className={cx.timelineItemOrder}>
             <strong>{String(index + 1).padStart(2, '0')}</strong>
             <button
               type="button"
+              className={cx.orderButton}
               aria-label={`Đưa ${item.title || `mục ${index + 1}`} lên`}
               disabled={index === 0}
               onClick={() => onChange(move(items, index, index - 1))}
             >
-              ↑
+              <ArrowUp aria-hidden className="size-4" />
             </button>
             <button
               type="button"
+              className={cx.orderButton}
               aria-label={`Đưa ${item.title || `mục ${index + 1}`} xuống`}
               disabled={index === items.length - 1}
               onClick={() => onChange(move(items, index, index + 1))}
             >
-              ↓
+              <ArrowDown aria-hidden className="size-4" />
             </button>
           </div>
-          <div className="timeline-item-fields">
+          <div className={cx.timelineItemFields}>
             <label>
               Tiêu đề mục {index + 1}
               <input
@@ -119,7 +124,7 @@ export function TimelineItemsEditor({
                 }
               />
             </label>
-            <label className="timeline-description-field">
+            <label className={cx.timelineDescriptionField}>
               Mô tả mục {index + 1}
               <input
                 value={item.description ?? ''}
@@ -131,7 +136,7 @@ export function TimelineItemsEditor({
             </label>
           </div>
           <button
-            className="timeline-remove-button"
+            className={cx.timelineRemoveButton}
             type="button"
             aria-label={`Xóa ${item.title || `mục ${index + 1}`}`}
             disabled={items.length === 1}
@@ -172,24 +177,24 @@ export function TimelineDraft({
   };
   return (
     <form
-      className="timeline-editor timeline-draft"
+      className={cn(cx.timelineEditor, cx.timelineDraft)}
       aria-label={`Bản nháp ${version.name}`}
       onSubmit={submit}
     >
-      <div className="timeline-editor-heading">
+      <div className={cx.timelineEditorHeading}>
         <div>
-          <p className="section-kicker">Bản nháp · revision {version.revision}</p>
           <h3>{version.name}</h3>
+          <p className={cx.help}>Bản nháp, phiên bản {version.revision}</p>
         </div>
         <button
-          className="catalog-secondary-button"
+          className={cx.secondaryButton}
           type="button"
           onClick={() => setItems([...items, newTimelineItem(items.length * 15)])}
         >
           Thêm mục
         </button>
       </div>
-      <div className="catalog-form-grid">
+      <div className={cx.formGrid}>
         <TimelineTextField label="Tên bản nháp" name="name" defaultValue={version.name} />
         <TimelineTextField
           label="Mô tả bản nháp"
@@ -198,12 +203,12 @@ export function TimelineDraft({
         />
       </div>
       <TimelineItemsEditor items={items} onChange={setItems} />
-      <div className="catalog-form-actions timeline-actions">
-        <button className="catalog-secondary-button" type="submit" disabled={pending}>
+      <div className={cn(cx.formActions, cx.timelineActions)}>
+        <button className={cx.secondaryButton} type="submit" disabled={pending}>
           Lưu kịch bản nháp
         </button>
         <button
-          className="catalog-primary-button"
+          className={cx.primaryButton}
           type="button"
           disabled={pending}
           onClick={() =>
@@ -238,9 +243,9 @@ export function TimelineHistoryVersion({
   version: TimelineVersion;
 }>) {
   return (
-    <div className="timeline-history-version">
+    <div className={cx.timelineHistoryVersion}>
       <div>
-        <span className="catalog-version-state">
+        <span className={cx.versionState}>
           {version.state === 'PUBLISHED' ? 'Đã công bố' : 'Đã thay thế'} · v
           {version.versionNumber ?? '—'}
         </span>
@@ -249,7 +254,7 @@ export function TimelineHistoryVersion({
       </div>
       {canClone ? (
         <button
-          className="catalog-secondary-button"
+          className={cx.secondaryButton}
           type="button"
           disabled={pending}
           aria-label={`Nhân bản phiên bản ${version.versionNumber ?? ''}`}

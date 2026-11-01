@@ -10,6 +10,11 @@ import type {
   VenueCatalogGateway,
 } from './catalog-api';
 
+import { X } from 'lucide-react';
+import { cn } from 'cn';
+import { Badge } from '../../components/ui/badge';
+import { cx } from './catalog-classes';
+
 export function RestaurantForm({
   onSubmit,
   pending,
@@ -32,7 +37,7 @@ export function RestaurantForm({
     });
   };
   return (
-    <form className="catalog-form-grid" onSubmit={submit} key={restaurant.revision}>
+    <form className={cx.formGrid} onSubmit={submit} key={restaurant.revision}>
       <Field label="Tên hiển thị" name="displayName" defaultValue={restaurant.displayName} />
       <Field label="Địa chỉ" name="address" defaultValue={restaurant.address} />
       <Field
@@ -47,14 +52,14 @@ export function RestaurantForm({
         defaultValue={restaurant.publicPhone ?? ''}
       />
       <Field
-        className="catalog-field-wide"
+        className={cx.fieldWide}
         label="Mô tả"
         name="description"
         as="textarea"
         defaultValue={restaurant.description}
       />
-      <div className="catalog-form-actions catalog-field-wide">
-        <button className="catalog-primary-button" type="submit" disabled={pending}>
+      <div className={cn(cx.formActions, cx.fieldWide)}>
+        <button className={cx.primaryButton} type="submit" disabled={pending}>
           {pending ? 'Đang lưu…' : 'Lưu hồ sơ nhà hàng'}
         </button>
       </div>
@@ -84,11 +89,11 @@ export function ShiftForm({
   };
   const prefix = shift.code.toLowerCase();
   return (
-    <form className="shift-form" onSubmit={submit} key={shift.revision}>
-      <div className="shift-form-title">
+    <form className={cx.shiftForm} onSubmit={submit} key={shift.revision}>
+      <div className={cx.shiftFormTitle}>
         <div>
-          <span className="section-kicker">Revision {shift.revision}</span>
           <h3>{shiftLabel(shift.code)}</h3>
+          <span className={cx.help}>Phiên bản {shift.revision}</span>
         </div>
         <Status lifecycle={shift.isActive ? 'ACTIVE' : 'RETIRED'} />
       </div>
@@ -106,11 +111,11 @@ export function ShiftForm({
         defaultValue={shift.endTime}
         id={`${prefix}-end`}
       />
-      <label className="catalog-checkbox">
+      <label className={cx.checkbox}>
         <input name="isActive" type="checkbox" defaultChecked={shift.isActive} />
         Đang nhận tiệc
       </label>
-      <button className="catalog-secondary-button" type="submit" disabled={pending}>
+      <button className={cx.secondaryButton} type="submit" disabled={pending}>
         Lưu khung giờ
       </button>
     </form>
@@ -139,19 +144,19 @@ export function HallForm({
     });
   };
   return (
-    <form className="catalog-drawer" onSubmit={submit}>
-      <div className="catalog-drawer-heading">
+    <form className={cx.drawer} onSubmit={submit}>
+      <div className={cx.drawerHeading}>
         <div>
-          <span className="section-kicker">
-            {hall === null ? 'Bản ghi mới' : `Revision ${hall.revision}`}
-          </span>
           <h3>{hall === null ? 'Thêm sảnh' : `Chỉnh sửa ${hall.name}`}</h3>
+          <span className={cx.help}>
+            {hall === null ? 'Bản ghi mới' : `Phiên bản ${hall.revision}`}
+          </span>
         </div>
         <button type="button" onClick={onCancel} aria-label="Đóng biểu mẫu sảnh">
-          ×
+          <X aria-hidden className="size-4" />
         </button>
       </div>
-      <div className="catalog-form-grid">
+      <div className={cx.formGrid}>
         <Field label="Tên sảnh" name="name" defaultValue={hall?.name ?? ''} />
         <Field
           label="Sức chứa tối đa"
@@ -169,18 +174,18 @@ export function HallForm({
           defaultValue={hall?.displayOrder ?? 0}
         />
         <Field
-          className="catalog-field-wide"
+          className={cx.fieldWide}
           label="Mô tả sảnh"
           name="description"
           as="textarea"
           defaultValue={hall?.description ?? ''}
         />
       </div>
-      <div className="catalog-form-actions">
-        <button className="catalog-secondary-button" type="button" onClick={onCancel}>
+      <div className={cx.formActions}>
+        <button className={cx.secondaryButton} type="button" onClick={onCancel}>
           Hủy
         </button>
-        <button className="catalog-primary-button" type="submit" disabled={pending}>
+        <button className={cx.primaryButton} type="submit" disabled={pending}>
           {hall === null ? 'Tạo sảnh' : 'Lưu thay đổi sảnh'}
         </button>
       </div>
@@ -205,7 +210,7 @@ export function Field({
 >) {
   const fieldId = id ?? `catalog-${name}`;
   return (
-    <div className={`catalog-field${className === undefined ? '' : ` ${className}`}`}>
+    <div className={cn(cx.field, className)}>
       <label htmlFor={fieldId}>{label}</label>
       {as === 'textarea' ? (
         <textarea
@@ -221,30 +226,28 @@ export function Field({
   );
 }
 
-export function SectionHeading({ eyebrow, title }: Readonly<{ eyebrow: string; title: string }>) {
+export function SectionHeading({ meta, title }: Readonly<{ meta?: string; title: string }>) {
   const id = `${title.toLocaleLowerCase('vi-VN').replaceAll(/[^a-z0-9]+/gu, '-')}-title`;
   return (
-    <div className="catalog-section-heading">
-      <p className="section-kicker">{eyebrow}</p>
+    <div className={cx.sectionHeading}>
       <h2 id={id}>{title}</h2>
+      {meta ? <p>{meta}</p> : null}
     </div>
   );
 }
 
 export function Status({ lifecycle }: Readonly<{ lifecycle: 'ACTIVE' | 'RETIRED' }>) {
   return (
-    <span className={`status ${lifecycle === 'ACTIVE' ? 'status-ready' : 'status-retired'}`}>
+    <Badge variant={lifecycle === 'ACTIVE' ? 'success' : 'neutral'}>
       {lifecycle === 'ACTIVE' ? 'Đang hoạt động' : 'Đã ngừng'}
-    </span>
+    </Badge>
   );
 }
 
 export function CatalogStatus({ label }: Readonly<{ label: string }>) {
   return (
-    <main id="catalog-content" className="catalog-loading" role="status" aria-busy="true">
-      <span className="catalog-loading-mark" aria-hidden="true">
-        W
-      </span>
+    <main id="catalog-content" data-ui-v3 className={cx.loading} role="status" aria-busy="true">
+      <span className={cx.loadingMark} aria-hidden="true" />
       <p>{label}</p>
     </main>
   );
@@ -255,9 +258,8 @@ export function CatalogAccessPanel({
   title,
 }: Readonly<{ children: ReactNode; title: string }>) {
   return (
-    <main id="catalog-content" className="permission-page">
-      <section className="permission-panel">
-        <span className="preview-label">Wedding Estate · Catalog</span>
+    <main id="catalog-content" data-ui-v3 className={cx.permissionPage}>
+      <section className={cx.permissionPanel}>
         <h1>{title}</h1>
         {children}
       </section>

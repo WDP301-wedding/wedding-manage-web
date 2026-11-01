@@ -12,6 +12,7 @@ import {
   type DishVersion,
 } from './food-catalog-shared';
 
+import { cx } from './catalog-classes';
 export function CreateDishForm({
   onSubmit,
   pending,
@@ -30,13 +31,13 @@ export function CreateDishForm({
     });
   };
   return (
-    <form className="catalog-editor" aria-label="Tạo món ăn" onSubmit={submit}>
-      <EditorHeading eyebrow="Bản nháp mới" title="Tạo món ăn" />
+    <form className={cx.editor} aria-label="Tạo món ăn" onSubmit={submit}>
+      <EditorHeading title="Tạo món ăn" />
       <LabeledInput label="Tên món" name="name" />
       <LabeledInput label="Nhóm món" name="categoryLabel" />
       <LabeledInput label="Mô tả món" name="description" as="textarea" />
       <LabeledInput label="Giá món (VND)" name="priceVnd" type="number" min={0} step={1} />
-      <button className="catalog-primary-button" type="submit" disabled={pending}>
+      <button className={cx.primaryButton} type="submit" disabled={pending}>
         Tạo bản nháp món ăn
       </button>
     </form>
@@ -59,7 +60,7 @@ export function DishAggregate({
     dish.versions[0]?.name ??
     'Món chưa đặt tên';
   return (
-    <article className="catalog-aggregate">
+    <article className={cx.aggregate}>
       <AggregateHeader
         label={label}
         lifecycle={dish.lifecycle}
@@ -73,7 +74,7 @@ export function DishAggregate({
           )
         }
       />
-      <div className="catalog-history" role="region" aria-label={`Lịch sử ${label}`}>
+      <div className={cx.history} role="region" aria-label={`Lịch sử ${label}`}>
         {dish.versions.map((version) => (
           <DishVersionRow
             key={version.id}
@@ -107,12 +108,12 @@ export function DishVersionRow({
 }>) {
   if (version.state !== 'DRAFT') {
     return (
-      <div className="catalog-version-row">
+      <div className={cx.versionRow}>
         <VersionSummary version={version} price={version.priceVnd} />
         {canClone ? (
           <button
             type="button"
-            className="catalog-secondary-button"
+            className={cx.secondaryButton}
             disabled={pending}
             aria-label={`Nhân bản phiên bản ${version.versionNumber ?? ''}`}
             onClick={() =>
@@ -146,8 +147,8 @@ export function DishVersionRow({
     );
   };
   return (
-    <form className="catalog-draft-form" aria-label={`Bản nháp ${version.name}`} onSubmit={submit}>
-      <span className="catalog-version-state">Bản nháp · revision {version.revision}</span>
+    <form className={cx.draftForm} aria-label={`Bản nháp ${version.name}`} onSubmit={submit}>
+      <span className={cx.versionState}>Bản nháp · revision {version.revision}</span>
       <LabeledInput label="Tên món bản nháp" name="name" defaultValue={version.name} />
       <LabeledInput
         label="Nhóm món bản nháp"
@@ -168,12 +169,12 @@ export function DishVersionRow({
         step={1}
         defaultValue={version.priceVnd ?? ''}
       />
-      <div className="catalog-form-actions">
-        <button className="catalog-secondary-button" type="submit" disabled={pending}>
+      <div className={cx.formActions}>
+        <button className={cx.secondaryButton} type="submit" disabled={pending}>
           Lưu bản nháp
         </button>
         <button
-          className="catalog-primary-button"
+          className={cx.primaryButton}
           type="button"
           disabled={pending}
           onClick={() =>

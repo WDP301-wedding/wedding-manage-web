@@ -30,6 +30,8 @@ import {
   OrderedVersionList,
 } from './menu-aggregate-list';
 
+import { cx } from './catalog-classes';
+import { cn } from 'cn';
 export {
   AggregateHeader,
   CreateDishForm,
@@ -102,19 +104,18 @@ export function DishMenuPanel({
 
   if (snapshot === null) {
     return (
-      <section className="catalog-section food-panel" aria-labelledby="food-title">
-        <div className="catalog-section-heading">
-          <p className="section-kicker">Versioned catalog</p>
+      <section className={cn(cx.section, cx.foodPanel)} aria-labelledby="food-title">
+        <div className={cx.sectionHeading}>
           <h2 id="food-title">Món ăn &amp; thực đơn</h2>
         </div>
         {error === null ? (
-          <p className="catalog-empty" role="status">
+          <p className={cx.empty} role="status">
             Đang tải món ăn và thực đơn…
           </p>
         ) : (
-          <div className="catalog-retry-state">
+          <div className={cx.retryState}>
             <p>{error}</p>
-            <button type="button" className="catalog-primary-button" onClick={() => void load()}>
+            <button type="button" className={cx.primaryButton} onClick={() => void load()}>
               Thử lại
             </button>
           </div>
@@ -124,14 +125,13 @@ export function DishMenuPanel({
   }
 
   return (
-    <section className="catalog-section food-panel" id="food" aria-labelledby="food-title">
-      <div className="catalog-section-heading">
-        <p className="section-kicker">Versioned catalog</p>
+    <section className={cn(cx.section, cx.foodPanel)} id="food" aria-labelledby="food-title">
+      <div className={cx.sectionHeading}>
         <h2 id="food-title">Món ăn &amp; thực đơn</h2>
       </div>
       <PanelMessages message={message} error={error} />
 
-      <div className="catalog-split-grid">
+      <div className={cx.splitGrid}>
         <CreateDishForm
           pending={pending}
           onSubmit={(input) =>
@@ -161,11 +161,11 @@ export function DishMenuPanel({
         />
       </div>
 
-      <div className="catalog-version-columns">
+      <div className={cx.versionColumns}>
         <div>
-          <h3 className="catalog-subheading">Món ăn</h3>
+          <h3 className={cx.subheading}>Món ăn</h3>
           {snapshot.dishes.length === 0 ? (
-            <p className="catalog-empty">Chưa có món ăn. Tạo bản nháp đầu tiên ở phía trên.</p>
+            <p className={cx.empty}>Chưa có món ăn. Tạo bản nháp đầu tiên ở phía trên.</p>
           ) : (
             snapshot.dishes.map((dish) => (
               <DishAggregate
@@ -179,9 +179,9 @@ export function DishMenuPanel({
           )}
         </div>
         <div>
-          <h3 className="catalog-subheading">Gói thực đơn</h3>
+          <h3 className={cx.subheading}>Gói thực đơn</h3>
           {snapshot.menus.length === 0 ? (
-            <p className="catalog-empty">Chưa có gói thực đơn.</p>
+            <p className={cx.empty}>Chưa có gói thực đơn.</p>
           ) : (
             snapshot.menus.map((menu) => (
               <MenuAggregate

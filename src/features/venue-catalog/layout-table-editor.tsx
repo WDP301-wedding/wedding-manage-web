@@ -2,6 +2,7 @@
 
 import type { LayoutTableWrite } from './catalog-api';
 
+import { cx } from './catalog-classes';
 export const CANVAS_SIZE = 10_000;
 
 export function TableNumber({
@@ -45,7 +46,7 @@ export function TableEditor({
   const number = (key: keyof LayoutTableWrite, value: string) =>
     onChange({ ...table, [key]: Number.parseInt(value, 10) || 0 });
   return (
-    <fieldset className="layout-table-editor">
+    <fieldset className={cx.layoutTableEditor}>
       <legend>{table.label}</legend>
       <code title="Danh tính bàn ổn định">{table.tableId}</code>
       <label>
@@ -110,7 +111,7 @@ export function TableEditor({
         onChange={(value) => number('rotationDegrees', value)}
       />
       <button
-        className="catalog-secondary-button"
+        className={cx.secondaryButton}
         type="button"
         onClick={onRemove}
         aria-label={`Bỏ và ngừng vĩnh viễn ${table.label}`}
