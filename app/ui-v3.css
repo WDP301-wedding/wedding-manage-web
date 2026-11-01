@@ -61,6 +61,7 @@
 @source '../src/features/payments-billing/incidental-create-form.tsx';
 @source '../src/features/payments-billing/incidental-table.tsx';
 @source '../src/features/payments-billing/final-invoices-list.tsx';
+@source '../src/features/staff-operations';
 
 /* Sản phẩm chỉ có giao diện sáng: khoá biến thể dark: vào class .dark không bao giờ được gắn. */
 @custom-variant dark (&:is(.dark *));
@@ -243,5 +244,19 @@
   /* Giữ hiện dần (cho biết nội dung đã đổi), bỏ dịch chuyển. */
   ::view-transition-new(.hy-page-in) {
     animation-name: hy-fade-in;
+  }
+}
+
+/* Điểm nhấn duy nhất của web quản lý: dấu tích tự vẽ nét khi khách vừa được check-in. */
+@media (prefers-reduced-motion: no-preference) {
+  .hy-draw-check path {
+    stroke-dasharray: 24;
+    stroke-dashoffset: 24;
+    animation: hy-draw 320ms var(--hy-ease-decelerate) forwards;
+  }
+}
+@keyframes hy-draw {
+  to {
+    stroke-dashoffset: 0;
   }
 }
