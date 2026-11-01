@@ -6,6 +6,7 @@ import { type ReactNode, useEffect, useRef, useState } from 'react';
 import type { ManagementSessionSnapshot } from './session';
 import { BrandMark } from '../../design-system/brand-mark';
 import { OfflineBanner } from '../../design-system/offline-banner';
+import { PageTransition } from '../../design-system/page-transition';
 import {
   CalendarIcon,
   ClipboardListIcon,
@@ -16,7 +17,7 @@ import {
   Settings2Icon,
   UsersIcon,
   XIcon,
-} from '../print-orders/icons';
+} from 'lucide-react';
 
 // The outer admin-shell / operations-shell / operations-main-container classes stay: legacy page
 // CSS still lays out and targets content through them until every screen is on Hỷ Yến v3.
@@ -371,7 +372,7 @@ export function OperationsShell({
 
       <div className="operations-main-container">
         <OfflineBanner />
-        {children}
+        <PageTransition>{children}</PageTransition>
       </div>
     </div>
   );

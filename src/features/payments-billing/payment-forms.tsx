@@ -22,20 +22,6 @@ export type CommandOutcome = 'succeeded' | 'retry' | 'failed';
 const money = (value: number) =>
   new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
 
-function EvidenceFields({ refund = false }: Readonly<{ refund?: boolean }>) {
-  return (
-    <>
-      <label>
-        {refund ? 'Mã chứng từ hoàn' : 'Mã chứng từ'}
-        <input name="evidence" required maxLength={120} autoComplete="off" />
-      </label>
-      <label>
-        {refund ? 'Lý do hoàn tiền' : 'Lý do ghi nhận'}
-        <textarea name="reason" required maxLength={500} rows={3} />
-      </label>
-    </>
-  );
-}
 function field(data: FormData, name: string): string {
   const value = data.get(name);
   return typeof value === 'string' ? value : '';
@@ -110,7 +96,6 @@ export function ManualPaymentForm({
   const form = useRef<HTMLFormElement>(null);
   const [draft, setDraft] = useState<ManualPaymentBody | null>(null);
   const [retry, setRetry] = useState(false);
-  const [invalid, setInvalid] = useState(false);
   const review = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
@@ -242,7 +227,6 @@ export function RefundForm({
   const form = useRef<HTMLFormElement>(null);
   const [draft, setDraft] = useState<RefundBody | null>(null);
   const [retry, setRetry] = useState(false);
-  const [invalid, setInvalid] = useState(false);
   const payments = booking.history.filter((entry) => entry.kind === 'PAYMENT');
   const review = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();

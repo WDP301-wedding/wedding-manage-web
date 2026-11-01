@@ -17,6 +17,7 @@
 @source '../src/features/identity-access/password-reset-otp-form.tsx';
 @source '../src/features/identity-access/account-page.tsx';
 @source '../src/features/identity-access/account-settings.tsx';
+@source '../src/features/identity-access/copy-button.tsx';
 @source '../src/features/booking-lifecycle/intake-page.tsx';
 @source '../src/features/booking-lifecycle/consultation-kpi-bar.tsx';
 @source '../src/features/booking-lifecycle/consultation-requests-list.tsx';
@@ -49,6 +50,7 @@
 @source '../src/features/booking-lifecycle/appendix-detail-view.tsx';
 @source '../src/features/booking-lifecycle/proposal-lifecycle-closure.tsx';
 @source '../src/features/payments-billing/billing-page.tsx';
+@source '../src/features/payments-billing/billing-booking-lookup.tsx';
 @source '../src/features/payments-billing/billing-display.tsx';
 @source '../src/features/payments-billing/billing-form-classes.ts';
 @source '../src/features/payments-billing/billing-mutations-section.tsx';
@@ -195,5 +197,51 @@
   }
   :where([data-ui-v3] *) {
     outline-color: color-mix(in oklab, var(--hy-focus) 50%, transparent);
+  }
+  /* Phần trình duyệt cũng theo thương hiệu: bôi chọn chữ, con trỏ nhập, thanh cuộn, số canh cột. */
+  :where([data-ui-v3]) ::selection {
+    background-color: var(--hy-wine-soft);
+    color: var(--hy-wine);
+  }
+  :where([data-ui-v3]) {
+    caret-color: var(--hy-wine);
+    scrollbar-color: var(--hy-outline-strong) transparent;
+  }
+  :where([data-ui-v3]) :where(table) {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Chuyển trang bằng React <ViewTransition> của Next 16 (design-system/page-transition.tsx):
+   trang cũ mờ nhanh, trang mới hiện dần và nhích lên 8px; thanh menu nằm trong root nên đứng yên. */
+::view-transition {
+  pointer-events: none;
+}
+::view-transition-old(.hy-page-out) {
+  animation: 120ms var(--hy-ease-accelerate) both hy-fade-out;
+}
+::view-transition-new(.hy-page-in) {
+  animation: 200ms var(--hy-ease-decelerate) both hy-rise-in;
+}
+@keyframes hy-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes hy-rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@keyframes hy-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  /* Giữ hiện dần (cho biết nội dung đã đổi), bỏ dịch chuyển. */
+  ::view-transition-new(.hy-page-in) {
+    animation-name: hy-fade-in;
   }
 }

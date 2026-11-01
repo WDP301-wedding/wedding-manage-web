@@ -140,7 +140,7 @@ export function ProposalPanel({
           </dl>
           <div className="flex flex-wrap items-center gap-2">
             {proposal.phase === 'CONFIRMED' && (
-              <Badge variant="success" className="before:hidden">
+              <Badge variant="success">
                 <Check aria-hidden />
                 Đã xác nhận &amp; hoàn tất cọc
               </Badge>

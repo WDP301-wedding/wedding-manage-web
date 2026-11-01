@@ -1,13 +1,12 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { TriangleAlert } from 'lucide-react';
 import { Badge } from '../../components/ui/badge';
 import { minimumEventDate, useMinimumEventDate } from '../../lib/event-date';
 import type { BookingPrefill } from './booking-helpers';
 import { field, formatDateTime, normalizeSearch } from './booking-helpers';
-import { notify } from '../../design-system/notifications';
-import type { Authorize, BookingSelections, ManagementBookingGateway } from './booking-api';
+import type { Authorize, ManagementBookingGateway } from './booking-api';
 import { BookingCreateSummary } from './booking-create-summary';
 import { BookingCreateFormFields } from './booking-create-form-fields';
 import { BookingCreateCatalogBar } from './booking-create-catalog-bar';

@@ -35,7 +35,6 @@ export function RefundApprovalForm({
   const form = useRef<HTMLFormElement>(null);
   const [draft, setDraft] = useState<RefundApprovalBody | null>(null);
   const [retry, setRetry] = useState(false);
-  const [invalid, setInvalid] = useState(false);
   const credits = booking.history.filter((entry) => entry.kind === 'CREDIT_ADJUSTMENT');
   const review = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();

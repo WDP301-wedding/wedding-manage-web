@@ -82,7 +82,6 @@ export function PageState({
       className="flex min-h-[60vh] flex-col items-start gap-3 bg-background p-6 sm:p-10"
       id="booking-main"
     >
-      <p className="text-xs font-semibold text-primary">Hỷ Yến · Quản trị nhà hàng</p>
       <h1 className="text-2xl font-bold">{title}</h1>
       {children}
     </main>

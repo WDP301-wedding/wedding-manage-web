@@ -40,7 +40,6 @@ export function useConsultationRequests() {
     queueFilter = useRef('');
   const [snapshot, setSnapshot] = useState<ManagementSessionSnapshot | null>(null);
   const [access, setAccess] = useState<'loading' | 'manager' | 'denied'>('loading');
-  const [resultKey, setResultKey] = useState('');
   const [queue, setQueue] = useState<Queue | null>(null),
     [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -106,7 +105,6 @@ export function useConsultationRequests() {
           data: rawData.map((item) => ({ ...item })),
         };
         queueFilter.current = filterKey;
-        setResultKey(filterKey);
         setQueue((previous) => {
           if (!cursor || !previous) return page;
           const items = new Map(previous.data.map((item) => [item.id, item]));

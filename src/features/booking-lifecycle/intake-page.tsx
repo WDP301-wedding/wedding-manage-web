@@ -80,7 +80,6 @@ export function ConsultationRequestsPage() {
       >
         <header className="flex flex-wrap items-end justify-between gap-4">
           <div className="flex max-w-[640px] flex-col gap-1">
-            <p className="text-xs font-semibold text-primary">Hỷ Yến · Quản trị nhà hàng</p>
             <h1 className="text-2xl font-bold">Yêu cầu tư vấn</h1>
             <p className="text-muted-foreground">
               Tiếp nhận lời nhắn và mở hồ sơ để cùng khách hàng chuẩn bị buổi tiệc.

@@ -13,7 +13,6 @@ export function PasswordResetOtpForm({ onCompleted }: { onCompleted: () => void 
   const [challenge, setChallenge] = useState<OtpChallenge | null>(null);
   const [remaining, setRemaining] = useState(0);
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   useEffect(() => {
     if (remaining <= 0) return;
     const timer = setTimeout(() => setRemaining((value) => Math.max(0, value - 1)), 1000);
@@ -22,7 +21,6 @@ export function PasswordResetOtpForm({ onCompleted }: { onCompleted: () => void 
   async function send() {
     if (pending || remaining > 0) return;
     setPending(true);
-    setError(null);
     try {
       const next = await gateway.request(email.trim());
       setChallenge(next);
@@ -35,7 +33,6 @@ export function PasswordResetOtpForm({ onCompleted }: { onCompleted: () => void 
         caught instanceof ApiClientError && caught.status === 429
           ? 'Bạn đã yêu cầu nhiều mã. Hãy đợi trước khi thử lại.'
           : 'Chưa gửi được mã xác nhận. Vui lòng thử lại.';
-      setError(msg);
       notify.error(caught, { fallbackMessage: msg });
     } finally {
       setPending(false);
@@ -55,7 +52,6 @@ export function PasswordResetOtpForm({ onCompleted }: { onCompleted: () => void 
       return;
     }
     setPending(true);
-    setError(null);
     try {
       await gateway.complete(challenge.challengeId, readString(form, 'code'), password);
       notify.success('Cập nhật mật khẩu thành công!');
@@ -70,7 +66,6 @@ export function PasswordResetOtpForm({ onCompleted }: { onCompleted: () => void 
         const pw = caught.details.find((d) => d.path === 'newPassword' || d.path === 'password');
         if (pw) {
           const msg = pw.message || 'Mật khẩu mới chưa hợp lệ (phải từ 1 đến 128 ký tự).';
-          setError(msg);
           notify.error(caught, { fallbackMessage: msg });
           return;
         }
@@ -79,7 +74,6 @@ export function PasswordResetOtpForm({ onCompleted }: { onCompleted: () => void 
         caught instanceof ApiClientError && caught.status === 429
           ? 'Bạn đã thử nhiều lần. Hãy đợi trước khi tiếp tục.'
           : 'Mã chưa đúng, đã hết hạn hoặc đã được sử dụng. Hãy kiểm tra mã mới nhất hoặc gửi lại.';
-      setError(msg);
       notify.error(caught, { fallbackMessage: msg });
     } finally {
       setPending(false);
@@ -173,7 +167,6 @@ export function PasswordResetOtpForm({ onCompleted }: { onCompleted: () => void 
             onClick={() => {
               setChallenge(null);
               setRemaining(0);
-              setError(null);
             }}
           >
             Dùng email khác

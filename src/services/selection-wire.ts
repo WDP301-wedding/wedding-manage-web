@@ -22,5 +22,3 @@ export const selectionResultSchema = z.object({
   bookingRevision: z.number().int().positive(),
   selection: customerSelectionSchema,
 });
-export type CustomerSelection = z.infer<typeof customerSelectionSchema>;
-export type SelectionResult = z.infer<typeof selectionResultSchema>;

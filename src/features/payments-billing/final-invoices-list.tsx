@@ -40,7 +40,7 @@ export function FinalInvoicesList({
                       <strong className="text-base font-semibold">
                         Hoá đơn {inv.invoiceNumber} · Bản {inv.revisionNumber}
                       </strong>
-                      <Badge variant="success" className="before:hidden">
+                      <Badge variant="success">
                         <Lock aria-hidden />
                         Bất biến &amp; Đã khoá sổ
                       </Badge>

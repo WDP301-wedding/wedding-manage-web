@@ -33,16 +33,15 @@ export function IncidentalsPanel({
   const [incidentals, setIncidentals] = useState<IncidentalExpensesResponse | null>(null);
   const [finalInvoices, setFinalInvoices] = useState<FinalInvoicesResponse | null>(null);
   const [appendices, setAppendices] = useState<AppendixListData | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [showFinalizeConfirm, setShowFinalizeConfirm] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const activeBookingIdRef = useRef(bookingId);
 
   const loadData = async (targetId = bookingId) => {
     if (!targetId) return;
     setLoading(true);
-    setError(null);
+    setLoadError(null);
     try {
       const [incRes, finRes, appRes] = await Promise.allSettled([
         billingService.getIncidentals(targetId),
@@ -71,12 +70,11 @@ export function IncidentalsPanel({
       }
 
       if (errors.length > 0) {
-        setError(errors.join(' | '));
+        setLoadError(errors.join(' '));
       }
     } catch (err) {
       if (activeBookingIdRef.current !== targetId) return;
-      const friendly = describeApiError(err);
-      setError(friendly.message);
+      setLoadError(describeApiError(err).message);
     } finally {
       if (activeBookingIdRef.current === targetId) {
         setLoading(false);
@@ -89,23 +87,18 @@ export function IncidentalsPanel({
     setIncidentals(null);
     setFinalInvoices(null);
     setAppendices(null);
-    setError(null);
-    setMessage(null);
     setShowFinalizeConfirm(false);
     void loadData(bookingId);
   }, [bookingId]);
 
   const handleCreateIncidental = async (formData: IncidentalFormData) => {
     setLoading(true);
-    setError(null);
-    setMessage(null);
     try {
       await billingService.createIncidental(bookingId, {
         ...formData,
         expectedRevision: incidentals?.revision ?? 1,
       });
       const msg = 'Đã thêm chi phí phát sinh thành công.';
-      setMessage(msg);
       notify.success(msg);
       setShowAddForm(false);
       await loadData();
@@ -114,7 +107,6 @@ export function IncidentalsPanel({
       const friendly = describeApiError(err, {
         EVENT_NOT_ENDED: 'Chỉ có thể ghi nhận phát sinh sau khi tiệc kết thúc.',
       });
-      setError(friendly.message);
       notify.error(err, { message: friendly.message });
     } finally {
       setLoading(false);
@@ -123,17 +115,14 @@ export function IncidentalsPanel({
 
   const handleDeleteLine = async (lineId: string) => {
     setLoading(true);
-    setError(null);
     try {
       await billingService.deleteIncidental(bookingId, lineId, incidentals?.revision ?? 1);
       const msg = 'Đã xoá dòng phát sinh.';
-      setMessage(msg);
       notify.success(msg);
       await loadData();
       onRefresh();
     } catch (err) {
       const friendly = describeApiError(err);
-      setError(friendly.message);
       notify.error(err, { message: friendly.message });
     } finally {
       setLoading(false);
@@ -144,13 +133,10 @@ export function IncidentalsPanel({
     if (!appendices?.effectiveRevisionId) {
       const msg =
         'Chưa thể chốt hoá đơn: không tìm thấy thoả thuận thương mại hiệu lực của booking.';
-      setError(msg);
       notify.error(msg);
       return;
     }
     setFinalizing(true);
-    setError(null);
-    setMessage(null);
     try {
       await billingService.finalizeInvoice(bookingId, {
         expectedBillingRevision: billingRevision,
@@ -158,7 +144,6 @@ export function IncidentalsPanel({
         expectedDraftRevision: incidentals?.revision ?? 0,
       });
       const msg = 'Đã chốt hoá đơn quyết toán cuối thành công. Sổ cái công nợ đã được khoá sổ.';
-      setMessage(msg);
       notify.success(msg);
       setShowFinalizeConfirm(false);
       await loadData();
@@ -171,7 +156,6 @@ export function IncidentalsPanel({
         COMMERCIAL_PREDECESSOR_STALE: 'Thoả thuận thương mại vừa thay đổi. Vui lòng làm mới trang.',
         EXPENSE_REVISION_STALE: 'Dữ liệu phát sinh vừa thay đổi. Vui lòng làm mới trang.',
       });
-      setError(friendly.message);
       notify.error(err, { message: friendly.message });
     } finally {
       setFinalizing(false);
@@ -203,7 +187,14 @@ export function IncidentalsPanel({
         </Button>
       </div>
 
-      {/* Bố cục 2 cột: Cột trái (Nghiệp vụ tất toán & Hoá đơn cuối) · Cột phải (Chi phí phát sinh nháp) */}
+      {/* Lỗi tải hiện ngay trong khung (không dùng toast) để người dùng biết vì sao bảng trống. */}
+      {loadError && (
+        <p className="rounded-lg bg-hy-error-bg px-4 py-3 text-xs text-hy-error">
+          Chưa tải được dữ liệu. {loadError}
+        </p>
+      )}
+
+      {/* Bố cục 2 cột: trái là quyết toán và hoá đơn cuối, phải là chi phí phát sinh nháp. */}
       <div className="flex flex-wrap items-start gap-6">
         {/* CỘT TRÁI: Nghiệp vụ tất toán sau tiệc & Hoá đơn cuối */}
         <div className="flex min-w-0 flex-[1_1_420px] flex-col gap-5">
@@ -311,7 +302,7 @@ export function IncidentalsPanel({
                 {incidentals?.revision ?? 0}
               </h3>
               {hasFinalizedInvoice ? (
-                <Badge variant="success" className="before:hidden">
+                <Badge variant="success">
                   <Lock aria-hidden />
                   Đã khoá sổ chi phí theo hoá đơn cuối
                 </Badge>

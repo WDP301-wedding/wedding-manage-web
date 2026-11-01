@@ -1,4 +1,8 @@
-// Class dùng chung cho các form nghiệp vụ thanh toán (thu, hoàn, duyệt hoàn).
+// Class dùng chung cho trang thanh toán và các form nghiệp vụ (thu, hoàn, duyệt hoàn).
+export const pageStateClass =
+  'flex min-h-[60vh] flex-col items-start gap-3 bg-background p-6 sm:p-10';
+export const cardClass =
+  'flex min-w-0 flex-col gap-4 rounded-xl border border-border bg-card p-6 shadow-hy-1';
 export const panelClass = 'flex flex-col gap-4';
 export const fieldsetClass = 'flex min-w-0 flex-col gap-3';
 export const rowClass = 'grid gap-3 sm:grid-cols-2';

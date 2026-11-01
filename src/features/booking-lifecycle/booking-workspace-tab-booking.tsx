@@ -77,7 +77,7 @@ export function BookingWorkspaceTabBooking({
           Quay lại Bước 01: Hồ sơ tư vấn
         </Button>
         {consultation ? (
-          <Badge variant="success" className="h-auto whitespace-normal before:hidden">
+          <Badge variant="success" className="h-auto whitespace-normal">
             <Check aria-hidden />
             Đã kết nối mã tư vấn: {consultation.id.slice(0, 8)}… (Phiên bản {consultation.revision})
           </Badge>

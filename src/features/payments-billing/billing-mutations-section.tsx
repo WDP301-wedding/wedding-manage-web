@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Banknote, Scale, Undo2 } from 'lucide-react';
 import type { BillingView, ManualPaymentBody, RefundBody, RefundApprovalBody } from './billing-api';
 import { ManualPaymentForm, RefundForm, type CommandOutcome } from './payment-forms';
 import { RefundApprovalForm } from './refund-approval-form';
@@ -19,7 +18,7 @@ export interface BillingMutationsSectionProps {
 }
 
 const tabClass =
-  'inline-flex h-10 items-center justify-center gap-1.5 rounded-md text-xs font-semibold text-muted-foreground transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none aria-selected:bg-card aria-selected:text-foreground aria-selected:shadow-hy-1 [&_svg]:size-4';
+  'inline-flex h-10 items-center justify-center rounded-md text-xs font-semibold text-muted-foreground transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none aria-selected:bg-card aria-selected:text-foreground aria-selected:shadow-hy-1';
 
 export function BillingMutationsSection({
   view,
@@ -42,7 +41,8 @@ export function BillingMutationsSection({
   }, [uncertain, approvalRevision, refundRevision]);
 
   // Tab ẩn bằng class (không dùng thuộc tính hidden) để giữ hành vi cũ.
-  const pane = (tab: typeof activeTab) => (activeTab === tab ? 'block' : 'hidden');
+  const pane = (tab: typeof activeTab) =>
+    activeTab === tab ? 'block motion-safe:animate-in motion-safe:fade-in-0' : 'hidden';
 
   return (
     <div className="flex min-w-0 flex-[1_1_440px] flex-col gap-4 rounded-xl border border-border bg-card p-6 shadow-hy-1">
@@ -65,7 +65,6 @@ export function BillingMutationsSection({
           className={tabClass}
           onClick={() => setActiveTab('manual')}
         >
-          <Banknote aria-hidden />
           Thu tiền
         </button>
         <button
@@ -75,7 +74,6 @@ export function BillingMutationsSection({
           className={tabClass}
           onClick={() => setActiveTab('refund')}
         >
-          <Undo2 aria-hidden />
           Hoàn tiền
         </button>
         <button
@@ -85,7 +83,6 @@ export function BillingMutationsSection({
           className={tabClass}
           onClick={() => setActiveTab('approval')}
         >
-          <Scale aria-hidden />
           Duyệt hoàn
         </button>
       </div>

@@ -1,15 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect } from 'react';
 import { AccountSettings } from './account-settings';
 import { OperationsShell } from './operations-shell';
 import { buttonVariants } from '../../components/ui/button';
-import {
-  createIdentityApi,
-  type ManagementIdentitySession,
-  sharedManagementSession,
-} from './session';
+import { type ManagementIdentitySession, sharedManagementSession } from './session';
 import { useManagementSession } from './use-management-session';
 import { notify } from '../../design-system/notifications';
 
@@ -54,7 +50,6 @@ export function ManagementAccountExperience({ session }: { session: ManagementId
         className="flex flex-col gap-6 px-4 pt-8 pb-14 sm:px-10"
       >
         <header className="flex flex-col gap-1">
-          <p className="text-xs font-semibold text-primary">Thông tin và bảo mật</p>
           <h1 className="text-2xl font-bold">Quản lý tài khoản</h1>
         </header>
         {snapshot === null ? (

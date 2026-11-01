@@ -17,10 +17,8 @@ export const PRINT_ORDER_STATUSES = [
 
 export type PrintOrderStatus = (typeof PRINT_ORDER_STATUSES)[number];
 
-export const MAX_ORDER_TOTAL_VND = 1_000_000_000_000;
 export const MAX_LINE_UNIT_PRICE_VND = 1_000_000;
 export const MIN_LINE_UNIT_PRICE_VND = 1;
-export const QUOTE_EXPIRY_DAYS = 7;
 
 export interface PrintLineView {
   readonly lineId: string;

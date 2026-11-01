@@ -76,7 +76,6 @@ export function ManagementBookingWorkspace({
       <div className="mb-6 flex flex-col gap-6">
         <header className="flex flex-wrap items-start justify-between gap-6">
           <div className="flex max-w-xl min-w-0 flex-[1_1_360px] flex-col gap-1">
-            <p className="text-xs font-semibold text-primary">Hỷ Yến · Quản trị nhà hàng</p>
             <h1 className="text-2xl font-bold">Điều phối đặt tiệc</h1>
             <p className="text-muted-foreground">
               Mỗi hồ sơ tư vấn gắn với một tiệc. Mở lại hồ sơ để tiếp tục đúng tiến trình.

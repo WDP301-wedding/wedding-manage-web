@@ -5,7 +5,7 @@ import { cn } from 'cn';
 
 // Hỷ Yến v3 StatusChip: luôn kèm chữ trạng thái, màu chỉ để hỗ trợ.
 const badgeVariants = cva(
-  "group/badge inline-flex w-fit shrink-0 items-center justify-center gap-1 overflow-hidden rounded-full border border-transparent px-3 py-1 text-2xs font-medium whitespace-nowrap transition-all before:size-1.5 before:shrink-0 before:rounded-full before:bg-current before:content-[''] focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background [&>svg]:pointer-events-none [&>svg]:size-3!",
+  'group/badge inline-flex w-fit shrink-0 items-center justify-center gap-1 overflow-hidden rounded-full border border-transparent px-3 py-1 text-2xs font-medium whitespace-nowrap transition-all focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background [&>svg]:pointer-events-none [&>svg]:size-3!',
   {
     variants: {
       variant: {

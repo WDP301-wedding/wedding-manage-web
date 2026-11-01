@@ -27,7 +27,6 @@ export function AccountSettings({
   const [profile, setProfile] = useState<Profile | null>(null);
   const [name, setName] = useState('');
   const [pending, setPending] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [reload, setReload] = useState(0);
   const [challenge, setChallenge] = useState<OtpChallenge | null>(null);
@@ -42,7 +41,6 @@ export function AccountSettings({
     const value = await session.authorize((token) => gateway.requestPasswordChange(token, current));
     setChallenge(value);
     setRemaining(value.resendAfterSeconds);
-    setNotice('Mã OTP đã được gửi vào email của bạn. Mã có hiệu lực 10 phút.');
   }
   function requestFailed(caught: unknown) {
     let msg = 'Chưa gửi được mã xác nhận. Hãy kiểm tra kết nối rồi thử lại.';
@@ -72,7 +70,6 @@ export function AccountSettings({
     if (typeof current !== 'string') return;
     setPending(true);
     setError(null);
-    setNotice(null);
     try {
       await sendCode(current);
     } catch (caught) {
@@ -107,7 +104,6 @@ export function AccountSettings({
     if (pending || profile === null) return;
     setPending(true);
     setError(null);
-    setNotice(null);
     try {
       const next = await session.authorize((token) =>
         gateway.updateProfile(token, name.trim(), profile.revision),
@@ -139,7 +135,6 @@ export function AccountSettings({
     }
     setPending(true);
     setError(null);
-    setNotice(null);
     try {
       if (!challenge) {
         await sendCode(current);
