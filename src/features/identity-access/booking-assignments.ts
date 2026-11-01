@@ -141,34 +141,6 @@ export function getMyManagedBookingIds(accountId?: string): string[] {
     .map((a) => a.bookingId);
 }
 
-export function saveMyManagedBookingIds(ids: string[], accountId?: string): void {
-  const currentId = resolveCurrentAccountId(accountId);
-  const currentEmail = resolveCurrentAccountEmail();
-  const assignments = getBookingAssignments();
-  const updated: BookingAssignmentsRegistry = { ...assignments };
-
-  for (const [bId, item] of Object.entries(updated)) {
-    if (item.assignedAccountId === currentId && !ids.includes(bId)) {
-      delete updated[bId];
-    }
-  }
-  for (const id of ids) {
-    if (!updated[id]) {
-      updated[id] = {
-        bookingId: id,
-        assignedAccountId: currentId,
-        assignedEmail: currentEmail,
-        assignedAt: new Date().toISOString(),
-      };
-    }
-  }
-  saveBookingAssignments(updated);
-}
-
 export function addMyManagedBookingId(id: string, accountId?: string, email?: string): void {
   claimBookingAssignment(id, accountId, email);
-}
-
-export function removeMyManagedBookingId(id: string, accountId?: string): void {
-  releaseBookingAssignment(id, accountId);
 }

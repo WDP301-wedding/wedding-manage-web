@@ -2,7 +2,21 @@
 
 import { useEffect, useRef } from 'react';
 import type { NotificationItem } from './notification-types';
-import styles from './notification.module.css';
+import { CircleCheck, CircleX, Info, TriangleAlert, X } from 'lucide-react';
+import { cn } from 'cn';
+
+const toastIcon = {
+  success: CircleCheck,
+  error: CircleX,
+  warning: TriangleAlert,
+  info: Info,
+} as const;
+const toastTone = {
+  success: 'border-hy-success/30 text-hy-success',
+  error: 'border-hy-error/30 text-hy-error',
+  warning: 'border-hy-warning/30 text-hy-warning',
+  info: 'border-hy-info/30 text-hy-info',
+} as const;
 
 interface NotificationToastProps {
   item: NotificationItem;
@@ -52,126 +66,35 @@ export function NotificationToast({ item, onDismiss }: Readonly<NotificationToas
 
   const isAlert = item.type === 'error' || item.type === 'warning';
 
+  const Icon = toastIcon[item.type];
   return (
     <div
-      className={`${styles.toast} ${
-        item.type === 'success'
-          ? styles.toastSuccess
-          : item.type === 'error'
-            ? styles.toastError
-            : item.type === 'warning'
-              ? styles.toastWarning
-              : styles.toastInfo
-      }`}
+      className={cn(
+        'pointer-events-auto relative flex items-start gap-3 rounded-xl border bg-card px-4 py-3 shadow-hy-2 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-top-2 motion-safe:duration-200',
+        toastTone[item.type],
+      )}
       role={isAlert ? 'alert' : 'status'}
       aria-live={isAlert ? 'assertive' : 'polite'}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      <div className={styles.iconWrapper}>
-        {item.type === 'success' && (
-          <svg
-            className={styles.iconSuccess}
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-            <polyline points="22 4 12 14.01 9 11.01" />
-          </svg>
-        )}
-        {item.type === 'error' && (
-          <svg
-            className={styles.iconError}
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <circle cx="12" cy="12" r="10" />
-            <line x1="15" y1="9" x2="9" y2="15" />
-            <line x1="9" y1="9" x2="15" y2="15" />
-          </svg>
-        )}
-        {item.type === 'warning' && (
-          <svg
-            className={styles.iconWarning}
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-            <line x1="12" y1="9" x2="12" y2="13" />
-            <line x1="12" y1="17" x2="12.01" y2="17" />
-          </svg>
-        )}
-        {item.type === 'info' && (
-          <svg
-            className={styles.iconInfo}
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-          >
-            <circle cx="12" cy="12" r="10" />
-            <line x1="12" y1="16" x2="12" y2="12" />
-            <line x1="12" y1="8" x2="12.01" y2="8" />
-          </svg>
-        )}
-      </div>
-
-      <div className={styles.content}>
-        {item.title && <div className={styles.title}>{item.title}</div>}
-        <p className={styles.message}>{item.message}</p>
+      <Icon aria-hidden className="mt-0.5 size-5 shrink-0" />
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5 text-foreground">
+        {item.title && <div className="font-semibold">{item.title}</div>}
+        <p className="text-sm [overflow-wrap:anywhere]">{item.message}</p>
         {item.requestId && (
-          <span className={styles.requestId} title={item.requestId}>
+          <span className="text-2xs text-muted-foreground" title={item.requestId}>
             Mã yêu cầu: {item.requestId.slice(0, 8)}…
           </span>
         )}
       </div>
-
       <button
         type="button"
-        className={styles.closeButton}
+        className="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
         onClick={() => onDismiss(item.id)}
         aria-label="Đóng thông báo"
       >
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
-        >
-          <line x1="18" y1="6" x2="6" y2="18" />
-          <line x1="6" y1="6" x2="18" y2="18" />
-        </svg>
+        <X aria-hidden className="size-4" />
       </button>
     </div>
   );

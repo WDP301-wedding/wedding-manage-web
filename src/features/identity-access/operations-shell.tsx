@@ -19,8 +19,6 @@ import {
   XIcon,
 } from 'lucide-react';
 
-// The outer admin-shell / operations-shell / operations-main-container classes stay: legacy page
-// CSS still lays out and targets content through them until every screen is on Hỷ Yến v3.
 const navItemClass =
   'flex h-11 items-center gap-3 rounded-lg px-3 text-sm text-muted-foreground no-underline transition-colors duration-150 hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none aria-[current=page]:bg-accent aria-[current=page]:font-semibold aria-[current=page]:text-accent-foreground';
 const iconButtonClass =
@@ -299,8 +297,11 @@ export function OperationsShell({
   );
 
   return (
-    <div className="admin-shell operations-shell">
-      <a className="skip-link" href={`#${contentId}`}>
+    <div className="flex min-h-screen flex-col bg-background min-[1025px]:grid min-[1025px]:grid-cols-[240px_minmax(0,1fr)] xl:grid-cols-[264px_minmax(0,1fr)]">
+      <a
+        className="fixed top-3 left-3 z-[2000] -translate-y-[160%] rounded-lg bg-hy-ink px-3.5 py-2.5 text-sm font-semibold text-white focus:translate-y-0 motion-safe:transition-transform"
+        href={`#${contentId}`}
+      >
         Đi đến nội dung chính
       </a>
 
@@ -370,7 +371,7 @@ export function OperationsShell({
         {footerProfile}
       </aside>
 
-      <div className="operations-main-container">
+      <div className="flex min-w-0 flex-1 flex-col [&>main]:mx-auto [&>main]:w-full [&>main]:max-w-[1680px]">
         <OfflineBanner />
         <PageTransition>{children}</PageTransition>
       </div>

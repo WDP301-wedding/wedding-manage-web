@@ -3,62 +3,13 @@
  * Một nguồn màu: token --hy-* trong styles/globals/tokens.css; tên của shadcn chỉ trỏ về đó.
  */
 @import 'tailwindcss/theme.css' layer(theme);
-/* shortcut: chỉ quét thư mục đã sang v3 để class cũ trùng tên utility (vd. "hidden", "table")
-   không bị Tailwind ghi đè; khi chuyển một màn, thêm @source cho file của màn đó. */
 @import 'tailwindcss/utilities.css' layer(utilities) source(none);
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
 
-@source '../src/components/ui';
-/* Màn đã chuyển sang v3 (thêm từng file khi chuyển). */
-@source '../src/design-system/brand-mark.tsx';
-@source '../src/features/identity-access';
-@source '../src/features/booking-lifecycle/intake-page.tsx';
-@source '../src/features/booking-lifecycle/consultation-kpi-bar.tsx';
-@source '../src/features/booking-lifecycle/consultation-requests-list.tsx';
-@source '../src/features/booking-lifecycle/booking-page.tsx';
-@source '../src/features/booking-lifecycle/booking-helpers.tsx';
-@source '../src/features/booking-lifecycle/booking-workspace.tsx';
-@source '../src/features/booking-lifecycle/booking-lookup-bar.tsx';
-@source '../src/features/booking-lifecycle/booking-workspace-tab-consultation.tsx';
-@source '../src/features/booking-lifecycle/existing-customer-picker.tsx';
-@source '../src/features/booking-lifecycle/consultation-panel.tsx';
-@source '../src/features/booking-lifecycle/activation-status.tsx';
-@source '../src/features/booking-lifecycle/activation-confirm-dialog.tsx';
-@source '../src/features/booking-lifecycle/couple-account-card.tsx';
-@source '../src/features/booking-lifecycle/booking-workspace-tab-booking.tsx';
-@source '../src/features/booking-lifecycle/booking-create-panel.tsx';
-@source '../src/features/booking-lifecycle/booking-create-form-fields.tsx';
-@source '../src/features/booking-lifecycle/booking-create-catalog-bar.tsx';
-@source '../src/features/booking-lifecycle/booking-create-summary.tsx';
-@source '../src/features/booking-lifecycle/booking-workspace-tab-manage.tsx';
-@source '../src/features/booking-lifecycle/booking-lifecycle-stepper.tsx';
-@source '../src/features/booking-lifecycle/created-booking-notice-banner.tsx';
-@source '../src/features/booking-lifecycle/booking-unauthorized-hint.tsx';
-@source '../src/features/booking-lifecycle/proposal-panel.tsx';
-@source '../src/features/booking-lifecycle/timeline-editor.tsx';
-@source '../src/features/booking-lifecycle/timeline-template-picker.tsx';
-@source '../src/features/booking-lifecycle/contract-panel.tsx';
-@source '../src/features/booking-lifecycle/contract-lines-table.tsx';
-@source '../src/features/booking-lifecycle/contract-draft-composer.tsx';
-@source '../src/features/booking-lifecycle/appendix-panel.tsx';
-@source '../src/features/booking-lifecycle/appendix-detail-view.tsx';
-@source '../src/features/booking-lifecycle/proposal-lifecycle-closure.tsx';
-@source '../src/features/payments-billing/billing-page.tsx';
-@source '../src/features/payments-billing/billing-booking-lookup.tsx';
-@source '../src/features/payments-billing/billing-display.tsx';
-@source '../src/features/payments-billing/billing-form-classes.ts';
-@source '../src/features/payments-billing/billing-mutations-section.tsx';
-@source '../src/features/payments-billing/attempt-lookup-panel.tsx';
-@source '../src/features/payments-billing/payment-forms.tsx';
-@source '../src/features/payments-billing/refund-approval-form.tsx';
-@source '../src/features/payments-billing/incidentals-panel.tsx';
-@source '../src/features/payments-billing/incidental-create-form.tsx';
-@source '../src/features/payments-billing/incidental-table.tsx';
-@source '../src/features/payments-billing/final-invoices-list.tsx';
-@source '../src/features/staff-operations';
-@source '../src/features/print-orders';
-@source '../src/features/venue-catalog';
+/* Mọi màn của web quản lý đã sang v3: quét toàn bộ mã nguồn. */
+@source '../src';
+@source '../app';
 
 /* Sản phẩm chỉ có giao diện sáng: khoá biến thể dark: vào class .dark không bao giờ được gắn. */
 @custom-variant dark (&:is(.dark *));

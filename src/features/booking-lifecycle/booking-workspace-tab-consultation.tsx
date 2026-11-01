@@ -4,7 +4,8 @@ import { ArrowRight } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { ExistingCustomerPicker } from './existing-customer-picker';
 import { ConsultationPanel } from './consultation-panel';
-import { bookingStyles } from './booking.styles';
+import { stepHiddenClass } from './booking-classes';
+import { cn } from 'cn';
 import { parseConsultationChoices } from './booking-helpers';
 import type { Authorize, ManagementBookingGateway } from './booking-api';
 import type { InviteLogEntry, BookingPrefill } from './booking-helpers';
@@ -48,8 +49,7 @@ export function BookingWorkspaceTabConsultation({
     <section
       data-ui-v3
       aria-label="Hồ sơ tư vấn cặp đôi"
-      className="flex flex-wrap items-start gap-6"
-      style={active ? undefined : bookingStyles.stepContainerHidden}
+      className={cn('flex flex-wrap items-start gap-6', !active && stepHiddenClass)}
     >
       <div className="flex min-w-0 flex-[1_1_340px] flex-col gap-4">
         <ExistingCustomerPicker

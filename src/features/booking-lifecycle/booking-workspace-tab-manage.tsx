@@ -6,7 +6,8 @@ import { BookingUnauthorizedHint } from './booking-unauthorized-hint';
 import { CoupleAccountCard } from './couple-account-card';
 import { CreatedBookingNoticeBanner } from './created-booking-notice-banner';
 import { ProposalPanel } from './proposal-panel';
-import { bookingStyles } from './booking.styles';
+import { stepHiddenClass } from './booking-classes';
+import { cn } from 'cn';
 import { Button } from '../../components/ui/button';
 import type { Authorize, ManagementBookingGateway, ProposalView } from './booking-api';
 import type { InviteLogEntry, BookingPrefill } from './booking-helpers';
@@ -80,8 +81,7 @@ export function BookingWorkspaceTabManage({
   return (
     <section
       aria-labelledby="proposal-heading"
-      className="flex flex-col gap-5"
-      style={active ? undefined : bookingStyles.stepContainerHidden}
+      className={cn('flex flex-col gap-5', !active && stepHiddenClass)}
     >
       <div className="flex flex-col gap-0.5">
         <p className="text-xs text-muted-foreground">Hồ sơ đang xử lý</p>

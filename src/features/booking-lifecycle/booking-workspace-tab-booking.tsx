@@ -5,7 +5,8 @@ import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { BookingCreatePanel } from './booking-create-panel';
 import { CoupleAccountCard } from './couple-account-card';
-import { bookingStyles } from './booking.styles';
+import { stepHiddenClass } from './booking-classes';
+import { cn } from 'cn';
 import type { Authorize, ManagementBookingGateway, ProposalView } from './booking-api';
 import type { InviteLogEntry, BookingPrefill } from './booking-helpers';
 
@@ -62,8 +63,7 @@ export function BookingWorkspaceTabBooking({
     <section
       data-ui-v3
       aria-label="Khảo sát sảnh &amp; Tạo booking"
-      className="flex flex-col gap-5"
-      style={active ? undefined : bookingStyles.stepContainerHidden}
+      className={cn('flex flex-col gap-5', !active && stepHiddenClass)}
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <Button
