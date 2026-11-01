@@ -1,6 +1,5 @@
-import type React from 'react';
-import { Clock3Icon } from './icons';
-import { printOrderStyles } from './print-orders.styles';
+import type { ReactNode } from 'react';
+import { cardClass, cardTitleClass } from './print-order-classes';
 import {
   formatVietnameseDate,
   formatVnd,
@@ -13,114 +12,102 @@ export interface PrintOrderCommercialCardProps {
   selectedOrder: PrintOrderView;
 }
 
+function Row({ term, children }: Readonly<{ term: ReactNode; children: ReactNode }>) {
+  return (
+    <div className="flex flex-col gap-0.5 border-t border-border py-2.5 first:border-t-0 first:pt-0">
+      <dt className="text-xs text-muted-foreground">{term}</dt>
+      <dd>{children}</dd>
+    </div>
+  );
+}
+
+function priceTerm(status: PrintOrderView['status']): string {
+  if (isOrderApprovedOrBeyond(status)) return 'Giá đã chấp thuận';
+  if (status === 'QUOTED') return 'Giá chào báo giá (Chờ duyệt)';
+  if (status === 'CANCELLED') return 'Giá thương mại trước khi hủy';
+  return 'Giá thương mại';
+}
+
 export function PrintOrderCommercialCard({
   selectedOrder,
 }: Readonly<PrintOrderCommercialCardProps>) {
+  const revision = selectedOrder.currentCommercialRevision;
+  const proposal = selectedOrder.pendingReplacementProposal;
   return (
-    <div className="v0-detail-card">
-      <div className="v0-card-head">
-        <Clock3Icon width={18} height={18} />
-        <h3>Tóm tắt thương mại</h3>
-      </div>
-
-      <dl className="v0-spec-list">
-        <div>
-          <dt>Tổng số lượng</dt>
-          <dd>
-            <strong>{selectedOrder.lines.reduce((s, l) => s + l.quantity, 0)} bản in</strong>
-          </dd>
-        </div>
-
-        <div>
-          <dt>
-            {isOrderApprovedOrBeyond(selectedOrder.status)
-              ? 'Giá đã chấp thuận'
-              : selectedOrder.status === 'QUOTED'
-                ? 'Giá chào báo giá (Chờ duyệt)'
-                : selectedOrder.status === 'CANCELLED'
-                  ? 'Giá thương mại trước khi hủy'
-                  : 'Giá thương mại'}
-          </dt>
-          <dd>
-            {selectedOrder.currentCommercialRevision ? (
-              <strong className="v0-price-highlight">
-                {formatVnd(selectedOrder.currentCommercialRevision.orderTotalVnd)}
-              </strong>
-            ) : (
-              <span className="text-muted">Không có dữ liệu thương mại</span>
-            )}
-          </dd>
-        </div>
-
-        {selectedOrder.currentCommercialRevision ? (
-          <div>
-            <dt>
-              {isOrderApprovedOrBeyond(selectedOrder.status)
+    <section className={cardClass}>
+      <h3 className={cardTitleClass}>Tóm tắt thương mại</h3>
+      <dl className="flex flex-col">
+        <Row term="Tổng số lượng">
+          <strong className="font-semibold tabular-nums">
+            {selectedOrder.lines.reduce((s, l) => s + l.quantity, 0)} bản in
+          </strong>
+        </Row>
+        <Row term={priceTerm(selectedOrder.status)}>
+          {revision ? (
+            <strong className="text-lg font-bold text-primary tabular-nums">
+              {formatVnd(revision.orderTotalVnd)}
+            </strong>
+          ) : (
+            <span className="text-muted-foreground">Không có dữ liệu thương mại</span>
+          )}
+        </Row>
+        {revision ? (
+          <Row
+            term={
+              isOrderApprovedOrBeyond(selectedOrder.status)
                 ? 'Thời hạn báo giá gốc'
-                : 'Hạn chót báo giá (7 ngày)'}
-            </dt>
-            <dd>
-              {formatVietnameseDate(selectedOrder.currentCommercialRevision.expiresAt)}
-              {selectedOrder.status === 'QUOTED' &&
-              isCommercialRevisionExpired(selectedOrder.currentCommercialRevision) ? (
-                <span className="text-danger" style={printOrderStyles.textDangerBlock}>
-                  (Báo giá đã hết hạn)
-                </span>
-              ) : null}
-            </dd>
-          </div>
+                : 'Hạn chót báo giá (7 ngày)'
+            }
+          >
+            {formatVietnameseDate(revision.expiresAt)}
+            {selectedOrder.status === 'QUOTED' && isCommercialRevisionExpired(revision) ? (
+              <span className="block text-xs text-hy-error">(Báo giá đã hết hạn)</span>
+            ) : null}
+          </Row>
         ) : null}
 
-        {/* Pending Replacement Proposal Banner if present */}
-        {selectedOrder.pendingReplacementProposal ? (
-          <div className="v0-proposal-block">
-            <dt>Đề xuất thay thế đang chờ Couple duyệt</dt>
-            <dd>
-              <strong>{formatVnd(selectedOrder.pendingReplacementProposal.orderTotalVnd)}</strong>
-              <span className="text-amber" style={printOrderStyles.amberBlockSmall}>
-                Hạn chót: {formatVietnameseDate(selectedOrder.pendingReplacementProposal.expiresAt)}{' '}
-                · Dự kiến bàn giao:{' '}
-                {formatVietnameseDate(selectedOrder.pendingReplacementProposal.estimatedHandoverAt)}
+        {proposal ? (
+          <div className="my-1 flex flex-col gap-1.5 rounded-lg bg-hy-warning-bg px-4 py-3 text-hy-warning">
+            <dt className="text-xs font-semibold">Đề xuất thay thế đang chờ Couple duyệt</dt>
+            <dd className="flex flex-col gap-1.5">
+              <strong className="text-base font-bold tabular-nums">
+                {formatVnd(proposal.orderTotalVnd)}
+              </strong>
+              <span className="text-xs">
+                Hạn chót: {formatVietnameseDate(proposal.expiresAt)}. Dự kiến bàn giao:{' '}
+                {formatVietnameseDate(proposal.estimatedHandoverAt)}
               </span>
-              <span className="text-amber" style={printOrderStyles.amberBlockSmallWithMargin}>
+              <span className="text-xs">
                 Chờ Couple phản hồi · Sản xuất đang bị tạm dừng. Quá trình sản xuất bị chặn cho đến
                 khi Couple phê duyệt.
               </span>
-              <div style={printOrderStyles.proposalLinesBox}>
-                {selectedOrder.pendingReplacementProposal.lines.map((pLine, pIdx) => {
-                  const acceptedLine = selectedOrder.currentCommercialRevision?.lines.find(
-                    (al) => al.lineId === pLine.lineId,
-                  );
+              <ul className="flex flex-col gap-1 text-xs text-foreground">
+                {proposal.lines.map((pLine, pIdx) => {
+                  const acceptedLine = revision?.lines.find((al) => al.lineId === pLine.lineId);
                   return (
-                    <div key={pLine.lineId} style={printOrderStyles.proposalLineRow}>
+                    <li
+                      key={pLine.lineId}
+                      className="flex flex-wrap justify-between gap-2 tabular-nums"
+                    >
                       <span>
-                        #{pIdx + 1}: {formatVnd(acceptedLine?.unitPriceVnd ?? 0)} ➔{' '}
+                        {pIdx + 1}. {formatVnd(acceptedLine?.unitPriceVnd ?? 0)} thành{' '}
                         <strong>{formatVnd(pLine.unitPriceVnd)}</strong>
                       </span>
                       <span>Tổng: {formatVnd(pLine.lineTotalVnd)}</span>
-                    </div>
+                    </li>
                   );
                 })}
-              </div>
+              </ul>
             </dd>
           </div>
         ) : null}
 
-        <div>
-          <dt>Cặp đôi</dt>
-          <dd>{selectedOrder.displayCouple ?? 'Chưa gán thông tin'}</dd>
-        </div>
-
-        <div>
-          <dt>Ngày tiệc</dt>
-          <dd>{selectedOrder.displayEventDate ?? 'Chưa có thông tin ngày tiệc'}</dd>
-        </div>
-
-        <div>
-          <dt>Sảnh tiệc</dt>
-          <dd>{selectedOrder.displayHall ?? 'Chưa gán thông tin'}</dd>
-        </div>
+        <Row term="Cặp đôi">{selectedOrder.displayCouple ?? 'Chưa gán thông tin'}</Row>
+        <Row term="Ngày tiệc">
+          {selectedOrder.displayEventDate ?? 'Chưa có thông tin ngày tiệc'}
+        </Row>
+        <Row term="Sảnh tiệc">{selectedOrder.displayHall ?? 'Chưa gán thông tin'}</Row>
       </dl>
-    </div>
+    </section>
   );
 }

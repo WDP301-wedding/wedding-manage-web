@@ -1,7 +1,0 @@
-@import './styles/print-orders-shell-nav.css' layer(legacy);
-@import './styles/print-orders-queue-controls.css' layer(legacy);
-@import './styles/print-orders-table.css' layer(legacy);
-@import './styles/print-orders-detail.css' layer(legacy);
-@import './styles/print-orders-drawers-modals.css' layer(legacy);
-@import './styles/print-orders-responsive.css' layer(legacy);
-@import './styles/print-orders-preview-validation.css' layer(legacy);

@@ -57,6 +57,7 @@
 @source '../src/features/payments-billing/incidental-table.tsx';
 @source '../src/features/payments-billing/final-invoices-list.tsx';
 @source '../src/features/staff-operations';
+@source '../src/features/print-orders';
 
 /* Sản phẩm chỉ có giao diện sáng: khoá biến thể dark: vào class .dark không bao giờ được gắn. */
 @custom-variant dark (&:is(.dark *));
