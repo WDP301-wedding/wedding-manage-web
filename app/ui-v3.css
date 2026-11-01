@@ -100,8 +100,19 @@
 }
 
 @layer base {
-  /* shortcut: reset kiểu preflight chỉ trong vùng [data-ui-v3] để màn cũ giữ nguyên giao diện;
-     bỏ scope và dùng preflight đầy đủ khi mọi màn đã sang v3. */
+  /* Trước đây CSS cũ lo phần này; nay toàn trang dùng nền và cỡ hộp của v3. */
+  body {
+    margin: 0;
+    background-color: var(--hy-cream);
+    color: var(--hy-ink);
+    font-family: var(--font-body);
+  }
+  *,
+  ::before,
+  ::after {
+    box-sizing: border-box;
+  }
+  /* Reset kiểu preflight trong vùng [data-ui-v3] (mọi màn và khung quản trị đều gắn thuộc tính này). */
   :where([data-ui-v3], [data-ui-v3] *, [data-ui-v3] ::before, [data-ui-v3] ::after) {
     margin: 0;
     padding: 0;

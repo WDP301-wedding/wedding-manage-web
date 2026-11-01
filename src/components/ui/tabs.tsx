@@ -22,7 +22,7 @@ const tabsListVariants = cva(
       variant: {
         default: 'bg-muted',
         // Gạch chân trượt (TabsIndicator) trên vạch nền 1px của cả hàng tab.
-        line: 'relative max-w-full gap-1 overflow-x-auto bg-transparent p-0 shadow-[inset_0_-1px_0_var(--hy-outline)]',
+        line: 'relative max-w-full justify-start gap-1 overflow-x-auto bg-transparent p-0 shadow-[inset_0_-1px_0_var(--hy-outline)]',
       },
     },
     defaultVariants: {

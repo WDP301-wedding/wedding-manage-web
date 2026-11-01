@@ -31,6 +31,17 @@ export interface WorkspaceProps {
   onLogout: () => void;
 }
 
+// Dưới 1536px chi tiết đơn nằm dưới bảng: cuộn tới đó để người dùng thấy đơn vừa chọn.
+function revealDetailBelowTable() {
+  if (window.matchMedia?.('(min-width: 1536px)').matches) return;
+  const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  requestAnimationFrame(() =>
+    document
+      .getElementById('print-order-detail')
+      ?.scrollIntoView?.({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }),
+  );
+}
+
 export function PrintOrdersWorkspace({
   snapshot,
   actorName,
@@ -206,7 +217,7 @@ export function PrintOrdersWorkspace({
         <div
           className={cn(
             'grid items-start gap-6',
-            selectedOrder && 'xl:grid-cols-[minmax(0,1fr)_minmax(340px,400px)]',
+            selectedOrder && '2xl:grid-cols-[minmax(0,1fr)_minmax(360px,420px)]',
           )}
         >
           <PrintOrdersTable
@@ -216,6 +227,7 @@ export function PrintOrdersWorkspace({
             onSelectOrder={(order) => {
               if (isSubmittingRef.current) return;
               setSelectedOrder(order);
+              revealDetailBelowTable();
             }}
             loading={loading}
             loadError={loadError}

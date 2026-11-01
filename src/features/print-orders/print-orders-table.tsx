@@ -35,7 +35,8 @@ export interface PrintOrdersTableProps {
   isSubmitting: boolean;
 }
 
-const thClass = 'px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground';
+const thClass =
+  'px-4 py-2.5 text-left text-xs font-semibold whitespace-nowrap text-muted-foreground';
 const tdClass = 'px-4 py-3 align-top';
 
 function Summary({

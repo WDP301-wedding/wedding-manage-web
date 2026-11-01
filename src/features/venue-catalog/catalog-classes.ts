@@ -17,7 +17,7 @@ export const cx = {
   section:
     'flex min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-hy-1',
   sectionHeading:
-    'flex flex-wrap items-baseline justify-between gap-2 border-b border-border px-6 py-4 [&_h2]:text-lg [&_h2]:font-semibold [&_p]:text-xs [&_p]:text-muted-foreground',
+    'flex flex-wrap items-baseline justify-between gap-2 border-b border-border px-6 py-4 [&_h2]:text-lg [&_h2]:font-semibold [&_p]:basis-full [&_p]:text-xs [&_p]:text-muted-foreground',
   sectionToolbar:
     'flex flex-wrap items-center justify-between gap-4 border-b border-border pr-6 max-md:flex-col max-md:items-stretch max-md:px-6 max-md:pb-4 [&>div:first-child]:border-0 max-md:[&>div:first-child]:-mx-6',
   toolbarActions: `flex flex-wrap items-end justify-end gap-2.5 [&_label]:flex [&_label]:flex-col [&_label]:gap-1 [&_label]:text-xs [&_label]:font-semibold ${controls}`,
@@ -25,7 +25,7 @@ export const cx = {
   field: `flex min-w-0 flex-col gap-1.5 text-xs font-semibold ${controls}`,
   fieldWide: 'sm:col-span-full',
   formActions: 'flex flex-wrap items-center justify-end gap-2.5',
-  rowActions: 'flex flex-wrap items-center gap-2',
+  rowActions: 'flex items-center gap-2 whitespace-nowrap',
   primaryButton: buttonVariants(),
   primaryLink: buttonVariants(),
   secondaryButton: buttonVariants({ variant: 'outline' }),
@@ -84,7 +84,7 @@ export const cx = {
   mediaOrderActions: 'flex gap-1.5 px-4 pb-4',
   mediaUploadForm:
     'grid items-end gap-4 rounded-xl bg-muted p-4 sm:grid-cols-2 lg:grid-cols-[repeat(3,minmax(0,1fr))_auto] [&>div:first-child]:col-span-full',
-  layoutSection: '',
+  layoutSection: '[&>form]:m-6 [&>div:last-child]:mx-6 [&>div:last-child]:mb-6',
   layoutCreate:
     'grid gap-4 sm:grid-cols-2 [&>button]:col-span-full [&>div:first-child]:col-span-full',
   layoutMetaGrid: 'grid gap-4 sm:grid-cols-2',

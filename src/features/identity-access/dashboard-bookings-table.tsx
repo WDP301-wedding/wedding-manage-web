@@ -160,7 +160,7 @@ export function DashboardBookingsTable({
                   </Badge>
                 </td>
                 <td className={tdClass}>
-                  <div className="flex flex-wrap justify-end gap-1">
+                  <div className="flex justify-end gap-1">
                     <Link
                       className={cn(
                         linkActionClass,

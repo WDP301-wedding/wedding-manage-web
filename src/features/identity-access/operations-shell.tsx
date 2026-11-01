@@ -297,7 +297,10 @@ export function OperationsShell({
   );
 
   return (
-    <div className="flex min-h-screen flex-col bg-background min-[1025px]:grid min-[1025px]:grid-cols-[240px_minmax(0,1fr)] xl:grid-cols-[264px_minmax(0,1fr)]">
+    <div
+      data-ui-v3
+      className="flex min-h-screen flex-col bg-background min-[1025px]:grid min-[1025px]:grid-cols-[240px_minmax(0,1fr)] xl:grid-cols-[264px_minmax(0,1fr)]"
+    >
       <a
         className="fixed top-3 left-3 z-[2000] -translate-y-[160%] rounded-lg bg-hy-ink px-3.5 py-2.5 text-sm font-semibold text-white focus:translate-y-0 motion-safe:transition-transform"
         href={`#${contentId}`}

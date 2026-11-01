@@ -231,7 +231,7 @@ export function SectionHeading({ meta, title }: Readonly<{ meta?: string; title:
   return (
     <div className={cx.sectionHeading}>
       <h2 id={id}>{title}</h2>
-      {meta ? <p>{meta}</p> : null}
+      {meta ? <span className="text-xs text-muted-foreground">{meta}</span> : null}
     </div>
   );
 }

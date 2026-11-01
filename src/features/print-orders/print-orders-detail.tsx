@@ -33,6 +33,7 @@ export function PrintOrdersDetail({
 }: PrintOrdersDetailProps) {
   return (
     <aside
+      id="print-order-detail"
       aria-label="Chi tiết đơn in ấn được chọn"
       className="flex min-w-0 flex-col gap-4 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-right-2"
     >

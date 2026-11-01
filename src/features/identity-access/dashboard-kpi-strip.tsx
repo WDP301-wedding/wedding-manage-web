@@ -66,13 +66,23 @@ export function DashboardKpiStrip({
         <>
           <Metric
             label="Tiền thực nhận tháng này"
-            value={isLoading || !analytics ? '…' : formatVndNullable(analytics.netCashRevenueVnd)}
+            value={
+              isLoading
+                ? '…'
+                : !analytics
+                  ? 'Chưa có'
+                  : formatVndNullable(analytics.netCashRevenueVnd)
+            }
             detail={isLoading ? 'Đang tổng hợp sổ cái…' : 'Thực thu tiền mặt/chuyển khoản (VND)'}
           />
           <Metric
             label="Tổng cọc đã thu"
             value={
-              isLoading || !analytics ? '…' : formatVndNullable(analytics.grossCashReceivedVnd)
+              isLoading
+                ? '…'
+                : !analytics
+                  ? 'Chưa có'
+                  : formatVndNullable(analytics.grossCashReceivedVnd)
             }
             detail={
               isLoading

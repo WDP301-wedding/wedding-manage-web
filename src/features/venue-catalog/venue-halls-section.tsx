@@ -84,8 +84,10 @@ export function VenueHallsSection({
               {filteredHalls.map((hall) => (
                 <tr key={hall.id}>
                   <td>
-                    <strong>{hall.name}</strong>
-                    <span>{hall.description || 'Chưa có mô tả'}</span>
+                    <strong className="block font-semibold">{hall.name}</strong>
+                    <span className="block text-xs text-muted-foreground">
+                      {hall.description || 'Chưa có mô tả'}
+                    </span>
                   </td>
                   <td>{hall.maxGuests.toLocaleString('vi-VN')} khách</td>
                   <td>{hall.displayOrder}</td>
