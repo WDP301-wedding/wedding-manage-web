@@ -16,9 +16,7 @@ export function unresolved(error: unknown): boolean {
   if (!isApiError(error)) return true;
   if (error instanceof ApiClientError && error.kind !== 'api') return true;
   return (
-    error.status === 429 ||
-    (error.status ?? 500) >= 500 ||
-    error.code === 'REQUEST_IN_PROGRESS'
+    error.status === 429 || (error.status ?? 500) >= 500 || error.code === 'REQUEST_IN_PROGRESS'
   );
 }
 export function denied(error: unknown): boolean {
@@ -33,7 +31,8 @@ export function billingMessage(error: unknown): string {
   if (error.status === 429) return 'Có quá nhiều yêu cầu. Hãy đợi rồi thử lại cùng nội dung.';
   const messages: Record<string, string> = {
     STALE_BILLING_REVISION: 'Số dư đã thay đổi. Hãy làm mới và kiểm tra lại trước khi xác nhận.',
-    BILLING_REFUND_LIMIT_EXCEEDED: 'Khoản hoàn vượt hạn mức đã duyệt hoặc số tiền còn được hoàn.',
+    BILLING_REFUND_LIMIT_EXCEEDED:
+      'Khoản hoàn vượt số tiền còn được hoàn hoặc chưa có căn cứ điều chỉnh/hủy tiệc hợp lệ.',
     BILLING_REFUND_NOT_APPROVED: 'Chưa có quyết định hoàn tiền hợp lệ cho khoản thanh toán này.',
     DEPOSIT_NOT_ELIGIBLE:
       'Hồ sơ chưa đủ điều kiện nhận cọc. Hãy kiểm tra lịch giữ chỗ và kịch bản đã duyệt.',
@@ -114,12 +113,20 @@ export function BillingSummary({ view }: Readonly<{ view: BillingView }>) {
   );
 }
 export function BillingHistory({ view }: Readonly<{ view: BillingView }>) {
+  const transactions = view.history.filter(
+    (entry) => entry.kind === 'PAYMENT' || entry.kind === 'REFUND',
+  );
   return (
     <section className="flex flex-col gap-3">
       <h2 className="text-lg font-semibold">Lịch sử giao dịch</h2>
-      {view.history.length === 0 ? (
+      <p className="text-xs text-muted-foreground">
+        Chỉ gồm các khoản đã thu hoặc hoàn. Khoản phải thu vẫn hiển thị riêng ở phần tổng hợp.
+      </p>
+      {transactions.length === 0 ? (
         <p className="rounded-lg border border-dashed border-input p-4 text-center text-xs text-muted-foreground">
-          Chưa có giao dịch
+          {view.nextCursor
+            ? 'Chưa có khoản thu/hoàn trong các trang đã tải. Tải thêm lịch sử để xem giao dịch trước.'
+            : 'Chưa có giao dịch thu/hoàn.'}
         </p>
       ) : (
         <div
@@ -139,7 +146,7 @@ export function BillingHistory({ view }: Readonly<{ view: BillingView }>) {
               </tr>
             </thead>
             <tbody>
-              {view.history.map((entry) => (
+              {transactions.map((entry) => (
                 <tr key={entry.ledgerEntryId} className="border-t border-border align-top">
                   <td className="px-3 py-2 text-xs whitespace-nowrap tabular-nums">
                     {new Date(entry.occurredAt).toLocaleString('vi-VN')}

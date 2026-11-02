@@ -14,6 +14,7 @@ import { notify } from '../../design-system/notifications';
 import { createManagementBillingGateway, type ManagementBillingGateway } from './billing-api';
 import type { createBillingIntents } from './billing-intents';
 import { BillingHistory, BillingSummary } from './billing-display';
+import { BillingFinancialOverview } from './billing-financial-overview';
 import { BillingMutationsSection } from './billing-mutations-section';
 import { IncidentalsPanel } from './incidentals-panel';
 import { BillingBookingLookup } from './billing-booking-lookup';
@@ -153,8 +154,10 @@ export function ManagementBillingWorkspace({
 
       {view !== null && (
         <>
+          <BillingFinancialOverview bookingId={view.bookingId} overview={view.financialOverview} />
+
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-xl font-semibold">Tổng hợp tiền đặt tiệc</h2>
+            <h2 className="text-xl font-semibold">Công nợ đã ghi nhận</h2>
             <Button
               variant="outline"
               size="sm"
@@ -167,6 +170,10 @@ export function ManagementBillingWorkspace({
             </Button>
           </div>
 
+          <p className="-mt-3 text-sm text-muted-foreground">
+            Số liệu từ sổ công nợ, không bao gồm giá trị hợp đồng chưa được ghi nhận. Trước khi nhận
+            cọc, xem nghĩa vụ dự kiến hoặc đã cam kết ở phần Hợp đồng và tiền cọc phía trên.
+          </p>
           <BillingSummary view={view} />
 
           <div className="flex flex-wrap items-start gap-6">

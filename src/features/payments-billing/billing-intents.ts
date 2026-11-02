@@ -4,7 +4,7 @@ import { ApiClientError } from '../../lib/api/client';
 export class BillingIntentMismatchError extends Error {
   constructor() {
     super(
-      'Nội dung nhập lại khác yêu cầu trước. Hãy chỉnh lại đúng chứng từ, giữ nguyên nội dung ban đầu rồi thử lại.',
+      'Nội dung nhập lại khác yêu cầu trước. Hãy giữ đúng số tiền, loại giao dịch và thời điểm ban đầu rồi thử lại; nếu là yêu cầu từ phiên bản cũ, kiểm tra lịch sử trước khi liên hệ nhà hàng xử lý.',
     );
     this.name = 'BillingIntentMismatchError';
   }

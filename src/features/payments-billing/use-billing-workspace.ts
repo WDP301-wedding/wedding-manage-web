@@ -150,21 +150,12 @@ export function useBillingWorkspace({
     if (!more) {
       const manual = await intents.pending(`manual:${id}`);
       const refund = await intents.pending(`refund:${id}`);
-      const approval = await intents.pending(`approval:${id}`);
       setRefundRevision(refund?.expectedBillingRevision ?? null);
-      setApprovalRevision(approval?.expectedBillingRevision ?? null);
-      setUncertain(
-        manual !== null
-          ? 'manual'
-          : refund !== null
-            ? 'refund'
-            : approval !== null
-              ? 'approval'
-              : null,
-      );
-      if (manual !== null || refund !== null || approval !== null) {
+      setApprovalRevision(null);
+      setUncertain(manual !== null ? 'manual' : refund !== null ? 'refund' : null);
+      if (manual !== null || refund !== null) {
         notify.warning(
-          'Yêu cầu trước chưa rõ kết quả. Nhập lại đúng nội dung chứng từ và thử lại yêu cầu đó.',
+          'Yêu cầu trước chưa rõ kết quả. Nhập lại đúng nội dung khoản thu/hoàn và thử lại yêu cầu đó.',
         );
       }
     }
