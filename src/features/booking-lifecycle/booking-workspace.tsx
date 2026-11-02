@@ -14,6 +14,9 @@ import { BookingWorkspaceTabManage } from './booking-workspace-tab-manage';
 const tabClass =
   'inline-flex h-12 shrink-0 items-center gap-2 border-b-2 border-transparent px-3 font-semibold whitespace-nowrap text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none aria-selected:border-primary aria-selected:text-primary';
 
+// Thanh bước hẹp (< 52rem) thì ẩn chip trạng thái để 3 bước không bị cắt; thẻ hồ sơ phía trên vẫn hiện trạng thái.
+const tabBadgeClass = '@max-[52rem]:hidden';
+
 export interface ManagementBookingWorkspaceProps {
   authorize: Authorize;
   gateway: ManagementBookingGateway;
@@ -144,7 +147,7 @@ export function ManagementBookingWorkspace({
         <div
           role="tablist"
           aria-label="Phân hệ điều phối tiệc"
-          className="flex gap-1 overflow-x-auto shadow-[inset_0_-1px_0_var(--hy-outline)]"
+          className="@container flex gap-1 overflow-x-auto shadow-[inset_0_-1px_0_var(--hy-outline)]"
         >
           <button
             type="button"
@@ -155,7 +158,11 @@ export function ManagementBookingWorkspace({
             className={tabClass}
           >
             <span>1. Hồ sơ tư vấn</span>
-            {consultation ? <Badge variant="success">Đã có mã</Badge> : null}
+            {consultation ? (
+              <Badge variant="success" className={tabBadgeClass}>
+                Đã có mã
+              </Badge>
+            ) : null}
           </button>
           <button
             type="button"
@@ -166,7 +173,7 @@ export function ManagementBookingWorkspace({
             className={tabClass}
           >
             <span>2. Khảo sát sảnh &amp; Đặt tiệc</span>
-            {consultation ? <Badge>Đã liên kết</Badge> : null}
+            {consultation ? <Badge className={tabBadgeClass}>Đã liên kết</Badge> : null}
           </button>
           <button
             type="button"
@@ -177,7 +184,11 @@ export function ManagementBookingWorkspace({
             className={tabClass}
           >
             <span>3. Tiệc đang xử lý</span>
-            {proposal ? <Badge variant="success">Đang mở</Badge> : null}
+            {proposal ? (
+              <Badge variant="success" className={tabBadgeClass}>
+                Đang mở
+              </Badge>
+            ) : null}
           </button>
         </div>
       </div>

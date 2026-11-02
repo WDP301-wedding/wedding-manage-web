@@ -69,6 +69,11 @@ export function useStaffOperations({
 
   const handleSearchGuests = async (event?: FormEvent) => {
     if (event) event.preventDefault();
+    // API tìm khách cần ít nhất 2 ký tự tên hoặc số điện thoại.
+    if (searchQuery.trim().length < 2) {
+      notify.warning('Nhập ít nhất 2 ký tự họ tên hoặc số điện thoại của khách.');
+      return;
+    }
     setSearching(true);
     try {
       const id = await resolveEventId();

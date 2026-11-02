@@ -132,7 +132,7 @@ export function CheckinDeskSection({
             Bàn đón tiếp &amp; Tra cứu khách mời
           </h2>
           <p className={cardHintClass}>
-            Nhập mã tiệc để tải dữ liệu khách mời. Tra cứu nhanh theo họ tên hoặc số điện thoại.
+            Nhập mã tiệc (mã HY) và ít nhất 2 ký tự họ tên hoặc số điện thoại của khách.
           </p>
         </div>
 

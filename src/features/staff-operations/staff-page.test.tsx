@@ -74,6 +74,9 @@ describe('StaffOperationsPage (M6, S1, S2)', () => {
 
     const bookingInput = screen.getByLabelText('Mã tiệc');
     fireEvent.change(bookingInput, { target: { value: '11111111-1111-4111-8111-111111111111' } });
+    fireEvent.change(screen.getByLabelText('Họ tên hoặc SĐT khách'), {
+      target: { value: 'Nguyễn' },
+    });
 
     const searchBtn = screen.getByRole('button', { name: 'Tra cứu khách' });
     fireEvent.click(searchBtn);
@@ -81,7 +84,7 @@ describe('StaffOperationsPage (M6, S1, S2)', () => {
     await waitFor(() => {
       expect(staffService.searchGuests).toHaveBeenCalledWith(
         '11111111-1111-4111-8111-111111111111',
-        '',
+        'Nguyễn',
       );
       expect(screen.getByText('Nguyễn Văn Khách')).toBeDefined();
       expect(screen.getByText('…1234')).toBeDefined();
@@ -99,12 +102,15 @@ describe('StaffOperationsPage (M6, S1, S2)', () => {
     await screen.findByRole('tab', { name: /Quản lý tài khoản/ });
 
     fireEvent.change(screen.getByLabelText('Mã tiệc'), { target: { value: 'hy-000018' } });
+    fireEvent.change(screen.getByLabelText('Họ tên hoặc SĐT khách'), {
+      target: { value: 'Nguyễn' },
+    });
     fireEvent.click(screen.getByRole('button', { name: 'Tra cứu khách' }));
 
     await waitFor(() =>
       expect(staffService.searchGuests).toHaveBeenCalledWith(
         '22222222-2222-4222-8222-222222222222',
-        '',
+        'Nguyễn',
       ),
     );
     expect(staffService.lookupBookings).toHaveBeenCalledWith('hy-000018');
@@ -135,6 +141,9 @@ describe('StaffOperationsPage (M6, S1, S2)', () => {
 
     const bookingInput = screen.getByLabelText('Mã tiệc');
     fireEvent.change(bookingInput, { target: { value: '11111111-1111-4111-8111-111111111111' } });
+    fireEvent.change(screen.getByLabelText('Họ tên hoặc SĐT khách'), {
+      target: { value: 'Nguyễn' },
+    });
 
     const searchBtn = screen.getByRole('button', { name: 'Tra cứu khách' });
     fireEvent.click(searchBtn);
@@ -179,6 +188,9 @@ describe('StaffOperationsPage (M6, S1, S2)', () => {
 
     const bookingInput = screen.getByLabelText('Mã tiệc');
     fireEvent.change(bookingInput, { target: { value: '11111111-1111-4111-8111-111111111111' } });
+    fireEvent.change(screen.getByLabelText('Họ tên hoặc SĐT khách'), {
+      target: { value: 'Nguyễn' },
+    });
 
     const searchBtn = screen.getByRole('button', { name: 'Tra cứu khách' });
     fireEvent.click(searchBtn);
