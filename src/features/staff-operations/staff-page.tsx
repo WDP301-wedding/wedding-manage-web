@@ -35,6 +35,9 @@ export function StaffOperationsPage({
       onSearchGuests={staff.handleSearchGuests}
       onCheckIn={staff.handleCheckIn}
       onUndoCheckIn={staff.handleUndoCheckIn}
+      isManager={isManager}
+      actionReason={staff.actionReason}
+      setActionReason={staff.setActionReason}
     />
   );
 
@@ -60,7 +63,10 @@ export function StaffOperationsPage({
         </header>
 
         {isManager ? (
-          <Tabs value={staff.activeTab} onValueChange={(value: unknown) => staff.openTab(value as StaffTab)}>
+          <Tabs
+            value={staff.activeTab}
+            onValueChange={(value: unknown) => staff.openTab(value as StaffTab)}
+          >
             <TabsList variant="line" aria-label="Phân hệ nhân sự">
               <TabsTrigger value="checkin">Đón khách &amp; Check-in</TabsTrigger>
               <TabsTrigger value="management">Quản lý tài khoản &amp; Phân công</TabsTrigger>
@@ -81,6 +87,8 @@ export function StaffOperationsPage({
                 onProvisionStaff={staff.handleProvisionStaff}
                 onAssignStaff={staff.handleAssignStaff}
                 onRevokeAssignment={staff.handleRevokeAssignment}
+                actionReason={staff.actionReason}
+                setActionReason={staff.setActionReason}
               />
             </TabsContent>
           </Tabs>

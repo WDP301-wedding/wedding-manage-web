@@ -25,19 +25,6 @@ export const staffService = {
     return response.data.data;
   },
 
-  async setOperationalAccess(
-    accountId: string,
-    active: boolean,
-    expectedRevision: number,
-    idempotencyKey = crypto.randomUUID(),
-  ): Promise<void> {
-    await axiosApiClient.post(
-      `/management/staff-accounts/${accountId}/operational-access`,
-      { active, expectedRevision },
-      { headers: { 'Idempotency-Key': idempotencyKey } },
-    );
-  },
-
   /** Chỉ quản lý gọi được: đổi mã HY/tên khách thành bookingId. */
   async lookupBookings(
     query: string,
@@ -55,20 +42,14 @@ export const staffService = {
     return response.data.data;
   },
 
+  /** BE nhận staffAccountId + expectedRevision (0 khi phân công mới; revision hiện tại khi cấp lại). */
   async assignStaff(
-    input: {
-      bookingId: string;
-      staffAccountId: string;
-      roleCode: 'CHECK_IN' | 'COORDINATOR' | 'GENERAL_SUPPORT';
-    },
+    input: { bookingId: string; staffAccountId: string; expectedRevision: number },
     idempotencyKey = crypto.randomUUID(),
   ): Promise<{ assignmentId: string }> {
     const response = await axiosApiClient.post<{ data: { assignmentId: string } }>(
       `/management/events/${input.bookingId}/assignments`,
-      {
-        staffAccountId: input.staffAccountId,
-        roleCode: input.roleCode,
-      },
+      { staffAccountId: input.staffAccountId, expectedRevision: input.expectedRevision },
       { headers: { 'Idempotency-Key': idempotencyKey } },
     );
     return response.data.data;
@@ -77,11 +58,13 @@ export const staffService = {
   async revokeAssignment(
     bookingId: string,
     assignmentId: string,
+    expectedRevision: number,
+    reason: string,
     idempotencyKey = crypto.randomUUID(),
   ): Promise<void> {
     await axiosApiClient.post(
       `/management/events/${bookingId}/assignments/${assignmentId}/revocation`,
-      {},
+      { expectedRevision, reason },
       { headers: { 'Idempotency-Key': idempotencyKey } },
     );
   },
@@ -99,14 +82,16 @@ export const staffService = {
     return response.data.data;
   },
 
+  /** Tài khoản quản lý luôn phải kèm overrideReason (BE: MANAGER_OVERRIDE_REQUIRED). */
   async checkInGuest(
     bookingId: string,
     guestId: string,
+    overrideReason?: string,
     idempotencyKey = crypto.randomUUID(),
   ): Promise<void> {
     await axiosApiClient.post(
       `/staff/events/${bookingId}/guests/${guestId}/check-ins`,
-      {},
+      overrideReason ? { overrideReason } : {},
       { headers: { 'Idempotency-Key': idempotencyKey } },
     );
   },
@@ -117,6 +102,7 @@ export const staffService = {
     guestId: string,
     expectedLedgerRevision: number,
     reason: string,
+    overrideReason?: string,
     idempotencyKey = crypto.randomUUID(),
   ): Promise<void> {
     const path = `/staff/events/${bookingId}/guests/${guestId}`;
@@ -137,7 +123,12 @@ export const staffService = {
     if (!active) throw new Error('Không còn lần check-in nào để hoàn tác.');
     await axiosApiClient.post(
       `${path}/check-in-undos`,
-      { checkInRecordId: active.checkInRecordId, expectedLedgerRevision, reason },
+      {
+        checkInRecordId: active.checkInRecordId,
+        expectedLedgerRevision,
+        reason,
+        ...(overrideReason ? { overrideReason } : {}),
+      },
       { headers: { 'Idempotency-Key': idempotencyKey } },
     );
   },

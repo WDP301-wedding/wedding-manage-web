@@ -159,8 +159,55 @@ describe('StaffOperationsPage (M6, S1, S2)', () => {
       expect(staffService.checkInGuest).toHaveBeenCalledWith(
         '11111111-1111-4111-8111-111111111111',
         'guest-1',
+        undefined,
       );
     });
+  });
+
+  it('asks a manager for a reason and sends it as the override reason', async () => {
+    vi.mocked(staffService.searchGuests).mockResolvedValue({
+      items: [
+        {
+          guestId: 'guest-1',
+          name: 'Trần Thị Khách',
+          phoneLast4: null,
+          groupName: 'Groom Side',
+          groupColor: '#10b981',
+          tableLabels: [],
+          checkedIn: false,
+          guestGroupId: 'group-1',
+          ledgerRevision: 1,
+          warning: null,
+        },
+      ],
+      nextCursor: null,
+    });
+    render(<StaffOperationsPage session={createMockSession(true)} />);
+    await screen.findByRole('tab', { name: /Quản lý tài khoản/ });
+    fireEvent.change(screen.getByLabelText('Mã tiệc'), {
+      target: { value: '11111111-1111-4111-8111-111111111111' },
+    });
+    fireEvent.change(screen.getByLabelText('Họ tên hoặc SĐT khách'), {
+      target: { value: 'Trần' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Tra cứu khách' }));
+    expect(await screen.findByText('Nhà trai')).toBeDefined();
+
+    const checkIn = screen.getByRole('button', { name: 'Check-in cho khách Trần Thị Khách' });
+    fireEvent.click(checkIn);
+    expect(staffService.checkInGuest).not.toHaveBeenCalled();
+
+    fireEvent.change(screen.getByLabelText(/Lý do thao tác/), {
+      target: { value: 'Khách đến sớm, quản lý đón trực tiếp' },
+    });
+    fireEvent.click(checkIn);
+    await waitFor(() =>
+      expect(staffService.checkInGuest).toHaveBeenCalledWith(
+        '11111111-1111-4111-8111-111111111111',
+        'guest-1',
+        'Khách đến sớm, quản lý đón trực tiếp',
+      ),
+    );
   });
 
   it('allows undoing check-in when guest is already checked-in', async () => {
@@ -200,6 +247,9 @@ describe('StaffOperationsPage (M6, S1, S2)', () => {
       expect(screen.getByText('Đã check-in')).toBeDefined();
     });
 
+    fireEvent.change(screen.getByLabelText(/Lý do thao tác/), {
+      target: { value: 'Khách báo nhầm người, hoàn tác' },
+    });
     const undoBtn = screen.getByRole('button', { name: 'Hoàn tác check-in cho khách Lê Văn An' });
     fireEvent.click(undoBtn);
 
@@ -208,7 +258,8 @@ describe('StaffOperationsPage (M6, S1, S2)', () => {
         '11111111-1111-4111-8111-111111111111',
         'guest-2',
         2,
-        expect.stringContaining('hoàn tác'),
+        'Khách báo nhầm người, hoàn tác',
+        undefined,
       );
     });
   });

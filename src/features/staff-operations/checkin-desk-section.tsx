@@ -28,6 +28,9 @@ export interface CheckinDeskSectionProps {
   onSearchGuests: (event?: FormEvent) => Promise<void>;
   onCheckIn: (guestId: string) => Promise<void>;
   onUndoCheckIn: (guestId: string) => Promise<void>;
+  isManager: boolean;
+  actionReason: string;
+  setActionReason: (reason: string) => void;
 }
 
 // BE tạo 4 nhóm mặc định bằng tên tiếng Anh (GST-004); giao diện hiện tên tiếng Việt.
@@ -131,6 +134,9 @@ export function CheckinDeskSection({
   onSearchGuests,
   onCheckIn,
   onUndoCheckIn,
+  isManager,
+  actionReason,
+  setActionReason,
 }: Readonly<CheckinDeskSectionProps>) {
   return (
     <section aria-labelledby="checkin-desk-title" className="flex flex-col gap-6">
@@ -174,6 +180,22 @@ export function CheckinDeskSection({
             {searching ? 'Đang tìm…' : 'Tra cứu khách'}
           </Button>
         </form>
+        <label className={labelClass} htmlFor="staff-action-reason">
+          Lý do thao tác
+          <Input
+            id="staff-action-reason"
+            className="font-normal"
+            maxLength={500}
+            placeholder="Ví dụ: Khách đến sớm, quản lý đón trực tiếp"
+            value={actionReason}
+            onChange={(e) => setActionReason(e.target.value)}
+          />
+          <span className={cardHintClass}>
+            {isManager
+              ? 'Tài khoản quản lý cần ghi lý do cho mỗi lần check-in hoặc hoàn tác (ít nhất 10 ký tự).'
+              : 'Chỉ cần khi hoàn tác check-in (ít nhất 10 ký tự).'}
+          </span>
+        </label>
       </div>
 
       <div className="flex flex-col gap-3">

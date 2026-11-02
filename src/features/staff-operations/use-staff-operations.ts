@@ -6,11 +6,12 @@ import {
   type GuestSearchResultItem,
 } from '../../services/staff.service';
 import { notify } from '../../design-system/notifications';
+import { describeApiError } from '../../lib/api/api-errors';
 
 export type StaffTab = 'checkin' | 'management';
 
-// shortcut: lý do hoàn tác cố định (BE bắt buộc ≥ 10 ký tự); thêm ô nhập nếu cần ghi lý do cụ thể.
-const undoReason = 'Nhân viên hoàn tác check-in tại bàn đón khách.';
+// BE ghi lý do vào nhật ký: hoàn tác, thu hồi phân công và mọi thao tác của quản lý cần ≥ 10 ký tự.
+const minReasonLength = 10;
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu;
 
 export function useStaffOperations({
@@ -28,6 +29,13 @@ export function useStaffOperations({
 
   const [assignments, setAssignments] = useState<readonly EventAssignmentItem[]>([]);
   const [loadingAssignments, setLoadingAssignments] = useState(false);
+  const [actionReason, setActionReason] = useState('');
+  const reason = actionReason.trim();
+  const requireReason = (message: string) => {
+    if (reason.length >= minReasonLength) return true;
+    notify.warning(message);
+    return false;
+  };
   const [staffAccountId, setStaffAccountId] = useState('');
 
   // Ô "Mã tiệc" nhận mã HY (quản lý tra cứu được) hoặc mã UUID; API tác nghiệp chỉ nhận UUID.
@@ -96,28 +104,41 @@ export function useStaffOperations({
   };
 
   const handleCheckIn = async (guestId: string) => {
+    if (
+      isManager &&
+      !requireReason('Tài khoản quản lý cần ghi lý do (ít nhất 10 ký tự) trước khi check-in.')
+    )
+      return;
     setPending(true);
     try {
-      await staffService.checkInGuest(eventId, guestId);
+      await staffService.checkInGuest(eventId, guestId, isManager ? reason : undefined);
       notify.success('Đã check-in thành công cho khách mời.');
       await handleSearchGuests();
     } catch (err) {
-      notify.error(err, { fallbackMessage: 'Thao tác check-in thất bại.' });
+      notify.error(err, { fallbackMessage: describeApiError(err).message });
     } finally {
       setPending(false);
     }
   };
 
   const handleUndoCheckIn = async (guestId: string) => {
+    if (!requireReason('Ghi lý do hoàn tác (ít nhất 10 ký tự) trước khi hoàn tác check-in.'))
+      return;
     setPending(true);
     try {
       const guest = guests.find((item) => item.guestId === guestId);
       if (!guest) return;
-      await staffService.undoCheckIn(eventId, guestId, guest.ledgerRevision, undoReason);
+      await staffService.undoCheckIn(
+        eventId,
+        guestId,
+        guest.ledgerRevision,
+        reason,
+        isManager ? reason : undefined,
+      );
       notify.success('Đã hoàn tác check-in.');
       await handleSearchGuests();
     } catch (err) {
-      notify.error(err, { fallbackMessage: 'Thao tác hoàn tác thất bại.' });
+      notify.error(err, { fallbackMessage: describeApiError(err).message });
     } finally {
       setPending(false);
     }
@@ -184,16 +205,17 @@ export function useStaffOperations({
     const form = event.currentTarget;
     const data = new FormData(form);
     const staffId = data.get('staffAccountId') as string;
-    const roleCode = data.get('roleCode') as 'CHECK_IN' | 'COORDINATOR' | 'GENERAL_SUPPORT';
 
     setPending(true);
     try {
       const id = await resolveEventId();
       if (!id) return;
+      // Cấp lại cho người đã từng được phân công thì gửi revision hiện tại; phân công mới là 0.
+      const previous = assignments.find((item) => item.staffAccountId === staffId.trim());
       await staffService.assignStaff({
         bookingId: id,
-        staffAccountId: staffId,
-        roleCode,
+        staffAccountId: staffId.trim(),
+        expectedRevision: previous?.revision ?? 0,
       });
       notify.success('Phân công nhân sự vào tiệc thành công!');
       await handleLoadAssignments();
@@ -207,10 +229,12 @@ export function useStaffOperations({
   };
 
   const handleRevokeAssignment = async (assignmentId: string) => {
-    if (!eventId) return;
+    const assignment = assignments.find((item) => item.assignmentId === assignmentId);
+    if (!eventId || !assignment) return;
+    if (!requireReason('Ghi lý do thu hồi (ít nhất 10 ký tự) trước khi thu hồi phân công.')) return;
     setPending(true);
     try {
-      await staffService.revokeAssignment(eventId, assignmentId);
+      await staffService.revokeAssignment(eventId, assignmentId, assignment.revision, reason);
       notify.success('Đã thu hồi phân công nhân sự.');
       await handleLoadAssignments();
     } catch (err) {
@@ -239,6 +263,8 @@ export function useStaffOperations({
     loadingAssignments,
     staffAccountId,
     setStaffAccountId,
+    actionReason,
+    setActionReason,
     handleSearchGuests,
     handleCheckIn,
     handleUndoCheckIn,
