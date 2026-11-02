@@ -95,7 +95,7 @@ export function ConsultationPanel({
               <Check aria-hidden className="mt-0.5 size-4 shrink-0 text-hy-success" />
               {prefill?.sourceConsultationId
                 ? 'Đã chọn khách cũ. Email được giữ cố định để liên kết đúng tài khoản; có thể chọn lại khách ở danh sách bên cạnh.'
-                : 'Đã tự động điền thông tin từ yêu cầu tư vấn của khách hàng.'}
+                : 'Đã điền sẵn thông tin khách cho hồ sơ này.'}
             </span>
           ) : null}
           {showReset ? (

@@ -99,11 +99,46 @@ export const staffService = {
     return response.data.data;
   },
 
-  async checkInGuest(bookingId: string, guestId: string): Promise<void> {
-    await axiosApiClient.post(`/staff/events/${bookingId}/guests/${guestId}/check-ins`);
+  async checkInGuest(
+    bookingId: string,
+    guestId: string,
+    idempotencyKey = crypto.randomUUID(),
+  ): Promise<void> {
+    await axiosApiClient.post(
+      `/staff/events/${bookingId}/guests/${guestId}/check-ins`,
+      {},
+      { headers: { 'Idempotency-Key': idempotencyKey } },
+    );
   },
 
-  async undoCheckIn(bookingId: string, guestId: string): Promise<void> {
-    await axiosApiClient.post(`/staff/events/${bookingId}/guests/${guestId}/check-in-undos`);
+  /** Hoàn tác lần check-in còn hiệu lực gần nhất (BE cần mã bản ghi, revision của khách và lý do). */
+  async undoCheckIn(
+    bookingId: string,
+    guestId: string,
+    expectedLedgerRevision: number,
+    reason: string,
+    idempotencyKey = crypto.randomUUID(),
+  ): Promise<void> {
+    const path = `/staff/events/${bookingId}/guests/${guestId}`;
+    const history = await axiosApiClient.get<{
+      data: {
+        items: readonly {
+          checkInRecordId: string;
+          action: 'CHECK_IN' | 'UNDO';
+          originalCheckInRecordId: string | null;
+        }[];
+      };
+    }>(`${path}/check-ins`, { params: { limit: 50 } });
+    const records = history.data.data.items;
+    const undone = new Set(records.map((item) => item.originalCheckInRecordId));
+    const active = records.findLast(
+      (item) => item.action === 'CHECK_IN' && !undone.has(item.checkInRecordId),
+    );
+    if (!active) throw new Error('Không còn lần check-in nào để hoàn tác.');
+    await axiosApiClient.post(
+      `${path}/check-in-undos`,
+      { checkInRecordId: active.checkInRecordId, expectedLedgerRevision, reason },
+      { headers: { 'Idempotency-Key': idempotencyKey } },
+    );
   },
 };

@@ -30,6 +30,14 @@ export interface CheckinDeskSectionProps {
   onUndoCheckIn: (guestId: string) => Promise<void>;
 }
 
+// BE tạo 4 nhóm mặc định bằng tên tiếng Anh (GST-004); giao diện hiện tên tiếng Việt.
+const defaultGroupLabels: Record<string, string> = {
+  Parents: 'Bố mẹ hai bên',
+  'Groom Side': 'Nhà trai',
+  'Bride Side': 'Nhà gái',
+  Friends: 'Bạn bè',
+};
+
 // Trên điện thoại mỗi dòng khách thành một thẻ: ẩn tiêu đề cột, ô xếp thành lưới 2 cột.
 const rowClass =
   'border-t border-border transition-colors duration-300 max-sm:grid max-sm:grid-cols-[1fr_auto] max-sm:gap-x-3 max-sm:gap-y-1 max-sm:rounded-xl max-sm:border max-sm:p-4';
@@ -61,7 +69,7 @@ function GuestRow({
         {guest.phoneLast4 ? `…${guest.phoneLast4}` : 'Không có SĐT'}
       </td>
       <td className={cn(cellClass, 'max-sm:col-start-1 max-sm:text-xs')}>
-        {guest.groupName || 'Chung'}
+        {guest.groupName ? (defaultGroupLabels[guest.groupName] ?? guest.groupName) : 'Chung'}
       </td>
       <td
         className={cn(

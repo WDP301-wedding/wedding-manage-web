@@ -7,6 +7,11 @@ import { Badge } from '../../components/ui/badge';
 
 export const categoryLabels = { MENU: 'Thực đơn', SERVICE: 'Dịch vụ', PRINT: 'Thiệp in' } as const;
 const categoryTones = { MENU: 'warning', SERVICE: 'info', PRINT: 'brand' } as const;
+// Đơn vị dòng hợp đồng là mã (table, copy); hiện bằng tiếng Việt.
+const unitLabels: Record<string, string> = { table: 'bàn', copy: 'bản' };
+// BE ghép mã mẫu (UUID) vào cuối mô tả dòng thiệp in; không hiện mã kỹ thuật này cho người dùng.
+export const lineDescription = (text: string) =>
+  text.replace(/ · [0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/iu, '');
 
 export interface ContractLinesTableProps {
   lines: readonly {
@@ -59,12 +64,12 @@ export function ContractLinesTable({ lines, title }: Readonly<ContractLinesTable
                   <strong className="font-semibold">{line.name}</strong>
                   {line.description || line.note ? (
                     <div className="text-xs text-muted-foreground">
-                      {line.description || line.note}
+                      {line.description ? lineDescription(line.description) : line.note}
                     </div>
                   ) : null}
                 </td>
                 <td className={cn(cellClass, 'tabular-nums')}>
-                  {line.quantity} {line.unit}
+                  {line.quantity} {unitLabels[line.unit] ?? line.unit}
                 </td>
                 <td className={cn(cellClass, 'tabular-nums')}>{formatVnd(line.unitPriceVnd)}</td>
                 <td className={cn(cellClass, 'text-right font-semibold tabular-nums')}>

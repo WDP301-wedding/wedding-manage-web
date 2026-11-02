@@ -207,6 +207,8 @@ describe('StaffOperationsPage (M6, S1, S2)', () => {
       expect(staffService.undoCheckIn).toHaveBeenCalledWith(
         '11111111-1111-4111-8111-111111111111',
         'guest-2',
+        2,
+        expect.stringContaining('hoàn tác'),
       );
     });
   });

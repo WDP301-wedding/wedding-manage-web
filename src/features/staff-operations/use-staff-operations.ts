@@ -9,6 +9,8 @@ import { notify } from '../../design-system/notifications';
 
 export type StaffTab = 'checkin' | 'management';
 
+// shortcut: lý do hoàn tác cố định (BE bắt buộc ≥ 10 ký tự); thêm ô nhập nếu cần ghi lý do cụ thể.
+const undoReason = 'Nhân viên hoàn tác check-in tại bàn đón khách.';
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu;
 
 export function useStaffOperations({
@@ -109,7 +111,9 @@ export function useStaffOperations({
   const handleUndoCheckIn = async (guestId: string) => {
     setPending(true);
     try {
-      await staffService.undoCheckIn(eventId, guestId);
+      const guest = guests.find((item) => item.guestId === guestId);
+      if (!guest) return;
+      await staffService.undoCheckIn(eventId, guestId, guest.ledgerRevision, undoReason);
       notify.success('Đã hoàn tác check-in.');
       await handleSearchGuests();
     } catch (err) {
