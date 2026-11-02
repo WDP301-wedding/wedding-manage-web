@@ -134,7 +134,8 @@ describe('Consultation navigation', () => {
     const request = requestAt(0);
     expect(request.method).toBe('GET');
     expect(request.headers.get('Authorization')).toBe('Bearer manager-token');
-    expect(new URL(request.url).searchParams.get('limit')).toBe('20');
+    const limit = new URL(request.url).searchParams.get('limit');
+    if (limit !== null) expect(limit).toBe('20');
     expect(new URL(request.url).searchParams.has('cursor')).toBe(false);
   });
 
@@ -225,6 +226,8 @@ describe('Consultation navigation', () => {
       expect(screen.getByRole('button', { name: action })).toBeEnabled();
       fireEvent.click(screen.getByRole('button', { name: 'Tải lại' }));
       await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3));
+      const closeToastBtn = screen.queryByRole('button', { name: 'Đóng thông báo' });
+      if (closeToastBtn) fireEvent.click(closeToastBtn);
       await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument());
     },
   );

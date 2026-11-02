@@ -151,6 +151,7 @@ class NotificationService {
       if (status === 429 || code === 'RATE_LIMITED') {
         title = 'Giới hạn thao tác (429)';
         message =
+          options?.fallbackMessage ??
           'Đã vượt quá số lần gửi lời mời cho phép trong 24 giờ. Vui lòng chờ trước khi gửi lại hoặc kiểm tra email đã nhận.';
         return { title, message, requestId };
       }

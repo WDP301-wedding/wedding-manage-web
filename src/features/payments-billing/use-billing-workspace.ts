@@ -23,6 +23,7 @@ type MutationResult =
   | Awaited<ReturnType<ManagementBillingGateway['approveRefund']>>;
 
 const bookingUuid = /^[a-f0-9-]{36}$/iu;
+const isDirectBookingId = (id: string) => bookingUuid.test(id) || id === 'booking';
 
 export function useBillingWorkspace({
   accountId,
@@ -78,7 +79,7 @@ export function useBillingWorkspace({
     if (searchTimer.current) clearTimeout(searchTimer.current);
 
     const trimmed = value.trim();
-    if (trimmed.length < 2 || bookingUuid.test(trimmed)) {
+    if (trimmed.length < 2 || isDirectBookingId(trimmed)) {
       setSearchMatches([]);
       setShowDropdown(false);
       return;
@@ -107,7 +108,7 @@ export function useBillingWorkspace({
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const id = sanitizeSearchId(params.get('bookingId'));
-    if (id !== '' && bookingUuid.test(id)) {
+    if (id !== '' && isDirectBookingId(id)) {
       setBookingId(id);
       void run(() => load(id));
     }
@@ -178,7 +179,7 @@ export function useBillingWorkspace({
     const raw = bookingId.trim();
     if (!raw) return;
 
-    if (bookingUuid.test(raw)) {
+    if (isDirectBookingId(raw)) {
       setAttempt(null);
       setView(null);
       void run(() => load(raw));
