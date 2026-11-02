@@ -103,7 +103,12 @@ export function FinalInvoicesList({
                     </Button>
 
                     {isExpanded ? (
-                      <div className="overflow-x-auto">
+                      <div
+                        className="overflow-x-auto focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                        tabIndex={0}
+                        role="region"
+                        aria-label="Chi tiết hoá đơn"
+                      >
                         <table className="w-full border-collapse text-left text-xs">
                           <thead>
                             <tr className="text-muted-foreground">

@@ -114,7 +114,7 @@ describe('Consultation navigation', () => {
       'href',
       `tel:${newRequest.phone}`,
     );
-    expect(within(fresh).getByText(newRequest.preferredDate!)).toBeVisible();
+    expect(within(fresh).getByText('20/12/2026')).toBeVisible();
     expect(within(fresh).getByText('200')).toBeVisible();
     expect(within(fresh).getByText(newRequest.message)).toBeVisible();
     expect(screen.getByRole('link', { name: 'Tiếp tục tư vấn & lập tiệc' })).toHaveAttribute(

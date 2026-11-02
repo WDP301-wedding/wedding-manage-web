@@ -28,7 +28,18 @@ export interface CheckinDeskSectionProps {
   onSearchGuests: (event?: FormEvent) => Promise<void>;
   onCheckIn: (guestId: string) => Promise<void>;
   onUndoCheckIn: (guestId: string) => Promise<void>;
+  isManager: boolean;
+  actionReason: string;
+  setActionReason: (reason: string) => void;
 }
+
+// BE tạo 4 nhóm mặc định bằng tên tiếng Anh (GST-004); giao diện hiện tên tiếng Việt.
+const defaultGroupLabels: Record<string, string> = {
+  Parents: 'Bố mẹ hai bên',
+  'Groom Side': 'Nhà trai',
+  'Bride Side': 'Nhà gái',
+  Friends: 'Bạn bè',
+};
 
 // Trên điện thoại mỗi dòng khách thành một thẻ: ẩn tiêu đề cột, ô xếp thành lưới 2 cột.
 const rowClass =
@@ -61,7 +72,7 @@ function GuestRow({
         {guest.phoneLast4 ? `…${guest.phoneLast4}` : 'Không có SĐT'}
       </td>
       <td className={cn(cellClass, 'max-sm:col-start-1 max-sm:text-xs')}>
-        {guest.groupName || 'Chung'}
+        {guest.groupName ? (defaultGroupLabels[guest.groupName] ?? guest.groupName) : 'Chung'}
       </td>
       <td
         className={cn(
@@ -123,6 +134,9 @@ export function CheckinDeskSection({
   onSearchGuests,
   onCheckIn,
   onUndoCheckIn,
+  isManager,
+  actionReason,
+  setActionReason,
 }: Readonly<CheckinDeskSectionProps>) {
   return (
     <section aria-labelledby="checkin-desk-title" className="flex flex-col gap-6">
@@ -132,7 +146,7 @@ export function CheckinDeskSection({
             Bàn đón tiếp &amp; Tra cứu khách mời
           </h2>
           <p className={cardHintClass}>
-            Nhập mã tiệc để tải dữ liệu khách mời. Tra cứu nhanh theo họ tên hoặc số điện thoại.
+            Nhập mã tiệc (mã HY) và ít nhất 2 ký tự họ tên hoặc số điện thoại của khách.
           </p>
         </div>
 
@@ -146,7 +160,7 @@ export function CheckinDeskSection({
               id="staff-booking-id"
               className="font-normal"
               required
-              placeholder="VD: cd0b75ab-6256-427e-9b37-777f8b9c2822"
+              placeholder="VD: HY-000018"
               value={bookingId}
               onChange={(e) => setBookingId(e.target.value)}
               onBlur={() => setBookingId(bookingId.trim())}
@@ -166,6 +180,22 @@ export function CheckinDeskSection({
             {searching ? 'Đang tìm…' : 'Tra cứu khách'}
           </Button>
         </form>
+        <label className={labelClass} htmlFor="staff-action-reason">
+          Lý do thao tác
+          <Input
+            id="staff-action-reason"
+            className="font-normal"
+            maxLength={500}
+            placeholder="Ví dụ: Khách đến sớm, quản lý đón trực tiếp"
+            value={actionReason}
+            onChange={(e) => setActionReason(e.target.value)}
+          />
+          <span className={cardHintClass}>
+            {isManager
+              ? 'Tài khoản quản lý cần ghi lý do cho mỗi lần check-in hoặc hoàn tác (ít nhất 10 ký tự).'
+              : 'Chỉ cần khi hoàn tác check-in (ít nhất 10 ký tự).'}
+          </span>
+        </label>
       </div>
 
       <div className="flex flex-col gap-3">

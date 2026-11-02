@@ -12,7 +12,6 @@ import {
   cardHintClass,
   cardTitleClass,
   labelClass,
-  selectClass,
   tableClass,
   tableWrapClass,
   tdClass,
@@ -30,6 +29,8 @@ export interface StaffManagementSectionProps {
   onProvisionStaff: (event: FormEvent<HTMLFormElement>) => Promise<void>;
   onAssignStaff: (event: FormEvent<HTMLFormElement>) => Promise<void>;
   onRevokeAssignment: (assignmentId: string) => Promise<void>;
+  actionReason: string;
+  setActionReason: (reason: string) => void;
 }
 
 function AssignmentsTable({
@@ -98,6 +99,8 @@ export function StaffManagementSection({
   onProvisionStaff,
   onAssignStaff,
   onRevokeAssignment,
+  actionReason,
+  setActionReason,
 }: Readonly<StaffManagementSectionProps>) {
   return (
     <section aria-label="Tài khoản và phân công nhân sự" className="flex flex-col gap-6">
@@ -120,19 +123,6 @@ export function StaffManagementSection({
                 placeholder="ten.nhanvien@nhahang.vn"
               />
             </label>
-            <label className={labelClass}>
-              Họ và tên hiển thị
-              <Input
-                className="font-normal"
-                name="displayName"
-                required
-                placeholder="Nguyễn Văn A"
-              />
-            </label>
-            <label className={labelClass}>
-              Số điện thoại (tuỳ chọn)
-              <Input className="font-normal" name="phone" type="tel" placeholder="0901234567" />
-            </label>
             <Button type="submit" className="self-start" disabled={pending}>
               Cấp tài khoản
             </Button>
@@ -142,7 +132,9 @@ export function StaffManagementSection({
         <div className={cn(cardClass, 'flex-[1_1_380px]')}>
           <div className="flex flex-col gap-0.5">
             <h3 className={cardTitleClass}>Phân công nhân sự vào tiệc</h3>
-            <p className={cardHintClass}>Giao quyền đón khách hoặc điều phối tiệc cho nhân viên.</p>
+            <p className={cardHintClass}>
+              Nhân viên được phân công mới mở được bàn đón khách của tiệc.
+            </p>
           </div>
           <form onSubmit={onAssignStaff} className="flex flex-col gap-3">
             <label className={labelClass}>
@@ -155,14 +147,6 @@ export function StaffManagementSection({
                 onChange={(e) => setStaffAccountId(e.target.value)}
                 placeholder="Mã tài khoản nhân viên"
               />
-            </label>
-            <label className={labelClass}>
-              Vai trò phân công
-              <select name="roleCode" defaultValue="CHECK_IN" className={selectClass}>
-                <option value="CHECK_IN">Đón khách &amp; Check-in</option>
-                <option value="COORDINATOR">Điều phối chương trình</option>
-                <option value="GENERAL_SUPPORT">Hỗ trợ chung</option>
-              </select>
             </label>
             <Button
               type="submit"
@@ -197,6 +181,22 @@ export function StaffManagementSection({
             {loadingAssignments ? 'Đang tải…' : 'Làm mới'}
           </Button>
         </div>
+        {assignments.length > 0 ? (
+          <div className="max-w-xl">
+            <label className={labelClass} htmlFor="staff-revoke-reason">
+              Lý do thu hồi phân công
+              <Input
+                id="staff-revoke-reason"
+                className="font-normal"
+                maxLength={500}
+                placeholder="Ví dụ: Khách đến sớm, quản lý đón trực tiếp"
+                value={actionReason}
+                onChange={(e) => setActionReason(e.target.value)}
+              />
+              <span className={cardHintClass}>Bắt buộc khi thu hồi (ít nhất 10 ký tự).</span>
+            </label>
+          </div>
+        ) : null}
         {assignments.length === 0 ? (
           <p className="rounded-xl border border-dashed border-input px-6 py-8 text-center text-muted-foreground">
             Chưa có nhân sự nào được phân công cho tiệc này.

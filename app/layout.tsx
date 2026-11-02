@@ -6,7 +6,7 @@ import { SessionRevocationBoundary } from '../src/features/identity-access/sessi
 import { NotificationProvider } from '../src/design-system/notifications';
 
 export const metadata: Metadata = {
-  title: 'Tổng quan vận hành | Wedding Operations',
+  title: { default: 'Tổng quan vận hành | Hỷ Yến Quản trị', template: '%s | Hỷ Yến Quản trị' },
   description: 'Không gian vận hành dành cho quản lý và nhân viên nhà hàng.',
 };
 

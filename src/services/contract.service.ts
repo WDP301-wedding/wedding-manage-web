@@ -4,12 +4,10 @@ import type { operations } from '../lib/api/generated/schema';
 export type ContractListData =
   operations['listCommercialContracts']['responses'][200]['content']['application/json']['data'];
 export type ContractRevisionItem = ContractListData['revisions'][number];
-export type ContractLineItem = ContractRevisionItem['document']['lines'][number];
 
 export type AppendixListData =
   operations['listCommercialAppendices']['responses'][200]['content']['application/json']['data'];
 export type AppendixRevisionItem = AppendixListData['revisions'][number];
-export type AppendixLineItem = AppendixRevisionItem['document']['afterLines'][number];
 
 export type ContractDraftBody =
   operations['createCommercialContractRevision']['requestBody']['content']['application/json'];

@@ -20,14 +20,6 @@ export interface BookingWorkspaceTabManageProps {
   consultation: { id: string; revision: number } | null;
   prefill: BookingPrefill;
   inviteLogs: readonly InviteLogEntry[];
-  createdBookingNotice: {
-    bookingId: string;
-    consultationId: string;
-    email?: string | undefined;
-  } | null;
-  setCreatedBookingNotice: (
-    notice: { bookingId: string; consultationId: string; email?: string | undefined } | null,
-  ) => void;
   switchTab: (tab: 'consultation' | 'booking' | 'manage') => void;
   sendWorkspaceInvite: () => Promise<void>;
   setInviteLogs: React.Dispatch<React.SetStateAction<readonly InviteLogEntry[]>>;
@@ -46,8 +38,6 @@ export function BookingWorkspaceTabManage({
   consultation,
   prefill,
   inviteLogs,
-  createdBookingNotice: _createdBookingNotice,
-  setCreatedBookingNotice: _setCreatedBookingNotice,
   switchTab,
   sendWorkspaceInvite,
   setInviteLogs,

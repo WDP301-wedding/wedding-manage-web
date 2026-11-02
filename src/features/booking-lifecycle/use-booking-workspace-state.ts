@@ -55,11 +55,6 @@ export function useBookingWorkspaceState({
   const [error, setError] = useState<string | null>(null);
   const [recentBookingIds, setRecentBookingIds] = useState<string[]>([]);
   const [prefill, setPrefill] = useState<BookingPrefill>({});
-  const [createdBookingNotice, setCreatedBookingNotice] = useState<{
-    bookingId: string;
-    consultationId: string;
-    email?: string | undefined;
-  } | null>(null);
   const inFlightProposal = useRef<Map<string, Promise<void>>>(new Map());
 
   const { inviteLogs, setInviteLogs, sendWorkspaceInvite } = useWorkspaceInvite({
@@ -153,7 +148,6 @@ export function useBookingWorkspaceState({
         setConsultation(null);
         setPrefill({});
         setInviteLogs([]);
-        setCreatedBookingNotice((previous) => (previous?.bookingId === id ? previous : null));
       }
       try {
         const result = await authorize((token) => gateway.loadProposal(token, id));
@@ -285,7 +279,6 @@ export function useBookingWorkspaceState({
     setProposal(null);
     setBookingId('');
     setInviteLogs([]);
-    setCreatedBookingNotice(null);
     setConsultation(null);
     setPrefill({});
     window.history.replaceState(null, '', '/bookings');
@@ -337,8 +330,6 @@ export function useBookingWorkspaceState({
     setInviteLogs,
     prefill,
     setPrefill,
-    createdBookingNotice,
-    setCreatedBookingNotice,
     sendWorkspaceInvite,
     recordMyBooking,
     run,

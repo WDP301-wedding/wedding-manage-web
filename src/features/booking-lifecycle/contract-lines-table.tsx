@@ -7,6 +7,11 @@ import { Badge } from '../../components/ui/badge';
 
 export const categoryLabels = { MENU: 'Thực đơn', SERVICE: 'Dịch vụ', PRINT: 'Thiệp in' } as const;
 const categoryTones = { MENU: 'warning', SERVICE: 'info', PRINT: 'brand' } as const;
+// Đơn vị dòng hợp đồng là mã (table, copy); hiện bằng tiếng Việt.
+const unitLabels: Record<string, string> = { table: 'bàn', copy: 'bản' };
+// BE ghép mã mẫu (UUID) vào cuối mô tả dòng thiệp in; không hiện mã kỹ thuật này cho người dùng.
+export const lineDescription = (text: string) =>
+  text.replace(/ · [0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/iu, '');
 
 export interface ContractLinesTableProps {
   lines: readonly {
@@ -31,7 +36,12 @@ export function ContractLinesTable({ lines, title }: Readonly<ContractLinesTable
       <h4 className="font-semibold">
         {title ?? `Chi tiết dịch vụ trong hợp đồng (${lines.length})`}
       </h4>
-      <div className="overflow-x-auto rounded-lg border border-border bg-card">
+      <div
+        className="overflow-x-auto rounded-lg border border-border bg-card focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+        tabIndex={0}
+        role="region"
+        aria-label="Các hạng mục hợp đồng"
+      >
         <table className="w-full min-w-[600px] border-collapse text-left">
           <thead className="bg-muted text-xs">
             <tr>
@@ -54,12 +64,12 @@ export function ContractLinesTable({ lines, title }: Readonly<ContractLinesTable
                   <strong className="font-semibold">{line.name}</strong>
                   {line.description || line.note ? (
                     <div className="text-xs text-muted-foreground">
-                      {line.description || line.note}
+                      {line.description ? lineDescription(line.description) : line.note}
                     </div>
                   ) : null}
                 </td>
                 <td className={cn(cellClass, 'tabular-nums')}>
-                  {line.quantity} {line.unit}
+                  {line.quantity} {unitLabels[line.unit] ?? line.unit}
                 </td>
                 <td className={cn(cellClass, 'tabular-nums')}>{formatVnd(line.unitPriceVnd)}</td>
                 <td className={cn(cellClass, 'text-right font-semibold tabular-nums')}>

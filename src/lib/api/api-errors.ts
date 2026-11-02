@@ -97,6 +97,11 @@ const codeMessages: Record<string, string> = {
   CHECK_IN_CONFIGURATION_STALE: 'Cấu hình đón tiếp check-in vừa được thay đổi. Vui lòng làm mới.',
   CHECK_IN_MODE_LOCKED: 'Đã có khách điểm danh nên không thể thay đổi chế độ check-in.',
   CHECK_IN_NOT_OPEN: 'Bàn check-in chưa đến giờ mở hoặc chưa được quản lý kích hoạt.',
+  CHECK_IN_WINDOW_CLOSED:
+    'Bàn check-in chỉ mở trong khung giờ của tiệc. Ngoài giờ, quản lý check-in và ghi lý do.',
+  MANAGER_OVERRIDE_REQUIRED: 'Tài khoản quản lý cần ghi lý do cho thao tác check-in này.',
+  EVENT_ASSIGNMENT_REQUIRED: 'Bạn chưa được phân công vào tiệc này nên chưa mở được bàn check-in.',
+  CHECK_IN_DISABLED: 'Tiệc này chưa bật check-in theo tên khách.',
   GUEST_NOT_FOUND: 'Không tìm thấy thông tin khách mời trong danh sách tiệc.',
   GUEST_ALREADY_CHECKED_IN: 'Khách này đã được điểm danh trước đó.',
   CHECK_IN_UNDO_EXPIRED: 'Đã quá thời gian cho phép hoàn tác điểm danh (5 giây).',

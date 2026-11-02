@@ -196,8 +196,8 @@ export function ContractPanel({
           </details>
           {data.customerSelection.status !== 'SUBMITTED' && !currentRevision ? (
             <p className="text-xs text-muted-foreground">
-              Chờ khách lưu nháp và gửi lựa chọn ở Thoả thuận → Hợp đồng. Sau khi gửi, hệ thống mới
-              mở lập hợp đồng và điền sẵn toàn bộ các hạng mục.
+              Chờ khách lưu nháp và gửi lựa chọn ở mục Thoả thuận, thẻ Hợp đồng. Sau khi gửi, hệ
+              thống mới mở lập hợp đồng và điền sẵn toàn bộ các hạng mục.
             </p>
           ) : null}
         </section>

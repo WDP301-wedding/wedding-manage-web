@@ -97,7 +97,7 @@ export function useBillingWorkspace({
   };
 
   const selectLookupBooking = (item: BookingIdentity) => {
-    setBookingId(item.bookingId);
+    setBookingId(item.bookingCode);
     setShowDropdown(false);
     setSearchMatches([]);
     resetBookingView();

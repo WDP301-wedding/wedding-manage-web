@@ -25,17 +25,14 @@ export const staffService = {
     return response.data.data;
   },
 
-  async setOperationalAccess(
-    accountId: string,
-    active: boolean,
-    expectedRevision: number,
-    idempotencyKey = crypto.randomUUID(),
-  ): Promise<void> {
-    await axiosApiClient.post(
-      `/management/staff-accounts/${accountId}/operational-access`,
-      { active, expectedRevision },
-      { headers: { 'Idempotency-Key': idempotencyKey } },
-    );
+  /** Chỉ quản lý gọi được: đổi mã HY/tên khách thành bookingId. */
+  async lookupBookings(
+    query: string,
+  ): Promise<readonly { bookingId: string; bookingCode: string }[]> {
+    const response = await axiosApiClient.get<{
+      data: readonly { bookingId: string; bookingCode: string }[];
+    }>('/management/booking-lookups', { params: { q: query } });
+    return response.data.data;
   },
 
   async getEventAssignments(bookingId: string): Promise<readonly EventAssignmentItem[]> {
@@ -45,20 +42,14 @@ export const staffService = {
     return response.data.data;
   },
 
+  /** BE nhận staffAccountId + expectedRevision (0 khi phân công mới; revision hiện tại khi cấp lại). */
   async assignStaff(
-    input: {
-      bookingId: string;
-      staffAccountId: string;
-      roleCode: 'CHECK_IN' | 'COORDINATOR' | 'GENERAL_SUPPORT';
-    },
+    input: { bookingId: string; staffAccountId: string; expectedRevision: number },
     idempotencyKey = crypto.randomUUID(),
   ): Promise<{ assignmentId: string }> {
     const response = await axiosApiClient.post<{ data: { assignmentId: string } }>(
       `/management/events/${input.bookingId}/assignments`,
-      {
-        staffAccountId: input.staffAccountId,
-        roleCode: input.roleCode,
-      },
+      { staffAccountId: input.staffAccountId, expectedRevision: input.expectedRevision },
       { headers: { 'Idempotency-Key': idempotencyKey } },
     );
     return response.data.data;
@@ -67,11 +58,13 @@ export const staffService = {
   async revokeAssignment(
     bookingId: string,
     assignmentId: string,
+    expectedRevision: number,
+    reason: string,
     idempotencyKey = crypto.randomUUID(),
   ): Promise<void> {
     await axiosApiClient.post(
       `/management/events/${bookingId}/assignments/${assignmentId}/revocation`,
-      {},
+      { expectedRevision, reason },
       { headers: { 'Idempotency-Key': idempotencyKey } },
     );
   },
@@ -89,11 +82,54 @@ export const staffService = {
     return response.data.data;
   },
 
-  async checkInGuest(bookingId: string, guestId: string): Promise<void> {
-    await axiosApiClient.post(`/staff/events/${bookingId}/guests/${guestId}/check-ins`);
+  /** Tài khoản quản lý luôn phải kèm overrideReason (BE: MANAGER_OVERRIDE_REQUIRED). */
+  async checkInGuest(
+    bookingId: string,
+    guestId: string,
+    overrideReason?: string,
+    idempotencyKey = crypto.randomUUID(),
+  ): Promise<void> {
+    await axiosApiClient.post(
+      `/staff/events/${bookingId}/guests/${guestId}/check-ins`,
+      overrideReason ? { overrideReason } : {},
+      { headers: { 'Idempotency-Key': idempotencyKey } },
+    );
   },
 
-  async undoCheckIn(bookingId: string, guestId: string): Promise<void> {
-    await axiosApiClient.post(`/staff/events/${bookingId}/guests/${guestId}/check-in-undos`);
+  /** Hoàn tác lần check-in còn hiệu lực gần nhất (BE cần mã bản ghi, revision của khách và lý do). */
+  async undoCheckIn(
+    bookingId: string,
+    guestId: string,
+    expectedLedgerRevision: number,
+    reason: string,
+    overrideReason?: string,
+    idempotencyKey = crypto.randomUUID(),
+  ): Promise<void> {
+    const path = `/staff/events/${bookingId}/guests/${guestId}`;
+    const history = await axiosApiClient.get<{
+      data: {
+        items: readonly {
+          checkInRecordId: string;
+          action: 'CHECK_IN' | 'UNDO';
+          originalCheckInRecordId: string | null;
+        }[];
+      };
+    }>(`${path}/check-ins`, { params: { limit: 50 } });
+    const records = history.data.data.items;
+    const undone = new Set(records.map((item) => item.originalCheckInRecordId));
+    const active = records.findLast(
+      (item) => item.action === 'CHECK_IN' && !undone.has(item.checkInRecordId),
+    );
+    if (!active) throw new Error('Không còn lần check-in nào để hoàn tác.');
+    await axiosApiClient.post(
+      `${path}/check-in-undos`,
+      {
+        checkInRecordId: active.checkInRecordId,
+        expectedLedgerRevision,
+        reason,
+        ...(overrideReason ? { overrideReason } : {}),
+      },
+      { headers: { 'Idempotency-Key': idempotencyKey } },
+    );
   },
 };
