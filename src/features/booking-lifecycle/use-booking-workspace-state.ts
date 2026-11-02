@@ -60,6 +60,7 @@ export function useBookingWorkspaceState({
     consultationId: string;
     email?: string | undefined;
   } | null>(null);
+  const inFlightProposal = useRef<Map<string, Promise<void>>>(new Map());
 
   const { inviteLogs, setInviteLogs, sendWorkspaceInvite } = useWorkspaceInvite({
     authorize,
@@ -134,48 +135,64 @@ export function useBookingWorkspaceState({
     shouldSwitchTab = true,
     knownContext?: ConsultationWorkspace,
   ) => {
-    resumeTarget.current = { bookingId: id };
-    const sequence = ++contextSequence.current;
-    setPending('load');
-    setError(null);
-    setContextStatus('loading');
-    if (shouldSwitchTab) {
-      setProposal(null);
-      setConsultation(null);
-      setPrefill({});
-      setInviteLogs([]);
-      setCreatedBookingNotice((previous) => (previous?.bookingId === id ? previous : null));
+    const activePromise = inFlightProposal.current.get(id);
+    if (activePromise) {
+      await activePromise;
+      if (shouldSwitchTab) switchTab('manage');
+      return;
     }
-    try {
-      const result = await authorize((token) => gateway.loadProposal(token, id));
-      const context =
-        knownContext?.consultationId === result.consultationId
-          ? knownContext
-          : await authorize((token) => gateway.loadWorkspace(token, result.consultationId));
-      if (sequence !== contextSequence.current) return;
-      applyContext(context);
-      setBookingId(result.bookingId);
-      setProposal(result);
-      recordMyBooking(result.bookingId);
-      setContextStatus('ready');
+
+    const task = (async () => {
+      resumeTarget.current = { bookingId: id };
+      const sequence = ++contextSequence.current;
+      setPending('load');
+      setError(null);
+      setContextStatus('loading');
       if (shouldSwitchTab) {
-        switchTab('manage');
-        window.history.replaceState(null, '', '/bookings?bookingId=' + result.bookingId);
-      }
-    } catch (caught) {
-      if (sequence !== contextSequence.current) return;
-      setContextStatus('error');
-      if (caught instanceof ApiClientError && [401, 403, 404].includes(caught.status ?? 0)) {
         setProposal(null);
         setConsultation(null);
         setPrefill({});
-        setBookingId('');
+        setInviteLogs([]);
+        setCreatedBookingNotice((previous) => (previous?.bookingId === id ? previous : null));
       }
-      const errText = errorMessage(caught);
-      setError(errText);
-      notify.error(caught, { message: errText });
+      try {
+        const result = await authorize((token) => gateway.loadProposal(token, id));
+        const context =
+          knownContext?.consultationId === result.consultationId
+            ? knownContext
+            : await authorize((token) => gateway.loadWorkspace(token, result.consultationId));
+        if (sequence !== contextSequence.current) return;
+        applyContext(context);
+        setBookingId(result.bookingId);
+        setProposal(result);
+        recordMyBooking(result.bookingId);
+        setContextStatus('ready');
+        if (shouldSwitchTab) {
+          switchTab('manage');
+          window.history.replaceState(null, '', '/bookings?bookingId=' + result.bookingId);
+        }
+      } catch (caught) {
+        if (sequence !== contextSequence.current) return;
+        setContextStatus('error');
+        if (caught instanceof ApiClientError && [401, 403, 404].includes(caught.status ?? 0)) {
+          setProposal(null);
+          setConsultation(null);
+          setPrefill({});
+          setBookingId('');
+        }
+        const errText = errorMessage(caught);
+        setError(errText);
+        notify.error(caught, { message: errText });
+      } finally {
+        if (sequence === contextSequence.current) setPending(null);
+      }
+    })();
+
+    inFlightProposal.current.set(id, task);
+    try {
+      await task;
     } finally {
-      if (sequence === contextSequence.current) setPending(null);
+      inFlightProposal.current.delete(id);
     }
   };
 

@@ -62,7 +62,7 @@ export function useConsultationRequests() {
       setPending(true);
       setError(null);
       try {
-        const query: Record<string, string> = {};
+        const query: Record<string, string> = { limit: '20' };
         if (statusFilter !== 'ALL') query.status = statusFilter;
         if (searchTerm) query.q = searchTerm;
         if (sortBy !== 'newest') query.sort = sortBy;
@@ -154,13 +154,19 @@ export function useConsultationRequests() {
       active = false;
     };
   }, []);
+  const lastTriggeredFilter = useRef<string | null>(null);
   useEffect(() => {
-    if (access === 'manager') void load();
+    if (access === 'manager') {
+      if (lastTriggeredFilter.current !== filterKey) {
+        lastTriggeredFilter.current = filterKey;
+        void load();
+      }
+    }
     return () => {
       sequence.current++;
       abort.current?.abort();
     };
-  }, [access, load]);
+  }, [access, filterKey, load]);
   useLiveRefresh(
     async () => {
       await loadLatest.current();

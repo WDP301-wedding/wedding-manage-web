@@ -1,21 +1,7 @@
-import { z } from 'zod';
-import { customerSelectionSchema, selectionLineSchema } from './selection-wire';
 import { axiosApiClient } from '../lib/api/axios-client';
 import type { operations } from '../lib/api/generated/schema';
 
-const capabilityEnvelope = z.object({
-  customerSelection: customerSelectionSchema.optional(),
-  draftSeed: z.array(selectionLineSchema).optional(),
-  capabilities: z
-    .object({
-      canManageDraft: z.boolean(),
-      canEditSelections: z.boolean().optional(),
-      canApprove: z.boolean(),
-      canWithdrawApproval: z.boolean(),
-    })
-    .optional(),
-});
-export type ContractListData = z.infer<typeof capabilityEnvelope> &
+export type ContractListData =
   operations['listCommercialContracts']['responses'][200]['content']['application/json']['data'];
 export type ContractRevisionItem = ContractListData['revisions'][number];
 export type ContractLineItem = ContractRevisionItem['document']['lines'][number];
@@ -55,7 +41,7 @@ export const contractService = {
       `/bookings/${bookingId}/contracts`,
       { params: query },
     );
-    return { ...response.data.data, ...capabilityEnvelope.parse(response.data.data) };
+    return response.data.data;
   },
 
   async getAppendices(bookingId: string, query?: { cursor?: string }): Promise<AppendixListData> {
