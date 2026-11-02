@@ -91,13 +91,13 @@ export function useConsultationRequests() {
         const resolvedMeta = meta.success
           ? meta.data
           : {
-              totalMatches: rawData.length,
-              counts: {
-                NEW: rawData.filter((i) => i.status === 'NEW').length,
-                CONVERTED: rawData.filter((i) => i.status === 'CONVERTED').length,
-                CLOSED: rawData.filter((i) => i.status === 'CLOSED').length,
-              },
-            };
+            totalMatches: rawData.length,
+            counts: {
+              NEW: rawData.filter((i) => i.status === 'NEW').length,
+              CONVERTED: rawData.filter((i) => i.status === 'CONVERTED').length,
+              CLOSED: rawData.filter((i) => i.status === 'CLOSED').length,
+            },
+          };
         const page: Queue = {
           ...result.data,
           ...resolvedMeta,
@@ -187,13 +187,13 @@ export function useConsultationRequests() {
       const result = await session.authorize((token) =>
         action === 'conversion'
           ? getApi().POST('/management/consultation-requests/{id}/conversion', {
-              headers: { Authorization: `Bearer ${token}` },
-              params: { path: { id: item.id } },
-            })
+            headers: { Authorization: `Bearer ${token}` },
+            params: { path: { id: item.id } },
+          })
           : getApi().POST('/management/consultation-requests/{id}/closure', {
-              headers: { Authorization: `Bearer ${token}` },
-              params: { path: { id: item.id } },
-            }),
+            headers: { Authorization: `Bearer ${token}` },
+            params: { path: { id: item.id } },
+          }),
       );
       if (result.error) {
         const errObj = result.error as { code?: string; message?: string; requestId?: string };
