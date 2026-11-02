@@ -63,10 +63,13 @@ export function LayoutPanel({
     try {
       await authorize(operation);
       setMessage(successMessage);
+      notify.success(successMessage);
       if (options.reload !== false) await load();
       return true;
     } catch (caught) {
-      setError(layoutErrorMessage(caught));
+      const msg = layoutErrorMessage(caught);
+      setError(msg);
+      notify.error(caught, { fallbackMessage: msg });
       return false;
     } finally {
       setPending(false);

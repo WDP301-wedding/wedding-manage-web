@@ -1,4 +1,5 @@
 'use client';
+import Link from 'next/link';
 
 import { useState } from 'react';
 import { CircleCheck } from 'lucide-react';
@@ -143,9 +144,17 @@ export function AppendixDetailView({
         </div>
       ) : null}
 
+      {activeAppendix.printOrderId ? (
+        <p className="text-sm text-muted-foreground">
+          Phụ lục đặt in được duyệt cùng đơn in; Couple đã xác nhận chi phí lúc đặt.{' '}
+          <Link href="/print-orders" className="text-primary underline">
+            Mở Thiệp và in ấn để xử lý đơn
+          </Link>
+        </p>
+      ) : null}
       {/* Các nút hành động cho phụ lục */}
       <div className="flex flex-wrap justify-end gap-2">
-        {activeAppendix.state === 'DRAFT' ? (
+        {!activeAppendix.printOrderId && activeAppendix.state === 'DRAFT' ? (
           <Button
             type="button"
             disabled={disabled || loading}
@@ -155,7 +164,10 @@ export function AppendixDetailView({
           </Button>
         ) : null}
 
-        {activeAppendix.state === 'AWAITING_APPROVAL' && !managerApproved && !confirmingApproval ? (
+        {!activeAppendix.printOrderId &&
+        activeAppendix.state === 'AWAITING_APPROVAL' &&
+        !managerApproved &&
+        !confirmingApproval ? (
           <Button
             type="button"
             disabled={disabled || loading}

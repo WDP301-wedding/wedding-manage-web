@@ -5,9 +5,14 @@ export type ContractListData =
   operations['listCommercialContracts']['responses'][200]['content']['application/json']['data'];
 export type ContractRevisionItem = ContractListData['revisions'][number];
 
-export type AppendixListData =
+type LegacyAppendixListData =
   operations['listCommercialAppendices']['responses'][200]['content']['application/json']['data'];
-export type AppendixRevisionItem = AppendixListData['revisions'][number];
+export type AppendixRevisionItem = LegacyAppendixListData['revisions'][number] & {
+  readonly printOrderId?: string;
+};
+export type AppendixListData = Omit<LegacyAppendixListData, 'revisions'> & {
+  readonly revisions: readonly AppendixRevisionItem[];
+};
 
 export type ContractDraftBody =
   operations['createCommercialContractRevision']['requestBody']['content']['application/json'];

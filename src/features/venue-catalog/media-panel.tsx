@@ -157,10 +157,13 @@ export function MediaPanel({
     try {
       await authorize(operation);
       setMessage(success);
+      notify.success(success);
       await loadAssets(selected);
       return true;
     } catch (caught) {
-      setError(mediaErrorMessage(caught));
+      const msg = mediaErrorMessage(caught);
+      setError(msg);
+      notify.error(caught, { fallbackMessage: msg });
       return false;
     } finally {
       setPending(false);

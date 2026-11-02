@@ -236,7 +236,9 @@ export function useBookingWorkspaceState({
     if (!context) return null;
     if (context.bookingId) {
       await loadProposal(context.bookingId);
-      setMessage('Hồ sơ tư vấn này đã có tiệc. Đã mở hồ sơ hiện có; không tạo thêm booking.');
+      const msg = 'Hồ sơ tư vấn này đã có tiệc. Đã mở hồ sơ hiện có; không tạo thêm booking.';
+      setMessage(msg);
+      notify.info(msg);
       return null;
     }
     applyContext(context);
@@ -268,6 +270,7 @@ export function useBookingWorkspaceState({
 
   const refresh = async (success: string) => {
     setMessage(success);
+    notify.success(success);
     if (proposal !== null) await proposalRefresh.refresh();
   };
 
@@ -283,9 +286,10 @@ export function useBookingWorkspaceState({
     setPrefill({});
     window.history.replaceState(null, '', '/bookings');
     switchTab('consultation');
-    setMessage(
-      'Đã xóa mã tư vấn cũ. Hãy nhập thông tin cặp đôi mới ở Bước 01 rồi bấm "Tạo hồ sơ tư vấn".',
-    );
+    const msg =
+      'Đã xóa mã tư vấn cũ. Hãy nhập thông tin cặp đôi mới ở Bước 01 rồi bấm "Tạo hồ sơ tư vấn".';
+    setMessage(msg);
+    notify.info(msg);
   };
 
   useEffect(() => {

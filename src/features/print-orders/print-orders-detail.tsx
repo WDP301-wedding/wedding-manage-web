@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Button } from '../../components/ui/button';
 import {
   canCancelOrder,
@@ -14,7 +15,9 @@ import { PrintOrderTimelineCard } from './print-order-timeline-card';
 
 export interface PrintOrdersDetailProps {
   selectedOrder: PrintOrderView;
+  purchasePreview?: ReactNode;
   isSubmitting: boolean;
+  onApprovePurchase?: () => void;
   onStartProduction: () => void;
   onMarkReady: () => void;
   onOpenHandoverModal: () => void;
@@ -24,7 +27,9 @@ export interface PrintOrdersDetailProps {
 
 export function PrintOrdersDetail({
   selectedOrder,
+  purchasePreview,
   isSubmitting,
+  onApprovePurchase,
   onStartProduction,
   onMarkReady,
   onOpenHandoverModal,
@@ -46,7 +51,24 @@ export function PrintOrdersDetail({
             (Hợp đồng: {selectedOrder.bookingId})
           </span>
         </div>
+        {selectedOrder.purchase ? (
+          <p className="text-sm text-muted-foreground">
+            {selectedOrder.purchase.cancellationRequested
+              ? 'Couple đã yêu cầu hủy và giảm phí; sản xuất đang bị chặn. '
+              : ''}
+            Couple đã xác nhận bản in, {selectedOrder.purchase.material} và chi phí{' '}
+            {selectedOrder.currentCommercialRevision?.orderTotalVnd.toLocaleString('vi-VN')} đ.
+            Duyệt đơn đồng thời xác nhận phụ lục phía nhà hàng, không thu lại tiền cọc. Muốn thay
+            đổi nội dung hoặc giá: hủy yêu cầu chờ duyệt để Couple chọn và xác nhận lại.
+          </p>
+        ) : null}
         <div className="flex flex-wrap gap-2">
+          {selectedOrder.purchase && selectedOrder.status === 'REQUESTED' ? (
+            <Button onClick={onApprovePurchase} disabled={isSubmitting}>
+              Duyệt đơn in & chi phí
+            </Button>
+          ) : null}
+
           {canStartProduction(selectedOrder) ? (
             <Button onClick={onStartProduction} disabled={isSubmitting}>
               Bắt đầu sản xuất
@@ -92,6 +114,7 @@ export function PrintOrdersDetail({
           ) : null}
         </div>
       </div>
+      {purchasePreview}
       <PrintOrderSpecsCard selectedOrder={selectedOrder} />
       <PrintOrderCommercialCard selectedOrder={selectedOrder} />
       <PrintOrderTimelineCard selectedOrder={selectedOrder} />

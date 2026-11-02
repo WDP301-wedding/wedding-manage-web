@@ -1,29 +1,34 @@
 import { CircleCheck, CircleX, Clock } from 'lucide-react';
 import { cn } from 'cn';
 import { ApiClientError } from '../../lib/api/client';
+import { ApiServiceError } from '../../lib/api/axios-client';
 import type { AttemptView, BillingView } from './billing-api';
 import { BillingIntentMismatchError } from './billing-intents';
 
 export const money = (value: number) =>
   new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
+
+const isApiError = (error: unknown): error is ApiClientError | ApiServiceError =>
+  error instanceof ApiClientError || error instanceof ApiServiceError;
+
 export function unresolved(error: unknown): boolean {
   if (error instanceof BillingIntentMismatchError) return false;
+  if (!isApiError(error)) return true;
+  if (error instanceof ApiClientError && error.kind !== 'api') return true;
   return (
-    !(error instanceof ApiClientError) ||
-    error.kind !== 'api' ||
     error.status === 429 ||
     (error.status ?? 500) >= 500 ||
     error.code === 'REQUEST_IN_PROGRESS'
   );
 }
 export function denied(error: unknown): boolean {
-  return error instanceof ApiClientError && [401, 403, 404].includes(error.status ?? 0);
+  return isApiError(error) && [401, 403, 404].includes(error.status ?? 0);
 }
 export function billingMessage(error: unknown): string {
   if (error instanceof BillingIntentMismatchError) return error.message;
   if (denied(error))
     return 'Phiên đăng nhập hoặc quyền xem hồ sơ không còn hợp lệ. Hãy đăng nhập và kiểm tra quyền truy cập.';
-  if (!(error instanceof ApiClientError))
+  if (!isApiError(error))
     return 'Chưa hoàn tất yêu cầu. Kiểm tra kết nối và giữ nguyên nội dung để thử lại; nếu lịch sử đã thay đổi, hãy tải lại.';
   if (error.status === 429) return 'Có quá nhiều yêu cầu. Hãy đợi rồi thử lại cùng nội dung.';
   const messages: Record<string, string> = {

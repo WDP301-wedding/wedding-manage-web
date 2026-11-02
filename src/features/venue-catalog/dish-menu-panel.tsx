@@ -5,6 +5,7 @@ import { hasDirtyCatalogForms, useCatalogLiveRefresh } from './use-catalog-live-
 import { useCallback, useEffect, useState } from 'react';
 
 import type { CatalogGateway, FoodCatalogSnapshot } from './catalog-api';
+import { notify } from '../../design-system/notifications';
 import { CreateDishForm, DishAggregate, DishVersionRow } from './dish-aggregate-list';
 import {
   AggregateHeader,
@@ -92,10 +93,13 @@ export function DishMenuPanel({
     try {
       await authorize(operation);
       setMessage(success);
+      notify.success(success);
       await load();
       return true;
     } catch (caught) {
-      setError(foodErrorMessage(caught));
+      const msg = foodErrorMessage(caught);
+      setError(msg);
+      notify.error(caught, { fallbackMessage: msg });
       return false;
     } finally {
       setPending(false);
