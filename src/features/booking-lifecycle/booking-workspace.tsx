@@ -12,7 +12,7 @@ import { BookingWorkspaceTabBooking } from './booking-workspace-tab-booking';
 import { BookingWorkspaceTabManage } from './booking-workspace-tab-manage';
 
 const tabClass =
-  'inline-flex h-12 shrink-0 items-center gap-2 border-b-2 border-transparent px-4 font-semibold whitespace-nowrap text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none aria-selected:border-primary aria-selected:text-primary';
+  'inline-flex h-12 shrink-0 items-center gap-2 border-b-2 border-transparent px-3 font-semibold whitespace-nowrap text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none aria-selected:border-primary aria-selected:text-primary';
 
 export interface ManagementBookingWorkspaceProps {
   authorize: Authorize;
@@ -50,8 +50,6 @@ export function ManagementBookingWorkspace({
     setInviteLogs,
     prefill,
     setPrefill,
-    createdBookingNotice,
-    setCreatedBookingNotice,
     sendWorkspaceInvite,
     recordMyBooking,
     run,
@@ -168,7 +166,7 @@ export function ManagementBookingWorkspace({
             className={tabClass}
           >
             <span>2. Khảo sát sảnh &amp; Đặt tiệc</span>
-            {consultation ? <Badge>Đã liên kết tư vấn</Badge> : null}
+            {consultation ? <Badge>Đã liên kết</Badge> : null}
           </button>
           <button
             type="button"
@@ -219,7 +217,6 @@ export function ManagementBookingWorkspace({
         switchTab={switchTab}
         setBookingId={setBookingId}
         setConsultation={setConsultation}
-        setCreatedBookingNotice={setCreatedBookingNotice}
         setMessage={setMessage}
         loadProposal={loadProposal}
         recordMyBooking={recordMyBooking}
@@ -235,8 +232,6 @@ export function ManagementBookingWorkspace({
         consultation={consultation}
         prefill={prefill}
         inviteLogs={inviteLogs}
-        createdBookingNotice={createdBookingNotice}
-        setCreatedBookingNotice={setCreatedBookingNotice}
         switchTab={switchTab}
         sendWorkspaceInvite={sendWorkspaceInvite}
         setInviteLogs={setInviteLogs}

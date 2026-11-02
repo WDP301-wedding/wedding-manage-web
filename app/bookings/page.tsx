@@ -1,4 +1,7 @@
+import type { Metadata } from 'next';
 import { ManagementBookingPage } from '../../src/features/booking-lifecycle/booking-page';
+
+export const metadata: Metadata = { title: 'Điều phối đặt tiệc' };
 
 export default async function BookingsPage({
   searchParams,

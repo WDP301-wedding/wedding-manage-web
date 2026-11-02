@@ -117,7 +117,12 @@ export function BillingHistory({ view }: Readonly<{ view: BillingView }>) {
           Chưa có giao dịch
         </p>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-border">
+        <div
+          className="overflow-x-auto rounded-lg border border-border focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+          tabIndex={0}
+          role="region"
+          aria-label="Chi tiết giao dịch"
+        >
           <table className="w-full min-w-[520px] border-collapse text-left">
             <caption className="sr-only">Chi tiết giao dịch</caption>
             <thead className="bg-muted text-xs">

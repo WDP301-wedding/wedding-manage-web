@@ -18,7 +18,3 @@ export const customerSelectionSchema = z.object({
   totalVnd: z.number().int().nonnegative(),
   submittedAt: z.string().nullable(),
 });
-export const selectionResultSchema = z.object({
-  bookingRevision: z.number().int().positive(),
-  selection: customerSelectionSchema,
-});

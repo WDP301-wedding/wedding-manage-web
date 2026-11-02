@@ -154,7 +154,11 @@ export function ConsultationRequestsList({
                     <span>Ngày mong muốn</span>
                   </dt>
                   <dd className="flex flex-wrap items-center gap-2 font-semibold tabular-nums">
-                    <span>{item.preferredDate ?? 'Chưa chọn'}</span>
+                    <span>
+                      {item.preferredDate
+                        ? item.preferredDate.split('-').reverse().join('/')
+                        : 'Chưa chọn'}
+                    </span>
                     {dateTag ? (
                       <span className="rounded-full border border-input px-2 text-2xs leading-5 font-medium">
                         {dateTag}
@@ -205,7 +209,7 @@ export function ConsultationRequestsList({
               {item.message && (
                 <div className="flex flex-col gap-1">
                   <span className="text-xs text-muted-foreground">Lời nhắn từ khách hàng:</span>
-                  <p>{item.message}</p>
+                  <p className="whitespace-pre-line">{item.message}</p>
                 </div>
               )}
             </article>

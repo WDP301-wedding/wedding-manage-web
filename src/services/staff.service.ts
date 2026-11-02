@@ -38,6 +38,16 @@ export const staffService = {
     );
   },
 
+  /** Chỉ quản lý gọi được: đổi mã HY/tên khách thành bookingId. */
+  async lookupBookings(
+    query: string,
+  ): Promise<readonly { bookingId: string; bookingCode: string }[]> {
+    const response = await axiosApiClient.get<{
+      data: readonly { bookingId: string; bookingCode: string }[];
+    }>('/management/booking-lookups', { params: { q: query } });
+    return response.data.data;
+  },
+
   async getEventAssignments(bookingId: string): Promise<readonly EventAssignmentItem[]> {
     const response = await axiosApiClient.get<{ data: readonly EventAssignmentItem[] }>(
       `/management/events/${bookingId}/assignments`,

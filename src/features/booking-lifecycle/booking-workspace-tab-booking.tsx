@@ -28,9 +28,6 @@ export interface BookingWorkspaceTabBookingProps {
   switchTab: (tab: 'consultation' | 'booking' | 'manage') => void;
   setBookingId: (id: string) => void;
   setConsultation: (c: { id: string; revision: number } | null) => void;
-  setCreatedBookingNotice: (
-    notice: { bookingId: string; consultationId: string; email?: string | undefined } | null,
-  ) => void;
   setMessage: (msg: string | null) => void;
   loadProposal: (id: string, force?: boolean) => Promise<void>;
   recordMyBooking: (id: string) => void;
@@ -54,7 +51,6 @@ export function BookingWorkspaceTabBooking({
   switchTab,
   setBookingId,
   setConsultation,
-  setCreatedBookingNotice,
   setMessage,
   loadProposal,
   recordMyBooking,
@@ -110,7 +106,6 @@ export function BookingWorkspaceTabBooking({
           onCreated={(result, consultationId) => {
             setBookingId(result.bookingId);
             setConsultation({ id: consultationId, revision: result.consultationRevision });
-            setCreatedBookingNotice(null);
             notify.success(
               prefill.email
                 ? `Hồ sơ tiệc mới đã sẵn sàng cho cặp đôi (${prefill.email}).`

@@ -215,7 +215,12 @@ export function PrintOrdersTable(props: PrintOrdersTableProps) {
         </div>
       ) : null}
 
-      <div className="overflow-x-auto rounded-xl border border-border bg-card">
+      <div
+        className="overflow-x-auto rounded-xl border border-border bg-card focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+        tabIndex={0}
+        role="region"
+        aria-label="Danh sách đơn in"
+      >
         <table className="w-full min-w-[820px] border-collapse text-sm">
           <caption className="sr-only">Danh sách các đơn in ấn thiệp cưới</caption>
           <thead className="bg-muted">

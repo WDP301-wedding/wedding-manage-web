@@ -31,7 +31,12 @@ export function ContractLinesTable({ lines, title }: Readonly<ContractLinesTable
       <h4 className="font-semibold">
         {title ?? `Chi tiết dịch vụ trong hợp đồng (${lines.length})`}
       </h4>
-      <div className="overflow-x-auto rounded-lg border border-border bg-card">
+      <div
+        className="overflow-x-auto rounded-lg border border-border bg-card focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+        tabIndex={0}
+        role="region"
+        aria-label="Các hạng mục hợp đồng"
+      >
         <table className="w-full min-w-[600px] border-collapse text-left">
           <thead className="bg-muted text-xs">
             <tr>

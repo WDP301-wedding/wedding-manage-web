@@ -29,7 +29,7 @@ export function AuthForm({
           {pending ? 'Đang xử lý…' : submitLabel}
         </Button>
         <small className="text-xs text-muted-foreground">
-          Access token chỉ tồn tại trong bộ nhớ của trang này.
+          Dùng máy chung? Nhớ đăng xuất khi xong việc.
         </small>
       </div>
     </form>

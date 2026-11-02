@@ -9,11 +9,9 @@ export type RefundApprovalBody = components['schemas']['BillingRefundApprovalBod
 
 export type IncidentalExpensesResponse =
   operations['getManagementIncidentalExpenses']['responses'][200]['content']['application/json']['data'];
-export type IncidentalExpenseItem = IncidentalExpensesResponse['lines'][number];
 
 export type FinalInvoicesResponse =
   operations['listCommercialInvoices']['responses'][200]['content']['application/json']['data'];
-export type FinalInvoiceItem = FinalInvoicesResponse['revisions'][number];
 
 export const billingService = {
   async getBillingSummary(

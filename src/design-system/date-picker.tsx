@@ -80,8 +80,6 @@ export function DatePicker({
           aria-describedby={ariaDescribedby}
           aria-labelledby={ariaLabelledby}
           aria-label={ariaLabel}
-          aria-expanded={picker.isOpen}
-          aria-haspopup="dialog"
           onClick={picker.handleToggle}
           onChange={picker.handleInputChange}
           onBlur={picker.handleBlur}
@@ -91,6 +89,8 @@ export function DatePicker({
           type="button"
           tabIndex={-1}
           aria-label="Chọn ngày từ lịch"
+          aria-expanded={picker.isOpen}
+          aria-haspopup="dialog"
           disabled={disabled}
           className="absolute top-1 right-1 inline-flex size-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
           onClick={picker.handleToggle}
