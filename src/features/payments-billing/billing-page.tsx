@@ -14,7 +14,6 @@ import { notify } from '../../design-system/notifications';
 import { createManagementBillingGateway, type ManagementBillingGateway } from './billing-api';
 import type { createBillingIntents } from './billing-intents';
 import { BillingHistory, BillingSummary } from './billing-display';
-import { AttemptLookupPanel } from './attempt-lookup-panel';
 import { BillingMutationsSection } from './billing-mutations-section';
 import { IncidentalsPanel } from './incidentals-panel';
 import { BillingBookingLookup } from './billing-booking-lookup';
@@ -168,16 +167,7 @@ export function ManagementBillingWorkspace({
             </Button>
           </div>
 
-          <div className="flex flex-wrap items-stretch gap-6">
-            <BillingSummary view={view} />
-            <AttemptLookupPanel
-              disabled={pending}
-              attemptId={billing.attemptId}
-              setAttemptId={billing.setAttemptId}
-              attempt={billing.attempt}
-              onLookup={billing.lookupAttempt}
-            />
-          </div>
+          <BillingSummary view={view} />
 
           <div className="flex flex-wrap items-start gap-6">
             <BillingMutationsSection

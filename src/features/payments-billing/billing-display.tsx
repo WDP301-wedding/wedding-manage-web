@@ -86,7 +86,7 @@ const kindDot: Record<keyof typeof kinds, string> = {
 };
 export function BillingSummary({ view }: Readonly<{ view: BillingView }>) {
   return (
-    <section aria-label="Tổng hợp tiền đặt tiệc" className="min-w-0 flex-[2_1_560px]">
+    <section aria-label="Tổng hợp tiền đặt tiệc" className="min-w-0 w-full">
       <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         {Object.entries(view.totals).map(([key, value]) => (
           <div
