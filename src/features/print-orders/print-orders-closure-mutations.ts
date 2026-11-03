@@ -20,7 +20,7 @@ export interface UsePrintOrderClosureMutationsOptions {
   authorize: <T>(operation: (token: string) => Promise<T>) => Promise<T>;
   gateway: ManagementPrintOrdersGateway;
   showToast: (msg: string) => void;
-  showError: (msg: string) => void;
+  showError: (msg: unknown) => void;
   currentCursor?: string | undefined;
   fetchOrders: (cursor?: string, silent?: boolean) => Promise<boolean>;
   setHandoverModalOpen: (open: boolean) => void;
@@ -128,7 +128,7 @@ export function usePrintOrderClosureMutations({
             showError('Không thể đối soát trạng thái với máy chủ. Vui lòng kiểm tra kết nối mạng.');
           }
         } else {
-          showError(err instanceof Error ? err.message : 'Lỗi bàn giao đơn in.');
+          showError(err);
         }
       } finally {
         isSubmittingRef.current = false;
@@ -242,7 +242,7 @@ export function usePrintOrderClosureMutations({
             showError('Không thể đối soát trạng thái với máy chủ. Vui lòng kiểm tra kết nối mạng.');
           }
         } else {
-          showError(err instanceof Error ? err.message : 'Lỗi hủy đơn in.');
+          showError(err);
         }
       } finally {
         isSubmittingRef.current = false;

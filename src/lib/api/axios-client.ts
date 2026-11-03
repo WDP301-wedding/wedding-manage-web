@@ -1,3 +1,4 @@
+import { apiErrorMessage, localizeErrorDetails } from './error-presentation';
 import { enforceActiveBooking } from './booking-navigation';
 import axios, {
   type AxiosError,
@@ -25,6 +26,7 @@ export interface ApiErrorPayload {
 }
 
 export class ApiServiceError extends Error {
+  readonly backendMessage: string;
   readonly code: string;
   readonly requestId: string;
   readonly status: number | undefined;
@@ -40,12 +42,13 @@ export class ApiServiceError extends Error {
     retryAfterSeconds?: number | undefined;
     cause?: unknown;
   }) {
-    super(options.message, { cause: options.cause });
+    super(apiErrorMessage(options), { cause: options.cause });
     this.name = 'ApiServiceError';
+    this.backendMessage = options.message;
     this.code = options.code;
     this.requestId = options.requestId;
     this.status = options.status;
-    this.details = options.details;
+    this.details = localizeErrorDetails(options.details);
     this.retryAfterSeconds = options.retryAfterSeconds;
   }
 }

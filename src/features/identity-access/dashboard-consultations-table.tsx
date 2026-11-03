@@ -135,7 +135,7 @@ export function DashboardConsultationsTable({
                   {item.phone || <span className={subTextClass}>Chưa có</span>}
                 </td>
                 <td className={cn(tdClass, 'tabular-nums')}>
-                  {item.preferredDate || 'Chưa định ngày'}
+                  {item.preferredDate ? formatDate(item.preferredDate) : 'Chưa định ngày'}
                   {item.preferredShift ? (
                     <span className={cn(subTextClass, 'block')}>
                       {item.preferredShift === 'LUNCH' ? 'Ca trưa' : 'Ca tối'}

@@ -79,7 +79,7 @@ export function PrintOrdersWorkspace({
     notify.success(msg);
   }, []);
 
-  const showError = useCallback((msg: string) => {
+  const showError = useCallback((msg: unknown) => {
     notify.error(msg);
   }, []);
 
