@@ -34,7 +34,7 @@ import { cx } from './catalog-classes';
 import { cn } from 'cn';
 import { Plus } from 'lucide-react';
 import { PrintOrderDialog } from '../print-orders/print-order-dialog';
-import { currentDishOptions, latestFoodVersion } from './food-record-card';
+import { currentDishOptions } from './food-record-card';
 export {
   AggregateHeader,
   CreateDishForm,
