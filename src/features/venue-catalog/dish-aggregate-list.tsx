@@ -167,10 +167,15 @@ export function DishVersionRow({
         disabled={pending}
         label="Nhóm món bản nháp"
         name="categoryLabel"
-        list="common-dish-categories"
+        list={`draft-dish-categories-${version.id}`}
         autoComplete="off"
         defaultValue={version.categoryLabel}
       />
+      <datalist id={`draft-dish-categories-${version.id}`}>
+        {COMMON_DISH_CATEGORIES.map((category) => (
+          <option key={category} value={category} />
+        ))}
+      </datalist>
       <LabeledInput
         disabled={pending}
         label="Mô tả món bản nháp"
