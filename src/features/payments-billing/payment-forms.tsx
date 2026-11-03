@@ -1,4 +1,5 @@
 'use client';
+import { HySelect } from '../../components/ui/select-field';
 
 import { useRef, useState, type FormEvent } from 'react';
 import type { BillingView, ManualPaymentBody, RefundBody } from './billing-api';
@@ -6,6 +7,7 @@ import { Info } from 'lucide-react';
 import { notify } from '../../design-system/notifications';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
+import { formatDate, formatDateTime } from '../booking-lifecycle/booking-helpers';
 
 import {
   confirmClass,
@@ -119,10 +121,10 @@ export function ManualPaymentForm({
           <div className={rowClass}>
             <label className={labelClass}>
               Loại khoản thu
-              <select name="purpose" className={selectClass}>
+              <HySelect name="purpose" className={selectClass}>
                 <option value="DEPOSIT">Đặt cọc</option>
                 <option value="BALANCE">Thanh toán còn lại</option>
-              </select>
+              </HySelect>
             </label>
             <label className={labelClass}>
               Số tiền thực nhận (VND)
@@ -160,7 +162,7 @@ export function ManualPaymentForm({
         <>
           <p className="text-xs">
             Khoản thu: {draft.purpose === 'DEPOSIT' ? 'Đặt cọc' : 'Thanh toán còn lại'} ·{' '}
-            {new Date(draft.settledAt).toLocaleString('vi-VN')}
+            {formatDateTime(draft.settledAt)}
           </p>
           <ConfirmPayment
             amount={draft.amountVnd}
@@ -236,15 +238,15 @@ export function RefundForm({
           <div className={rowClass}>
             <label className={labelClass}>
               Khoản thanh toán gốc
-              <select name="source" required defaultValue="" className={selectClass}>
+              <HySelect name="source" required defaultValue="" className={selectClass}>
                 <option value="">Chọn khoản thanh toán</option>
                 {payments.map((entry) => (
                   <option key={entry.ledgerEntryId} value={entry.ledgerEntryId}>
-                    {money(entry.amountVnd)} ·{' '}
-                    {new Date(entry.occurredAt).toLocaleDateString('vi-VN')} · {entry.ledgerEntryId}
+                    {money(entry.amountVnd)} · {formatDate(entry.occurredAt)} ·{' '}
+                    {entry.ledgerEntryId}
                   </option>
                 ))}
-              </select>
+              </HySelect>
             </label>
             <label className={labelClass}>
               Số tiền hoàn (VND)

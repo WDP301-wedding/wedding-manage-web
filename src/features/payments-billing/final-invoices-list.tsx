@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { ChevronDown, ChevronUp, Lock } from 'lucide-react';
 import type { FinalInvoicesResponse } from '../../services/billing.service';
 import { formatVnd } from '../../lib/formatters';
+import { formatDateTime } from '../booking-lifecycle/booking-helpers';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 
@@ -46,7 +47,7 @@ export function FinalInvoicesList({
                       </Badge>
                     </div>
                     <div className="text-xs text-muted-foreground tabular-nums">
-                      Chốt lúc: {new Date(inv.issuedAt).toLocaleString('vi-VN')}
+                      Chốt lúc: {formatDateTime(inv.issuedAt)}
                     </div>
                   </div>
 

@@ -4,7 +4,7 @@ import { LoaderCircle } from 'lucide-react';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { BookingLookupBar } from './booking-lookup-bar';
-import { bookingPhaseLabel, bookingPhaseTone } from './booking-helpers';
+import { bookingPhaseLabel, bookingPhaseTone, formatDate } from './booking-helpers';
 import type { Authorize, ManagementBookingGateway } from './booking-api';
 import { useBookingWorkspaceState } from './use-booking-workspace-state';
 import { BookingWorkspaceTabConsultation } from './booking-workspace-tab-consultation';
@@ -104,9 +104,7 @@ export function ManagementBookingWorkspace({
             <span className="text-muted-foreground [overflow-wrap:anywhere]">{prefill.email}</span>
             {proposal ? (
               <>
-                <span className="tabular-nums">
-                  Ngày: {proposal.eventDate.split('-').reverse().join('/')}
-                </span>
+                <span className="tabular-nums">Ngày: {formatDate(proposal.eventDate)}</span>
                 <Badge variant={bookingPhaseTone(proposal.phase)}>
                   {bookingPhaseLabel(proposal.phase)}
                 </Badge>

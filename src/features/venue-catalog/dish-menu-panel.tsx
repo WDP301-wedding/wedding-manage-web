@@ -1,4 +1,5 @@
 'use client';
+import { HySelect } from '../../components/ui/select-field';
 
 import { hasDirtyCatalogForms, useCatalogLiveRefresh } from './use-catalog-live-refresh';
 
@@ -244,7 +245,7 @@ export function DishMenuPanel({
               aria-label="Tìm kiếm món ăn"
             />
             {dishCategories.length > 0 ? (
-              <select
+              <HySelect
                 className="h-9 rounded-md border border-input bg-card px-2 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 value={dishCategory}
                 onChange={(e) => setDishCategory(e.currentTarget.value)}
@@ -256,20 +257,18 @@ export function DishMenuPanel({
                     {cat}
                   </option>
                 ))}
-              </select>
+              </HySelect>
             ) : null}
-            <select
+            <HySelect
               className="h-9 rounded-md border border-input bg-card px-2 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               value={dishLifecycle}
-              onChange={(e) =>
-                setDishLifecycle(e.currentTarget.value as typeof dishLifecycle)
-              }
+              onChange={(e) => setDishLifecycle(e.currentTarget.value as typeof dishLifecycle)}
               aria-label="Lọc trạng thái món"
             >
               <option value="ALL">Tất cả trạng thái</option>
               <option value="ACTIVE">Đang phục vụ</option>
               <option value="RETIRED">Đã ngừng</option>
-            </select>
+            </HySelect>
           </div>
           {snapshot.dishes.length === 0 ? (
             <p className={cx.empty}>Chưa có món ăn. Tạo bản nháp đầu tiên ở phía trên.</p>
@@ -305,18 +304,16 @@ export function DishMenuPanel({
               onChange={(e) => setMenuSearch(e.currentTarget.value)}
               aria-label="Tìm gói thực đơn"
             />
-            <select
+            <HySelect
               className="h-9 rounded-md border border-input bg-card px-2 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               value={menuLifecycle}
-              onChange={(e) =>
-                setMenuLifecycle(e.currentTarget.value as typeof menuLifecycle)
-              }
+              onChange={(e) => setMenuLifecycle(e.currentTarget.value as typeof menuLifecycle)}
               aria-label="Lọc trạng thái thực đơn"
             >
               <option value="ALL">Tất cả trạng thái</option>
               <option value="ACTIVE">Đang áp dụng</option>
               <option value="RETIRED">Đã ngừng</option>
-            </select>
+            </HySelect>
           </div>
           {snapshot.menus.length === 0 ? (
             <p className={cx.empty}>Chưa có gói thực đơn.</p>

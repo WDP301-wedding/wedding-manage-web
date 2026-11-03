@@ -19,11 +19,13 @@ import { SortHeader } from './table-controls';
 import {
   type ConsultationSortField,
   type SortOrder,
+  type DashboardConsultationItem,
   consultationBookingHref,
 } from './use-dashboard-consultations';
+import { formatDate } from '../booking-lifecycle/booking-helpers';
 
 export interface DashboardConsultationsTableProps {
-  items: readonly ConsultationRequestItem[];
+  items: readonly DashboardConsultationItem[];
   sortField: ConsultationSortField;
   sortOrder: SortOrder;
   onSortChange: (field: ConsultationSortField) => void;
@@ -35,7 +37,7 @@ const STATUS = {
   NEW: { label: 'Chờ xử lý', variant: 'warning' },
 } as const;
 
-function RequestAction({ item }: Readonly<{ item: ConsultationRequestItem }>) {
+function RequestAction({ item }: Readonly<{ item: DashboardConsultationItem }>) {
   const bookingHref = consultationBookingHref(item);
   if (bookingHref) {
     return (
@@ -104,9 +106,7 @@ export function DashboardConsultationsTable({
             return (
               <tr key={item.id} className={rowClass}>
                 <td className={cn(tdClass, 'font-semibold whitespace-nowrap tabular-nums')}>
-                  {item.createdAt
-                    ? new Date(item.createdAt).toLocaleDateString('vi-VN')
-                    : 'Hôm nay'}
+                  {item.createdAt ? formatDate(item.createdAt) : 'Hôm nay'}
                 </td>
                 <td className={tdClass}>
                   <div className="flex flex-col gap-0.5">

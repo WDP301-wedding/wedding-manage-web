@@ -1,15 +1,13 @@
 'use client';
 
-import Link from 'next/link';
-import { Lock, Star } from 'lucide-react';
+import { BookingActions } from './booking-actions';
+
 import { cn } from 'cn';
 import type { AnalyticsBookingsData } from '../../services/analytics.service';
 import { Badge } from '../../components/ui/badge';
-import { Button } from '../../components/ui/button';
 import type { BookingAssignmentsRegistry } from './booking-assignments';
 import { CopyButton } from './copy-button';
 import {
-  linkActionClass,
   rowClass,
   subTextClass,
   tableClass,
@@ -18,9 +16,11 @@ import {
   theadClass,
   thClass,
 } from './dashboard-classes';
+import type { NavigationBooking } from '../../services/booking-navigation.service';
 import { SortHeader } from './table-controls';
+import { formatDate } from '../booking-lifecycle/booking-helpers';
 
-export type DashboardBookingItem = AnalyticsBookingsData['items'][number];
+export type DashboardBookingItem = NavigationBooking;
 
 type BadgeVariant = 'neutral' | 'success' | 'warning' | 'error' | 'info';
 const PHASES: Record<string, { label: string; variant: BadgeVariant }> = {
@@ -31,7 +31,8 @@ const PHASES: Record<string, { label: string; variant: BadgeVariant }> = {
   CANCELLED: { label: 'Đã hủy', variant: 'error' },
 };
 
-export type BookingSortField = 'recency' | 'eventDate' | 'hallName' | 'shiftCode' | 'tableCount' | 'phase';
+export type BookingSortField =
+  'recency' | 'eventDate' | 'hallName' | 'shiftCode' | 'tableCount' | 'phase';
 export type SortOrder = 'asc' | 'desc';
 
 export interface DashboardBookingsTableProps {
@@ -132,7 +133,7 @@ export function DashboardBookingsTable({
             return (
               <tr key={booking.bookingId} className={rowClass}>
                 <td className={cn(tdClass, 'font-semibold whitespace-nowrap tabular-nums')}>
-                  {new Date(booking.eventDate).toLocaleDateString('vi-VN')}
+                  {formatDate(booking.eventDate)}
                 </td>
                 <td className={tdClass}>
                   <div className="flex flex-col gap-0.5">
@@ -164,56 +165,13 @@ export function DashboardBookingsTable({
                   </Badge>
                 </td>
                 <td className={tdClass}>
-                  <div className="flex justify-end gap-1">
-                    <Link
-                      className={cn(
-                        linkActionClass,
-                        'bg-accent text-accent-foreground hover:bg-hy-wine-soft/70',
-                      )}
-                      href={`/bookings?bookingId=${booking.bookingId}`}
-                      prefetch={false}
-                    >
-                      Xem hồ sơ
-                    </Link>
-                    <Link
-                      className={cn(linkActionClass, 'text-foreground hover:bg-muted')}
-                      href={`/billing?bookingId=${booking.bookingId}`}
-                      prefetch={false}
-                    >
-                      Thanh toán
-                    </Link>
-                    <Link
-                      className={cn(linkActionClass, 'text-foreground hover:bg-muted')}
-                      href={`/staff?bookingId=${booking.bookingId}`}
-                      prefetch={false}
-                    >
-                      Nhân sự
-                    </Link>
-                    {mine ? null : assignedToOther ? (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        disabled
-                        title={`Tiệc này đã được ${assignedEmail} tiếp nhận và đang khóa`}
-                        className="text-muted-foreground"
-                      >
-                        <Lock aria-hidden className="size-3.5" />
-                        Đã có người nhận
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        title="Tiếp nhận phụ trách tiệc này và khóa với các quản lý khác"
-                        onClick={() =>
-                          onClaim(booking.bookingId, booking.hallNameSnapshot || undefined)
-                        }
-                      >
-                        <Star aria-hidden className="size-3.5" />
-                        Nhận tiệc
-                      </Button>
-                    )}
-                  </div>
+                  <BookingActions
+                    booking={booking}
+                    mine={mine}
+                    assignedToOther={assignedToOther}
+                    assignedEmail={assignedEmail}
+                    onClaim={onClaim}
+                  />
                 </td>
               </tr>
             );

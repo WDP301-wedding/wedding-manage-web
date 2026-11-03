@@ -1,3 +1,4 @@
+import { enforceActiveBooking } from './booking-navigation';
 import axios, {
   type AxiosError,
   type AxiosInstance,
@@ -278,7 +279,10 @@ export function createAxiosApiClient(customConfig: AxiosRequestConfig = {}): Axi
   );
 
   instance.interceptors.response.use(
-    (response: AxiosResponse) => response,
+    (response: AxiosResponse) => {
+      enforceActiveBooking(response.data);
+      return response;
+    },
     async (error: AxiosError<ApiErrorPayload>) => {
       const response = error.response;
       const sentRequestId =

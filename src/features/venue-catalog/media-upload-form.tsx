@@ -1,4 +1,5 @@
 'use client';
+import { HySelect } from '../../components/ui/select-field';
 
 import { type FormEvent, useState } from 'react';
 import type { CatalogMedia } from './catalog-api';
@@ -79,14 +80,14 @@ export function MediaUploadForm({ assets, onSubmit, pending }: Readonly<MediaUpl
       </label>
       <label className={cx.field}>
         <span>Chế độ tải lên</span>
-        <select name="oldAssetId" defaultValue="">
+        <HySelect name="oldAssetId" defaultValue="">
           <option value="">Thêm ảnh mới</option>
           {assets.map((asset, index) => (
             <option key={asset.id} value={asset.id}>
               Thay ảnh {index + 1} · {asset.alternativeText}
             </option>
           ))}
-        </select>
+        </HySelect>
       </label>
       <button className={cx.primaryButton} type="submit" disabled={pending}>
         Tải ảnh lên

@@ -1,4 +1,5 @@
 'use client';
+import { HySelect } from '../../components/ui/select-field';
 
 import { cn } from 'cn';
 import type { BookingSortField, SortOrder } from './dashboard-bookings-table';
@@ -18,7 +19,6 @@ export interface DashboardBookingsToolbarProps {
   sortField: BookingSortField;
   sortOrder: SortOrder;
   onQuickSortChange: (val: string) => void;
-  onResetPage: () => void;
 }
 
 const segmentClass =
@@ -37,7 +37,6 @@ export function DashboardBookingsToolbar({
   sortField,
   sortOrder,
   onQuickSortChange,
-  onResetPage,
 }: Readonly<DashboardBookingsToolbarProps>) {
   return (
     <div className={toolbarClass}>
@@ -76,14 +75,12 @@ export function DashboardBookingsToolbar({
         value={searchQuery}
         onChange={(value) => {
           setSearchQuery(value);
-          onResetPage();
         }}
       />
-      <select
+      <HySelect
         value={phaseFilter}
         onChange={(e) => {
           setPhaseFilter(e.target.value);
-          onResetPage();
         }}
         aria-label="Lọc theo trạng thái tiệc"
         className={filterSelectClass}
@@ -93,9 +90,8 @@ export function DashboardBookingsToolbar({
         <option value="AWAITING_DEPOSIT">Chờ cọc</option>
         <option value="DRAFT">Bản nháp</option>
         <option value="COMPLETED">Hoàn thành</option>
-        <option value="CANCELLED">Đã hủy</option>
-      </select>
-      <select
+      </HySelect>
+      <HySelect
         value={`${sortField}-${sortOrder}`}
         onChange={(e) => onQuickSortChange(e.target.value)}
         aria-label="Sắp xếp danh sách"
@@ -110,7 +106,7 @@ export function DashboardBookingsToolbar({
         <option value="hallName-asc">Sảnh: A → Z</option>
         <option value="hallName-desc">Sảnh: Z → A</option>
         <option value="phase-asc">Trạng thái: A → Z</option>
-      </select>
+      </HySelect>
     </div>
   );
 }

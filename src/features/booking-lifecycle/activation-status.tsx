@@ -16,6 +16,7 @@ import {
   type ActivationApiClient,
 } from './activation-status.types';
 import { ActivationConfirmDialog } from './activation-confirm-dialog';
+import { formatDateTime } from './booking-helpers';
 
 const session = sharedManagementSession;
 
@@ -332,18 +333,14 @@ export function ActivationStatus({
             {value.acceptedAt ? (
               <div className="flex flex-col gap-0.5">
                 <dt className="text-xs text-muted-foreground">Khách nhận lời mời</dt>
-                <dd className="tabular-nums">
-                  {new Date(value.acceptedAt).toLocaleString('vi-VN')}
-                </dd>
+                <dd className="tabular-nums">{formatDateTime(value.acceptedAt)}</dd>
               </div>
             ) : null}
 
             {value.expiresAt ? (
               <div className="flex flex-col gap-0.5">
                 <dt className="text-xs text-muted-foreground">Hạn lời mời</dt>
-                <dd className="tabular-nums">
-                  {new Date(value.expiresAt).toLocaleString('vi-VN')}
-                </dd>
+                <dd className="tabular-nums">{formatDateTime(value.expiresAt)}</dd>
               </div>
             ) : null}
 

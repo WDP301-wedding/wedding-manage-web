@@ -1,4 +1,5 @@
 'use client';
+import { HySelect } from '../../components/ui/select-field';
 
 import { type FormEvent, useMemo, useRef, useState } from 'react';
 import type { CatalogGateway, CatalogLayout, LayoutTableWrite } from './catalog-api';
@@ -203,9 +204,7 @@ export function LayoutDraftEditor({
   );
 
   const handleMoveTable = (id: string, x: number, y: number) => {
-    setTables((current) =>
-      current.map((tbl) => (tbl.tableId === id ? { ...tbl, x, y } : tbl)),
-    );
+    setTables((current) => current.map((tbl) => (tbl.tableId === id ? { ...tbl, x, y } : tbl)));
   };
 
   const handleSelectTable = (id: string) => {
@@ -364,11 +363,12 @@ export function LayoutDraftEditor({
         </label>
       </div>
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-        <span>💡 Kéo thả bàn trực tiếp trên sơ đồ để chỉnh vị trí nhanh (bước nhảy 100 đơn vị).</span>
+        <span>
+          💡 Kéo thả bàn trực tiếp trên sơ đồ để chỉnh vị trí nhanh (bước nhảy 100 đơn vị).
+        </span>
         {selectedTableId ? (
           <span className="font-semibold text-primary">
-            Đang chọn:{' '}
-            {tables.find((t) => t.tableId === selectedTableId)?.label ?? selectedTableId}
+            Đang chọn: {tables.find((t) => t.tableId === selectedTableId)?.label ?? selectedTableId}
           </span>
         ) : null}
       </div>
@@ -442,16 +442,14 @@ export function LayoutDraftEditor({
             </label>
             <label className="flex flex-col gap-1 text-xs font-semibold">
               <span>Hình dạng</span>
-              <select
+              <HySelect
                 className="h-9 rounded-md border border-input bg-card px-2 text-xs"
                 value={batchShape}
-                onChange={(e) =>
-                  setBatchShape(e.currentTarget.value as 'ROUND' | 'RECTANGLE')
-                }
+                onChange={(e) => setBatchShape(e.currentTarget.value as 'ROUND' | 'RECTANGLE')}
               >
                 <option value="ROUND">Bàn tròn</option>
                 <option value="RECTANGLE">Bàn chữ nhật</option>
-              </select>
+              </HySelect>
             </label>
             <button
               type="button"

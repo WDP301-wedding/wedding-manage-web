@@ -1,4 +1,5 @@
 'use client';
+import { HySelect } from '../../components/ui/select-field';
 
 import { ArrowDown, ArrowUp, X } from 'lucide-react';
 import { type FormEvent, useMemo, useState } from 'react';
@@ -128,7 +129,7 @@ export function CreateMenuForm({
       <div className={cx.field}>
         <label htmlFor="menu-dish-version">Món phiên bản</label>
         <div className={cx.inlineControl}>
-          <select
+          <HySelect
             id="menu-dish-version"
             value={selectedVersionId}
             onChange={(event) => setSelectedVersionId(event.currentTarget.value)}
@@ -139,7 +140,7 @@ export function CreateMenuForm({
                 {option.label}
               </option>
             ))}
-          </select>
+          </HySelect>
           <button
             type="button"
             className={cx.secondaryButton}
@@ -161,9 +162,7 @@ export function CreateMenuForm({
           <span className="text-muted-foreground">
             Tổng giá các món đơn lẻ ({items.length} món):
           </span>
-          <strong className="font-semibold text-foreground">
-            {formatVnd(totalApertifPrice)}
-          </strong>
+          <strong className="font-semibold text-foreground">{formatVnd(totalApertifPrice)}</strong>
         </div>
       ) : null}
       {items.length === 0 ? (

@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { CircleCheck } from 'lucide-react';
 import { cn } from 'cn';
 import { formatVnd } from '../../lib/formatters';
+import { formatDate } from './booking-helpers';
 import { ApprovalStatus, ContractLinesTable } from './contract-lines-table';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -90,9 +91,7 @@ export function AppendixDetailView({
         </div>
         <div className="flex flex-col">
           <dt className="text-xs text-muted-foreground">Ngày lập phụ lục:</dt>
-          <dd className="tabular-nums">
-            {new Date(activeAppendix.createdAt).toLocaleDateString('vi-VN')}
-          </dd>
+          <dd className="tabular-nums">{formatDate(activeAppendix.createdAt)}</dd>
         </div>
       </dl>
 

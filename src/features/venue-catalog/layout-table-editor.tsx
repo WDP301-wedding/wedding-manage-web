@@ -1,4 +1,5 @@
 'use client';
+import { HySelect } from '../../components/ui/select-field';
 
 import type { LayoutTableWrite } from './catalog-api';
 import { cn } from 'cn';
@@ -67,7 +68,7 @@ export function TableEditor({
       </label>
       <label>
         <span>Hình dạng</span>
-        <select
+        <HySelect
           value={table.shape}
           onChange={(event) =>
             onChange({ ...table, shape: event.currentTarget.value as LayoutTableWrite['shape'] })
@@ -75,7 +76,7 @@ export function TableEditor({
         >
           <option value="ROUND">Tròn</option>
           <option value="RECTANGLE">Chữ nhật</option>
-        </select>
+        </HySelect>
       </label>
       <TableNumber
         label={`Số ghế ${table.label}`}

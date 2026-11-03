@@ -38,7 +38,6 @@ const noticeTone = {
 
 export function DashboardBookingsSection({
   isManager,
-  state,
   bookings,
   assignments,
   resolvedAccountId,
@@ -46,151 +45,53 @@ export function DashboardBookingsSection({
   lockNotice,
   onDismissLockNotice,
 }: Readonly<DashboardBookingsSectionProps>) {
-  const view = useDashboardBookings({ bookings, assignments, resolvedAccountId });
-
-  if (!isManager) {
-    return <StaffCheckinBanner />;
-  }
-
-  const { serverSearch, bookingTab, filteredBookings } = view;
-  const loading = state === 'loading' || serverSearch.loading;
-  const createLink = (
-    <Link
-      className={buttonVariants({ variant: 'outline', size: 'sm' })}
-      href="/bookings"
-      prefetch={false}
-    >
-      <Plus aria-hidden className="size-3.5" />
-      Tạo đặt tiệc mới
-    </Link>
-  );
-
-  let body;
-  if (serverSearch.error) {
-    body = (
-      <div role="alert" className={emptyClass}>
-        <p>{serverSearch.error}</p>
-        <Button variant="outline" size="sm" onClick={serverSearch.retry}>
-          Tìm lại từ đầu
-        </Button>
-      </div>
-    );
-  } else if (loading) {
-    body = <p className={emptyClass}>Đang đồng bộ danh sách tiệc cưới từ máy chủ…</p>;
-  } else if (view.currentTabBookings.length === 0 && !view.searchQuery.trim()) {
-    body =
-      bookingTab === 'mine' ? (
-        <div className={emptyClass}>
-          <strong className="text-base font-semibold text-foreground">
-            Chưa có buổi tiệc nào trong &quot;Tiệc của tôi&quot;
-          </strong>
-          <p className="max-w-[520px]">
-            Bạn chưa nhận phụ trách hoặc tạo tiệc cưới nào. Hãy bấm &quot;Tạo đặt tiệc mới&quot;
-            hoặc chuyển sang tab <strong>Tất cả tiệc nhà hàng</strong> để theo dõi lịch và nhận
-            tiệc.
-          </p>
-          <div className="mt-3 flex flex-wrap justify-center gap-2">
-            {createLink}
-            <Button variant="ghost" size="sm" onClick={() => view.setBookingTab('all')}>
-              Xem tất cả tiệc nhà hàng ({bookings.length})
-            </Button>
-          </div>
-        </div>
-      ) : (
-        <div className={emptyClass}>
-          <strong className="text-base font-semibold text-foreground">
-            Chưa có buổi tiệc nào trong lịch
-          </strong>
-          <p>
-            Bấm &quot;Tạo đặt tiệc mới&quot; hoặc chọn từ danh sách yêu cầu tư vấn để tạo hồ sơ tiệc
-            cưới.
-          </p>
-        </div>
-      );
-  } else if (filteredBookings.length === 0) {
-    body = (
-      <div className={emptyClass}>
-        <strong className="text-base font-semibold text-foreground">
-          Không tìm thấy tiệc cưới phù hợp
-        </strong>
-        <p>Không có buổi tiệc nào khớp với từ khóa tìm kiếm hoặc trạng thái lọc đã chọn.</p>
-      </div>
-    );
-  } else {
-    body = (
-      <>
-        <DashboardBookingsTable
-          bookings={view.paginatedBookings}
-          assignments={assignments}
-          resolvedAccountId={resolvedAccountId}
-          onClaim={onClaim}
-          sortField={view.sortField}
-          sortOrder={view.sortOrder}
-          onSortChange={view.handleSortChange}
-        />
-        <TablePagination
-          info={
-            <span>
-              Hiển thị <strong>{view.startIndex + 1}</strong> – <strong>{view.endIndex}</strong>{' '}
-              trong <strong>{filteredBookings.length}</strong> kết quả đã tải tiệc cưới
-            </span>
-          }
-          pageSize={view.pageSize}
-          pageSizes={[5, 10, 20, 50]}
-          onPageSize={(size) => {
-            view.setPageSize(size);
-            view.setCurrentPage(1);
-          }}
-          page={view.safeCurrentPage}
-          totalPages={view.totalPages}
-          onPage={view.setCurrentPage}
-          navLabel="Phân trang lịch tiệc"
-        />
-      </>
-    );
-  }
-
+  const view = useDashboardBookings({
+    bookings,
+    assignments,
+    resolvedAccountId,
+    enabled: isManager,
+  });
+  if (!isManager) return <StaffCheckinBanner />;
   return (
     <section className={sectionClass} id="booked-events">
       <div className={sectionHeaderClass}>
         <h2 className={sectionTitleClass}>
           Lịch tiệc &amp; Sự kiện đã đặt (
-          {state === 'loading'
-            ? '…'
-            : bookingTab === 'mine'
-              ? view.myBookingsCount
-              : bookings.length}
-          )
+          {view.bookingTab === 'mine' ? view.myBookingsCount : view.allBookingsCount})
         </h2>
-        {createLink}
+        <div className="flex flex-wrap items-center gap-3">
+          <Link
+            href="/cancelled-bookings"
+            className="text-sm font-semibold text-primary hover:underline"
+          >
+            Tiệc đã hủy
+          </Link>
+          <Link className={buttonVariants({ variant: 'outline', size: 'sm' })} href="/bookings">
+            <Plus aria-hidden className="size-3.5" />
+            Tạo đặt tiệc mới
+          </Link>
+        </div>
       </div>
-
-      {lockNotice ? (
+      {lockNotice && (
         <div
           role="status"
           className={cn(
-            'flex items-start justify-between gap-3 rounded-lg px-4 py-3 text-xs motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-top-1',
+            'flex items-center justify-between gap-3 rounded-lg p-3 text-sm',
             noticeTone[lockNotice.type],
           )}
         >
           <span>{lockNotice.message}</span>
-          <button
-            type="button"
-            onClick={onDismissLockNotice}
-            aria-label="Đóng thông báo"
-            className="inline-flex size-6 shrink-0 items-center justify-center rounded-md hover:bg-black/5 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-          >
-            <X aria-hidden className="size-3.5" />
+          <button type="button" onClick={onDismissLockNotice} aria-label="Đóng thông báo">
+            <X aria-hidden className="size-4" />
           </button>
         </div>
-      ) : null}
-
+      )}
       <DashboardBookingsToolbar
-        bookingTab={bookingTab}
+        bookingTab={view.bookingTab}
         setBookingTab={view.setBookingTab}
         myBookingsCount={view.myBookingsCount}
-        totalBookingsCount={bookings.length}
-        isLoading={state === 'loading'}
+        totalBookingsCount={view.allBookingsCount}
+        isLoading={view.loading}
         searchQuery={view.searchQuery}
         setSearchQuery={view.setSearchQuery}
         phaseFilter={view.phaseFilter}
@@ -198,22 +99,49 @@ export function DashboardBookingsSection({
         sortField={view.sortField}
         sortOrder={view.sortOrder}
         onQuickSortChange={view.handleQuickSortChange}
-        onResetPage={() => view.setCurrentPage(1)}
       />
-
-      {body}
-
-      {serverSearch.hasMore && !serverSearch.error && (
-        <Button
-          variant="outline"
-          size="sm"
-          className="self-start"
-          disabled={serverSearch.loading}
-          onClick={() => void serverSearch.more()}
-        >
-          Tải thêm kết quả tìm kiếm
-        </Button>
+      {view.error ? (
+        <div role="alert" className={emptyClass}>
+          <p>{view.error}</p>
+          <Button variant="outline" onClick={() => void view.refresh()}>
+            Thử lại
+          </Button>
+        </div>
+      ) : view.loading ? (
+        <p role="status" className={emptyClass}>
+          Đang tải trang tiệc…
+        </p>
+      ) : view.total === 0 ? (
+        <p className={emptyClass}>Không có tiệc phù hợp. Tiệc đã hủy được lưu tại khu vực riêng.</p>
+      ) : (
+        <DashboardBookingsTable
+          bookings={view.paginatedBookings}
+          assignments={view.serverAssignments}
+          resolvedAccountId={resolvedAccountId}
+          onClaim={onClaim}
+          sortField={view.sortField}
+          sortOrder={view.sortOrder}
+          onSortChange={view.handleSortChange}
+        />
       )}
+      <TablePagination
+        info={
+          <span>
+            Hiển thị{' '}
+            <strong>
+              {view.total === 0 ? 0 : view.startIndex + 1}–{view.endIndex}
+            </strong>{' '}
+            / <strong>{view.total}</strong> tiệc
+          </span>
+        }
+        pageSize={view.pageSize}
+        pageSizes={[5, 10, 20, 50]}
+        onPageSize={view.setPageSize}
+        page={view.safeCurrentPage}
+        totalPages={view.totalPages}
+        onPage={view.setCurrentPage}
+        navLabel="Phân trang lịch tiệc"
+      />
     </section>
   );
 }

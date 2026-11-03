@@ -1,5 +1,7 @@
 'use client';
 
+import { useState } from 'react';
+
 import { Button } from '../../components/ui/button';
 import { DashboardBookingsSection } from './dashboard-bookings-section';
 import { DashboardConsultationsSection } from './dashboard-consultations-section';
@@ -23,6 +25,10 @@ export function DashboardLiveView({
   currentAccountEmail?: string;
 }>) {
   const { data, state, errorMessage, retry } = useDashboardData(isManager);
+  const [consultationTotals, setConsultationTotals] = useState<{
+    total: number;
+    pending: number;
+  } | null>(null);
   const claims = useBookingClaims(currentAccountId, currentAccountEmail);
 
   return (
@@ -42,6 +48,7 @@ export function DashboardLiveView({
       <DashboardVenueCard restaurant={data.restaurant} isManager={isManager} />
 
       <DashboardKpiStrip
+        consultationSummary={consultationTotals}
         isManager={isManager}
         isLoading={state === 'loading'}
         halls={data.halls}
@@ -62,6 +69,7 @@ export function DashboardLiveView({
       />
 
       <DashboardConsultationsSection
+        onTotalsChange={setConsultationTotals}
         isManager={isManager}
         state={state}
         consultations={data.consultations}

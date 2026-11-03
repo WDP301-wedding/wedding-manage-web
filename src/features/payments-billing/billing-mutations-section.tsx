@@ -6,6 +6,7 @@ import { ManualPaymentForm, RefundForm, type CommandOutcome } from './payment-fo
 
 export interface BillingMutationsSectionProps {
   view: BillingView;
+  archiveMode?: boolean;
   pending: boolean;
   uncertain: 'manual' | 'refund' | 'approval' | null;
   refundRevision: number | null;
@@ -21,12 +22,15 @@ const tabClass =
 
 export function BillingMutationsSection({
   view,
+  archiveMode = false,
   pending,
   uncertain,
   refundRevision,
   onMutate,
 }: Readonly<BillingMutationsSectionProps>) {
-  const [activeTab, setActiveTab] = useState<'manual' | 'refund'>('manual');
+  const [activeTab, setActiveTab] = useState<'manual' | 'refund'>(
+    archiveMode ? 'refund' : 'manual',
+  );
 
   useEffect(() => {
     if (uncertain === 'manual' || uncertain === 'refund') {
@@ -55,15 +59,17 @@ export function BillingMutationsSection({
         role="tablist"
         aria-label="Nghiệp vụ thanh toán"
       >
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === 'manual'}
-          className={tabClass}
-          onClick={() => setActiveTab('manual')}
-        >
-          Thu tiền
-        </button>
+        {(!archiveMode || uncertain === 'manual') && (
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'manual'}
+            className={tabClass}
+            onClick={() => setActiveTab('manual')}
+          >
+            {archiveMode ? 'Đối chiếu khoản thu chưa rõ kết quả' : 'Thu tiền'}
+          </button>
+        )}
         <button
           type="button"
           role="tab"
@@ -75,14 +81,16 @@ export function BillingMutationsSection({
         </button>
       </div>
 
-      <div className={pane('manual')}>
-        <ManualPaymentForm
-          key={`manual:${view.bookingId}`}
-          bookingId={view.bookingId}
-          disabled={pending || (uncertain !== null && uncertain !== 'manual')}
-          onConfirm={(body) => onMutate('manual', body)}
-        />
-      </div>
+      {(!archiveMode || uncertain === 'manual') && (
+        <div className={pane('manual')}>
+          <ManualPaymentForm
+            key={`manual:${view.bookingId}`}
+            bookingId={view.bookingId}
+            disabled={pending || (uncertain !== null && uncertain !== 'manual')}
+            onConfirm={(body) => onMutate('manual', body)}
+          />
+        </div>
+      )}
 
       <div className={pane('refund')}>
         <RefundForm

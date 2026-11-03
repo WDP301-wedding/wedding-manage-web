@@ -1,4 +1,5 @@
 'use client';
+import { HySelect } from '../../components/ui/select-field';
 
 import { type FormEvent, useMemo, useState } from 'react';
 import type { CatalogGateway, CatalogMenu } from './catalog-api';
@@ -89,7 +90,7 @@ export function MenuDraftEditor({
         defaultValue={version.priceVndPerTable}
       />
       <div className={cx.inlineControl}>
-        <select
+        <HySelect
           aria-label="Thêm phiên bản món vào bản nháp"
           value={selected}
           onChange={(event) => setSelected(event.currentTarget.value)}
@@ -100,7 +101,7 @@ export function MenuDraftEditor({
               {option.label}
             </option>
           ))}
-        </select>
+        </HySelect>
         <button
           className={cx.secondaryButton}
           type="button"
@@ -119,9 +120,7 @@ export function MenuDraftEditor({
           <span className="text-muted-foreground">
             Tổng giá các món đơn lẻ ({items.length} món):
           </span>
-          <strong className="font-semibold text-foreground">
-            {formatVnd(totalItemsPrice)}
-          </strong>
+          <strong className="font-semibold text-foreground">{formatVnd(totalItemsPrice)}</strong>
         </div>
       ) : null}
       <div className={cx.formActions}>

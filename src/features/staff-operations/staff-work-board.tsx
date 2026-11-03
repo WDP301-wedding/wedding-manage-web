@@ -1,3 +1,4 @@
+import { HySelect } from '../../components/ui/select-field';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -12,6 +13,7 @@ import {
 } from '../../services/staff-workspace.contracts';
 import { useLiveRefresh } from '../realtime/use-live-refresh';
 import { staffCommand } from './staff-command-intents';
+import { formatDateTime } from '../booking-lifecycle/booking-helpers';
 import { cardClass, labelClass } from './staff-classes';
 const titles = { TASK: 'Công việc', INCIDENT: 'Sự cố', HANDOVER: 'Bàn giao ca' } as const;
 const statuses = { OPEN: 'Mới ghi nhận', IN_PROGRESS: 'Đang xử lý', DONE: 'Hoàn tất' } as const;
@@ -180,7 +182,7 @@ export function StaffWorkBoard({
   const assigneeField = (selected: string | null) => (
     <label className={labelClass}>
       Người phụ trách / nhận bàn giao
-      <select
+      <HySelect
         name="assignee"
         defaultValue={selected ?? ''}
         className={selectClass}
@@ -194,7 +196,7 @@ export function StaffWorkBoard({
               {m.label}
             </option>
           ))}
-      </select>
+      </HySelect>
     </label>
   );
   const canCreate = view.isManager || kind !== 'TASK';
@@ -247,10 +249,10 @@ export function StaffWorkBoard({
             <div className="grid gap-3 sm:grid-cols-2">
               <label className={labelClass}>
                 Mức ưu tiên
-                <select name="priority" className={selectClass} disabled={pending}>
+                <HySelect name="priority" className={selectClass} disabled={pending}>
                   <option value="NORMAL">Bình thường</option>
                   <option value="URGENT">Cần xử lý ngay</option>
-                </select>
+                </HySelect>
               </label>
               {(view.isManager || kind === 'HANDOVER') && assigneeField(null)}
             </div>
@@ -348,7 +350,7 @@ export function StaffWorkBoard({
           )}
           <label className={labelClass}>
             Trạng thái
-            <select
+            <HySelect
               name="status"
               defaultValue={editing.kind === 'HANDOVER' ? 'DONE' : editing.status}
               disabled={pending}
@@ -362,7 +364,7 @@ export function StaffWorkBoard({
                   {editing.kind === 'HANDOVER' ? 'Đã nhận bàn giao' : statuses[s]}
                 </option>
               ))}
-            </select>
+            </HySelect>
           </label>
           {view.isManager && assigneeField(editing.assignedAccountId)}
           <label className={labelClass}>
@@ -407,12 +409,7 @@ export function StaffWorkBoard({
           <ol className="mt-3 space-y-3">
             {history.page.items.map((h) => (
               <li key={h.revision} className="text-sm">
-                <strong>Phiên bản {h.revision}</strong> ·{' '}
-                {new Intl.DateTimeFormat('vi-VN', {
-                  dateStyle: 'short',
-                  timeStyle: 'short',
-                  timeZone: 'Asia/Ho_Chi_Minh',
-                }).format(new Date(h.createdAt))}
+                <strong>Phiên bản {h.revision}</strong> · {formatDateTime(h.createdAt)}
                 <p className="whitespace-pre-wrap text-muted-foreground">
                   {typeof h.snapshot.note === 'string'
                     ? h.snapshot.note === 'CREATED'

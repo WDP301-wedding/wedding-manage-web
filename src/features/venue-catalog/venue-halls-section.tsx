@@ -1,4 +1,5 @@
 'use client';
+import { HySelect } from '../../components/ui/select-field';
 
 import type { CatalogHall } from './catalog-types';
 import { HallForm, SectionHeading, Status } from './catalog-forms';
@@ -43,14 +44,14 @@ export function VenueHallsSection({
         <div className={cx.toolbarActions}>
           <label>
             Lọc trạng thái sảnh
-            <select
+            <HySelect
               value={hallFilter}
               onChange={(event) => setHallFilter(event.currentTarget.value as typeof hallFilter)}
             >
               <option value="ALL">Tất cả</option>
               <option value="ACTIVE">Đang hoạt động</option>
               <option value="RETIRED">Đã ngừng</option>
-            </select>
+            </HySelect>
           </label>
           <button
             className={cx.primaryButton}

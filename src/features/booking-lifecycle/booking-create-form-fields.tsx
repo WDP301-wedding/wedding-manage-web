@@ -1,4 +1,5 @@
 'use client';
+import { HySelect } from '../../components/ui/select-field';
 
 import { DatePicker } from '../../design-system/date-picker';
 import { Badge } from '../../components/ui/badge';
@@ -80,7 +81,7 @@ export function BookingCreateFormFields({
         <h3 className="text-base font-semibold">1. Địa điểm &amp; Lịch tổ chức</h3>
         <label htmlFor="hallId-select" className={fieldLabelClass}>
           Sảnh tiệc
-          <select
+          <HySelect
             id="hallId-select"
             className={selectClass}
             key={`hallId-${matchedHall?.id ?? 'none'}`}
@@ -98,7 +99,7 @@ export function BookingCreateFormFields({
                 {hall.name} · tối đa {hall.maxGuests} khách
               </option>
             ))}
-          </select>
+          </HySelect>
         </label>
 
         <div className="grid gap-x-4 gap-y-3 sm:grid-cols-2">
@@ -119,7 +120,7 @@ export function BookingCreateFormFields({
           </label>
           <label htmlFor="shiftCode-select" className={fieldLabelClass}>
             <span>Ca</span>
-            <select
+            <HySelect
               id="shiftCode-select"
               className={selectClass}
               key={`shiftCode-${prefillShift ?? ''}-${selections ? 'loaded' : 'loading'}`}
@@ -141,7 +142,7 @@ export function BookingCreateFormFields({
                   {shift.code === 'LUNCH' ? 'Trưa' : 'Tối'} · {shift.startTime}–{shift.endTime}
                 </option>
               ))}
-            </select>
+            </HySelect>
           </label>
         </div>
 
@@ -180,7 +181,7 @@ export function BookingCreateFormFields({
         <h3 className="text-base font-semibold">2. Thực đơn &amp; Quy mô bàn tiệc</h3>
         <label htmlFor="menuPackageVersionId-select" className={fieldLabelClass}>
           Thực đơn đặt tiệc
-          <select
+          <HySelect
             id="menuPackageVersionId-select"
             className={selectClass}
             key={`menuId-${matchedMenu?.versionId ?? 'none'}`}
@@ -198,7 +199,7 @@ export function BookingCreateFormFields({
                 {menu.name} · bản {menu.versionNumber} · {money(menu.priceVndPerTable)}/bàn
               </option>
             ))}
-          </select>
+          </HySelect>
         </label>
 
         <div className="grid grid-cols-2 gap-x-4 gap-y-3">

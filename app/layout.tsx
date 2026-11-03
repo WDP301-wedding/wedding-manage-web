@@ -1,7 +1,9 @@
+import { ActiveBookingBoundary } from '../src/features/booking-archive/active-booking-boundary';
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 
 import './globals.css';
+import './styles/select-field.css';
 import { SessionRevocationBoundary } from '../src/features/identity-access/session-revocation-boundary';
 import { NotificationProvider } from '../src/design-system/notifications';
 
@@ -19,7 +21,9 @@ export default function RootLayout({ children }: RootLayoutProps) {
     <html lang="vi">
       <body>
         <SessionRevocationBoundary>
-          <NotificationProvider>{children}</NotificationProvider>
+          <NotificationProvider>
+            <ActiveBookingBoundary>{children}</ActiveBookingBoundary>
+          </NotificationProvider>
         </SessionRevocationBoundary>
       </body>
     </html>

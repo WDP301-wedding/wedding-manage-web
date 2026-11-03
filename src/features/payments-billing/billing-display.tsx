@@ -3,6 +3,7 @@ import { cn } from 'cn';
 import { ApiClientError } from '../../lib/api/client';
 import { ApiServiceError } from '../../lib/api/axios-client';
 import type { AttemptView, BillingView } from './billing-api';
+import { formatDateTime } from '../booking-lifecycle/booking-helpers';
 import { BillingIntentMismatchError } from './billing-intents';
 
 export const money = (value: number) =>
@@ -149,7 +150,7 @@ export function BillingHistory({ view }: Readonly<{ view: BillingView }>) {
               {transactions.map((entry) => (
                 <tr key={entry.ledgerEntryId} className="border-t border-border align-top">
                   <td className="px-3 py-2 text-xs whitespace-nowrap tabular-nums">
-                    {new Date(entry.occurredAt).toLocaleString('vi-VN')}
+                    {formatDateTime(entry.occurredAt)}
                   </td>
                   <td className="px-3 py-2">
                     <span className="inline-flex items-center gap-1.5 font-semibold">

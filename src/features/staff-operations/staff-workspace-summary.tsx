@@ -4,10 +4,8 @@ import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { cardClass } from './staff-classes';
 import type { StaffWorkspace } from '../../services/staff-workspace.contracts';
-export const eventDate = (value: string) =>
-  new Intl.DateTimeFormat('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }).format(
-    new Date(`${value}T00:00:00+07:00`),
-  );
+import { formatDate, formatDateTime } from '../booking-lifecycle/booking-helpers';
+export const eventDate = (value: string) => formatDate(value);
 export function StaffEventSelector({
   context,
   disabled,
@@ -39,7 +37,13 @@ export function StaffEventSelector({
           Tải danh sách tiệc
         </Button>
       </div>
-      <details open={!context.workspace}>
+      <details
+        open={!context.workspace}
+        onClick={(event) => {
+          if (event.target instanceof Element && event.target.closest('[data-booking-choice]'))
+            event.currentTarget.open = false;
+        }}
+      >
         <summary className="cursor-pointer text-sm font-semibold text-primary">
           Chọn hoặc chuyển tiệc
         </summary>
@@ -89,6 +93,7 @@ export function StaffEventSelector({
                   <button
                     type="button"
                     disabled={disabled}
+                    data-booking-choice
                     aria-pressed={event.bookingId === context.eventId}
                     onClick={() => context.setBookingId(event.bookingId)}
                     className="flex w-full flex-col gap-1 rounded-lg border border-border p-3 text-left text-sm hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring aria-pressed:border-primary disabled:opacity-50"
@@ -202,20 +207,9 @@ export function StaffCheckinReadiness({
         ))}
       </dl>
       <p className="text-sm text-muted-foreground">
-        Khung giờ do máy chủ xác định:{' '}
-        {new Intl.DateTimeFormat('vi-VN', {
-          dateStyle: 'short',
-          timeStyle: 'short',
-          timeZone: 'Asia/Ho_Chi_Minh',
-        }).format(new Date(view.windowOpensAt))}{' '}
-        đến{' '}
-        {new Intl.DateTimeFormat('vi-VN', {
-          dateStyle: 'short',
-          timeStyle: 'short',
-          timeZone: 'Asia/Ho_Chi_Minh',
-        }).format(new Date(view.windowClosesAt))}
-        . Manager luôn cần ghi lý do; chỉ Manager được thao tác ngoài khung giờ. Đã có bản ghi
-        check-in thì không thể tắt chế độ.
+        Khung giờ do máy chủ xác định: {formatDateTime(view.windowOpensAt)} đến{' '}
+        {formatDateTime(view.windowClosesAt)}. Manager luôn cần ghi lý do; chỉ Manager được thao tác
+        ngoài khung giờ. Đã có bản ghi check-in thì không thể tắt chế độ.
       </p>
       {view.listedGuestCount === 0 && (
         <p role="status" className="text-sm text-primary">

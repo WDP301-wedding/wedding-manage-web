@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { Badge } from '../../components/ui/badge';
 import { Button, buttonVariants } from '../../components/ui/button';
-import { bookingPhaseLabel, bookingPhaseTone, type BadgeTone } from './booking-helpers';
+import { bookingPhaseLabel, bookingPhaseTone, formatDate, type BadgeTone } from './booking-helpers';
 import type { Item } from './use-consultation-requests';
 
 export interface ConsultationRequestsListProps {
@@ -201,7 +201,7 @@ export function ConsultationRequestsList({
                     <span>Đã nhận</span>
                   </dt>
                   <dd className="tabular-nums">
-                    <span>{new Date(item.createdAt).toLocaleDateString('vi-VN')}</span>
+                    <span>{formatDate(item.createdAt)}</span>
                   </dd>
                 </div>
               </dl>

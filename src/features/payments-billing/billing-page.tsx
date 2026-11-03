@@ -94,24 +94,31 @@ export function ManagementBillingWorkspace({
   authorize,
   gateway,
   intents,
+  archiveMode = false,
 }: Readonly<{
   accountId: string;
   authorize: Authorize;
   gateway: ManagementBillingGateway;
   intents?: ReturnType<typeof createBillingIntents>;
+  archiveMode?: boolean;
 }>) {
   const billing = useBillingWorkspace({ accountId, authorize, gateway, intents });
   const { view, pending, uncertain } = billing;
 
+  const Container = archiveMode ? 'section' : 'main';
   return (
-    <main
+    <Container
       data-ui-v3
-      className="flex min-h-screen flex-col gap-6 bg-background p-[clamp(1rem,3vw,3.25rem)]"
+      className={
+        archiveMode
+          ? 'flex flex-col gap-5'
+          : 'flex min-h-screen flex-col gap-6 bg-background p-[clamp(1rem,3vw,3.25rem)]'
+      }
       id="billing-content"
     >
       <header className="flex flex-wrap items-start justify-between gap-6">
         <div className="flex max-w-xl min-w-0 flex-[1_1_360px] flex-col gap-1">
-          {view !== null && (
+          {view !== null && !archiveMode && (
             <Link
               className="inline-flex items-center gap-1 self-start text-xs font-semibold text-primary hover:underline"
               href={`/bookings?bookingId=${encodeURIComponent(view.bookingId)}`}
@@ -125,18 +132,20 @@ export function ManagementBillingWorkspace({
             Theo dõi tiền đặt tiệc, ghi nhận khoản thu và hoàn tiền.
           </p>
         </div>
-        <BillingBookingLookup
-          value={billing.bookingId}
-          disabled={pending || uncertain !== null}
-          matches={billing.searchMatches}
-          open={billing.showDropdown}
-          onChange={billing.handleBookingInputChange}
-          onFocus={() => {
-            if (billing.searchMatches.length > 0) billing.setShowDropdown(true);
-          }}
-          onSelect={billing.selectLookupBooking}
-          onSubmit={billing.submitLookup}
-        />
+        {!archiveMode && (
+          <BillingBookingLookup
+            value={billing.bookingId}
+            disabled={pending || uncertain !== null}
+            matches={billing.searchMatches}
+            open={billing.showDropdown}
+            onChange={billing.handleBookingInputChange}
+            onFocus={() => {
+              if (billing.searchMatches.length > 0) billing.setShowDropdown(true);
+            }}
+            onSelect={billing.selectLookupBooking}
+            onSubmit={billing.submitLookup}
+          />
+        )}
       </header>
 
       {/* empty:sr-only giữ vùng thông báo trong cây trợ năng nhưng không chiếm chỗ khi trống. */}
@@ -154,7 +163,12 @@ export function ManagementBillingWorkspace({
 
       {view !== null && (
         <>
-          <BillingFinancialOverview bookingId={view.bookingId} overview={view.financialOverview} />
+          {!archiveMode && (
+            <BillingFinancialOverview
+              bookingId={view.bookingId}
+              overview={view.financialOverview}
+            />
+          )}
 
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-xl font-semibold">Công nợ đã ghi nhận</h2>
@@ -179,6 +193,7 @@ export function ManagementBillingWorkspace({
           <div className="flex flex-wrap items-start gap-6">
             <BillingMutationsSection
               view={view}
+              archiveMode={archiveMode}
               pending={pending}
               uncertain={uncertain}
               refundRevision={billing.refundRevision}
@@ -204,16 +219,18 @@ export function ManagementBillingWorkspace({
             </div>
           </div>
 
-          <IncidentalsPanel
-            bookingId={view.bookingId}
-            billingRevision={view.billingRevision}
-            disabled={pending}
-            onRefresh={() => {
-              void billing.run(() => billing.load(view.bookingId));
-            }}
-          />
+          {!archiveMode && (
+            <IncidentalsPanel
+              bookingId={view.bookingId}
+              billingRevision={view.billingRevision}
+              disabled={pending}
+              onRefresh={() => {
+                void billing.run(() => billing.load(view.bookingId));
+              }}
+            />
+          )}
         </>
       )}
-    </main>
+    </Container>
   );
 }

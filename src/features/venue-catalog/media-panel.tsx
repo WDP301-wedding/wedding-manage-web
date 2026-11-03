@@ -1,4 +1,5 @@
 'use client';
+import { HySelect } from '../../components/ui/select-field';
 
 import { ArrowDown, ArrowUp } from 'lucide-react';
 import { hasDirtyCatalogForms, useCatalogLiveRefresh } from './use-catalog-live-refresh';
@@ -207,7 +208,7 @@ export function MediaPanel({
       <div className={cx.mediaToolbar}>
         <label className={cx.field}>
           <span>Tài nguyên danh mục</span>
-          <select
+          <HySelect
             value={selected === undefined ? '' : mediaResourceKey(selected)}
             onChange={(event) => chooseResource(event.currentTarget.value)}
             disabled={loading || resources.length === 0}
@@ -218,7 +219,7 @@ export function MediaPanel({
                 {resource.label}
               </option>
             ))}
-          </select>
+          </HySelect>
         </label>
         <button
           className={cx.secondaryButton}
