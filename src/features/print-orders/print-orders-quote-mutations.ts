@@ -18,7 +18,7 @@ export interface UsePrintOrderQuoteMutationsOptions {
   authorize: <T>(operation: (token: string) => Promise<T>) => Promise<T>;
   gateway: ManagementPrintOrdersGateway;
   showToast: (msg: string) => void;
-  showError: (msg: string) => void;
+  showError: (msg: unknown) => void;
   currentCursor?: string | undefined;
   fetchOrders: (cursor?: string, silent?: boolean) => Promise<boolean>;
   setQuoteDrawerOpen: (open: boolean) => void;
@@ -125,7 +125,7 @@ export function usePrintOrderQuoteMutations({
             showError('Không thể đối soát trạng thái với máy chủ. Vui lòng kiểm tra kết nối mạng.');
           }
         } else {
-          showError(err instanceof Error ? err.message : 'Không thể gửi báo giá.');
+          showError(err);
         }
       } finally {
         isSubmittingRef.current = false;

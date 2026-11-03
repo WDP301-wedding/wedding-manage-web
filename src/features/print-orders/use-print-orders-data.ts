@@ -11,7 +11,7 @@ import { useRefreshQueue } from '../realtime/refresh-queue';
 export interface UsePrintOrdersDataOptions {
   gateway: ManagementPrintOrdersGateway;
   authorize: <T>(operation: (token: string) => Promise<T>) => Promise<T>;
-  showError: (msg: string) => void;
+  showError: (msg: unknown) => void;
   showToast: (msg: string) => void;
   isSubmittingRef: React.MutableRefObject<boolean>;
 }
@@ -68,7 +68,7 @@ export function usePrintOrdersData({
         if (epoch !== requestEpochRef.current) return false;
         const msg = err instanceof Error ? err.message : 'Lỗi tải danh sách đơn in.';
         setLoadError(msg);
-        showError(msg);
+        showError(err);
         return false;
       } finally {
         if (epoch === requestEpochRef.current && !silent) {

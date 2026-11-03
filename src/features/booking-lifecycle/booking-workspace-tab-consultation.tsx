@@ -49,9 +49,9 @@ export function BookingWorkspaceTabConsultation({
     <section
       data-ui-v3
       aria-label="Hồ sơ tư vấn cặp đôi"
-      className={cn('flex flex-wrap items-start gap-6', !active && stepHiddenClass)}
+      className={cn('grid grid-cols-1 items-start gap-6 lg:grid-cols-12', !active && stepHiddenClass)}
     >
-      <div className="flex min-w-0 flex-[1_1_340px] flex-col gap-4">
+      <div className="flex flex-col gap-4 lg:col-span-5">
         <ExistingCustomerPicker
           authorize={authorize}
           gateway={gateway}
@@ -78,7 +78,7 @@ export function BookingWorkspaceTabConsultation({
         </Button>
       </div>
 
-      <div className="min-w-0 flex-[2_1_520px]">
+      <div className="flex flex-col gap-4 lg:col-span-7">
         <ConsultationPanel
           activationVisible={active}
           disabled={disabled}

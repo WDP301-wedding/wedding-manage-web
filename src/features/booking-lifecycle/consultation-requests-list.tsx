@@ -155,9 +155,7 @@ export function ConsultationRequestsList({
                   </dt>
                   <dd className="flex flex-wrap items-center gap-2 font-semibold tabular-nums">
                     <span>
-                      {item.preferredDate
-                        ? item.preferredDate.split('-').reverse().join('/')
-                        : 'Chưa chọn'}
+                      {item.preferredDate ? formatDate(item.preferredDate) : 'Chưa chọn'}
                     </span>
                     {dateTag ? (
                       <span className="rounded-full border border-input px-2 text-2xs leading-5 font-medium">

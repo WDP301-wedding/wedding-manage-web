@@ -1,3 +1,4 @@
+import { describeApiError } from '../../lib/api/api-errors';
 import type React from 'react';
 import { ApiClientError } from '../../lib/api/client';
 import type { ProposalView } from './booking-api';
@@ -157,7 +158,7 @@ export function errorMessage(error: unknown, shift?: ProposalView['proposal']['s
     TIMELINE_REVISION_SUPERSEDED:
       'Kịch bản đã có phiên bản mới. Hãy tải lại hồ sơ trước khi tiếp tục.',
   };
-  return messages[error.code] ?? 'Yêu cầu chưa hoàn tất. Hãy kiểm tra dữ liệu và thử lại.';
+  return messages[error.code] ?? describeApiError(error).message;
 }
 
 export function bookingPhaseLabel(phase: string): string {

@@ -72,9 +72,9 @@ export function ManagementBookingWorkspace({
     <main
       data-ui-v3
       id="booking-main"
-      className="min-h-screen bg-background p-[clamp(1rem,3vw,3.25rem)]"
+      className="min-h-screen bg-background px-4 py-5 sm:px-6 lg:px-8"
     >
-      <div className="mb-6 flex flex-col gap-6">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
         <header className="flex flex-wrap items-start justify-between gap-6">
           <div className="flex max-w-xl min-w-0 flex-[1_1_360px] flex-col gap-1">
             <h1 className="text-2xl font-bold">Điều phối đặt tiệc</h1>
@@ -189,9 +189,8 @@ export function ManagementBookingWorkspace({
             ) : null}
           </button>
         </div>
-      </div>
 
-      <BookingWorkspaceTabConsultation
+        <BookingWorkspaceTabConsultation
         active={activeTab === 'consultation'}
         authorize={authorize}
         gateway={gateway}
@@ -249,6 +248,7 @@ export function ManagementBookingWorkspace({
         gateway={gateway}
         refresh={refresh}
       />
+      </div>
     </main>
   );
 }

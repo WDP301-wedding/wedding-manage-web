@@ -96,7 +96,7 @@ export function usePrintOrderLifecycleMutations(options: UsePrintOrderLifecycleM
           showError('Không thể đối soát trạng thái với máy chủ. Vui lòng kiểm tra kết nối mạng.');
         }
       } else {
-        showError(err instanceof Error ? err.message : 'Lỗi bắt đầu sản xuất.');
+        showError(err);
       }
     } finally {
       isSubmittingRef.current = false;
@@ -183,7 +183,7 @@ export function usePrintOrderLifecycleMutations(options: UsePrintOrderLifecycleM
           showError('Không thể đối soát trạng thái với máy chủ. Vui lòng kiểm tra kết nối mạng.');
         }
       } else {
-        showError(err instanceof Error ? err.message : 'Lỗi đánh dấu sẵn sàng.');
+        showError(err);
       }
     } finally {
       isSubmittingRef.current = false;
@@ -235,7 +235,7 @@ export function usePrintOrderLifecycleMutations(options: UsePrintOrderLifecycleM
       );
     } catch (error) {
       if (epoch === requestEpochRef.current) {
-        showError(error instanceof Error ? error.message : 'Không thể duyệt đơn in.');
+        showError(error);
         void fetchOrders(currentCursor, true);
       }
     } finally {
