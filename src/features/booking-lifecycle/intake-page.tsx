@@ -1,4 +1,5 @@
 'use client';
+import { HySelect } from '../../components/ui/select-field';
 
 import Link from 'next/link';
 import { cn } from 'cn';
@@ -176,7 +177,7 @@ export function ConsultationRequestsPage() {
                       onChange={(e) => setSearchQuery(e.target.value)}
                     />
 
-                    <select
+                    <HySelect
                       className="h-11 rounded-lg border border-input bg-card px-3 text-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                       value={sortBy}
                       onChange={(e) => setSortBy(e.target.value as SortOption)}
@@ -187,7 +188,7 @@ export function ConsultationRequestsPage() {
                       <option value="date-asc">Ngày tiệc gần nhất</option>
                       <option value="guests-desc">Số khách nhiều nhất</option>
                       <option value="name-asc">Tên khách (A-Z)</option>
-                    </select>
+                    </HySelect>
 
                     {(statusFilter !== 'ALL' || searchQuery.trim()) && (
                       <Button variant="link" size="sm" type="button" onClick={resetFilters}>

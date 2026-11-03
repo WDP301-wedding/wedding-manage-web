@@ -1,4 +1,5 @@
 'use client';
+import { HySelect } from '../../components/ui/select-field';
 
 import { useState } from 'react';
 
@@ -106,7 +107,7 @@ export function TimelineTemplatePicker({
           <>
             <label className="flex min-w-0 flex-[1_1_240px] flex-col gap-1 text-xs font-semibold">
               Mẫu kịch bản đã công bố
-              <select
+              <HySelect
                 className="h-11 w-full min-w-0 rounded-lg border border-input bg-card px-3 text-sm font-normal text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                 disabled={disabled || loading}
                 value={selectedId}
@@ -121,7 +122,7 @@ export function TimelineTemplatePicker({
                     {version.name} · phiên bản {version.versionNumber}
                   </option>
                 ))}
-              </select>
+              </HySelect>
             </label>
             <Button
               type="button"

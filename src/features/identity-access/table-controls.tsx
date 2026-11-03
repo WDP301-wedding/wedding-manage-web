@@ -1,4 +1,5 @@
 'use client';
+import { HySelect } from '../../components/ui/select-field';
 
 import type { ReactNode } from 'react';
 import {
@@ -116,7 +117,7 @@ export function TablePagination({
         {info}
         <label className="inline-flex items-center gap-2">
           Hiển thị:
-          <select
+          <HySelect
             value={pageSize}
             onChange={(e) => onPageSize(Number(e.target.value))}
             aria-label="Số dòng hiển thị mỗi trang"
@@ -127,10 +128,10 @@ export function TablePagination({
                 {size} / trang
               </option>
             ))}
-          </select>
+          </HySelect>
         </label>
       </div>
-      {totalPages > 1 ? (
+      {totalPages >= 1 ? (
         <div role="navigation" aria-label={navLabel} className="flex items-center gap-1">
           <button
             type="button"

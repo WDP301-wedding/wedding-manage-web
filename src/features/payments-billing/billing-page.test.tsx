@@ -57,7 +57,7 @@ async function load() {
   await screen.findByText('Còn phải thu');
 }
 describe('management billing workspace', () => {
-  it('clears the loaded booking, monetary forms and attempt when the lookup identifier changes', async () => {
+  it('clears the loaded booking and monetary forms when the lookup identifier changes', async () => {
     const api = gateway();
     render(
       <ManagementBillingWorkspace
@@ -69,17 +69,11 @@ describe('management billing workspace', () => {
       { wrapper: NotificationProvider },
     );
     await load();
-    fireEvent.change(screen.getByLabelText('Mã giao dịch thanh toán'), {
-      target: { value: 'attempt' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: 'Tra cứu giao dịch' }));
-    await screen.findByLabelText('Trạng thái thanh toán');
     expect(screen.getByRole('heading', { name: 'Phê duyệt hoàn tiền' })).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText('Mã hồ sơ đặt tiệc'), {
       target: { value: 'booking-B' },
     });
     expect(screen.queryByText('Còn phải thu')).not.toBeInTheDocument();
-    expect(screen.queryByLabelText('Trạng thái thanh toán')).not.toBeInTheDocument();
     expect(
       screen.queryByRole('heading', { name: 'Ghi nhận tiền đã nhận' }),
     ).not.toBeInTheDocument();

@@ -1,4 +1,5 @@
 'use client';
+import { HySelect } from '../../components/ui/select-field';
 
 import { useRef, useState, type FormEvent } from 'react';
 import type { BillingView, RefundApprovalBody } from './billing-api';
@@ -91,7 +92,7 @@ export function RefundApprovalForm({
           <div className={rowClass}>
             <label className={labelClass}>
               Căn cứ phê duyệt
-              <select name="basis" required defaultValue="" className={selectClass}>
+              <HySelect name="basis" required defaultValue="" className={selectClass}>
                 <option value="">Chọn căn cứ</option>
                 <option value="CANCELLATION">Quyết định hủy tiệc đã chốt</option>
                 {credits.map((entry) => (
@@ -99,7 +100,7 @@ export function RefundApprovalForm({
                     Điều chỉnh giảm · {money(entry.amountVnd)} · {entry.ledgerEntryId}
                   </option>
                 ))}
-              </select>
+              </HySelect>
             </label>
             <label className={labelClass}>
               Hạn mức hoàn được duyệt (VND)

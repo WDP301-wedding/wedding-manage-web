@@ -1,9 +1,10 @@
 'use client';
+import { HySelect } from '../../components/ui/select-field';
 
 import { ArrowDown, ArrowUp, X } from 'lucide-react';
 import { type FormEvent, useMemo, useState } from 'react';
 import type { CatalogDish, MenuWrite } from './catalog-api';
-import { EditorHeading, integer, LabeledInput, move, text } from './food-catalog-shared';
+import { EditorHeading, formatVnd, integer, LabeledInput, move, text } from './food-catalog-shared';
 
 import { cx } from './catalog-classes';
 import { currentDishOptions } from './food-record-card';
@@ -71,6 +72,22 @@ export function CreateMenuForm({
   const [selectedVersionId, setSelectedVersionId] = useState('');
   const [items, setItems] = useState<string[]>([]);
 
+  const dishPriceMap = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const dish of dishes) {
+      for (const v of dish.versions) {
+        if (typeof v.priceVnd === 'number') {
+          map.set(v.id, v.priceVnd);
+        }
+      }
+    }
+    return map;
+  }, [dishes]);
+
+  const totalApertifPrice = useMemo(() => {
+    return items.reduce((sum, id) => sum + (dishPriceMap.get(id) ?? 0), 0);
+  }, [items, dishPriceMap]);
+
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (items.length === 0) return;
@@ -105,7 +122,7 @@ export function CreateMenuForm({
       <div className={cx.field}>
         <label htmlFor="menu-dish-version">Món phiên bản</label>
         <div className={cx.inlineControl}>
-          <select
+          <HySelect
             id="menu-dish-version"
             value={selectedVersionId}
             onChange={(event) => setSelectedVersionId(event.currentTarget.value)}
@@ -116,7 +133,7 @@ export function CreateMenuForm({
                 {option.label}
               </option>
             ))}
-          </select>
+          </HySelect>
           <button
             type="button"
             className={cx.secondaryButton}
@@ -133,6 +150,14 @@ export function CreateMenuForm({
         </div>
       </div>
       <OrderedVersionList items={items} options={options} onChange={setItems} disabled={pending} />
+      {items.length > 0 ? (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-muted/60 px-3 py-2 text-xs">
+          <span className="text-muted-foreground">
+            Tổng giá các món đơn lẻ ({items.length} món):
+          </span>
+          <strong className="font-semibold text-foreground">{formatVnd(totalApertifPrice)}</strong>
+        </div>
+      ) : null}
       {items.length === 0 ? (
         <p className={cx.help}>Thực đơn cần ít nhất một phiên bản món đã công bố.</p>
       ) : null}

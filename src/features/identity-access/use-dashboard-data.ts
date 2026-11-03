@@ -12,10 +12,7 @@ import {
   type PublicHall,
   type PublicRestaurant,
 } from '../../services/catalog.service';
-import {
-  consultationService,
-  type ConsultationRequestItem,
-} from '../../services/consultation.service';
+import { type ConsultationRequestItem } from '../../services/consultation.service';
 import { describeApiError } from '../../lib/api/api-errors';
 import { notify } from '../../design-system/notifications';
 
@@ -37,10 +34,6 @@ const emptyData: DashboardData = {
   bookings: [],
   analytics: null,
 };
-
-function isoDate(date: Date): string {
-  return date.toISOString().slice(0, 10);
-}
 
 /** Tải dữ liệu Tổng quan, giữ danh mục trong bộ nhớ đệm ngắn và làm mới theo sự kiện realtime. */
 export function useDashboardData(isManager: boolean) {
@@ -75,42 +68,20 @@ export function useDashboardData(isManager: boolean) {
       const now = new Date();
       const month = String(now.getMonth() + 1).padStart(2, '0');
       const dateFrom = `${now.getFullYear()}-${month}-01`;
-      const dateTo = `${now.getFullYear()}-${month}-31`;
-      const bookingStart = new Date(now);
-      bookingStart.setDate(bookingStart.getDate() - 7);
-      const bookingEnd = new Date(now);
-      bookingEnd.setDate(bookingEnd.getDate() + 350);
-
-      const [restaurantRes, hallsRes, consultationsRes, analyticsRes, bookingsRes] =
-        await Promise.allSettled([
-          cachedCatalog
-            ? Promise.resolve(cachedCatalog.restaurant)
-            : catalogService.getRestaurant(),
-          cachedCatalog ? Promise.resolve(cachedCatalog.halls) : catalogService.getPublicHalls(),
-          isManager
-            ? consultationService.getConsultationRequests({ limit: 10 })
-            : Promise.resolve(null),
-          isManager ? analyticsService.getOverview({ dateFrom, dateTo }) : Promise.resolve(null),
-          isManager
-            ? analyticsService.getBookings({
-                dateFrom: isoDate(bookingStart),
-                dateTo: isoDate(bookingEnd),
-                pageSize: 50,
-              })
-            : Promise.resolve(null),
-        ]);
+      const dateTo = `${now.getFullYear()}-${month}-${new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()}`;
+      const [restaurantRes, hallsRes, analyticsRes] = await Promise.allSettled([
+        cachedCatalog ? Promise.resolve(cachedCatalog.restaurant) : catalogService.getRestaurant(),
+        cachedCatalog ? Promise.resolve(cachedCatalog.halls) : catalogService.getPublicHalls(),
+        isManager ? analyticsService.getOverview({ dateFrom, dateTo }) : Promise.resolve(null),
+      ]);
 
       if (sequence !== dataSequence.current) return;
       const restaurant = restaurantRes.status === 'fulfilled' ? restaurantRes.value : null;
       const halls = hallsRes.status === 'fulfilled' ? hallsRes.value : [];
-      const consultations =
-        consultationsRes.status === 'fulfilled' && consultationsRes.value
-          ? consultationsRes.value.data
-          : [];
+      const consultations: readonly ConsultationRequestItem[] = [];
       const analytics =
         analyticsRes.status === 'fulfilled' && analyticsRes.value ? analyticsRes.value : null;
-      const bookings =
-        bookingsRes.status === 'fulfilled' && bookingsRes.value ? bookingsRes.value.items : [];
+      const bookings: readonly DashboardBookingItem[] = [];
 
       if (
         generation === catalogGeneration.current &&

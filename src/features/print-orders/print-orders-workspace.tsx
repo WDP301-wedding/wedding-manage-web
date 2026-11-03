@@ -1,3 +1,4 @@
+import { PrintPurchasePreview } from './print-purchase-preview';
 import { useCallback, useRef, useState } from 'react';
 import { Clock3, Plus, RefreshCw } from 'lucide-react';
 import { cn } from 'cn';
@@ -131,23 +132,28 @@ export function PrintOrdersWorkspace({
     onLogout();
   }, [onLogout, resetDataState]);
 
-  const { handleStartProduction, handleMarkReady, handleConfirmHandover, handleConfirmCancel } =
-    usePrintOrderLifecycleMutations({
-      selectedOrder,
-      setSelectedOrder,
-      setOrders,
-      isSubmittingRef,
-      setIsSubmitting,
-      requestEpochRef,
-      authorize,
-      gateway,
-      showToast,
-      showError,
-      currentCursor,
-      fetchOrders,
-      setHandoverModalOpen,
-      setCancelModalOpen,
-    });
+  const {
+    handleApprovePurchase,
+    handleStartProduction,
+    handleMarkReady,
+    handleConfirmHandover,
+    handleConfirmCancel,
+  } = usePrintOrderLifecycleMutations({
+    selectedOrder,
+    setSelectedOrder,
+    setOrders,
+    isSubmittingRef,
+    setIsSubmitting,
+    requestEpochRef,
+    authorize,
+    gateway,
+    showToast,
+    showError,
+    currentCursor,
+    fetchOrders,
+    setHandoverModalOpen,
+    setCancelModalOpen,
+  });
 
   const { handleSubmitQuote } = usePrintOrderQuoteMutations({
     selectedOrder,
@@ -258,7 +264,17 @@ export function PrintOrdersWorkspace({
           {selectedOrder ? (
             <PrintOrdersDetail
               selectedOrder={selectedOrder}
+              purchasePreview={
+                selectedOrder.purchase ? (
+                  <PrintPurchasePreview
+                    key={selectedOrder.orderId}
+                    order={selectedOrder}
+                    authorize={authorize}
+                  />
+                ) : undefined
+              }
               isSubmitting={isSubmitting}
+              onApprovePurchase={() => void handleApprovePurchase()}
               onStartProduction={() => {
                 void handleStartProduction();
               }}

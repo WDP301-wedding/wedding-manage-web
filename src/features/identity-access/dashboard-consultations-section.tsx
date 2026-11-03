@@ -1,5 +1,9 @@
 'use client';
 
+import { useEffect } from 'react';
+
+import { HySelect } from '../../components/ui/select-field';
+
 import Link from 'next/link';
 import type { ConsultationRequestItem } from '../../services/consultation.service';
 import { DashboardConsultationsTable } from './dashboard-consultations-table';
@@ -19,15 +23,18 @@ export interface DashboardConsultationsSectionProps {
   isManager: boolean;
   state: DashboardState;
   consultations: readonly ConsultationRequestItem[];
+  onTotalsChange?: (counts: { total: number; pending: number }) => void;
 }
 
 export function DashboardConsultationsSection({
   isManager,
-  state,
   consultations,
+  onTotalsChange,
 }: Readonly<DashboardConsultationsSectionProps>) {
-  const view = useDashboardConsultations(consultations);
-  const { sortedConsultations } = view;
+  const view = useDashboardConsultations(consultations, isManager);
+  useEffect(() => {
+    if (view.counts) onTotalsChange?.(view.counts);
+  }, [onTotalsChange, view.counts]);
 
   return (
     <section className={sectionClass} id="upcoming-events">
@@ -39,14 +46,14 @@ export function DashboardConsultationsSection({
             href="/consultation-requests"
             prefetch={false}
           >
-            Xem toàn bộ ({state === 'loading' ? '…' : consultations.length})
+            Xem toàn bộ ({view.loading ? '…' : view.total})
           </Link>
         ) : null}
       </div>
 
-      {state === 'loading' ? (
+      {view.loading ? (
         <p className={emptyClass}>Đang đồng bộ danh sách yêu cầu tư vấn từ máy chủ…</p>
-      ) : consultations.length === 0 ? (
+      ) : view.total === 0 && !view.error && !view.searchQuery && view.statusFilter === 'ALL' ? (
         <div className={emptyClass}>
           <strong className="text-base font-semibold text-foreground">
             Chưa có yêu cầu tư vấn nào được ghi nhận
@@ -65,7 +72,7 @@ export function DashboardConsultationsSection({
                 view.setCurrentPage(1);
               }}
             />
-            <select
+            <HySelect
               value={view.statusFilter}
               onChange={(e) => {
                 view.setStatusFilter(e.target.value);
@@ -78,8 +85,8 @@ export function DashboardConsultationsSection({
               <option value="NEW">Chờ xử lý</option>
               <option value="CONVERTED">Đã chuyển đổi</option>
               <option value="CLOSED">Đã đóng</option>
-            </select>
-            <select
+            </HySelect>
+            <HySelect
               value={`${view.sortField}-${view.sortOrder}`}
               onChange={(e) => view.handleQuickSortChange(e.target.value)}
               aria-label="Sắp xếp yêu cầu tư vấn"
@@ -91,10 +98,17 @@ export function DashboardConsultationsSection({
               <option value="displayName-desc">Khách hàng: Z → A</option>
               <option value="preferredDate-asc">Ngày dự kiến: Gần nhất</option>
               <option value="status-asc">Trạng thái: A → Z</option>
-            </select>
+            </HySelect>
           </div>
 
-          {sortedConsultations.length === 0 ? (
+          {view.error ? (
+            <p role="alert" className={emptyClass}>
+              {view.error}
+              <button type="button" onClick={() => void view.retry()}>
+                Thử lại
+              </button>
+            </p>
+          ) : view.total === 0 ? (
             <p className={emptyClass}>Không tìm thấy yêu cầu tư vấn phù hợp với điều kiện lọc.</p>
           ) : (
             <>
@@ -107,9 +121,8 @@ export function DashboardConsultationsSection({
               <TablePagination
                 info={
                   <span>
-                    Hiển thị <strong>{view.startIndex + 1}</strong> –{' '}
-                    <strong>{view.endIndex}</strong> / <strong>{sortedConsultations.length}</strong>{' '}
-                    yêu cầu tư vấn
+                    Hiển thị <strong>{view.total === 0 ? 0 : view.startIndex + 1}</strong> –{' '}
+                    <strong>{view.endIndex}</strong> / <strong>{view.total}</strong> yêu cầu tư vấn
                   </span>
                 }
                 pageSize={view.pageSize}

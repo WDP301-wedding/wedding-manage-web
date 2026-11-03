@@ -1,4 +1,5 @@
 'use client';
+import { HySelect } from '../../components/ui/select-field';
 
 import { hasDirtyCatalogForms, useCatalogLiveRefresh } from './use-catalog-live-refresh';
 
@@ -63,10 +64,13 @@ export function LayoutPanel({
     try {
       await authorize(operation);
       setMessage(successMessage);
+      notify.success(successMessage);
       if (options.reload !== false) await load();
       return true;
     } catch (caught) {
-      setError(layoutErrorMessage(caught));
+      const msg = layoutErrorMessage(caught);
+      setError(msg);
+      notify.error(caught, { fallbackMessage: msg });
       return false;
     } finally {
       setPending(false);
@@ -161,7 +165,7 @@ function CreateLayoutForm({
       </div>
       <label className={cx.field}>
         <span>Sảnh áp dụng</span>
-        <select name="hallId" required defaultValue="">
+        <HySelect name="hallId" required defaultValue="">
           <option value="" disabled>
             Chọn sảnh hoạt động
           </option>
@@ -170,7 +174,7 @@ function CreateLayoutForm({
               {hall.name} · tối đa {hall.maxGuests} khách
             </option>
           ))}
-        </select>
+        </HySelect>
       </label>
       <LayoutTextField label="Tên bố trí" name="name" />
       <LayoutTextField label="Mô tả" name="description" />

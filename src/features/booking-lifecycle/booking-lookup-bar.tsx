@@ -4,6 +4,7 @@ import { ChevronRight, Heart, Search } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import type { Authorize } from './booking-api';
+import { formatDate } from './booking-helpers';
 import { useBookingLookup, type BookingIdentity } from './use-booking-lookup';
 
 export interface BookingLookupBarProps {
@@ -23,7 +24,7 @@ const resultButtonClass =
   'flex w-full flex-col items-start gap-0.5 rounded-lg p-3 text-left [overflow-wrap:anywhere] transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:opacity-50 aria-[current=true]:bg-accent';
 
 function details(item: BookingIdentity) {
-  const date = item.eventDate.split('-').reverse().join('/');
+  const date = formatDate(item.eventDate);
   return [date, item.hallName, item.shiftCode === 'LUNCH' ? 'Ca trưa' : 'Ca tối']
     .filter(Boolean)
     .join(' · ');
@@ -175,7 +176,18 @@ export function BookingLookupBar({
         </div>
       ) : null}
       {lookup.recent.length > 0 ? (
-        <details className="group">
+        <details
+          className="group"
+          onClick={(event) => {
+            const target = event.target;
+            if (
+              target instanceof Element &&
+              target.closest('button') &&
+              !target.closest('button')?.hasAttribute('disabled')
+            )
+              event.currentTarget.open = false;
+          }}
+        >
           <summary className="inline-flex h-9 cursor-pointer list-none items-center gap-1.5 rounded-lg text-xs font-semibold text-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none [&::-webkit-details-marker]:hidden">
             <ChevronRight
               aria-hidden

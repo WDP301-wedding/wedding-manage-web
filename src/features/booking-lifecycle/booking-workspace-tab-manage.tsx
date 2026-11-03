@@ -3,7 +3,6 @@
 import { useContractPanel } from './use-contract-panel';
 import { BookingLifecycleStepper } from './booking-lifecycle-stepper';
 import { BookingUnauthorizedHint } from './booking-unauthorized-hint';
-import { CoupleAccountCard } from './couple-account-card';
 import { ProposalPanel } from './proposal-panel';
 import { stepHiddenClass } from './booking-classes';
 import { cn } from 'cn';
@@ -100,16 +99,6 @@ export function BookingWorkspaceTabManage({
       ) : (
         <>
           <BookingLifecycleStepper phase={proposal.phase} agreementsApproved={agreementsApproved} />
-          <CoupleAccountCard
-            consultationId={active ? proposal.consultationId : undefined}
-            email={prefill.email}
-            canInvite={consultation !== null || Boolean(proposal?.consultationId)}
-            pending={disabled}
-            inviteLogs={inviteLogs}
-            onInvite={() => void sendWorkspaceInvite()}
-            onClearLogs={() => setInviteLogs([])}
-            hideIfActivated
-          />
           <ProposalPanel
             contractState={contractState}
             disabled={disabled}

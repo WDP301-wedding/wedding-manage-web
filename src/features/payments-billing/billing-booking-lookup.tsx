@@ -2,6 +2,7 @@
 
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
+import { formatDate } from '../booking-lifecycle/booking-helpers';
 import type { BookingIdentity } from '../booking-lifecycle/use-booking-lookup';
 
 function BookingMatch({
@@ -12,7 +13,7 @@ function BookingMatch({
   const contactInfo = [item.phone ? `SĐT: ${item.phone}` : null, item.email]
     .filter(Boolean)
     .join(', ');
-  const dateStr = item.eventDate.split('-').reverse().join('/');
+  const dateStr = formatDate(item.eventDate);
   return (
     <button
       type="button"

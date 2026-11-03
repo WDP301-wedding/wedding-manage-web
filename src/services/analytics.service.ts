@@ -1,4 +1,3 @@
-import { z } from 'zod';
 import { axiosApiClient } from '../lib/api/axios-client';
 import type { operations } from '../lib/api/generated/schema';
 
@@ -6,26 +5,17 @@ export type AnalyticsOverviewData =
   operations['getAnalyticsOverview']['responses'][200]['content']['application/json']['data'];
 type PinnedBookingsData =
   operations['getAnalyticsBookings']['responses'][200]['content']['application/json']['data'];
-// Additive identity fields are validated at the boundary until the next released API pin.
-const bookingIdentity = z.object({
-  bookingCode: z
-    .string()
-    .regex(/^HY-\d{6,}$/)
-    .nullish(),
-  customerName: z.string().nullish(),
-  alias: z.string().nullish(),
-  brideName: z.string().nullish(),
-  groomName: z.string().nullish(),
-  phone: z.string().nullish(),
-  email: z.string().nullish(),
-});
+
+export type ExtraBookingIdentity = Readonly<{
+  brideName?: string | null;
+  groomName?: string | null;
+  phone?: string | null;
+  email?: string | null;
+}>;
+
 export type AnalyticsBookingsData = Omit<PinnedBookingsData, 'items'> &
   Readonly<{
-    items: readonly (Omit<
-      PinnedBookingsData['items'][number],
-      keyof z.infer<typeof bookingIdentity>
-    > &
-      z.infer<typeof bookingIdentity>)[];
+    items: readonly (PinnedBookingsData['items'][number] & ExtraBookingIdentity)[];
   }>;
 export type AnalyticsAttendanceData =
   operations['getAnalyticsAttendance']['responses'][200]['content']['application/json']['data'];
@@ -57,11 +47,7 @@ export const analyticsService = {
       '/management/analytics/bookings',
       { params: query, ...(signal ? { signal } : {}) },
     );
-    const data = response.data.data;
-    return {
-      ...data,
-      items: data.items.map((item) => ({ ...item, ...bookingIdentity.parse(item) })),
-    };
+    return response.data.data;
   },
 
   async getAttendance(query: {

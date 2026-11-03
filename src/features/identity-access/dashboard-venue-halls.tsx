@@ -1,4 +1,5 @@
 'use client';
+import { HySelect } from '../../components/ui/select-field';
 
 import Link from 'next/link';
 import { cn } from 'cn';
@@ -58,7 +59,7 @@ export function DashboardVenueHalls({
               value={view.searchQuery}
               onChange={view.setSearchQuery}
             />
-            <select
+            <HySelect
               value={`${view.sortField}-${view.sortOrder}`}
               onChange={(e) => view.handleQuickSortChange(e.target.value)}
               aria-label="Sắp xếp danh mục sảnh"
@@ -68,7 +69,7 @@ export function DashboardVenueHalls({
               <option value="name-desc">Tên sảnh: Z → A</option>
               <option value="maxGuests-desc">Sức chứa: Nhiều nhất trước</option>
               <option value="maxGuests-asc">Sức chứa: Ít nhất trước</option>
-            </select>
+            </HySelect>
           </div>
 
           {view.sortedHalls.length === 0 ? (

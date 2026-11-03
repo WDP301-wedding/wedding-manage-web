@@ -1,3 +1,4 @@
+import { enforceActiveBooking, ArchivedBookingError } from './booking-navigation';
 import createClient, { type Client } from 'openapi-fetch';
 import { z } from 'zod';
 
@@ -105,6 +106,7 @@ async function validateResponse(response: Response, sentRequestId: string): Prom
   }
 
   if (response.ok) {
+    enforceActiveBooking(payload);
     return;
   }
 
@@ -168,7 +170,7 @@ function createFetchWithPolicy(
       await validateResponse(response, sentRequestId);
       return response;
     } catch (error) {
-      if (error instanceof ApiClientError) {
+      if (error instanceof ApiClientError || error instanceof ArchivedBookingError) {
         throw error;
       }
 

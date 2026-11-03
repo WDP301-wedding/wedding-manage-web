@@ -1,10 +1,23 @@
+import type { Client } from 'openapi-fetch';
+import {
+  financialOverviewExtension,
+  type FinancialOverview,
+} from './billing-financial-overview.contract';
 import { createApiClient, type ApiClient } from '../../lib/api/client';
-import type { components, operations } from '../../lib/api/generated/schema';
+import type { components, operations, paths } from '../../lib/api/generated/schema';
 
-export type BillingView = components['schemas']['BookingBillingResponse']['data'];
+export type BillingView = components['schemas']['BookingBillingResponse']['data'] & {
+  financialOverview?: FinancialOverview;
+};
 export type AttemptView = components['schemas']['BillingAttemptResponse']['data'];
-export type ManualPaymentBody = components['schemas']['BillingManualPaymentBody'];
-export type RefundBody = components['schemas']['BillingRefundBody'];
+type OptionalRecordingEvidence<T> = Omit<T, 'reason' | 'evidenceReference'> & {
+  reason?: string;
+  evidenceReference?: string;
+};
+export type ManualPaymentBody = OptionalRecordingEvidence<
+  components['schemas']['BillingManualPaymentBody']
+>;
+export type RefundBody = OptionalRecordingEvidence<components['schemas']['BillingRefundBody']>;
 export type RefundApprovalBody = components['schemas']['BillingRefundApprovalBody'];
 export type BillingPageQuery = operations['getBookingBilling']['parameters']['query'];
 export interface ManagementBillingGateway {
@@ -44,9 +57,27 @@ function required<T>(data: { readonly data: T } | undefined): T {
     throw new Error('Không nhận được dữ liệu billing. Hãy giữ nguyên yêu cầu và thử lại.');
   return data.data;
 }
+// Narrow additive contract adapter until the next pinned OpenAPI release: these two
+// endpoints now accept omitted recording evidence. Transport and response types stay intact.
+type RecordingPath<P extends keyof paths, B> = Omit<paths[P], 'post'> & {
+  post: Omit<NonNullable<paths[P]['post']>, 'requestBody'> & {
+    requestBody: { content: { 'application/json': B } };
+  };
+};
+type RecordingPaths = Omit<
+  paths,
+  '/management/billing/payments/manual' | '/management/billing/refunds'
+> & {
+  '/management/billing/payments/manual': RecordingPath<
+    '/management/billing/payments/manual',
+    ManualPaymentBody
+  >;
+  '/management/billing/refunds': RecordingPath<'/management/billing/refunds', RefundBody>;
+};
 export function createManagementBillingGateway(client?: ApiClient): ManagementBillingGateway {
   let resolved = client;
   const api = () => (resolved ??= createApiClient());
+  const recordingApi = () => api() as Client<RecordingPaths>;
   const headers = (token: string) => ({ Authorization: `Bearer ${token}` });
   return {
     async approveRefund(token, body, key) {
@@ -65,8 +96,10 @@ export function createManagementBillingGateway(client?: ApiClient): ManagementBi
         cache: 'no-store',
       });
       const value = required(data);
+      const { financialOverview } = financialOverviewExtension.parse(value);
       return {
         ...value,
+        ...(financialOverview === undefined ? {} : { financialOverview }),
         history: Array.from(value.history),
         balancePaymentEligibility: value.balancePaymentEligibility.canPay
           ? { ...value.balancePaymentEligibility, reasonCode: null }
@@ -82,7 +115,7 @@ export function createManagementBillingGateway(client?: ApiClient): ManagementBi
       return required(data);
     },
     async recordManual(token, body, key) {
-      const { data } = await api().POST('/management/billing/payments/manual', {
+      const { data } = await recordingApi().POST('/management/billing/payments/manual', {
         body,
         params: { header: { 'Idempotency-Key': key } },
         headers: headers(token),
@@ -91,7 +124,7 @@ export function createManagementBillingGateway(client?: ApiClient): ManagementBi
       return required(data);
     },
     async refund(token, body, key) {
-      const { data } = await api().POST('/management/billing/refunds', {
+      const { data } = await recordingApi().POST('/management/billing/refunds', {
         body,
         params: { header: { 'Idempotency-Key': key } },
         headers: headers(token),

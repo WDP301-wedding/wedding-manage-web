@@ -11,6 +11,13 @@ import type {
 } from './print-orders-types';
 
 export interface ManagementPrintOrdersGateway {
+  approvePurchase?(
+    this: void,
+    token: string,
+    orderId: string,
+    body: TransitionOrderBody,
+    idempotencyKey: string,
+  ): Promise<PrintOrderView>;
   list(
     this: void,
     token: string,
@@ -127,7 +134,25 @@ async function executeApiRequest<T>(
     };
     const code =
       errorPayload?.error?.code ?? (response.status === 409 ? 'PRINT_ORDER_CONFLICT' : 'API_ERROR');
-    let message = errorPayload?.error?.message;
+    const purchaseErrors: Record<string, string> = {
+      PRINT_QUOTE_STALE:
+        'Phiên bản đơn đã thay đổi. Hãy tải lại và kiểm tra nội dung trước khi duyệt.',
+      PRINT_QUOTE_EXPIRED:
+        'Xác nhận giá đã hết hiệu lực. Hủy yêu cầu chờ để khách xem và xác nhận giá mới.',
+      PRINT_APPENDIX_PENDING: 'Tiệc đang có phụ lục chờ xử lý. Hoàn tất hoặc rút yêu cầu đó trước.',
+      PRINT_PURCHASE_USE_APPROVAL:
+        'Đơn đã có xác nhận chi phí của khách. Hãy dùng Duyệt đơn in & chi phí.',
+      PRINT_CANCELLATION_PENDING: 'Khách đã yêu cầu hủy. Hãy xử lý yêu cầu hủy trước khi sản xuất.',
+      PRINT_CUSTOMER_CONSENT_INVALID:
+        'Không thể dùng xác nhận hủy cũ vì quyền truy cập của khách đã thay đổi. Cần xác nhận lại với khách.',
+      PRINT_ORDERS_PENDING:
+        'Còn đơn in chờ xử lý. Hãy xử lý hoặc hủy đơn trước khi chốt quyết toán.',
+      PAYMENT_ATTEMPT_ACTIVE: 'Đang có giao dịch cần đối soát. Chưa thể thay đổi chi phí lúc này.',
+      INVOICE_FINALIZED: 'Tiệc đã chốt hóa đơn. Cần luồng điều chỉnh hóa đơn thay vì sửa phụ lục.',
+      PRINT_CANCELLATION_NOT_ALLOWED:
+        'Chỉ hủy trước sản xuất. Với đơn đã duyệt, cần khách xác nhận yêu cầu hủy và giảm phí trước.',
+    };
+    let message = purchaseErrors[code] ?? errorPayload?.error?.message;
     if (!message) {
       if (code === 'PRINT_CANCELLATION_NOT_ALLOWED') {
         message =
@@ -188,6 +213,16 @@ export function createManagementPrintOrdersGateway(
   };
 
   return {
+    async approvePurchase(token, orderId, body, idempotencyKey) {
+      return executeApiRequest<PrintOrderView>(
+        buildApiUrl(
+          getBaseUrl(),
+          `/management/print-orders/${encodeURIComponent(orderId)}/purchase-approval`,
+        ).toString(),
+        { method: 'POST', headers: authHeaders(token, idempotencyKey), body: JSON.stringify(body) },
+        fetchImpl,
+      );
+    },
     async list(token, query) {
       const url = buildApiUrl(getBaseUrl(), '/management/print-orders');
       if (query?.bookingId) url.searchParams.set('bookingId', query.bookingId);

@@ -1,8 +1,9 @@
 'use client';
+import { HySelect } from '../../components/ui/select-field';
 
 import { hasDirtyCatalogForms, useCatalogLiveRefresh } from './use-catalog-live-refresh';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import type { CatalogGateway, FoodCatalogSnapshot } from './catalog-api';
 import { CreateDishForm, DishAggregate, DishVersionRow } from './dish-aggregate-list';
@@ -31,7 +32,7 @@ import {
 
 import { cx } from './catalog-classes';
 import { cn } from 'cn';
-import { Plus, Search } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { PrintOrderDialog } from '../print-orders/print-order-dialog';
 import { currentDishOptions, latestFoodVersion } from './food-record-card';
 export {
@@ -67,8 +68,64 @@ export function DishMenuPanel({
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState<'dish' | 'menu' | null>(null);
-  const [search, setSearch] = useState('');
-  const [status, setStatus] = useState('ALL');
+  const [dishSearch, setDishSearch] = useState('');
+  const [dishCategory, setDishCategory] = useState('ALL');
+  const [dishLifecycle, setDishLifecycle] = useState<'ALL' | 'ACTIVE' | 'RETIRED'>('ALL');
+
+  const [menuSearch, setMenuSearch] = useState('');
+  const [menuLifecycle, setMenuLifecycle] = useState<'ALL' | 'ACTIVE' | 'RETIRED'>('ALL');
+
+  const dishCategories = useMemo(() => {
+    if (!snapshot) return [];
+    const set = new Set<string>();
+    for (const dish of snapshot.dishes) {
+      for (const v of dish.versions) {
+        if (v.categoryLabel) set.add(v.categoryLabel.trim());
+      }
+    }
+    return Array.from(set).sort();
+  }, [snapshot]);
+
+  const filteredDishes = useMemo(() => {
+    if (!snapshot) return [];
+    return snapshot.dishes.filter((dish) => {
+      if (dishLifecycle !== 'ALL' && dish.lifecycle !== dishLifecycle) return false;
+      if (dishCategory !== 'ALL') {
+        const matchesCat = dish.versions.some(
+          (v) => (v.categoryLabel ?? '').toLowerCase() === dishCategory.toLowerCase(),
+        );
+        if (!matchesCat) return false;
+      }
+      if (dishSearch.trim() !== '') {
+        const query = dishSearch.trim().toLowerCase();
+        const matchesQuery = dish.versions.some(
+          (v) =>
+            v.name.toLowerCase().includes(query) ||
+            (v.description ?? '').toLowerCase().includes(query) ||
+            (v.categoryLabel ?? '').toLowerCase().includes(query),
+        );
+        if (!matchesQuery) return false;
+      }
+      return true;
+    });
+  }, [snapshot, dishLifecycle, dishCategory, dishSearch]);
+
+  const filteredMenus = useMemo(() => {
+    if (!snapshot) return [];
+    return snapshot.menus.filter((menu) => {
+      if (menuLifecycle !== 'ALL' && menu.lifecycle !== menuLifecycle) return false;
+      if (menuSearch.trim() !== '') {
+        const query = menuSearch.trim().toLowerCase();
+        const matchesQuery = menu.versions.some(
+          (v) =>
+            v.name.toLowerCase().includes(query) ||
+            (v.description ?? '').toLowerCase().includes(query),
+        );
+        if (!matchesQuery) return false;
+      }
+      return true;
+    });
+  }, [snapshot, menuLifecycle, menuSearch]);
 
   const load = useCallback(
     async (background = false) => {
@@ -142,29 +199,6 @@ export function DishMenuPanel({
         </p>
       )}
       <div className="flex flex-wrap items-end gap-3 border-b border-border p-5">
-        <label className={`${cx.field} min-w-0 flex-1`}>
-          <span>Tìm món ăn hoặc gói thực đơn</span>
-          <span className="relative">
-            <Search
-              aria-hidden
-              className="pointer-events-none absolute top-3.5 left-3 size-4 text-muted-foreground"
-            />
-            <input
-              className="pl-9!"
-              placeholder="Nhập tên, nhóm món…"
-              value={search}
-              onChange={(event) => setSearch(event.currentTarget.value)}
-            />
-          </span>
-        </label>
-        <label className={cx.field}>
-          Trạng thái
-          <select value={status} onChange={(event) => setStatus(event.currentTarget.value)}>
-            <option value="ALL">Tất cả trạng thái</option>
-            <option value="ACTIVE">Đang hoạt động</option>
-            <option value="RETIRED">Đã ngừng</option>
-          </select>
-        </label>
         <button
           type="button"
           className={cx.secondaryButton}
@@ -233,12 +267,47 @@ export function DishMenuPanel({
 
       <div className="flex min-w-0 flex-col gap-6 px-4 pb-6 sm:px-6">
         <div>
-          <h3 className={cx.subheading}>Món ăn ({snapshot.dishes.filter(matches).length})</h3>
-          {snapshot.dishes.filter(matches).length === 0 ? (
+          <h3 className={cx.subheading}>Món ăn ({filteredDishes.length})</h3>
+          <div className="mt-2.5 mb-3 flex flex-wrap gap-2 text-xs">
+            <input
+              className="h-9 min-w-[130px] flex-1 rounded-md border border-input bg-card px-2.5 text-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              type="search"
+              placeholder="Tìm món ăn..."
+              value={dishSearch}
+              onChange={(e) => setDishSearch(e.currentTarget.value)}
+              aria-label="Tìm kiếm món ăn"
+            />
+            {dishCategories.length > 0 ? (
+              <HySelect
+                className="h-9 rounded-md border border-input bg-card px-2 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                value={dishCategory}
+                onChange={(e) => setDishCategory(e.currentTarget.value)}
+                aria-label="Lọc theo nhóm món"
+              >
+                <option value="ALL">Tất cả nhóm</option>
+                {dishCategories.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </HySelect>
+            ) : null}
+            <HySelect
+              className="h-9 rounded-md border border-input bg-card px-2 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              value={dishLifecycle}
+              onChange={(e) => setDishLifecycle(e.currentTarget.value as typeof dishLifecycle)}
+              aria-label="Lọc trạng thái món"
+            >
+              <option value="ALL">Tất cả trạng thái</option>
+              <option value="ACTIVE">Đang phục vụ</option>
+              <option value="RETIRED">Đã ngừng</option>
+            </HySelect>
+          </div>
+          {filteredDishes.length === 0 ? (
             <p className={cx.empty}>Không có món ăn phù hợp. Thêm món mới hoặc thay đổi bộ lọc.</p>
           ) : (
             <FoodTable label="Danh sách món ăn">
-              {snapshot.dishes.filter(matches).map((dish) => (
+              {filteredDishes.map((dish) => (
                 <DishAggregate
                   key={dish.id}
                   dish={dish}
@@ -251,14 +320,34 @@ export function DishMenuPanel({
           )}
         </div>
         <div>
-          <h3 className={cx.subheading}>Gói thực đơn ({snapshot.menus.filter(matches).length})</h3>
-          {snapshot.menus.filter(matches).length === 0 ? (
+          <h3 className={cx.subheading}>Gói thực đơn ({filteredMenus.length})</h3>
+          <div className="mt-2.5 mb-3 flex flex-wrap gap-2 text-xs">
+            <input
+              className="h-9 min-w-[130px] flex-1 rounded-md border border-input bg-card px-2.5 text-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              type="search"
+              placeholder="Tìm gói thực đơn..."
+              value={menuSearch}
+              onChange={(e) => setMenuSearch(e.currentTarget.value)}
+              aria-label="Tìm gói thực đơn"
+            />
+            <HySelect
+              className="h-9 rounded-md border border-input bg-card px-2 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              value={menuLifecycle}
+              onChange={(e) => setMenuLifecycle(e.currentTarget.value as typeof menuLifecycle)}
+              aria-label="Lọc trạng thái thực đơn"
+            >
+              <option value="ALL">Tất cả trạng thái</option>
+              <option value="ACTIVE">Đang áp dụng</option>
+              <option value="RETIRED">Đã ngừng</option>
+            </HySelect>
+          </div>
+          {filteredMenus.length === 0 ? (
             <p className={cx.empty}>
               Không có gói thực đơn phù hợp. Thêm gói mới hoặc thay đổi bộ lọc.
             </p>
           ) : (
             <FoodTable label="Danh sách gói thực đơn">
-              {snapshot.menus.filter(matches).map((menu) => (
+              {filteredMenus.map((menu) => (
                 <MenuAggregate
                   key={menu.id}
                   dishOptions={currentDishOptions(snapshot.dishes)}
@@ -274,17 +363,6 @@ export function DishMenuPanel({
       </div>
     </section>
   );
-
-  function matches(
-    record: FoodCatalogSnapshot['dishes'][number] | FoodCatalogSnapshot['menus'][number],
-  ) {
-    const version = latestFoodVersion(record);
-    if (!version || (status !== 'ALL' && record.lifecycle !== status)) return false;
-    const normalize = (value: string) =>
-      value.normalize('NFD').replace(/\p{M}/gu, '').replaceAll('đ', 'd').toLocaleLowerCase('vi-VN');
-    const content = `${version.name} ${'categoryLabel' in version ? version.categoryLabel : ''}`;
-    return normalize(content).includes(normalize(search.trim()));
-  }
 }
 
 function FoodTable({ label, children }: Readonly<{ label: string; children: React.ReactNode }>) {

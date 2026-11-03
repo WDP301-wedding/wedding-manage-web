@@ -1,34 +1,39 @@
 import { CircleCheck, CircleX, Clock } from 'lucide-react';
 import { cn } from 'cn';
 import { ApiClientError } from '../../lib/api/client';
+import { ApiServiceError } from '../../lib/api/axios-client';
 import type { AttemptView, BillingView } from './billing-api';
+import { formatDateTime } from '../booking-lifecycle/booking-helpers';
 import { BillingIntentMismatchError } from './billing-intents';
 
 export const money = (value: number) =>
   new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
+
+const isApiError = (error: unknown): error is ApiClientError | ApiServiceError =>
+  error instanceof ApiClientError || error instanceof ApiServiceError;
+
 export function unresolved(error: unknown): boolean {
   if (error instanceof BillingIntentMismatchError) return false;
+  if (!isApiError(error)) return true;
+  if (error instanceof ApiClientError && error.kind !== 'api') return true;
   return (
-    !(error instanceof ApiClientError) ||
-    error.kind !== 'api' ||
-    error.status === 429 ||
-    (error.status ?? 500) >= 500 ||
-    error.code === 'REQUEST_IN_PROGRESS'
+    error.status === 429 || (error.status ?? 500) >= 500 || error.code === 'REQUEST_IN_PROGRESS'
   );
 }
 export function denied(error: unknown): boolean {
-  return error instanceof ApiClientError && [401, 403, 404].includes(error.status ?? 0);
+  return isApiError(error) && [401, 403, 404].includes(error.status ?? 0);
 }
 export function billingMessage(error: unknown): string {
   if (error instanceof BillingIntentMismatchError) return error.message;
   if (denied(error))
     return 'Phiên đăng nhập hoặc quyền xem hồ sơ không còn hợp lệ. Hãy đăng nhập và kiểm tra quyền truy cập.';
-  if (!(error instanceof ApiClientError))
+  if (!isApiError(error))
     return 'Chưa hoàn tất yêu cầu. Kiểm tra kết nối và giữ nguyên nội dung để thử lại; nếu lịch sử đã thay đổi, hãy tải lại.';
   if (error.status === 429) return 'Có quá nhiều yêu cầu. Hãy đợi rồi thử lại cùng nội dung.';
   const messages: Record<string, string> = {
     STALE_BILLING_REVISION: 'Số dư đã thay đổi. Hãy làm mới và kiểm tra lại trước khi xác nhận.',
-    BILLING_REFUND_LIMIT_EXCEEDED: 'Khoản hoàn vượt hạn mức đã duyệt hoặc số tiền còn được hoàn.',
+    BILLING_REFUND_LIMIT_EXCEEDED:
+      'Khoản hoàn vượt số tiền còn được hoàn hoặc chưa có căn cứ điều chỉnh/hủy tiệc hợp lệ.',
     BILLING_REFUND_NOT_APPROVED: 'Chưa có quyết định hoàn tiền hợp lệ cho khoản thanh toán này.',
     DEPOSIT_NOT_ELIGIBLE:
       'Hồ sơ chưa đủ điều kiện nhận cọc. Hãy kiểm tra lịch giữ chỗ và kịch bản đã duyệt.',
@@ -81,7 +86,7 @@ const kindDot: Record<keyof typeof kinds, string> = {
 };
 export function BillingSummary({ view }: Readonly<{ view: BillingView }>) {
   return (
-    <section aria-label="Tổng hợp tiền đặt tiệc" className="min-w-0 flex-[2_1_560px]">
+    <section aria-label="Tổng hợp tiền đặt tiệc" className="min-w-0 w-full">
       <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         {Object.entries(view.totals).map(([key, value]) => (
           <div
@@ -109,12 +114,20 @@ export function BillingSummary({ view }: Readonly<{ view: BillingView }>) {
   );
 }
 export function BillingHistory({ view }: Readonly<{ view: BillingView }>) {
+  const transactions = view.history.filter(
+    (entry) => entry.kind === 'PAYMENT' || entry.kind === 'REFUND',
+  );
   return (
     <section className="flex flex-col gap-3">
       <h2 className="text-lg font-semibold">Lịch sử giao dịch</h2>
-      {view.history.length === 0 ? (
+      <p className="text-xs text-muted-foreground">
+        Chỉ gồm các khoản đã thu hoặc hoàn. Khoản phải thu vẫn hiển thị riêng ở phần tổng hợp.
+      </p>
+      {transactions.length === 0 ? (
         <p className="rounded-lg border border-dashed border-input p-4 text-center text-xs text-muted-foreground">
-          Chưa có giao dịch
+          {view.nextCursor
+            ? 'Chưa có khoản thu/hoàn trong các trang đã tải. Tải thêm lịch sử để xem giao dịch trước.'
+            : 'Chưa có giao dịch thu/hoàn.'}
         </p>
       ) : (
         <div
@@ -134,10 +147,10 @@ export function BillingHistory({ view }: Readonly<{ view: BillingView }>) {
               </tr>
             </thead>
             <tbody>
-              {view.history.map((entry) => (
+              {transactions.map((entry) => (
                 <tr key={entry.ledgerEntryId} className="border-t border-border align-top">
                   <td className="px-3 py-2 text-xs whitespace-nowrap tabular-nums">
-                    {new Date(entry.occurredAt).toLocaleString('vi-VN')}
+                    {formatDateTime(entry.occurredAt)}
                   </td>
                   <td className="px-3 py-2">
                     <span className="inline-flex items-center gap-1.5 font-semibold">

@@ -45,12 +45,20 @@ export interface CommercialRevisionView {
   readonly revisionNumber: number;
   readonly lines: readonly QuotedLineView[];
   readonly orderTotalVnd: number;
-  readonly estimatedHandoverAt: string;
+  readonly estimatedHandoverAt: string | null;
   readonly expiresAt: string;
   readonly createdAt: string;
 }
 
 export interface PrintOrderView {
+  readonly purchase?: {
+    readonly cancellationRequested?: boolean;
+    readonly appendixRevisionId: string;
+    readonly quoteId: string;
+    readonly material: string;
+    readonly printType: string;
+    readonly cancellationAppendixRevisionId: string | null;
+  };
   readonly orderId: string;
   readonly bookingId: string;
   readonly status: PrintOrderStatus;
@@ -126,7 +134,7 @@ export function isCommercialRevisionExpired(revision: CommercialRevisionView | n
 export function deriveCommercialStatus(order: PrintOrderView): StatusBadgeDescriptor {
   switch (order.status) {
     case 'REQUESTED':
-      return { label: 'Chờ báo giá', tone: 'amber' };
+      return { label: order.purchase ? 'Chờ nhà hàng duyệt' : 'Chờ báo giá', tone: 'amber' };
     case 'QUOTED':
       if (isCommercialRevisionExpired(order.currentCommercialRevision)) {
         return { label: 'Báo giá hết hạn', tone: 'red' };
@@ -173,6 +181,7 @@ export function deriveProductionStatus(order: PrintOrderView): StatusBadgeDescri
  * Action eligibility helpers strictly conforming to domain/print-policy.ts
  */
 export function canQuoteOrder(order: PrintOrderView): boolean {
+  if (order.purchase) return false;
   if (order.status === 'REQUESTED') return true;
   if (order.status === 'QUOTED') {
     return isCommercialRevisionExpired(order.currentCommercialRevision);
@@ -181,7 +190,11 @@ export function canQuoteOrder(order: PrintOrderView): boolean {
 }
 
 export function canStartProduction(order: PrintOrderView): boolean {
-  return order.status === 'APPROVED' && order.pendingReplacementProposal === null;
+  return (
+    !order.purchase?.cancellationRequested &&
+    order.status === 'APPROVED' &&
+    order.pendingReplacementProposal === null
+  );
 }
 
 export function canMarkReady(order: PrintOrderView): boolean {
@@ -198,7 +211,9 @@ export function canCancelOrder(order: PrintOrderView): boolean {
 }
 
 export function canProposeReplacement(order: PrintOrderView): boolean {
-  return order.status === 'APPROVED' && order.pendingReplacementProposal === null;
+  return (
+    !order.purchase && order.status === 'APPROVED' && order.pendingReplacementProposal === null
+  );
 }
 
 /**

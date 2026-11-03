@@ -249,14 +249,16 @@ export function ManagerVenueWorkspace({
           }}
         />
         {supportsMedia(gateway) && visitedTabs.has('venue') ? (
-          <MediaPanel
-            gateway={gateway}
-            authorize={authorize}
-            active={activeTab === 'venue'}
-            allowedTypes={['HALL', 'RESTAURANT_PROFILE']}
-            heading="Thư viện ảnh sảnh tiệc"
-            description="Quản lý hình ảnh thực tế và phối cảnh của từng sảnh tiệc. Ảnh sẽ hiển thị cho khách hàng khi chọn sảnh."
-          />
+          <div id="media-hall">
+            <MediaPanel
+              gateway={gateway}
+              authorize={authorize}
+              active={activeTab === 'venue'}
+              allowedTypes={['HALL', 'RESTAURANT_PROFILE']}
+              heading="Thư viện ảnh sảnh tiệc"
+              description="Quản lý hình ảnh thực tế và phối cảnh của từng sảnh tiệc. Ảnh sẽ hiển thị cho khách hàng khi chọn sảnh."
+            />
+          </div>
         ) : null}
       </div>
       <div

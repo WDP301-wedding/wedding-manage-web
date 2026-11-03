@@ -27,7 +27,13 @@ export function currentDishOptions(dishes: readonly CatalogDish[]) {
         ({ id, state }) => id === dish.currentPublishedVersionId && state === 'PUBLISHED',
       );
       return version
-        ? [{ id: version.id, label: `${version.name} · phiên bản ${version.versionNumber}` }]
+        ? [
+            {
+              id: version.id,
+              label: `${version.name} · phiên bản ${version.versionNumber}`,
+              priceVnd: version.priceVnd,
+            },
+          ]
         : [];
     });
 }

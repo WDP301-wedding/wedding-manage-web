@@ -28,13 +28,9 @@ async function pages<T>(path: string, signal: AbortSignal): Promise<T[]> {
   return items;
 }
 export async function loadContractChoices(signal: AbortSignal): Promise<CatalogChoice[]> {
-  const [menus, services, prints] = await Promise.all([
+  const [menus, services] = await Promise.all([
     pages<Data<'listPublicMenuPackages'>['items'][number]>('/catalog/menu-packages', signal),
     pages<Data<'listSelectableRestaurantServices'>['items'][number]>('/catalog/services', signal),
-    pages<Data<'listSelectablePrintOfferings'>['items'][number]>(
-      '/catalog/print-offerings',
-      signal,
-    ),
   ]);
   return [
     ...menus.map((m) => ({
@@ -55,17 +51,6 @@ export async function loadContractChoices(signal: AbortSignal): Promise<CatalogC
         name: s.name,
         unit: s.unit,
         unitPriceVnd: s.unitPriceVnd,
-        quantity: 0,
-      })),
-    ...prints
-      .filter((p) => p.active)
-      .map((p) => ({
-        category: 'PRINT' as const,
-        sourceId: p.offeringId,
-        sourceRevisionId: p.sourceRevisionId,
-        name: p.name,
-        unit: 'bản in',
-        unitPriceVnd: p.unitPriceVnd,
         quantity: 0,
       })),
   ];

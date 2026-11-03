@@ -55,6 +55,7 @@ export function useBookingWorkspaceState({
   const [error, setError] = useState<string | null>(null);
   const [recentBookingIds, setRecentBookingIds] = useState<string[]>([]);
   const [prefill, setPrefill] = useState<BookingPrefill>({});
+  const inFlightProposal = useRef<Map<string, Promise<void>>>(new Map());
 
   const { inviteLogs, setInviteLogs, sendWorkspaceInvite } = useWorkspaceInvite({
     authorize,
@@ -129,47 +130,63 @@ export function useBookingWorkspaceState({
     shouldSwitchTab = true,
     knownContext?: ConsultationWorkspace,
   ) => {
-    resumeTarget.current = { bookingId: id };
-    const sequence = ++contextSequence.current;
-    setPending('load');
-    setError(null);
-    setContextStatus('loading');
-    if (shouldSwitchTab) {
-      setProposal(null);
-      setConsultation(null);
-      setPrefill({});
-      setInviteLogs([]);
+    const activePromise = inFlightProposal.current.get(id);
+    if (activePromise) {
+      await activePromise;
+      if (shouldSwitchTab) switchTab('manage');
+      return;
     }
-    try {
-      const result = await authorize((token) => gateway.loadProposal(token, id));
-      const context =
-        knownContext?.consultationId === result.consultationId
-          ? knownContext
-          : await authorize((token) => gateway.loadWorkspace(token, result.consultationId));
-      if (sequence !== contextSequence.current) return;
-      applyContext(context);
-      setBookingId(result.bookingId);
-      setProposal(result);
-      recordMyBooking(result.bookingId);
-      setContextStatus('ready');
+
+    const task = (async () => {
+      resumeTarget.current = { bookingId: id };
+      const sequence = ++contextSequence.current;
+      setPending('load');
+      setError(null);
+      setContextStatus('loading');
       if (shouldSwitchTab) {
-        switchTab('manage');
-        window.history.replaceState(null, '', '/bookings?bookingId=' + result.bookingId);
-      }
-    } catch (caught) {
-      if (sequence !== contextSequence.current) return;
-      setContextStatus('error');
-      if (caught instanceof ApiClientError && [401, 403, 404].includes(caught.status ?? 0)) {
         setProposal(null);
         setConsultation(null);
         setPrefill({});
-        setBookingId('');
+        setInviteLogs([]);
       }
-      const errText = errorMessage(caught);
-      setError(errText);
-      notify.error(caught, { message: errText });
+      try {
+        const result = await authorize((token) => gateway.loadProposal(token, id));
+        const context =
+          knownContext?.consultationId === result.consultationId
+            ? knownContext
+            : await authorize((token) => gateway.loadWorkspace(token, result.consultationId));
+        if (sequence !== contextSequence.current) return;
+        applyContext(context);
+        setBookingId(result.bookingId);
+        setProposal(result);
+        recordMyBooking(result.bookingId);
+        setContextStatus('ready');
+        if (shouldSwitchTab) {
+          switchTab('manage');
+          window.history.replaceState(null, '', '/bookings?bookingId=' + result.bookingId);
+        }
+      } catch (caught) {
+        if (sequence !== contextSequence.current) return;
+        setContextStatus('error');
+        if (caught instanceof ApiClientError && [401, 403, 404].includes(caught.status ?? 0)) {
+          setProposal(null);
+          setConsultation(null);
+          setPrefill({});
+          setBookingId('');
+        }
+        const errText = errorMessage(caught);
+        setError(errText);
+        notify.error(caught, { message: errText });
+      } finally {
+        if (sequence === contextSequence.current) setPending(null);
+      }
+    })();
+
+    inFlightProposal.current.set(id, task);
+    try {
+      await task;
     } finally {
-      if (sequence === contextSequence.current) setPending(null);
+      inFlightProposal.current.delete(id);
     }
   };
 
@@ -219,7 +236,9 @@ export function useBookingWorkspaceState({
     if (!context) return null;
     if (context.bookingId) {
       await loadProposal(context.bookingId);
-      setMessage('Hồ sơ tư vấn này đã có tiệc. Đã mở hồ sơ hiện có; không tạo thêm booking.');
+      const msg = 'Hồ sơ tư vấn này đã có tiệc. Đã mở hồ sơ hiện có; không tạo thêm booking.';
+      setMessage(msg);
+      notify.info(msg);
       return null;
     }
     applyContext(context);
@@ -251,6 +270,7 @@ export function useBookingWorkspaceState({
 
   const refresh = async (success: string) => {
     setMessage(success);
+    notify.success(success);
     if (proposal !== null) await proposalRefresh.refresh();
   };
 
@@ -266,9 +286,10 @@ export function useBookingWorkspaceState({
     setPrefill({});
     window.history.replaceState(null, '', '/bookings');
     switchTab('consultation');
-    setMessage(
-      'Đã xóa mã tư vấn cũ. Hãy nhập thông tin cặp đôi mới ở Bước 01 rồi bấm "Tạo hồ sơ tư vấn".',
-    );
+    const msg =
+      'Đã xóa mã tư vấn cũ. Hãy nhập thông tin cặp đôi mới ở Bước 01 rồi bấm "Tạo hồ sơ tư vấn".';
+    setMessage(msg);
+    notify.info(msg);
   };
 
   useEffect(() => {

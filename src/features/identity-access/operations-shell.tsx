@@ -34,6 +34,7 @@ export function OperationsShell({
 }: Readonly<{
   children: ReactNode;
   activePage:
+    | 'archive'
     | 'overview'
     | 'bookings'
     | 'consultations'
@@ -208,6 +209,15 @@ export function OperationsShell({
           >
             <UsersIcon width={18} height={18} aria-hidden="true" />
             <span>Nhân sự</span>
+          </Link>
+          <Link
+            className={navItemClass}
+            href="/cancelled-bookings"
+            aria-current={activePage === 'archive' ? 'page' : undefined}
+            onClick={() => setMobileDrawerOpen(false)}
+          >
+            <CalendarIcon width={18} height={18} aria-hidden />
+            <span>Tiệc đã hủy</span>
           </Link>
           <Link
             id="ops-nav-catalog"

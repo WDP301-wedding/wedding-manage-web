@@ -31,6 +31,7 @@ export function DashboardKpiStrip({
   isLoading = false,
   halls,
   consultations,
+  consultationSummary,
   analytics,
   restaurant,
 }: Readonly<{
@@ -38,10 +39,16 @@ export function DashboardKpiStrip({
   isLoading?: boolean;
   halls: readonly PublicHall[];
   consultations: readonly ConsultationRequestItem[];
+  consultationSummary?: { total: number; pending: number } | null;
   analytics: AnalyticsOverviewData | null;
   restaurant: PublicRestaurant | null;
 }>) {
-  const pending = consultations.filter((c) => c.status === 'NEW').length;
+  const pending =
+    consultationSummary === undefined
+      ? consultations.filter((c) => c.status === 'NEW').length
+      : (consultationSummary?.pending ?? 0);
+  const consultationTotal =
+    consultationSummary === undefined ? consultations.length : (consultationSummary?.total ?? null);
   const syncing = 'Đang đồng bộ…';
 
   return (
@@ -56,9 +63,19 @@ export function DashboardKpiStrip({
       />
       <Metric
         label="Yêu cầu tư vấn"
-        value={isLoading ? '…' : String(consultations.length).padStart(2, '0')}
+        value={
+          isLoading
+            ? '…'
+            : consultationTotal === null
+              ? '…'
+              : String(consultationTotal).padStart(2, '0')
+        }
         detail={
-          isLoading ? syncing : pending > 0 ? `${pending} yêu cầu chờ xử lý` : 'Đã hoàn tất xử lý'
+          isLoading || consultationTotal === null
+            ? syncing
+            : pending > 0
+              ? `${pending} yêu cầu chờ xử lý`
+              : 'Đã hoàn tất xử lý'
         }
         attention={pending > 0}
       />

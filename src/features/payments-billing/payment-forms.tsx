@@ -1,4 +1,5 @@
 'use client';
+import { HySelect } from '../../components/ui/select-field';
 
 import { useRef, useState, type FormEvent } from 'react';
 import type { BillingView, ManualPaymentBody, RefundBody } from './billing-api';
@@ -6,7 +7,7 @@ import { Info } from 'lucide-react';
 import { notify } from '../../design-system/notifications';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
-import { Textarea } from '../../components/ui/textarea';
+import { formatDate, formatDateTime } from '../booking-lifecycle/booking-helpers';
 
 import {
   confirmClass,
@@ -26,16 +27,8 @@ function field(data: FormData, name: string): string {
   const value = data.get(name);
   return typeof value === 'string' ? value : '';
 }
-function readEvidence(data: FormData) {
-  return {
-    evidenceReference: field(data, 'evidence').trim(),
-    reason: field(data, 'reason').trim(),
-  };
-}
 function ConfirmPayment({
   amount,
-  reason,
-  evidence,
   refund,
   retry,
   disabled,
@@ -43,8 +36,6 @@ function ConfirmPayment({
   onCancel,
 }: Readonly<{
   amount: number;
-  reason: string;
-  evidence: string;
   refund: boolean;
   retry: boolean;
   disabled: boolean;
@@ -57,15 +48,13 @@ function ConfirmPayment({
       aria-label={refund ? 'Xác nhận khoản hoàn' : 'Xác nhận khoản thu'}
     >
       <h3 className="font-semibold text-primary">
-        {refund ? 'Kiểm tra trước khi ghi nhận hoàn tiền' : 'Kiểm tra chứng từ nhận tiền'}
+        {refund ? 'Kiểm tra trước khi ghi nhận hoàn tiền' : 'Kiểm tra khoản thu'}
       </h3>
       <strong className="text-xl font-bold tabular-nums">{money(amount)}</strong>
-      <p>{reason}</p>
-      <p className="text-xs text-muted-foreground">Chứng từ: {evidence}</p>
       <p className="rounded-lg bg-hy-warning-bg px-3 py-2 text-xs">
         {refund
-          ? 'Chỉ ghi nhận khoản hoàn đã thực hiện theo quyết định được duyệt. Thao tác này không chuyển tiền tự động.'
-          : 'Chỉ xác nhận khi nhà hàng đã thực nhận và kiểm tra chứng từ.'}
+          ? 'Chỉ xác nhận khi đã thực sự hoàn tiền bên ngoài hệ thống. Thao tác này ghi vào lịch sử và không chuyển tiền tự động.'
+          : 'Chỉ xác nhận khi nhà hàng đã thực nhận tiền bên ngoài hệ thống. Khoản thu sẽ được lưu trong lịch sử giao dịch.'}
       </p>
       {retry && (
         <p role="status" className="rounded-lg bg-hy-info-bg px-3 py-2 text-xs text-hy-info">
@@ -94,24 +83,15 @@ export function ManualPaymentForm({
   onConfirm: (body: ManualPaymentBody) => Promise<CommandOutcome>;
 }>) {
   const form = useRef<HTMLFormElement>(null);
-  const [draft, setDraft] = useState<(ManualPaymentBody & ReturnType<typeof readEvidence>) | null>(
-    null,
-  );
+  const [draft, setDraft] = useState<ManualPaymentBody | null>(null);
   const [retry, setRetry] = useState(false);
   const review = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
     const amountVnd = Number(data.get('amount'));
     const date = new Date(field(data, 'settledAt'));
-    const evidence = readEvidence(data);
-    if (
-      !Number.isSafeInteger(amountVnd) ||
-      amountVnd <= 0 ||
-      !Number.isFinite(date.getTime()) ||
-      !evidence.reason ||
-      !evidence.evidenceReference
-    ) {
-      notify.warning('Nhập số tiền nguyên dương, thời điểm và chứng từ hợp lệ.');
+    if (!Number.isSafeInteger(amountVnd) || amountVnd <= 0 || !Number.isFinite(date.getTime())) {
+      notify.warning('Nhập số tiền nguyên dương và thời điểm nhận tiền hợp lệ.');
       return;
     }
     setDraft({
@@ -119,7 +99,6 @@ export function ManualPaymentForm({
       purpose: data.get('purpose') === 'BALANCE' ? 'BALANCE' : 'DEPOSIT',
       amountVnd,
       settledAt: date.toISOString(),
-      ...evidence,
     });
   };
   const confirm = async () => {
@@ -134,7 +113,7 @@ export function ManualPaymentForm({
       <div className="flex flex-col gap-0.5">
         <h2 className="text-base font-semibold">Ghi nhận tiền đã nhận</h2>
         <p className="text-xs text-muted-foreground">
-          Ghi nhận tiền mặt hoặc chuyển khoản mà nhà hàng đã nhận và kiểm tra chứng từ.
+          Ghi nhận tiền mặt hoặc chuyển khoản đã nhận bên ngoài hệ thống.
         </p>
       </div>
       <form ref={form} onSubmit={review}>
@@ -142,10 +121,10 @@ export function ManualPaymentForm({
           <div className={rowClass}>
             <label className={labelClass}>
               Loại khoản thu
-              <select name="purpose" className={selectClass}>
+              <HySelect name="purpose" className={selectClass}>
                 <option value="DEPOSIT">Đặt cọc</option>
                 <option value="BALANCE">Thanh toán còn lại</option>
-              </select>
+              </HySelect>
             </label>
             <label className={labelClass}>
               Số tiền thực nhận (VND)
@@ -173,21 +152,7 @@ export function ManualPaymentForm({
               Thời điểm nhận tiền
               <Input className={inputClass} name="settledAt" type="datetime-local" required />
             </label>
-            <label className={labelClass}>
-              Mã chứng từ
-              <Input
-                className={inputClass}
-                name="evidence"
-                required
-                maxLength={120}
-                autoComplete="off"
-              />
-            </label>
           </div>
-          <label className={labelClass}>
-            Lý do ghi nhận
-            <Textarea className={inputClass} name="reason" required maxLength={500} rows={2} />
-          </label>
           <Button type="submit" className="self-start">
             Kiểm tra khoản thu
           </Button>
@@ -197,12 +162,10 @@ export function ManualPaymentForm({
         <>
           <p className="text-xs">
             Khoản thu: {draft.purpose === 'DEPOSIT' ? 'Đặt cọc' : 'Thanh toán còn lại'} ·{' '}
-            {new Date(draft.settledAt).toLocaleString('vi-VN')}
+            {formatDateTime(draft.settledAt)}
           </p>
           <ConfirmPayment
             amount={draft.amountVnd}
-            reason={draft.reason}
-            evidence={draft.evidenceReference}
             refund={false}
             retry={retry}
             disabled={disabled}
@@ -227,7 +190,7 @@ export function RefundForm({
   onConfirm: (body: RefundBody) => Promise<CommandOutcome>;
 }>) {
   const form = useRef<HTMLFormElement>(null);
-  const [draft, setDraft] = useState<(RefundBody & ReturnType<typeof readEvidence>) | null>(null);
+  const [draft, setDraft] = useState<RefundBody | null>(null);
   const [retry, setRetry] = useState(false);
   const payments = booking.history.filter((entry) => entry.kind === 'PAYMENT');
   const review = (event: FormEvent<HTMLFormElement>) => {
@@ -235,22 +198,18 @@ export function RefundForm({
     const data = new FormData(event.currentTarget);
     const amountVnd = Number(data.get('amount'));
     const sourcePaymentId = field(data, 'source');
-    const evidence = readEvidence(data);
     if (
       !Number.isSafeInteger(amountVnd) ||
       amountVnd <= 0 ||
-      !payments.some((payment) => payment.ledgerEntryId === sourcePaymentId) ||
-      !evidence.reason ||
-      !evidence.evidenceReference
+      !payments.some((payment) => payment.ledgerEntryId === sourcePaymentId)
     ) {
-      notify.warning('Chọn khoản gốc và nhập số tiền nguyên dương, lý do, chứng từ hợp lệ.');
+      notify.warning('Chọn khoản thanh toán gốc và nhập số tiền nguyên dương hợp lệ.');
       return;
     }
     setDraft({
       sourcePaymentId,
       amountVnd,
       expectedBillingRevision: booking.billingRevision,
-      ...evidence,
     });
   };
   const confirm = async () => {
@@ -265,7 +224,8 @@ export function RefundForm({
       <div className="flex flex-col gap-0.5">
         <h2 className="text-base font-semibold">Ghi nhận hoàn tiền</h2>
         <p className="text-xs text-muted-foreground">
-          Chọn khoản thanh toán gốc. Hệ thống kiểm tra quyết định đã duyệt và hạn mức còn được hoàn.
+          Ghi nhận khoản đã hoàn bên ngoài hệ thống. Chọn giao dịch gốc; hệ thống kiểm tra hạn mức
+          hoàn và lưu xác nhận trong cùng thao tác.
         </p>
       </div>
       <form ref={form} onSubmit={review}>
@@ -278,15 +238,15 @@ export function RefundForm({
           <div className={rowClass}>
             <label className={labelClass}>
               Khoản thanh toán gốc
-              <select name="source" required defaultValue="" className={selectClass}>
+              <HySelect name="source" required defaultValue="" className={selectClass}>
                 <option value="">Chọn khoản thanh toán</option>
                 {payments.map((entry) => (
                   <option key={entry.ledgerEntryId} value={entry.ledgerEntryId}>
-                    {money(entry.amountVnd)} ·{' '}
-                    {new Date(entry.occurredAt).toLocaleDateString('vi-VN')} · {entry.ledgerEntryId}
+                    {money(entry.amountVnd)} · {formatDate(entry.occurredAt)} ·{' '}
+                    {entry.ledgerEntryId}
                   </option>
                 ))}
-              </select>
+              </HySelect>
             </label>
             <label className={labelClass}>
               Số tiền hoàn (VND)
@@ -301,20 +261,6 @@ export function RefundForm({
               />
             </label>
           </div>
-          <label className={labelClass}>
-            Mã chứng từ hoàn
-            <Input
-              className={inputClass}
-              name="evidence"
-              required
-              maxLength={120}
-              autoComplete="off"
-            />
-          </label>
-          <label className={labelClass}>
-            Lý do hoàn tiền
-            <Textarea className={inputClass} name="reason" required maxLength={500} rows={2} />
-          </label>
           <Button type="submit" className="self-start">
             Kiểm tra khoản hoàn
           </Button>
@@ -335,8 +281,6 @@ export function RefundForm({
           </p>
           <ConfirmPayment
             amount={draft.amountVnd}
-            reason={draft.reason}
-            evidence={draft.evidenceReference}
             refund
             retry={retry}
             disabled={disabled}

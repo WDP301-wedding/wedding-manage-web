@@ -13,6 +13,17 @@ import {
 import { cx } from './catalog-classes';
 import { FoodRecordRow, latestFoodVersion } from './food-record-card';
 import { useFoodDraft } from './use-food-draft';
+
+export const COMMON_DISH_CATEGORIES = [
+  'Khai vị',
+  'Súp',
+  'Món chính - Hải sản',
+  'Món chính - Thịt',
+  'Lẩu & Cơm',
+  'Tráng miệng',
+  'Đồ uống',
+] as const;
+
 export function CreateDishForm({
   onSubmit,
   pending,
@@ -34,17 +45,19 @@ export function CreateDishForm({
     <form className={cx.editor} aria-label="Tạo món ăn" onSubmit={submit}>
       <EditorHeading title="Tạo món ăn" />
       <LabeledInput label="Tên món" name="name" />
-      <LabeledInput label="Nhóm món" name="categoryLabel" />
-      <LabeledInput label="Mô tả món" name="description" as="textarea" required={false} />
       <LabeledInput
-        disabled={pending}
-        label="Giá món (VND)"
-        name="priceVnd"
-        type="number"
-        min={0}
-        step={1}
-        required={false}
+        label="Nhóm món"
+        name="categoryLabel"
+        list="common-dish-categories"
+        autoComplete="off"
       />
+      <datalist id="common-dish-categories">
+        {COMMON_DISH_CATEGORIES.map((cat) => (
+          <option key={cat} value={cat} />
+        ))}
+      </datalist>
+      <LabeledInput label="Mô tả món" name="description" as="textarea" />
+      <LabeledInput label="Giá món (VND)" name="priceVnd" type="number" min={0} step={1} />
       <button className={cx.primaryButton} type="submit" disabled={pending}>
         Tạo bản nháp món ăn
       </button>
@@ -154,6 +167,8 @@ export function DishVersionRow({
         disabled={pending}
         label="Nhóm món bản nháp"
         name="categoryLabel"
+        list="common-dish-categories"
+        autoComplete="off"
         defaultValue={version.categoryLabel}
       />
       <LabeledInput

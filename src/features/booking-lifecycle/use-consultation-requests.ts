@@ -62,7 +62,7 @@ export function useConsultationRequests() {
       setPending(true);
       setError(null);
       try {
-        const query: Record<string, string> = {};
+        const query: Record<string, string> = { limit: '20' };
         if (statusFilter !== 'ALL') query.status = statusFilter;
         if (searchTerm) query.q = searchTerm;
         if (sortBy !== 'newest') query.sort = sortBy;
@@ -91,13 +91,13 @@ export function useConsultationRequests() {
         const resolvedMeta = meta.success
           ? meta.data
           : {
-              totalMatches: rawData.length,
-              counts: {
-                NEW: rawData.filter((i) => i.status === 'NEW').length,
-                CONVERTED: rawData.filter((i) => i.status === 'CONVERTED').length,
-                CLOSED: rawData.filter((i) => i.status === 'CLOSED').length,
-              },
-            };
+            totalMatches: rawData.length,
+            counts: {
+              NEW: rawData.filter((i) => i.status === 'NEW').length,
+              CONVERTED: rawData.filter((i) => i.status === 'CONVERTED').length,
+              CLOSED: rawData.filter((i) => i.status === 'CLOSED').length,
+            },
+          };
         const page: Queue = {
           ...result.data,
           ...resolvedMeta,
@@ -154,13 +154,19 @@ export function useConsultationRequests() {
       active = false;
     };
   }, []);
+  const lastTriggeredFilter = useRef<string | null>(null);
   useEffect(() => {
-    if (access === 'manager') void load();
+    if (access === 'manager') {
+      if (lastTriggeredFilter.current !== filterKey) {
+        lastTriggeredFilter.current = filterKey;
+        void load();
+      }
+    }
     return () => {
       sequence.current++;
       abort.current?.abort();
     };
-  }, [access, load]);
+  }, [access, filterKey, load]);
   useLiveRefresh(
     async () => {
       await loadLatest.current();
@@ -181,13 +187,13 @@ export function useConsultationRequests() {
       const result = await session.authorize((token) =>
         action === 'conversion'
           ? getApi().POST('/management/consultation-requests/{id}/conversion', {
-              headers: { Authorization: `Bearer ${token}` },
-              params: { path: { id: item.id } },
-            })
+            headers: { Authorization: `Bearer ${token}` },
+            params: { path: { id: item.id } },
+          })
           : getApi().POST('/management/consultation-requests/{id}/closure', {
-              headers: { Authorization: `Bearer ${token}` },
-              params: { path: { id: item.id } },
-            }),
+            headers: { Authorization: `Bearer ${token}` },
+            params: { path: { id: item.id } },
+          }),
       );
       if (result.error) {
         const errObj = result.error as { code?: string; message?: string; requestId?: string };

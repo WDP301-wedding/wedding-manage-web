@@ -73,7 +73,7 @@ export function BookingWorkspaceTabBooking({
           <ArrowLeft aria-hidden />
           Quay lại Bước 01: Hồ sơ tư vấn
         </Button>
-        {consultation ? (
+        {consultation && !proposal ? (
           <ActivationStatus
             key={consultation.id}
             consultationId={consultation.id}

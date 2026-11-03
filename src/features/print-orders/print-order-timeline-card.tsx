@@ -58,7 +58,11 @@ export function PrintOrderTimelineCard({ selectedOrder }: Readonly<PrintOrderTim
           state="done"
           title="Yêu cầu đặt in"
           when={formatVietnameseDateTime(selectedOrder.createdAt)}
-          note="Couple đã khởi tạo yêu cầu in ấn từ ứng dụng."
+          note={
+            selectedOrder.purchase
+              ? 'Couple đã xem bản in và xác nhận chi phí.'
+              : 'Couple đã khởi tạo yêu cầu in ấn.'
+          }
         />
         <Step
           state={revision !== null ? 'done' : 'current'}
@@ -72,7 +76,13 @@ export function PrintOrderTimelineCard({ selectedOrder }: Readonly<PrintOrderTim
         />
         <Step
           state={isOrderApprovedOrBeyond(status) ? 'done' : cancelled ? 'cancelled' : 'pending'}
-          title={cancelled ? 'Đơn đã hủy' : 'Couple phê duyệt & Sản xuất'}
+          title={
+            cancelled
+              ? 'Đơn đã hủy'
+              : selectedOrder.purchase
+                ? 'Nhà hàng duyệt đơn và phụ lục'
+                : 'Couple phê duyệt & Sản xuất'
+          }
           when={
             cancelled
               ? 'Đã kết thúc'
@@ -87,7 +97,9 @@ export function PrintOrderTimelineCard({ selectedOrder }: Readonly<PrintOrderTim
               ? 'Đơn in đã hủy, không thể tiếp tục sản xuất.'
               : isOrderApprovedOrBeyond(status)
                 ? 'Couple đã chấp thuận điều khoản thương mại.'
-                : 'Chờ Couple xem xét báo giá trên ứng dụng.'
+                : selectedOrder.purchase
+                  ? 'Couple đã đồng ý, đang chờ nhà hàng duyệt đơn và chi phí.'
+                  : 'Chờ Couple xem xét báo giá.'
           }
         />
         <Step

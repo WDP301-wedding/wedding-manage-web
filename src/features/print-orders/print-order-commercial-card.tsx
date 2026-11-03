@@ -42,7 +42,13 @@ export function PrintOrderCommercialCard({
             {selectedOrder.lines.reduce((s, l) => s + l.quantity, 0)} bản in
           </strong>
         </Row>
-        <Row term={priceTerm(selectedOrder.status)}>
+        <Row
+          term={
+            selectedOrder.purchase && selectedOrder.status === 'REQUESTED'
+              ? 'Chi phí Couple đã xác nhận'
+              : priceTerm(selectedOrder.status)
+          }
+        >
           {revision ? (
             <strong className="text-lg font-bold text-primary tabular-nums">
               {formatVnd(revision.orderTotalVnd)}
@@ -75,7 +81,9 @@ export function PrintOrderCommercialCard({
               </strong>
               <span className="text-xs">
                 Hạn chót: {formatVietnameseDate(proposal.expiresAt)}. Dự kiến bàn giao:{' '}
-                {formatVietnameseDate(proposal.estimatedHandoverAt)}
+                {proposal.estimatedHandoverAt
+                  ? formatVietnameseDate(proposal.estimatedHandoverAt)
+                  : 'Chưa hẹn ngày bàn giao'}
               </span>
               <span className="text-xs">
                 Chờ Couple phản hồi · Sản xuất đang bị tạm dừng. Quá trình sản xuất bị chặn cho đến

@@ -1,0 +1,109 @@
+/* Shared React select: popup and trigger use the same tokens across all single-choice fields. */
+.hy-select-native {
+  position: absolute !important;
+  inline-size: 1px !important;
+  block-size: 1px !important;
+  min-inline-size: 0 !important;
+  min-block-size: 0 !important;
+  clip-path: inset(50%);
+  overflow: hidden;
+  white-space: nowrap;
+  pointer-events: none;
+}
+:root body .hy-select-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 2.5rem;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid var(--hy-outline-strong, var(--border));
+  border-radius: var(--hy-radius-sm, 0.65rem);
+  background: var(--hy-surface, var(--card));
+  color: var(--hy-ink, var(--foreground));
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.5;
+  text-align: start;
+  cursor: pointer;
+}
+.hy-select-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hy-select-chevron {
+  flex-shrink: 0;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: translateY(-0.12rem) rotate(45deg);
+}
+.hy-select-trigger[data-popup-open] .hy-select-chevron {
+  transform: translateY(0.12rem) rotate(225deg);
+}
+:root body .hy-select-trigger:focus-visible {
+  outline: 2px solid var(--hy-wine, var(--primary));
+  outline-offset: 2px;
+}
+:root body .hy-select-trigger[aria-invalid='true'] {
+  border-color: var(--hy-error, var(--destructive));
+}
+:root body .hy-select-trigger:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.hy-select-positioner {
+  z-index: 1200;
+  max-width: calc(100vw - 1.5rem);
+}
+.hy-select-popup {
+  min-width: var(--anchor-width);
+  max-width: min(34rem, calc(100vw - 1.5rem));
+  max-height: min(var(--available-height), 22rem);
+  overflow: auto;
+  padding: 0.3rem;
+  border: 1px solid var(--hy-outline-strong, var(--border));
+  border-radius: var(--hy-radius-sm, 0.65rem);
+  background: var(--hy-surface, var(--card));
+  color: var(--hy-ink, var(--foreground));
+  box-shadow: var(--hy-shadow-2, 0 0.75rem 2rem #0002);
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+.hy-select-option {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 0.4rem;
+  cursor: pointer;
+  outline: none;
+  overflow-wrap: anywhere;
+}
+.hy-select-option[data-highlighted] {
+  background: var(--hy-surface-warm, var(--accent));
+}
+.hy-select-option[data-selected] {
+  color: var(--hy-wine, var(--primary));
+  font-weight: 600;
+}
+.hy-select-option[data-disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.hy-select-mark {
+  flex-shrink: 0;
+}
+.hy-select-empty {
+  padding: 0.6rem 0.75rem;
+  color: var(--hy-ink-muted, var(--muted-foreground));
+}

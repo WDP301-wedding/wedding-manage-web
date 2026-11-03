@@ -2,9 +2,13 @@ import { axiosApiClient } from '../lib/api/axios-client';
 import type { operations } from '../lib/api/generated/schema';
 
 export type EventAssignmentItem =
-  operations['listEventStaffAssignments']['responses'][200]['content']['application/json']['data'][number];
+  operations['listEventStaffAssignments']['responses'][200]['content']['application/json']['data'][number] & {
+    readonly staffLabel?: string | null;
+  };
 export type GuestSearchResultItem =
-  operations['searchStaffEventGuests']['responses'][200]['content']['application/json']['data']['items'][number];
+  operations['searchStaffEventGuests']['responses'][200]['content']['application/json']['data']['items'][number] & {
+    readonly checkInRecordId?: string | null;
+  };
 export type ProvisionStaffAccountResponse =
   operations['provisionStaffAccount']['responses'][201]['content']['application/json']['data'];
 
@@ -104,27 +108,35 @@ export const staffService = {
     reason: string,
     overrideReason?: string,
     idempotencyKey = crypto.randomUUID(),
+    checkInRecordId?: string,
   ): Promise<void> {
     const path = `/staff/events/${bookingId}/guests/${guestId}`;
-    const history = await axiosApiClient.get<{
-      data: {
-        items: readonly {
-          checkInRecordId: string;
-          action: 'CHECK_IN' | 'UNDO';
-          originalCheckInRecordId: string | null;
-        }[];
-      };
-    }>(`${path}/check-ins`, { params: { limit: 50 } });
-    const records = history.data.data.items;
-    const undone = new Set(records.map((item) => item.originalCheckInRecordId));
-    const active = records.findLast(
-      (item) => item.action === 'CHECK_IN' && !undone.has(item.checkInRecordId),
-    );
-    if (!active) throw new Error('Không còn lần check-in nào để hoàn tác.');
+    let effectiveRecordId = checkInRecordId;
+    if (!effectiveRecordId) {
+      const history = await axiosApiClient.get<{
+        data: {
+          items: readonly {
+            checkInRecordId: string;
+            action: 'CHECK_IN' | 'UNDO';
+            ledgerRevision: number;
+          }[];
+        };
+      }>(`${path}/check-ins`, {
+        params: { afterRevision: Math.max(0, expectedLedgerRevision - 1), limit: 1 },
+      });
+      const active = history.data.data.items[0];
+      if (
+        !active ||
+        active.action !== 'CHECK_IN' ||
+        active.ledgerRevision !== expectedLedgerRevision
+      )
+        throw new Error('Trạng thái khách đã thay đổi. Tra cứu lại trước khi hoàn tác.');
+      effectiveRecordId = active.checkInRecordId;
+    }
     await axiosApiClient.post(
       `${path}/check-in-undos`,
       {
-        checkInRecordId: active.checkInRecordId,
+        checkInRecordId: effectiveRecordId,
         expectedLedgerRevision,
         reason,
         ...(overrideReason ? { overrideReason } : {}),

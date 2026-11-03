@@ -1,98 +1,155 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { z } from 'zod';
+import { axiosApiClient } from '../../lib/api/axios-client';
+import { useLiveRefresh } from '../realtime/use-live-refresh';
+import { describeApiError } from '../../lib/api/api-errors';
 import type { ConsultationRequestItem } from '../../services/consultation.service';
-
 export type ConsultationSortField = 'createdAt' | 'displayName' | 'preferredDate' | 'status';
 export type SortOrder = 'asc' | 'desc';
+const row = z.object({
+  id: z.uuid(),
+  displayName: z.string(),
+  brideName: z.string().nullable(),
+  groomName: z.string().nullable(),
+  email: z.string(),
+  phone: z.string(),
+  preferredDate: z.iso.date().nullable(),
+  expectedGuests: z.int().nullable(),
+  message: z.string(),
+  status: z.enum(['NEW', 'CONVERTED', 'CLOSED']),
+  consultationId: z.uuid().nullable(),
+  consultationRevision: z.int().nullable(),
+  bookingId: z.uuid().nullable().optional().default(null),
+  bookingPhase: z.string().nullable().optional().default(null),
+  createdAt: z.iso.datetime(),
+  preferredHallId: z.uuid().nullable().optional().default(null),
+  preferredMenuVersionId: z.uuid().nullable().optional().default(null),
+  preferredShift: z.enum(['LUNCH', 'DINNER']).nullable().optional().default(null),
+});
+export type DashboardConsultationItem = z.infer<typeof row>;
 
-export function useDashboardConsultations(consultations: readonly ConsultationRequestItem[]) {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('ALL');
-  const [sortField, setSortField] = useState<ConsultationSortField>('createdAt');
-  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(5);
-
-  const handleSortChange = (field: ConsultationSortField) => {
-    if (sortField === field) {
-      setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'));
-    } else {
-      setSortField(field);
-      setSortOrder(field === 'createdAt' ? 'desc' : 'asc');
-    }
-    setCurrentPage(1);
-  };
-
-  const handleQuickSortChange = (val: string) => {
-    const [f, o] = val.split('-') as [ConsultationSortField, SortOrder];
-    setSortField(f);
-    setSortOrder(o);
-    setCurrentPage(1);
-  };
-
-  const filteredConsultations = useMemo(() => {
-    return consultations.filter((item) => {
-      if (statusFilter !== 'ALL' && item.status !== statusFilter) return false;
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase().trim();
-        const nameMatch = (item.displayName || '').toLowerCase().includes(q);
-        const emailMatch = (item.email || '').toLowerCase().includes(q);
-        const phoneMatch = (item.phone || '').toLowerCase().includes(q);
-        const idMatch = (item.consultationId || '').toLowerCase().includes(q);
-        return nameMatch || emailMatch || phoneMatch || idMatch;
+const pageSchema = z.object({
+  page: z.int().positive(),
+  pageSize: z.int().positive(),
+  total: z.int().nonnegative(),
+  totalPages: z.int().nonnegative(),
+  items: z.array(row),
+  counts: z.object({ total: z.int(), pending: z.int() }),
+});
+export function useDashboardConsultations(
+  _consultations: readonly ConsultationRequestItem[],
+  enabled = true,
+) {
+  const [searchQuery, setSearchQuery] = useState(''),
+    [query, setQuery] = useState('');
+  const [statusFilter, setStatus] = useState('ALL');
+  const [sortField, setSort] = useState<ConsultationSortField>('createdAt'),
+    [sortOrder, setOrder] = useState<SortOrder>('desc');
+  const [currentPage, setCurrentPage] = useState(1),
+    [pageSize, setSize] = useState(5);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setQuery(searchQuery.trim());
+      setCurrentPage(1);
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+  const scope = JSON.stringify([query, statusFilter, sortField, sortOrder, currentPage, pageSize]);
+  const [result, setResult] = useState<{ scope: string; data: z.infer<typeof pageSchema> } | null>(
+      null,
+    ),
+    [error, setError] = useState<string | null>(null),
+    [pending, setPending] = useState(false);
+  const live = useLiveRefresh(
+    async (isCurrent) => {
+      setPending(true);
+      setError(null);
+      try {
+        const res = await axiosApiClient.get<{ data: unknown }>('/management/consultation-page', {
+          params: {
+            q: query,
+            status: statusFilter,
+            sort: sortField,
+            order: sortOrder,
+            page: currentPage,
+            pageSize,
+          },
+        });
+        const data = pageSchema.parse(res.data.data);
+        if (isCurrent()) setResult({ scope, data });
+      } catch (e) {
+        if (isCurrent()) setError(describeApiError(e).message);
+      } finally {
+        if (isCurrent()) setPending(false);
       }
-      return true;
-    });
-  }, [consultations, statusFilter, searchQuery]);
-
-  const sortedConsultations = useMemo(() => {
-    return [...filteredConsultations].sort((a, b) => {
-      let cmp = 0;
-      if (sortField === 'createdAt') {
-        const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        cmp = timeA - timeB;
-      } else if (sortField === 'displayName') {
-        cmp = (a.displayName || '').localeCompare(b.displayName || '', 'vi');
-      } else if (sortField === 'preferredDate') {
-        if (!a.preferredDate && !b.preferredDate) cmp = 0;
-        else if (!a.preferredDate) cmp = 1;
-        else if (!b.preferredDate) cmp = -1;
-        else cmp = new Date(a.preferredDate).getTime() - new Date(b.preferredDate).getTime();
-      } else if (sortField === 'status') {
-        cmp = a.status.localeCompare(b.status);
-      }
-      return sortOrder === 'asc' ? cmp : -cmp;
-    });
-  }, [filteredConsultations, sortField, sortOrder]);
-
-  const totalPages = Math.max(1, Math.ceil(sortedConsultations.length / pageSize));
-  const safeCurrentPage = Math.min(currentPage, totalPages);
-  const startIndex = (safeCurrentPage - 1) * pageSize;
-  const endIndex = Math.min(startIndex + pageSize, sortedConsultations.length);
-  const paginatedConsultations = sortedConsultations.slice(startIndex, endIndex);
-
+    },
+    {
+      scope: 'consultation-page:' + scope,
+      enabled: enabled && searchQuery.trim() === query,
+      initial: true,
+      types: ['booking.updated'],
+    },
+  );
+  const data = result?.scope === scope ? result.data : null,
+    items = data?.items ?? [];
+  const reset = () => setCurrentPage(1);
   return {
     searchQuery,
     setSearchQuery,
     statusFilter,
-    setStatusFilter,
+    setStatusFilter: (status: string) => {
+      setStatus(status);
+      reset();
+    },
     sortField,
     sortOrder,
     currentPage,
     setCurrentPage,
     pageSize,
-    setPageSize,
-    handleSortChange,
-    handleQuickSortChange,
-    sortedConsultations,
-    paginatedConsultations,
-    totalPages,
-    safeCurrentPage,
-    startIndex,
-    endIndex,
+    setPageSize: (size: number) => {
+      setSize(size);
+      reset();
+    },
+    handleSortChange: (field: ConsultationSortField) => {
+      setSort(field);
+      setOrder(
+        field === sortField
+          ? sortOrder === 'asc'
+            ? 'desc'
+            : 'asc'
+          : field === 'createdAt'
+            ? 'desc'
+            : 'asc',
+      );
+      reset();
+    },
+    handleQuickSortChange: (value: string) => {
+      const [field, order] = value.split('-');
+      if (
+        (field === 'createdAt' ||
+          field === 'displayName' ||
+          field === 'preferredDate' ||
+          field === 'status') &&
+        (order === 'asc' || order === 'desc')
+      ) {
+        setSort(field);
+        setOrder(order);
+        reset();
+      }
+    },
+    sortedConsultations: items,
+    paginatedConsultations: items,
+    total: data?.total ?? 0,
+    totalPages: Math.max(1, data?.totalPages ?? 0),
+    safeCurrentPage: data?.page ?? 1,
+    startIndex: data ? (data.page - 1) * data.pageSize : 0,
+    endIndex: data ? Math.min(data.page * data.pageSize, data.total) : 0,
+    counts: data?.counts,
+    loading: pending || (!data && !error) || searchQuery.trim() !== query,
+    error,
+    retry: live.refresh,
   };
 }
-
 /** Link mở bước Đặt tiệc với thông tin khách đã điền sẵn từ yêu cầu tư vấn đã chuyển đổi. */
 export function consultationBookingHref(item: ConsultationRequestItem): string | null {
   if (item.status !== 'CONVERTED' || !item.consultationId) return null;

@@ -204,7 +204,60 @@ export function usePrintOrderLifecycleMutations(options: UsePrintOrderLifecycleM
     currentCursor,
   ]);
 
+  const handleApprovePurchase = useCallback(async () => {
+    if (
+      !selectedOrder?.purchase ||
+      selectedOrder.status !== 'REQUESTED' ||
+      isSubmittingRef.current ||
+      !gateway.approvePurchase
+    )
+      return;
+    const epoch = requestEpochRef.current;
+    isSubmittingRef.current = true;
+    setIsSubmitting(true);
+    try {
+      const operation = gateway.approvePurchase;
+      const updated = await authorize((token) =>
+        operation(
+          token,
+          selectedOrder.orderId,
+          { expectedRevision: selectedOrder.revision },
+          `approve-purchase:${selectedOrder.orderId}:${selectedOrder.revision}`,
+        ),
+      );
+      if (epoch !== requestEpochRef.current) return;
+      setSelectedOrder(updated);
+      setOrders((items) =>
+        items.map((item) => (item.orderId === updated.orderId ? updated : item)),
+      );
+      showToast(
+        'Đã duyệt đơn in và phụ lục. Chi phí được ghi nhận một lần; đơn có thể bắt đầu sản xuất.',
+      );
+    } catch (error) {
+      if (epoch === requestEpochRef.current) {
+        showError(error instanceof Error ? error.message : 'Không thể duyệt đơn in.');
+        void fetchOrders(currentCursor, true);
+      }
+    } finally {
+      isSubmittingRef.current = false;
+      setIsSubmitting(false);
+    }
+  }, [
+    selectedOrder,
+    isSubmittingRef,
+    gateway,
+    requestEpochRef,
+    setIsSubmitting,
+    authorize,
+    setSelectedOrder,
+    setOrders,
+    showToast,
+    showError,
+    fetchOrders,
+    currentCursor,
+  ]);
   return {
+    handleApprovePurchase,
     handleStartProduction,
     handleMarkReady,
     handleConfirmHandover,

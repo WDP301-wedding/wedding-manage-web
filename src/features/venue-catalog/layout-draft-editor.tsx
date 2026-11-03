@@ -1,6 +1,7 @@
 'use client';
+import { HySelect } from '../../components/ui/select-field';
 
-import { type FormEvent, useMemo, useState } from 'react';
+import { type FormEvent, useMemo, useRef, useState } from 'react';
 import type { CatalogGateway, CatalogLayout, LayoutTableWrite } from './catalog-api';
 import { CANVAS_SIZE, TableEditor, TableNumber } from './layout-table-editor';
 
@@ -52,25 +53,116 @@ export function validateLayout(
   return null;
 }
 
-export function LayoutCanvas({ tables }: Readonly<{ tables: readonly LayoutTableWrite[] }>) {
+export function LayoutCanvas({
+  tables,
+  selectedTableId,
+  onSelectTable,
+  onMoveTable,
+}: Readonly<{
+  tables: readonly LayoutTableWrite[];
+  selectedTableId?: string | null;
+  onSelectTable?: (id: string) => void;
+  onMoveTable?: (id: string, x: number, y: number) => void;
+}>) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const dragRef = useRef<{
+    id: string;
+    startPointerX: number;
+    startPointerY: number;
+    startX: number;
+    startY: number;
+  } | null>(null);
+
+  const handlePointerDown = (
+    event: React.PointerEvent<HTMLSpanElement>,
+    table: LayoutTableWrite,
+  ) => {
+    if (!onMoveTable) return;
+    event.preventDefault();
+    onSelectTable?.(table.tableId);
+    event.currentTarget.setPointerCapture(event.pointerId);
+    dragRef.current = {
+      id: table.tableId,
+      startPointerX: event.clientX,
+      startPointerY: event.clientY,
+      startX: table.x,
+      startY: table.y,
+    };
+  };
+
+  const handlePointerMove = (event: React.PointerEvent<HTMLSpanElement>) => {
+    if (!dragRef.current || !containerRef.current || !onMoveTable) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return;
+
+    const dxPixels = event.clientX - dragRef.current.startPointerX;
+    const dyPixels = event.clientY - dragRef.current.startPointerY;
+
+    const dxCanvas = (dxPixels / rect.width) * CANVAS_SIZE;
+    const dyCanvas = (dyPixels / rect.height) * CANVAS_SIZE;
+
+    const targetTable = tables.find((t) => t.tableId === dragRef.current?.id);
+    const width = targetTable?.width ?? 1000;
+    const height = targetTable?.height ?? 1000;
+
+    const rawX = Math.round((dragRef.current.startX + dxCanvas) / 100) * 100;
+    const rawY = Math.round((dragRef.current.startY + dyCanvas) / 100) * 100;
+
+    const clampedX = Math.max(0, Math.min(CANVAS_SIZE - width, rawX));
+    const clampedY = Math.max(0, Math.min(CANVAS_SIZE - height, rawY));
+
+    onMoveTable(dragRef.current.id, clampedX, clampedY);
+  };
+
+  const handlePointerUp = (event: React.PointerEvent<HTMLSpanElement>) => {
+    if (dragRef.current) {
+      try {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      } catch {
+        // no-op
+      }
+      dragRef.current = null;
+    }
+  };
+
   return (
-    <div className={cx.layoutCanvas} role="img" aria-label="Xem trước bố trí bàn theo tỷ lệ canvas">
-      {tables.map((table) => (
-        <span
-          key={table.tableId}
-          className={cn(cx.layoutCanvasTable, table.shape === 'ROUND' && 'rounded-full')}
-          style={{
-            left: `${(table.x / CANVAS_SIZE) * 100}%`,
-            top: `${(table.y / CANVAS_SIZE) * 100}%`,
-            width: `${Math.max((table.width / CANVAS_SIZE) * 100, 3)}%`,
-            height: `${Math.max((table.height / CANVAS_SIZE) * 100, 3)}%`,
-            transform: `rotate(${table.rotationDegrees}deg)`,
-          }}
-          title={`${table.label}: ${table.seatCapacity} ghế`}
-        >
-          {table.label}
-        </span>
-      ))}
+    <div
+      ref={containerRef}
+      className={cx.layoutCanvas}
+      role="img"
+      aria-label="Xem trước bố trí bàn theo tỷ lệ canvas"
+    >
+      {tables.map((table) => {
+        const isSelected = selectedTableId === table.tableId;
+        return (
+          <span
+            key={table.tableId}
+            className={cn(
+              cx.layoutCanvasTable,
+              table.shape === 'ROUND' && 'rounded-full',
+              isSelected &&
+                'ring-2 ring-primary ring-offset-2 shadow-md z-10 font-bold bg-primary text-primary-foreground',
+              onMoveTable && 'cursor-grab active:cursor-grabbing select-none',
+            )}
+            style={{
+              left: `${(table.x / CANVAS_SIZE) * 100}%`,
+              top: `${(table.y / CANVAS_SIZE) * 100}%`,
+              width: `${Math.max((table.width / CANVAS_SIZE) * 100, 3)}%`,
+              height: `${Math.max((table.height / CANVAS_SIZE) * 100, 3)}%`,
+              transform: `rotate(${table.rotationDegrees}deg)`,
+              touchAction: onMoveTable ? 'none' : 'auto',
+            }}
+            title={`${table.label}: ${table.seatCapacity} ghế (Tọa độ: X ${table.x}, Y ${table.y})`}
+            onPointerDown={(e) => handlePointerDown(e, table)}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerUp}
+            onClick={() => onSelectTable?.(table.tableId)}
+          >
+            {table.label}
+          </span>
+        );
+      })}
     </div>
   );
 }
@@ -100,10 +192,65 @@ export function LayoutDraftEditor({
     version.tables.map((table) => ({ ...table })),
   );
   const [retirements, setRetirements] = useState<string[]>([]);
+  const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
+  const [showBatchTools, setShowBatchTools] = useState(false);
+  const [batchCount, setBatchCount] = useState(5);
+  const [batchSeats, setBatchSeats] = useState(10);
+  const [batchShape, setBatchShape] = useState<'ROUND' | 'RECTANGLE'>('ROUND');
+
   const totalSeats = useMemo(
     () => tables.reduce((total, table) => total + table.seatCapacity, 0),
     [tables],
   );
+
+  const handleMoveTable = (id: string, x: number, y: number) => {
+    setTables((current) => current.map((tbl) => (tbl.tableId === id ? { ...tbl, x, y } : tbl)));
+  };
+
+  const handleSelectTable = (id: string) => {
+    setSelectedTableId(id);
+    const element = document.getElementById(`table-editor-${id}`);
+    element?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  };
+
+  const addBatchTables = () => {
+    const count = Math.min(Math.max(1, batchCount), 30);
+    const newItems: LayoutTableWrite[] = [];
+    const tableIds: string[] = [];
+    const startOrder = tables.length + 1;
+
+    for (let i = 0; i < count; i++) {
+      const id = crypto.randomUUID();
+      const order = startOrder + i;
+      tableIds.push(id);
+      newItems.push({
+        tableId: id,
+        label: `Bàn ${String(order).padStart(2, '0')}`,
+        shape: batchShape,
+        seatCapacity: batchSeats,
+        x: 500 + ((order - 1) % 5) * 1800,
+        y: 500 + Math.floor((order - 1) / 5) * 1800,
+        width: 1000,
+        height: 1000,
+        rotationDegrees: 0,
+        displayOrder: order,
+      });
+    }
+
+    void run(
+      `Đã tạo nhanh ${count} bàn mới. Hãy lưu bố trí để hoàn tất.`,
+      async (token) => {
+        await Promise.all(
+          tableIds.map((tableId) =>
+            gateway.registerLayoutTable(token, { templateId: layout.id, tableId }),
+          ),
+        );
+        setTables((current) => [...current, ...newItems]);
+        setShowBatchTools(false);
+      },
+      { reload: false },
+    );
+  };
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -215,12 +362,28 @@ export function LayoutDraftEditor({
           />
         </label>
       </div>
-      <LayoutCanvas tables={tables} />
+      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+        <span>
+          💡 Kéo thả bàn trực tiếp trên sơ đồ để chỉnh vị trí nhanh (bước nhảy 100 đơn vị).
+        </span>
+        {selectedTableId ? (
+          <span className="font-semibold text-primary">
+            Đang chọn: {tables.find((t) => t.tableId === selectedTableId)?.label ?? selectedTableId}
+          </span>
+        ) : null}
+      </div>
+      <LayoutCanvas
+        tables={tables}
+        selectedTableId={selectedTableId}
+        onSelectTable={handleSelectTable}
+        onMoveTable={handleMoveTable}
+      />
       <div className={cx.layoutTableList}>
         {tables.map((table, index) => (
           <TableEditor
             key={table.tableId}
             table={table}
+            selected={selectedTableId === table.tableId}
             onChange={(next) =>
               setTables((current) =>
                 current.map((item, itemIndex) => (itemIndex === index ? next : item)),
@@ -236,6 +399,68 @@ export function LayoutDraftEditor({
             }}
           />
         ))}
+      </div>
+      <div className="rounded-xl border border-dashed border-border bg-muted/30 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h5 className="text-sm font-semibold">Tạo nhanh dãy bàn (Batch Generator)</h5>
+            <p className="text-xs text-muted-foreground">
+              Tạo cùng lúc nhiều bàn và tự động xếp vị trí theo ma trận lưới
+            </p>
+          </div>
+          <button
+            type="button"
+            className={cx.secondaryButton}
+            onClick={() => setShowBatchTools(!showBatchTools)}
+          >
+            {showBatchTools ? 'Đóng công cụ' : 'Mở công cụ tạo nhanh'}
+          </button>
+        </div>
+        {showBatchTools ? (
+          <div className="mt-3 flex flex-wrap items-end gap-3 border-t border-border pt-3">
+            <label className="flex flex-col gap-1 text-xs font-semibold">
+              <span>Số lượng bàn</span>
+              <input
+                type="number"
+                min={1}
+                max={30}
+                className="h-9 w-20 rounded-md border border-input bg-card px-2 text-xs"
+                value={batchCount}
+                onChange={(e) => setBatchCount(Number(e.currentTarget.value) || 1)}
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-xs font-semibold">
+              <span>Số ghế mỗi bàn</span>
+              <input
+                type="number"
+                min={1}
+                max={50}
+                className="h-9 w-20 rounded-md border border-input bg-card px-2 text-xs"
+                value={batchSeats}
+                onChange={(e) => setBatchSeats(Number(e.currentTarget.value) || 10)}
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-xs font-semibold">
+              <span>Hình dạng</span>
+              <HySelect
+                className="h-9 rounded-md border border-input bg-card px-2 text-xs"
+                value={batchShape}
+                onChange={(e) => setBatchShape(e.currentTarget.value as 'ROUND' | 'RECTANGLE')}
+              >
+                <option value="ROUND">Bàn tròn</option>
+                <option value="RECTANGLE">Bàn chữ nhật</option>
+              </HySelect>
+            </label>
+            <button
+              type="button"
+              className={cx.primaryButton}
+              disabled={pending}
+              onClick={() => void addBatchTables()}
+            >
+              Tạo nhanh {batchCount} bàn
+            </button>
+          </div>
+        ) : null}
       </div>
       <div className={cx.formActions}>
         <button className={cx.secondaryButton} type="button" disabled={pending} onClick={addTable}>

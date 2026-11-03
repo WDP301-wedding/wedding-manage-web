@@ -1,8 +1,9 @@
 'use client';
+import { HySelect } from '../../components/ui/select-field';
 
 import { type FormEvent, useMemo, useState } from 'react';
 import type { CatalogGateway, CatalogMenu } from './catalog-api';
-import { integer, LabeledInput, text, type MenuVersion } from './food-catalog-shared';
+import { formatVnd, integer, LabeledInput, text, type MenuVersion } from './food-catalog-shared';
 import { OrderedVersionList, CreateMenuForm } from './create-menu-form';
 
 import { cx } from './catalog-classes';
@@ -21,7 +22,7 @@ export function MenuDraftEditor({
 }: Readonly<{
   menuId: string;
   onClose: () => void;
-  dishOptions: readonly { id: string; label: string }[];
+  dishOptions: readonly { id: string; label: string; priceVnd?: number | null }[];
   gateway: CatalogGateway;
   pending: boolean;
   run: (success: string, operation: (token: string) => Promise<void>) => Promise<boolean>;
@@ -45,6 +46,19 @@ export function MenuDraftEditor({
       (option, index, all) => all.findIndex(({ id }) => id === option.id) === index,
     );
   }, [dishOptions, version.items, items]);
+
+  const totalItemsPrice = useMemo(() => {
+    const priceMap = new Map<string, number>();
+    for (const item of version.items) {
+      if (typeof item.priceVnd === 'number') priceMap.set(item.dishVersionId, item.priceVnd);
+    }
+    for (const opt of dishOptions) {
+      if (typeof opt.priceVnd === 'number') {
+        priceMap.set(opt.id, opt.priceVnd);
+      }
+    }
+    return items.reduce((sum, id) => sum + (priceMap.get(id) ?? 0), 0);
+  }, [items, dishOptions, version.items]);
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -106,7 +120,7 @@ export function MenuDraftEditor({
         defaultValue={version.priceVndPerTable}
       />
       <div className={cx.inlineControl}>
-        <select
+        <HySelect
           aria-label="Thêm phiên bản món vào bản nháp"
           disabled={pending}
           value={selected}
@@ -118,7 +132,7 @@ export function MenuDraftEditor({
               {option.label}
             </option>
           ))}
-        </select>
+        </HySelect>
         <button
           className={cx.secondaryButton}
           type="button"
@@ -132,6 +146,14 @@ export function MenuDraftEditor({
         </button>
       </div>
       <OrderedVersionList items={items} options={options} onChange={setItems} disabled={pending} />
+      {totalItemsPrice > 0 ? (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-muted/60 px-3 py-2 text-xs">
+          <span className="text-muted-foreground">
+            Tổng giá các món đơn lẻ ({items.length} món):
+          </span>
+          <strong className="font-semibold text-foreground">{formatVnd(totalItemsPrice)}</strong>
+        </div>
+      ) : null}
       <div className={cx.formActions}>
         <button className={cx.secondaryButton} type="button" disabled={pending} onClick={onClose}>
           Hủy
@@ -164,7 +186,7 @@ export function MenuAggregate({
   pending,
   run,
 }: Readonly<{
-  dishOptions: readonly { id: string; label: string }[];
+  dishOptions: readonly { id: string; label: string; priceVnd?: number | null }[];
   gateway: CatalogGateway;
   menu: CatalogMenu;
   pending: boolean;

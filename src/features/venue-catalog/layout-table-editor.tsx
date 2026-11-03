@@ -1,6 +1,8 @@
 'use client';
+import { HySelect } from '../../components/ui/select-field';
 
 import type { LayoutTableWrite } from './catalog-api';
+import { cn } from 'cn';
 
 import { cx } from './catalog-classes';
 export const CANVAS_SIZE = 10_000;
@@ -37,16 +39,24 @@ export function TableNumber({
 export function TableEditor({
   onChange,
   onRemove,
+  selected = false,
   table,
 }: Readonly<{
   onChange: (table: LayoutTableWrite) => void;
   onRemove: () => void;
+  selected?: boolean;
   table: LayoutTableWrite;
 }>) {
   const number = (key: keyof LayoutTableWrite, value: string) =>
     onChange({ ...table, [key]: Number.parseInt(value, 10) || 0 });
   return (
-    <fieldset className={cx.layoutTableEditor}>
+    <fieldset
+      id={`table-editor-${table.tableId}`}
+      className={cn(
+        cx.layoutTableEditor,
+        selected && 'border-primary ring-1 ring-primary bg-accent/10',
+      )}
+    >
       <legend>{table.label}</legend>
       <code title="Danh tính bàn ổn định">{table.tableId}</code>
       <label>
@@ -58,7 +68,7 @@ export function TableEditor({
       </label>
       <label>
         <span>Hình dạng</span>
-        <select
+        <HySelect
           value={table.shape}
           onChange={(event) =>
             onChange({ ...table, shape: event.currentTarget.value as LayoutTableWrite['shape'] })
@@ -66,7 +76,7 @@ export function TableEditor({
         >
           <option value="ROUND">Tròn</option>
           <option value="RECTANGLE">Chữ nhật</option>
-        </select>
+        </HySelect>
       </label>
       <TableNumber
         label={`Số ghế ${table.label}`}

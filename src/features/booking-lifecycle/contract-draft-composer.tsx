@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { describeApiError } from '../../lib/api/api-errors';
+import { notify } from '../../design-system/notifications';
 import { formatVnd } from '../../lib/formatters';
 import {
   contractService,
@@ -127,13 +128,20 @@ export function ContractDraftComposer({
         if (attempt.current?.fingerprint !== fingerprint)
           attempt.current = { fingerprint, key: crypto.randomUUID() };
         await contractService.createContractDraft(proposal.bookingId, body, attempt.current.key);
-        if (version === epoch.current) onSaved();
+        if (version === epoch.current) {
+          notify.success('Đã lưu hợp đồng nháp thành công.');
+          onSaved();
+        }
       } else {
         const data = await contractService.previewContract(proposal.bookingId, body);
         if (version === epoch.current) setPreview({ fingerprint, data });
       }
     } catch (err) {
-      if (version === epoch.current) setError(describeApiError(err).message);
+      if (version === epoch.current) {
+        const msg = describeApiError(err).message;
+        setError(msg);
+        notify.error(err, { fallbackMessage: msg });
+      }
     } finally {
       lock.current = false;
       setPending(false);
