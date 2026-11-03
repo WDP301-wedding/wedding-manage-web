@@ -26,7 +26,6 @@ import {
   CreateMenuForm,
   MenuAggregate,
   MenuDraftEditor,
-  MenuVersionRow,
   OrderedVersionList,
 } from './menu-aggregate-list';
 
@@ -48,7 +47,6 @@ export {
   LabeledInput,
   MenuAggregate,
   MenuDraftEditor,
-  MenuVersionRow,
   move,
   optionalInteger,
   OrderedVersionList,
@@ -135,7 +133,7 @@ export function DishMenuPanel({
     <section className={cn(cx.section, cx.foodPanel)} id="food" aria-labelledby="food-title">
       <div className={cx.sectionHeading}>
         <h2 id="food-title">Món ăn &amp; thực đơn</h2>
-        <p>Quản lý bản mới nhất, xem chi tiết và cập nhật danh mục nhà hàng.</p>
+        <p>Theo dõi bản đang công bố, quản lý bản nháp và xem lịch sử phiên bản.</p>
       </div>
       <PanelMessages message={message} error={error} />
       {error && (
@@ -233,15 +231,14 @@ export function DishMenuPanel({
         </PrintOrderDialog>
       )}
 
-      <div className={cx.versionColumns}>
+      <div className="flex min-w-0 flex-col gap-6 px-4 pb-6 sm:px-6">
         <div>
           <h3 className={cx.subheading}>Món ăn ({snapshot.dishes.filter(matches).length})</h3>
           {snapshot.dishes.filter(matches).length === 0 ? (
             <p className={cx.empty}>Không có món ăn phù hợp. Thêm món mới hoặc thay đổi bộ lọc.</p>
           ) : (
-            snapshot.dishes
-              .filter(matches)
-              .map((dish) => (
+            <FoodTable label="Danh sách món ăn">
+              {snapshot.dishes.filter(matches).map((dish) => (
                 <DishAggregate
                   key={dish.id}
                   dish={dish}
@@ -249,7 +246,8 @@ export function DishMenuPanel({
                   run={run}
                   gateway={gateway}
                 />
-              ))
+              ))}
+            </FoodTable>
           )}
         </div>
         <div>
@@ -259,9 +257,8 @@ export function DishMenuPanel({
               Không có gói thực đơn phù hợp. Thêm gói mới hoặc thay đổi bộ lọc.
             </p>
           ) : (
-            snapshot.menus
-              .filter(matches)
-              .map((menu) => (
+            <FoodTable label="Danh sách gói thực đơn">
+              {snapshot.menus.filter(matches).map((menu) => (
                 <MenuAggregate
                   key={menu.id}
                   dishOptions={currentDishOptions(snapshot.dishes)}
@@ -270,7 +267,8 @@ export function DishMenuPanel({
                   run={run}
                   gateway={gateway}
                 />
-              ))
+              ))}
+            </FoodTable>
           )}
         </div>
       </div>
@@ -287,4 +285,24 @@ export function DishMenuPanel({
     const content = `${version.name} ${'categoryLabel' in version ? version.categoryLabel : ''}`;
     return normalize(content).includes(normalize(search.trim()));
   }
+}
+
+function FoodTable({ label, children }: Readonly<{ label: string; children: React.ReactNode }>) {
+  return (
+    <div className={cx.tableScroll} role="region" aria-label={label} tabIndex={0}>
+      <table className={cx.table}>
+        <caption className="sr-only">{label}</caption>
+        <thead>
+          <tr>
+            {['Tên', 'Trạng thái', 'Phiên bản công bố', 'Giá', 'Thao tác'].map((title) => (
+              <th key={title} scope="col">
+                {title}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>{children}</tbody>
+      </table>
+    </div>
+  );
 }

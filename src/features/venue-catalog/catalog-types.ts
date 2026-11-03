@@ -106,7 +106,12 @@ export interface FoodCatalogGateway {
   ): Promise<void>;
   cloneDish(
     accessToken: string,
-    input: Readonly<{ dishId: string; sourceVersionId: string; versionId: string }>,
+    input: Readonly<{
+      dishId: string;
+      sourceVersionId: string;
+      versionId: string;
+      idempotencyKey?: string;
+    }>,
   ): Promise<void>;
   changeDishLifecycle(
     accessToken: string,
@@ -126,7 +131,12 @@ export interface FoodCatalogGateway {
   ): Promise<void>;
   cloneMenu(
     accessToken: string,
-    input: Readonly<{ packageId: string; sourceVersionId: string; versionId: string }>,
+    input: Readonly<{
+      packageId: string;
+      sourceVersionId: string;
+      versionId: string;
+      idempotencyKey?: string;
+    }>,
   ): Promise<void>;
   changeMenuLifecycle(
     accessToken: string,

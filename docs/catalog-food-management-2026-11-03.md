@@ -1,5 +1,33 @@
 # Món ăn và gói thực đơn, 2026-11-03
 
+## Follow-up: tables and version history
+
+The owner subsequently authorized tables with one row per dish/menu, explicit
+published price/version plus a separate draft badge, and read-only historical
+details (including the exact historical dishes of a menu). New-version forms now
+remain local until Save. Cancel/Escape/close before Save sends no catalog mutation;
+existing drafts have a separate resume action. A lost clone response retains the
+same source/destination/idempotency key for retry. All APIs remain unchanged.
+
+The backend additionally copies source images into destination-owned objects when
+cloning a dish/menu, preserving original images. See the [backend hand-off and
+verification](../../wedding-be/docs/catalog-food-versions-2026-11-03.md).
+Dish retirement within a published menu intentionally retains its existing behavior.
+
+Follow-up verification: typecheck, lint, production build and the unchanged API pin
+passed. All 32 catalog tests passed; the four Vietnamese typography tests passed
+when run separately after load-related timeouts. Local browser verification with
+real backend/PostgreSQL covered exact history, published-versus-draft prices,
+Cancel with zero writes, Save creating a draft only on confirmation, narrow table
+scrolling at 320/768/1024/1440 pixels and Escape/focus restoration. Image inheritance
+was verified for both food types through local HTTP and 18 focused PostgreSQL tests.
+Full-suite failures remain documented in the backend hand-off; this is not a cloud
+deployment or a claim that every project suite passes.
+
+The original delivery and evidence below are preserved for their original scope.
+
+## Original delivery
+
 Branch: `codex/catalog-food-usability-20261103` in manage-web and backend.
 
 The catalog displays one latest draft/current publication per dish or menu.

@@ -74,6 +74,200 @@ function gateway(overrides: Record<string, unknown> = {}): CatalogGateway {
 }
 
 describe('VC-19 dish and menu administration', () => {
+  it('lists one row per dish with published price and a separate draft indicator', async () => {
+    render(<DishMenuPanel gateway={gateway()} authorize={authorize} />);
+    const table = await screen.findByRole('table', { name: 'Danh sách món ăn' });
+    expect(within(table).getAllByRole('row')).toHaveLength(2);
+    const row = within(table).getByRole('row', { name: 'Gỏi ngó sen' });
+    expect(within(row).getByText(/120\.000/u)).toBeVisible();
+    expect(within(row).queryByText(/130\.000/u)).not.toBeInTheDocument();
+    expect(within(row).getByText('Có bản nháp')).toBeVisible();
+    expect(within(row).getByText('v1')).toBeVisible();
+    expect(within(row).getByRole('button', { name: 'Tiếp tục bản nháp' })).toBeVisible();
+  });
+
+  it('reads historical prices and descriptions separately from publication and draft without mutations', async () => {
+    const published = foodSnapshot.dishes[0]!.versions[0]!;
+    const api = gateway({
+      loadFood: vi.fn(() =>
+        Promise.resolve({
+          ...foodSnapshot,
+          dishes: [
+            {
+              ...foodSnapshot.dishes[0],
+              versions: [
+                { ...published, versionNumber: 2 },
+                foodSnapshot.dishes[0]!.versions[1],
+                {
+                  ...published,
+                  id: 'historical-dish',
+                  versionNumber: 1,
+                  state: 'SUPERSEDED',
+                  name: 'Gỏi công thức cũ',
+                  description: 'Mô tả lịch sử',
+                  priceVnd: 90000,
+                },
+              ],
+            },
+          ],
+        }),
+      ),
+    });
+    render(<DishMenuPanel gateway={api} authorize={authorize} />);
+    const row = await screen.findByRole('row', { name: 'Gỏi ngó sen' });
+    fireEvent.click(within(row).getByRole('button', { name: 'Chi tiết' }));
+    const dialog = screen.getByRole('dialog', { name: 'Chi tiết Gỏi ngó sen' });
+    expect(within(dialog).getByRole('region', { name: 'Bản đang công bố' })).toHaveTextContent(
+      '120.000',
+    );
+    expect(within(dialog).getByRole('region', { name: 'Bản nháp' })).toHaveTextContent('130.000');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Chi tiết phiên bản 1' }));
+    const historical = within(dialog).getByRole('region', { name: 'Chi tiết phiên bản 1' });
+    expect(historical).toHaveTextContent('Mô tả lịch sử');
+    expect(historical).toHaveTextContent('90.000');
+    expect(within(historical).queryByRole('textbox')).not.toBeInTheDocument();
+    expect(api.cloneDish).not.toHaveBeenCalled();
+    expect(api.updateDishDraft).not.toHaveBeenCalled();
+  });
+
+  it('keeps entered new-version content after a failed update and retries the same draft', async () => {
+    const updateDishDraft = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('Unavailable'))
+      .mockResolvedValue(2);
+    const cloneDish = vi.fn(() => Promise.resolve());
+    const api = gateway({
+      cloneDish,
+      updateDishDraft,
+      loadFood: vi.fn(() =>
+        Promise.resolve({
+          dishes: [
+            {
+              ...foodSnapshot.dishes[0],
+              draftVersionId: null,
+              versions: [foodSnapshot.dishes[0]!.versions[0]],
+            },
+          ],
+          menus: [],
+        }),
+      ),
+    });
+    render(<DishMenuPanel gateway={api} authorize={authorize} />);
+    const row = await screen.findByRole('row', { name: 'Gỏi ngó sen' });
+    fireEvent.click(within(row).getByRole('button', { name: 'Tạo phiên bản mới' }));
+    fireEvent.change(screen.getByRole('textbox', { name: 'Tên món bản nháp' }), {
+      target: { value: 'Nội dung cần giữ' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Lưu bản nháp' }));
+    await screen.findByRole('alert');
+    expect(screen.getByRole('textbox', { name: 'Tên món bản nháp' })).toHaveValue(
+      'Nội dung cần giữ',
+    );
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Lưu bản nháp' })).toBeEnabled());
+    fireEvent.click(screen.getByRole('button', { name: 'Lưu bản nháp' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(cloneDish).toHaveBeenCalledOnce();
+    expect(updateDishDraft).toHaveBeenCalledTimes(2);
+    expect(updateDishDraft.mock.calls[0]![1].versionId).toBe(
+      updateDishDraft.mock.calls[1]![1].versionId,
+    );
+  });
+
+  it.each([true, false])(
+    'recovers a lost clone response without duplicating the save intent (draft visible: %s)',
+    async (visible) => {
+      let attempted: { versionId: string; sourceVersionId: string; idempotencyKey: string } | null =
+        null;
+      const cloneDish = vi.fn((_token: string, input: NonNullable<typeof attempted>) => {
+        attempted = input;
+        return cloneDish.mock.calls.length === 1
+          ? Promise.reject(new Error('Response lost'))
+          : Promise.resolve();
+      });
+      const updateDishDraft = vi.fn(() => Promise.resolve(2));
+      const published = foodSnapshot.dishes[0]!.versions[0]!;
+      const api = gateway({
+        cloneDish,
+        updateDishDraft,
+        loadFood: vi.fn(() =>
+          Promise.resolve({
+            dishes: [
+              {
+                ...foodSnapshot.dishes[0],
+                draftVersionId: attempted && visible ? attempted.versionId : null,
+                versions: [
+                  published,
+                  ...(attempted && visible
+                    ? [
+                        {
+                          ...published,
+                          id: attempted.versionId,
+                          state: 'DRAFT',
+                          versionNumber: null,
+                          revision: 1,
+                        },
+                      ]
+                    : []),
+                ],
+              },
+            ],
+            menus: [],
+          }),
+        ),
+      });
+      render(<DishMenuPanel gateway={api} authorize={authorize} />);
+      const row = await screen.findByRole('row', { name: 'Gỏi ngó sen' });
+      fireEvent.click(within(row).getByRole('button', { name: 'Tạo phiên bản mới' }));
+      fireEvent.change(screen.getByRole('textbox', { name: 'Tên món bản nháp' }), {
+        target: { value: 'Nội dung sau mất phản hồi' },
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Lưu bản nháp' }));
+      await screen.findByRole('alert');
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: 'Lưu bản nháp' })).toBeEnabled(),
+      );
+      fireEvent.click(screen.getByRole('button', { name: 'Lưu bản nháp' }));
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+      expect(updateDishDraft).toHaveBeenCalledWith(
+        'manager-token',
+        expect.objectContaining({
+          versionId: cloneDish.mock.calls[0]![1].versionId,
+          name: 'Nội dung sau mất phản hồi',
+        }),
+      );
+      expect(cloneDish).toHaveBeenCalledTimes(visible ? 1 : 2);
+      if (!visible) expect(cloneDish.mock.calls[1]![1]).toEqual(cloneDish.mock.calls[0]![1]);
+    },
+  );
+
+  it('cancels a new version without creating or updating any server draft', async () => {
+    const api = gateway({
+      loadFood: vi.fn(() =>
+        Promise.resolve({
+          dishes: [
+            {
+              ...foodSnapshot.dishes[0],
+              draftVersionId: null,
+              versions: [foodSnapshot.dishes[0]!.versions[0]],
+            },
+          ],
+          menus: [],
+        }),
+      ),
+    });
+    render(<DishMenuPanel gateway={api} authorize={authorize} />);
+    const row = await screen.findByRole('row', { name: 'Gỏi ngó sen' });
+    fireEvent.click(within(row).getByRole('button', { name: 'Tạo phiên bản mới' }));
+    fireEvent.change(screen.getByRole('textbox', { name: 'Tên món bản nháp' }), {
+      target: { value: 'Nội dung chưa lưu' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Hủy' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(api.cloneDish).not.toHaveBeenCalled();
+    expect(api.updateDishDraft).not.toHaveBeenCalled();
+    fireEvent.click(within(row).getByRole('button', { name: 'Tạo phiên bản mới' }));
+    expect(screen.getByRole('textbox', { name: 'Tên món bản nháp' })).toHaveValue('Gỏi ngó sen');
+  });
   it('confirms deletion before calling the real gateway and removes the record after refresh', async () => {
     const deleteDish = vi.fn(async () => {});
     const loadFood = vi
@@ -81,12 +275,12 @@ describe('VC-19 dish and menu administration', () => {
       .mockResolvedValueOnce(foodSnapshot)
       .mockResolvedValue({ dishes: [], menus: [] });
     render(<DishMenuPanel gateway={gateway({ deleteDish, loadFood })} authorize={authorize} />);
-    const dish = await screen.findByRole('article', { name: 'Gỏi ngó sen mới' });
+    const dish = await screen.findByRole('row', { name: 'Gỏi ngó sen' });
     fireEvent.click(within(dish).getByRole('button', { name: 'Xóa' }));
     expect(deleteDish).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: 'Xác nhận xóa' }));
     await waitFor(() =>
-      expect(screen.queryByRole('article', { name: 'Gỏi ngó sen mới' })).not.toBeInTheDocument(),
+      expect(screen.queryByRole('row', { name: 'Gỏi ngó sen' })).not.toBeInTheDocument(),
     );
     expect(deleteDish).toHaveBeenCalledWith('manager-token', { id: dishId, expectedRevision: 4 });
   });
@@ -97,8 +291,8 @@ describe('VC-19 dish and menu administration', () => {
     render(
       <DishMenuPanel gateway={gateway({ updateDishDraft, publishDish })} authorize={authorize} />,
     );
-    const dish = await screen.findByRole('article', { name: 'Gỏi ngó sen mới' });
-    fireEvent.click(within(dish).getByRole('button', { name: 'Chỉnh sửa' }));
+    const dish = await screen.findByRole('row', { name: 'Gỏi ngó sen' });
+    fireEvent.click(within(dish).getByRole('button', { name: 'Tiếp tục bản nháp' }));
     const input = await screen.findByRole('textbox', { name: 'Tên món bản nháp' });
     fireEvent.change(input, { target: { value: 'Gỏi ngó sen cập nhật' } });
     fireEvent.click(screen.getByRole('button', { name: 'Lưu và công bố' }));
@@ -118,7 +312,7 @@ describe('VC-19 dish and menu administration', () => {
     const api = gateway({ createDish });
     render(<DishMenuPanel gateway={api} authorize={authorize} />);
 
-    expect(await screen.findByText(/130\.000/u)).toHaveTextContent('₫');
+    expect(await screen.findByText(/120\.000/u)).toHaveTextContent('₫');
     fireEvent.click(screen.getByRole('button', { name: 'Thêm món ăn' }));
     const form = screen.getByRole('form', { name: 'Tạo món ăn' });
     fireEvent.change(within(form).getByLabelText('Tên món'), { target: { value: 'Súp bí đỏ' } });
@@ -172,7 +366,7 @@ describe('VC-19 dish and menu administration', () => {
     );
   });
 
-  it('offers edit on the latest published dish using a new draft behind the scenes', async () => {
+  it('creates a draft only when saving entered new-version content', async () => {
     const cloneDish = vi.fn(() => Promise.resolve());
     const api = gateway({
       cloneDish,
@@ -191,9 +385,14 @@ describe('VC-19 dish and menu administration', () => {
     });
     render(<DishMenuPanel gateway={api} authorize={authorize} />);
 
-    const dish = await screen.findByRole('article', { name: 'Gỏi ngó sen' });
+    const dish = await screen.findByRole('row', { name: 'Gỏi ngó sen' });
     expect(within(dish).queryByRole('textbox')).not.toBeInTheDocument();
-    fireEvent.click(within(dish).getByRole('button', { name: 'Chỉnh sửa' }));
+    fireEvent.click(within(dish).getByRole('button', { name: 'Tạo phiên bản mới' }));
+    expect(cloneDish).not.toHaveBeenCalled();
+    fireEvent.change(screen.getByRole('textbox', { name: 'Tên món bản nháp' }), {
+      target: { value: 'Tên đã nhập' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Lưu bản nháp' }));
 
     await waitFor(() =>
       expect(cloneDish).toHaveBeenCalledWith(
@@ -203,12 +402,12 @@ describe('VC-19 dish and menu administration', () => {
     );
   });
 
-  it('shows only the latest dish and keeps its draft editor closed until editing', async () => {
+  it('keeps publication visible and opens the existing draft without cloning', async () => {
     render(<DishMenuPanel gateway={gateway()} authorize={authorize} />);
-    const dish = await screen.findByRole('article', { name: 'Gỏi ngó sen mới' });
-    expect(within(dish).queryByText('Gỏi ngó sen')).not.toBeInTheDocument();
+    const dish = await screen.findByRole('row', { name: 'Gỏi ngó sen' });
+    expect(within(dish).getByText('Gỏi ngó sen')).toBeVisible();
     expect(screen.queryByRole('textbox', { name: 'Tên món bản nháp' })).not.toBeInTheDocument();
-    fireEvent.click(within(dish).getByRole('button', { name: 'Chỉnh sửa' }));
+    fireEvent.click(within(dish).getByRole('button', { name: 'Tiếp tục bản nháp' }));
     expect(await screen.findByRole('textbox', { name: 'Tên món bản nháp' })).toHaveValue(
       'Gỏi ngó sen mới',
     );
@@ -266,8 +465,8 @@ describe('VC-19 dish and menu administration', () => {
         authorize={authorize}
       />,
     );
-    const menu = await screen.findByRole('article', { name: 'Gói Mùa Thu' });
-    fireEvent.click(within(menu).getByRole('button', { name: 'Xem chi tiết' }));
+    const menu = await screen.findByRole('row', { name: 'Gói Mùa Thu' });
+    fireEvent.click(within(menu).getByRole('button', { name: 'Chi tiết' }));
     const dialog = screen.getByRole('dialog', { name: 'Chi tiết Gói Mùa Thu' });
     expect(within(dialog).getByText('Gỏi ngó sen')).toBeVisible();
     expect(within(dialog).getByText('Tôm và rau thơm')).toBeVisible();

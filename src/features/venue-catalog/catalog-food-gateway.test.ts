@@ -17,6 +17,38 @@ const json = (data: unknown) =>
   new Response(JSON.stringify({ data }), { headers: { 'Content-Type': 'application/json' } });
 
 describe('food catalog HTTP gateway', () => {
+  it('reuses a clone intent key in the header without adding it to the strict API body', async () => {
+    const requests: Request[] = [];
+    const api = gateway((request) => {
+      requests.push(request);
+      return Promise.resolve(json({ versionId: 'new-version', revision: 1 }));
+    });
+    for (let retry = 0; retry < 2; retry++) {
+      await api.cloneDish('manager-token', {
+        dishId: 'dish',
+        sourceVersionId: 'published',
+        versionId: 'new-version',
+        idempotencyKey: 'same-intent',
+      });
+      await api.cloneMenu('manager-token', {
+        packageId: 'menu',
+        sourceVersionId: 'published',
+        versionId: 'new-version',
+        idempotencyKey: 'same-menu-intent',
+      });
+    }
+    expect(requests.map((request) => request.headers.get('Idempotency-Key'))).toEqual([
+      'same-intent',
+      'same-menu-intent',
+      'same-intent',
+      'same-menu-intent',
+    ]);
+    for (const request of requests)
+      expect(await request.json()).toEqual({
+        sourceVersionId: 'published',
+        versionId: 'new-version',
+      });
+  });
   it('loads all cursor pages and preserves the version history needed by exact menu references', async () => {
     const urls: URL[] = [];
     const api = gateway((request) => {

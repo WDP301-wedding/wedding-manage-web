@@ -2,33 +2,32 @@
 
 import { type FormEvent, useMemo, useState } from 'react';
 import type { CatalogGateway, CatalogMenu } from './catalog-api';
-import {
-  integer,
-  LabeledInput,
-  text,
-  VersionSummary,
-  formatVnd,
-  type MenuVersion,
-} from './food-catalog-shared';
+import { integer, LabeledInput, text, type MenuVersion } from './food-catalog-shared';
 import { OrderedVersionList, CreateMenuForm } from './create-menu-form';
 
 import { cx } from './catalog-classes';
-import { FoodRecordCard, latestFoodVersion } from './food-record-card';
+import { FoodRecordRow, latestFoodVersion } from './food-record-card';
+import { useFoodDraft } from './use-food-draft';
 export { OrderedVersionList, CreateMenuForm };
 
 export function MenuDraftEditor({
+  menuId,
+  onClose,
   dishOptions,
   gateway,
   pending,
   run,
   version,
 }: Readonly<{
+  menuId: string;
+  onClose: () => void;
   dishOptions: readonly { id: string; label: string }[];
   gateway: CatalogGateway;
   pending: boolean;
   run: (success: string, operation: (token: string) => Promise<void>) => Promise<boolean>;
   version: MenuVersion;
 }>) {
+  const ensureDraft = useFoodDraft(version);
   const [items, setItems] = useState(() =>
     [...version.items]
       .sort((left, right) => left.displayOrder - right.displayOrder)
@@ -55,25 +54,42 @@ export function MenuDraftEditor({
     void run(
       publish ? 'Đã lưu và công bố gói thực đơn.' : 'Đã lưu bản nháp thực đơn.',
       async (token) => {
+        const draft = await ensureDraft((input) =>
+          gateway.cloneMenu(token, { packageId: menuId, ...input }),
+        );
         const revision = await gateway.updateMenuDraft(token, {
-          versionId: version.id,
-          expectedRevision: version.revision,
+          versionId: draft.id,
+          expectedRevision: draft.revision,
           name: text(data, 'name'),
           description: text(data, 'description'),
           priceVndPerTable: integer(data, 'priceVndPerTable'),
           items: items.map((dishVersionId, index) => ({ dishVersionId, displayOrder: index + 1 })),
         });
+        draft.revision = revision;
         if (publish)
-          await gateway.publishMenu(token, { versionId: version.id, expectedRevision: revision });
+          await gateway.publishMenu(token, {
+            versionId: draft.id,
+            expectedRevision: revision,
+          });
       },
-    );
+    ).then((ok) => {
+      if (ok) onClose();
+    });
   };
 
   return (
     <form className={cx.draftForm} aria-label={`Bản nháp ${version.name}`} onSubmit={submit}>
-      <span className={cx.versionState}>Chỉnh sửa gói thực đơn</span>
-      <LabeledInput label="Tên gói bản nháp" name="name" defaultValue={version.name} />
+      <span className={cx.versionState}>
+        {version.state === 'DRAFT' ? 'Chỉnh sửa bản nháp' : 'Tạo phiên bản mới từ bản đang công bố'}
+      </span>
       <LabeledInput
+        disabled={pending}
+        label="Tên gói bản nháp"
+        name="name"
+        defaultValue={version.name}
+      />
+      <LabeledInput
+        disabled={pending}
         label="Mô tả gói bản nháp"
         name="description"
         as="textarea"
@@ -81,6 +97,7 @@ export function MenuDraftEditor({
         required={false}
       />
       <LabeledInput
+        disabled={pending}
         label="Giá bàn bản nháp (VND)"
         name="priceVndPerTable"
         type="number"
@@ -91,6 +108,7 @@ export function MenuDraftEditor({
       <div className={cx.inlineControl}>
         <select
           aria-label="Thêm phiên bản món vào bản nháp"
+          disabled={pending}
           value={selected}
           onChange={(event) => setSelected(event.currentTarget.value)}
         >
@@ -115,6 +133,9 @@ export function MenuDraftEditor({
       </div>
       <OrderedVersionList items={items} options={options} onChange={setItems} disabled={pending} />
       <div className={cx.formActions}>
+        <button className={cx.secondaryButton} type="button" disabled={pending} onClick={onClose}>
+          Hủy
+        </button>
         <button
           className={cx.secondaryButton}
           type="submit"
@@ -136,59 +157,6 @@ export function MenuDraftEditor({
   );
 }
 
-export function MenuVersionRow({
-  canClone,
-  dishOptions,
-  gateway,
-  menuId,
-  pending,
-  run,
-  version,
-}: Readonly<{
-  canClone: boolean;
-  dishOptions: readonly { id: string; label: string }[];
-  gateway: CatalogGateway;
-  menuId: string;
-  pending: boolean;
-  run: (success: string, operation: (token: string) => Promise<void>) => Promise<boolean>;
-  version: MenuVersion;
-}>) {
-  if (version.state !== 'DRAFT') {
-    return (
-      <div className={cx.versionRow}>
-        <VersionSummary version={version} price={version.priceVndPerTable} />
-        {canClone ? (
-          <button
-            className={cx.secondaryButton}
-            type="button"
-            disabled={pending}
-            onClick={() =>
-              void run('Đã nhân bản gói thành bản nháp.', (token) =>
-                gateway.cloneMenu(token, {
-                  packageId: menuId,
-                  sourceVersionId: version.id,
-                  versionId: crypto.randomUUID(),
-                }),
-              )
-            }
-          >
-            Nhân bản
-          </button>
-        ) : null}
-      </div>
-    );
-  }
-  return (
-    <MenuDraftEditor
-      dishOptions={dishOptions}
-      gateway={gateway}
-      pending={pending}
-      run={run}
-      version={version}
-    />
-  );
-}
-
 export function MenuAggregate({
   dishOptions,
   gateway,
@@ -204,68 +172,22 @@ export function MenuAggregate({
 }>) {
   const version = latestFoodVersion(menu);
   if (!version) return null;
-  const label = version.name;
+  const editable = menu.versions.find(({ id }) => id === menu.draftVersionId) ?? version;
   return (
-    <FoodRecordCard
-      label={label}
-      lifecycle={menu.lifecycle}
-      draft={version.state === 'DRAFT'}
-      price={version.priceVndPerTable}
-      priceUnit="bàn"
+    <FoodRecordRow
+      record={menu}
       pending={pending}
-      summary={
-        <p>
-          {version.items.length} món · {version.description || 'Chưa có mô tả'}
-        </p>
-      }
-      details={
-        <>
-          <p className="text-sm text-muted-foreground">{version.description || 'Chưa có mô tả.'}</p>
-          <p className="font-semibold text-primary">{formatVnd(version.priceVndPerTable)} / bàn</p>
-          <h3 className="font-semibold">Các món trong thực đơn ({version.items.length})</h3>
-          <ol className="flex flex-col divide-y divide-border">
-            {[...version.items]
-              .sort((a, b) => a.displayOrder - b.displayOrder)
-              .map((item, index) => (
-                <li key={item.dishVersionId} className="py-3">
-                  <div className="flex gap-3">
-                    <span className="text-sm text-muted-foreground">{index + 1}.</span>
-                    <div>
-                      <strong className="text-sm">{item.name}</strong>
-                      <p className="mt-1 text-xs text-muted-foreground">{item.categoryLabel}</p>
-                      <p className="mt-1 text-sm text-muted-foreground">{item.description}</p>
-                    </div>
-                  </div>
-                </li>
-              ))}
-          </ol>
-        </>
-      }
-      editor={
-        version.state === 'DRAFT' ? (
-          <MenuDraftEditor
-            key={`${version.id}-${version.revision}`}
-            dishOptions={dishOptions}
-            gateway={gateway}
-            pending={pending}
-            run={run}
-            version={version}
-          />
-        ) : (
-          <p role="status">Đang mở trình chỉnh sửa…</p>
-        )
-      }
-      onEdit={() =>
-        version.state === 'DRAFT'
-          ? Promise.resolve(true)
-          : run('Đã mở bản chỉnh sửa thực đơn.', (token) =>
-              gateway.cloneMenu(token, {
-                packageId: menu.id,
-                sourceVersionId: version.id,
-                versionId: crypto.randomUUID(),
-              }),
-            )
-      }
+      editor={(onClose) => (
+        <MenuDraftEditor
+          menuId={menu.id}
+          version={editable}
+          dishOptions={dishOptions}
+          gateway={gateway}
+          pending={pending}
+          run={run}
+          onClose={onClose}
+        />
+      )}
       onDelete={() =>
         run('Đã xóa gói thực đơn khỏi danh mục.', (token) =>
           gateway.deleteMenu(token, { id: menu.id, expectedRevision: menu.revision }),

@@ -120,8 +120,7 @@ export function createFoodCatalogGateway(
       invalidateCatalogResource(accessToken, '/management/catalog/dishes');
     },
 
-    async cloneDish(accessToken, { dishId, ...body }) {
-      const idempotencyKey = crypto.randomUUID();
+    async cloneDish(accessToken, { dishId, idempotencyKey = crypto.randomUUID(), ...body }) {
       await api().POST('/management/catalog/dishes/{dishId}/versions', {
         headers: authorization(accessToken),
         params: {
@@ -184,8 +183,7 @@ export function createFoodCatalogGateway(
       invalidateCatalogResource(accessToken, '/management/catalog/menu-packages');
     },
 
-    async cloneMenu(accessToken, { packageId, ...body }) {
-      const idempotencyKey = crypto.randomUUID();
+    async cloneMenu(accessToken, { packageId, idempotencyKey = crypto.randomUUID(), ...body }) {
       await api().POST('/management/catalog/menu-packages/{packageId}/versions', {
         headers: authorization(accessToken),
         params: {
