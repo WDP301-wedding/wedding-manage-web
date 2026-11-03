@@ -5,14 +5,11 @@ export type ContractListData =
   operations['listCommercialContracts']['responses'][200]['content']['application/json']['data'];
 export type ContractRevisionItem = ContractListData['revisions'][number];
 
-type LegacyAppendixListData =
+export type AppendixListData =
   operations['listCommercialAppendices']['responses'][200]['content']['application/json']['data'];
-export type AppendixRevisionItem = LegacyAppendixListData['revisions'][number] & {
-  readonly printOrderId?: string;
-};
-export type AppendixListData = Omit<LegacyAppendixListData, 'revisions'> & {
-  readonly revisions: readonly AppendixRevisionItem[];
-};
+export type AppendixRevisionItem = AppendixListData['revisions'][number];
+export type PrintRequestView =
+  operations['listPrintRequests']['responses'][200]['content']['application/json']['data']['items'][number];
 
 export type ContractDraftBody =
   operations['createCommercialContractRevision']['requestBody']['content']['application/json'];
@@ -138,6 +135,7 @@ export const contractService = {
     bookingId: string,
     body: {
       expectedRevision: number;
+      predecessorRevisionId: string;
       reason: string;
       lines: readonly {
         category: 'MENU' | 'PRINT' | 'SERVICE';

@@ -10,6 +10,8 @@ import { ApprovalStatus, ContractLinesTable } from './contract-lines-table';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import type { AppendixRevisionItem } from '../../services/contract.service';
+import { AppendixPrintPreviews } from './appendix-print-previews';
+import { AppendixPrintAdjustment, type PrintAdjustment } from './appendix-print-adjustment';
 
 export interface AppendixDetailViewProps {
   activeAppendix: AppendixRevisionItem;
@@ -20,6 +22,8 @@ export interface AppendixDetailViewProps {
   appendixStateLabels: Record<string, string>;
   handleApproveAppendix: (revisionId: string) => Promise<void>;
   handleSubmitAppendix: (revisionId: string) => Promise<void>;
+  canAdjustPrint?: boolean;
+  onAdjustPrint?: (input: PrintAdjustment) => Promise<boolean>;
 }
 
 const stateTone: Record<string, 'neutral' | 'info' | 'success'> = {
@@ -36,6 +40,8 @@ export function AppendixDetailView({
   appendixStateLabels,
   handleApproveAppendix,
   handleSubmitAppendix,
+  canAdjustPrint = false,
+  onAdjustPrint,
 }: Readonly<AppendixDetailViewProps>) {
   const [confirmingApproval, setConfirmingApproval] = useState(false);
   const delta = activeAppendix.document.deltaVnd;
@@ -102,6 +108,15 @@ export function AppendixDetailView({
       />
 
       <ApprovalStatus managerApproved={managerApproved} coupleApproved={coupleApproved} />
+      <AppendixPrintPreviews appendix={activeAppendix} />
+      {canAdjustPrint && onAdjustPrint ? (
+        <AppendixPrintAdjustment
+          key={activeAppendix.revisionId}
+          appendix={activeAppendix}
+          disabled={disabled || loading}
+          onSave={onAdjustPrint}
+        />
+      ) : null}
 
       {/* Hộp xác nhận phê duyệt nếu đang bấm nút */}
       {confirmingApproval ? (
@@ -117,8 +132,9 @@ export function AppendixDetailView({
             Bạn đang đồng ý thay đổi tổng thoả thuận tiệc từ{' '}
             <strong>{formatVnd(activeAppendix.document.beforeTotalVnd)}</strong> thành{' '}
             <strong>{formatVnd(activeAppendix.document.afterTotalVnd)}</strong> (chênh lệch:{' '}
-            <strong>{signedDelta}</strong>). Thao tác phê duyệt mang tính pháp lý và không thể thu
-            hồi.
+            <strong>{signedDelta}</strong>). Hệ thống ghi nhận sự đồng ý của bạn trên đúng phiên bản
+            này. Nếu Couple đã đồng ý cùng phiên bản, chi phí có hiệu lực và đơn in được tạo hoặc
+            cập nhật theo phụ lục.
           </p>
           <div className="flex flex-wrap justify-end gap-2">
             <Button
@@ -143,7 +159,7 @@ export function AppendixDetailView({
         </div>
       ) : null}
 
-      {activeAppendix.printOrderId ? (
+      {activeAppendix.printOrderId && !activeAppendix.printRequests?.length ? (
         <p className="text-sm text-muted-foreground">
           Phụ lục đặt in được duyệt cùng đơn in; Couple đã xác nhận chi phí lúc đặt.{' '}
           <Link href="/print-orders" className="text-primary underline">
@@ -153,7 +169,8 @@ export function AppendixDetailView({
       ) : null}
       {/* Các nút hành động cho phụ lục */}
       <div className="flex flex-wrap justify-end gap-2">
-        {!activeAppendix.printOrderId && activeAppendix.state === 'DRAFT' ? (
+        {(!activeAppendix.printOrderId || activeAppendix.printRequests?.length) &&
+        activeAppendix.state === 'DRAFT' ? (
           <Button
             type="button"
             disabled={disabled || loading}
@@ -163,7 +180,7 @@ export function AppendixDetailView({
           </Button>
         ) : null}
 
-        {!activeAppendix.printOrderId &&
+        {(!activeAppendix.printOrderId || activeAppendix.printRequests?.length) &&
         activeAppendix.state === 'AWAITING_APPROVAL' &&
         !managerApproved &&
         !confirmingApproval ? (
@@ -172,7 +189,7 @@ export function AppendixDetailView({
             disabled={disabled || loading}
             onClick={() => setConfirmingApproval(true)}
           >
-            Phê duyệt phụ lục (Quản lý)
+            Duyệt phụ lục
           </Button>
         ) : null}
 

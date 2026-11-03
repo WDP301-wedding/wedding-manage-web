@@ -49,6 +49,10 @@ function AppendixPanelView({
     handleApproveAppendix,
     handleSubmitAppendix,
     refreshAppendices,
+    canAdjustPrint,
+    handleAdjustPrint,
+    error,
+    actionMessage,
   } = panelState;
 
   const revisions = data?.revisions ?? [];
@@ -70,6 +74,16 @@ function AppendixPanelView({
           {loading ? 'Đang tải…' : 'Làm mới phụ lục'}
         </Button>
       </div>
+      {error ? (
+        <p role="alert" className="text-sm text-destructive">
+          {error}
+        </p>
+      ) : null}
+      {actionMessage ? (
+        <p role="status" className="text-sm text-hy-success">
+          {actionMessage}
+        </p>
+      ) : null}
 
       {loading && revisions.length === 0 ? (
         <p className="text-muted-foreground">Đang tải danh sách phụ lục…</p>
@@ -115,6 +129,7 @@ function AppendixPanelView({
 
           {activeAppendix ? (
             <AppendixDetailView
+              key={`${activeAppendix.revisionId}:${activeAppendix.documentDigest}`}
               activeAppendix={activeAppendix}
               disabled={disabled}
               loading={loading}
@@ -123,6 +138,8 @@ function AppendixPanelView({
               appendixStateLabels={appendixStateLabels}
               handleApproveAppendix={handleApproveAppendix}
               handleSubmitAppendix={handleSubmitAppendix}
+              canAdjustPrint={canAdjustPrint}
+              onAdjustPrint={handleAdjustPrint}
             />
           ) : null}
         </div>

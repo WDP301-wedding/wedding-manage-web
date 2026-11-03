@@ -37,7 +37,12 @@ export function ContractPanel({
   disabled: boolean;
   onRefresh: () => void;
 }>) {
-  const [subTab, setSubTab] = useState<'contract' | 'appendix'>('contract');
+  const [subTab, setSubTab] = useState<'contract' | 'appendix'>(() =>
+    typeof window !== 'undefined' &&
+    new URLSearchParams(window.location.search).has('appendixRevisionId')
+      ? 'appendix'
+      : 'contract',
+  );
   const {
     editing,
     setEditing,

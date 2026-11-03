@@ -93,7 +93,12 @@ export function usePrintOrdersData({
 
   useRealtimeSubscription({
     onEvent: (event) => {
-      if (event.type.startsWith('print.') || event.scope.entityType === 'print_order') {
+      if (
+        event.type === 'contract.updated' ||
+        event.type === 'booking.updated' ||
+        event.type.startsWith('print.') ||
+        event.scope.entityType === 'print_order'
+      ) {
         refresh.schedule();
       }
     },

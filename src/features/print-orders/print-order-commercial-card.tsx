@@ -44,9 +44,11 @@ export function PrintOrderCommercialCard({
         </Row>
         <Row
           term={
-            selectedOrder.purchase && selectedOrder.status === 'REQUESTED'
-              ? 'Chi phí Couple đã xác nhận'
-              : priceTerm(selectedOrder.status)
+            selectedOrder.appendixSource
+              ? 'Chi phí theo phụ lục đã duyệt'
+              : selectedOrder.purchase && selectedOrder.status === 'REQUESTED'
+                ? 'Chi phí Couple đã xác nhận'
+                : priceTerm(selectedOrder.status)
           }
         >
           {revision ? (
@@ -57,7 +59,7 @@ export function PrintOrderCommercialCard({
             <span className="text-muted-foreground">Không có dữ liệu thương mại</span>
           )}
         </Row>
-        {revision ? (
+        {revision && !selectedOrder.appendixSource ? (
           <Row
             term={
               isOrderApprovedOrBeyond(selectedOrder.status)

@@ -7,6 +7,7 @@ import {
   type AppendixRevisionItem,
 } from '../../services/contract.service';
 import { notify } from '../../design-system/notifications';
+import type { PrintAdjustment } from './appendix-print-adjustment';
 
 export interface UseAppendixPanelOptions {
   bookingId: string;
@@ -27,6 +28,8 @@ export function useAppendixPanel({
   const activeBookingIdRef = useRef(bookingId);
   const readEpoch = useRef(0);
   const previousHead = useRef<string | null>(null);
+  const adjustmentPending = useRef(false);
+  const adjustmentKey = useRef<{ signature: string; key: string } | null>(null);
 
   const loadAppendices = async (targetId = bookingId) => {
     if (!targetId) return;
@@ -43,7 +46,14 @@ export function useAppendixPanel({
       previousHead.current = nextHead;
       setSelectedRevisionId((previous) =>
         previous === null || previous === oldHead
-          ? nextHead
+          ? previous === null &&
+            new URLSearchParams(window.location.search).get('bookingId') === targetId
+            ? (res.revisions.find(
+                (row) =>
+                  row.revisionId ===
+                  new URLSearchParams(window.location.search).get('appendixRevisionId'),
+              )?.revisionId ?? nextHead)
+            : nextHead
           : res.revisions.some((row) => row.revisionId === previous)
             ? previous
             : nextHead,
@@ -139,6 +149,72 @@ export function useAppendixPanel({
 
   const managerApproved = activeAppendix?.approvals.some((a) => a.party === 'MANAGER');
   const coupleApproved = activeAppendix?.approvals.some((a) => a.party === 'COUPLE');
+  const head = data?.revisions.find((row) => row.revisionId === data.currentRevisionId);
+  const canAdjustPrint =
+    activeAppendix?.state === 'APPROVED' &&
+    activeAppendix.revisionId === data?.effectiveRevisionId &&
+    head?.state !== 'DRAFT' &&
+    head?.state !== 'AWAITING_APPROVAL';
+
+  const handleAdjustPrint = async (input: PrintAdjustment): Promise<boolean> => {
+    if (!data || !activeAppendix || !canAdjustPrint || adjustmentPending.current) return false;
+    const quantities = Object.values(input.quantities);
+    if (
+      !quantities.every(
+        (quantity) => Number.isInteger(quantity) && quantity >= 0 && quantity <= 10000,
+      )
+    )
+      return false;
+    adjustmentPending.current = true;
+    const targetBookingId = bookingId;
+    setLoading(true);
+    setError(null);
+    try {
+      const lines = activeAppendix.document.afterLines.flatMap((line) => {
+        const quantity =
+          line.category === 'PRINT'
+            ? (input.quantities[line.sourceId] ?? line.quantity)
+            : line.quantity;
+        return quantity === 0
+          ? []
+          : [
+              {
+                category: line.category,
+                sourceId: line.sourceId,
+                sourceRevisionId: line.sourceRevisionId,
+                quantity,
+              },
+            ];
+      });
+      const body = {
+        expectedRevision: data.bookingRevision,
+        predecessorRevisionId: activeAppendix.revisionId,
+        reason: input.reason,
+        lines,
+      };
+      const signature = JSON.stringify({ bookingId, body });
+      if (adjustmentKey.current?.signature !== signature)
+        adjustmentKey.current = { signature, key: crypto.randomUUID() };
+      await contractService.createAppendix(bookingId, body, adjustmentKey.current.key);
+      adjustmentKey.current = null;
+      if (activeBookingIdRef.current !== targetBookingId) return false;
+      notify.success(
+        'Đã tạo phụ lục điều chỉnh. Hãy gửi duyệt; cả hai bên cần xác nhận phiên bản mới.',
+      );
+      await loadAppendices();
+      onRefresh();
+      return true;
+    } catch (cause) {
+      if (activeBookingIdRef.current !== targetBookingId) return false;
+      const friendly = describeApiError(cause);
+      setError(friendly.message);
+      notify.error(cause, { message: friendly.message });
+      return false;
+    } finally {
+      adjustmentPending.current = false;
+      if (activeBookingIdRef.current === targetBookingId) setLoading(false);
+    }
+  };
 
   const pendingApprovalsCount =
     data?.revisions.filter(
@@ -158,6 +234,8 @@ export function useAppendixPanel({
     pendingApprovalsCount,
     handleApproveAppendix,
     handleSubmitAppendix,
+    canAdjustPrint,
+    handleAdjustPrint,
     refreshAppendices: () => void loadAppendices(),
   };
 }

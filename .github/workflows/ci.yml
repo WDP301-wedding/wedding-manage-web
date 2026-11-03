@@ -54,6 +54,9 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      - name: Verify appendix print tracking and Vietnamese typography
+        run: npx vitest run src/features/print-orders src/features/booking-lifecycle/appendix-print-flow.test.tsx src/design-system/typography.test.ts --maxWorkers=2
+
       - name: Verify locked API contract
         env:
           BACKEND_CONTRACT_READ_TOKEN: ${{ secrets.BACKEND_CONTRACT_READ_TOKEN }}
