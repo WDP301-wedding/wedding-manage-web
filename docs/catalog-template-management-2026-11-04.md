@@ -38,4 +38,5 @@ Validation:
   the current HySelect UI; the focused suites above are green. Other project
   failures remain outside this change; the full suite is not green.
 
-This delivery has not been merged or deployed to production.
+The checks above describe implementation verification. Production release status
+is tracked by the pull request and its main-branch Actions deployment run.
