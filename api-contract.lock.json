@@ -2,8 +2,8 @@
   "version": 1,
   "source": {
     "repository": "https://github.com/WDP301-wedding/wedding-be",
-    "commit": "aed7620d89083ab89d80b6121441152aae4dc1e6",
+    "commit": "1f41ada306e2a08770ec995d3954fcacca3f539b",
     "path": "openapi/openapi.json",
-    "sha256": "13bf2daf6a9c62510bc48b110f87a4867ad14f5f00b0bbef85a4031e8ddc28b2"
+    "sha256": "0e5f29fd8160b287fa18e1287b4d8dc68a006dc847bc0c05d7c246ac4571f1b8"
   }
 }

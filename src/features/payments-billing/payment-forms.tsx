@@ -94,7 +94,9 @@ export function ManualPaymentForm({
   onConfirm: (body: ManualPaymentBody) => Promise<CommandOutcome>;
 }>) {
   const form = useRef<HTMLFormElement>(null);
-  const [draft, setDraft] = useState<ManualPaymentBody | null>(null);
+  const [draft, setDraft] = useState<(ManualPaymentBody & ReturnType<typeof readEvidence>) | null>(
+    null,
+  );
   const [retry, setRetry] = useState(false);
   const review = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -225,7 +227,7 @@ export function RefundForm({
   onConfirm: (body: RefundBody) => Promise<CommandOutcome>;
 }>) {
   const form = useRef<HTMLFormElement>(null);
-  const [draft, setDraft] = useState<RefundBody | null>(null);
+  const [draft, setDraft] = useState<(RefundBody & ReturnType<typeof readEvidence>) | null>(null);
   const [retry, setRetry] = useState(false);
   const payments = booking.history.filter((entry) => entry.kind === 'PAYMENT');
   const review = (event: FormEvent<HTMLFormElement>) => {

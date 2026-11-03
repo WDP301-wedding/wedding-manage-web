@@ -21,7 +21,11 @@ const bookingIdentity = z.object({
 });
 export type AnalyticsBookingsData = Omit<PinnedBookingsData, 'items'> &
   Readonly<{
-    items: readonly (PinnedBookingsData['items'][number] & z.infer<typeof bookingIdentity>)[];
+    items: readonly (Omit<
+      PinnedBookingsData['items'][number],
+      keyof z.infer<typeof bookingIdentity>
+    > &
+      z.infer<typeof bookingIdentity>)[];
   }>;
 export type AnalyticsAttendanceData =
   operations['getAnalyticsAttendance']['responses'][200]['content']['application/json']['data'];

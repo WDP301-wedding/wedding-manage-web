@@ -16,7 +16,10 @@ const capabilityEnvelope = z.object({
     .optional(),
 });
 export type ContractListData = z.infer<typeof capabilityEnvelope> &
-  operations['listCommercialContracts']['responses'][200]['content']['application/json']['data'];
+  Omit<
+    operations['listCommercialContracts']['responses'][200]['content']['application/json']['data'],
+    keyof z.infer<typeof capabilityEnvelope>
+  >;
 export type ContractRevisionItem = ContractListData['revisions'][number];
 
 export type AppendixListData =
