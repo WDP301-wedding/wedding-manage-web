@@ -108,6 +108,7 @@ describe('VC-21 layout template editor', () => {
       wrapper: NotificationProvider,
     });
 
+    fireEvent.click(await screen.findByRole('button', { name: 'Tiếp tục bản nháp' }));
     expect(await screen.findByText('Canvas 10.000 × 10.000')).toBeVisible();
     expect(screen.getByText('20 / 120 ghế')).toBeVisible();
     expect(screen.getByText('Khoảng khách 10–20')).toBeVisible();
@@ -132,6 +133,7 @@ describe('VC-21 layout template editor', () => {
       wrapper: NotificationProvider,
     });
 
+    fireEvent.click(await screen.findByRole('button', { name: 'Tiếp tục bản nháp' }));
     const editor = await screen.findByRole('form', { name: 'Bản nháp Bố trí tiệc ấm cúng' });
     fireEvent.change(within(editor).getByLabelText('Tọa độ X Bàn 01'), {
       target: { value: '9501' },
@@ -170,6 +172,7 @@ describe('VC-21 layout template editor', () => {
       { wrapper: NotificationProvider },
     );
 
+    fireEvent.click(await screen.findByRole('button', { name: 'Tiếp tục bản nháp' }));
     const editor = await screen.findByRole('form', { name: 'Bản nháp Bố trí tiệc ấm cúng' });
     fireEvent.click(within(editor).getByRole('button', { name: 'Bỏ và ngừng vĩnh viễn Bàn 01' }));
     fireEvent.change(within(editor).getByLabelText('Khách tối đa'), {
@@ -186,6 +189,97 @@ describe('VC-21 layout template editor', () => {
         }),
       ),
     );
-    expect(retireLayoutTable).toHaveBeenCalledWith('manager-token', { templateId, tableId });
+    expect(retireLayoutTable).toHaveBeenCalledWith(
+      'manager-token',
+      expect.objectContaining({ templateId, tableId, idempotencyKey: expect.any(String) }),
+    );
+  });
+  it('keeps add, batch and remove operations local until save, and discards them on cancel', async () => {
+    const api = gateway();
+    render(<LayoutPanel gateway={api} authorize={authorize} />, { wrapper: NotificationProvider });
+    fireEvent.click(await screen.findByRole('button', { name: 'Tiếp tục bản nháp' }));
+    const editor = screen.getByRole('form', { name: 'Bản nháp Bố trí tiệc ấm cúng' });
+    fireEvent.click(within(editor).getByRole('button', { name: 'Thêm bàn với UUID mới' }));
+    expect(within(editor).getByLabelText('Tọa độ X Bàn 03')).toBeVisible();
+    fireEvent.click(within(editor).getByRole('button', { name: 'Bỏ và ngừng vĩnh viễn Bàn 01' }));
+    fireEvent.click(within(editor).getByRole('button', { name: 'Mở công cụ tạo nhanh' }));
+    fireEvent.click(within(editor).getByRole('button', { name: 'Tạo nhanh 5 bàn' }));
+    expect(within(editor).getAllByRole('group')).toHaveLength(7);
+    fireEvent.click(within(editor).getByRole('button', { name: 'Hủy' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    for (const method of [
+      api.registerLayoutTable,
+      api.retireLayoutTable,
+      api.updateLayoutDraft,
+      api.cloneLayout,
+      api.publishLayout,
+    ])
+      expect(method).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Tiếp tục bản nháp' }));
+    expect(screen.getByLabelText('Tọa độ X Bàn 01')).toHaveValue(500);
+    expect(screen.queryByLabelText('Tọa độ X Bàn 03')).not.toBeInTheDocument();
+  });
+
+  it('registers only surviving new table identities when saving', async () => {
+    const api = gateway();
+    render(<LayoutPanel gateway={api} authorize={authorize} />, { wrapper: NotificationProvider });
+    fireEvent.click(await screen.findByRole('button', { name: 'Tiếp tục bản nháp' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Thêm bàn với UUID mới' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Thêm bàn với UUID mới' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Bỏ và ngừng vĩnh viễn Bàn 03' }));
+    expect(api.registerLayoutTable).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Lưu bố trí nháp' }));
+    await waitFor(() => expect(api.updateLayoutDraft).toHaveBeenCalled());
+    expect(api.registerLayoutTable).toHaveBeenCalledTimes(1);
+    expect(api.retireLayoutTable).not.toHaveBeenCalled();
+    const input = vi.mocked(api.updateLayoutDraft).mock.calls[0]![1];
+    const surviving = input.tables.find((table) => table.label === 'Bàn 04');
+    expect(api.registerLayoutTable).toHaveBeenCalledWith(
+      'manager-token',
+      expect.objectContaining({ templateId, tableId: surviving?.tableId }),
+    );
+  });
+  it('creates a version only on save and publishes its edited geometry with the saved revision', async () => {
+    const record = snapshot.layouts[0]!;
+    const published = { ...record.versions[0]!, state: 'PUBLISHED' as const, versionNumber: 1 };
+    const api = gateway({
+      loadLayouts: vi.fn(() =>
+        Promise.resolve({
+          halls: snapshot.halls,
+          layouts: [
+            {
+              ...record,
+              currentPublishedVersionId: versionId,
+              draftVersionId: null,
+              versions: [published],
+            },
+          ],
+        }),
+      ),
+    });
+    render(<LayoutPanel gateway={api} authorize={authorize} />, { wrapper: NotificationProvider });
+    fireEvent.click(await screen.findByRole('button', { name: 'Tạo phiên bản mới' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Hủy' }));
+    expect(api.cloneLayout).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Tạo phiên bản mới' }));
+    fireEvent.change(screen.getByLabelText('Tọa độ X Bàn 01'), { target: { value: '900' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Lưu và công bố' }));
+    await waitFor(() => expect(api.publishLayout).toHaveBeenCalled());
+    const clone = vi.mocked(api.cloneLayout).mock.calls[0]![1];
+    expect(clone).toMatchObject({ templateId, sourceVersionId: versionId });
+    expect(api.updateLayoutDraft).toHaveBeenCalledWith(
+      'manager-token',
+      expect.objectContaining({
+        versionId: clone.versionId,
+        expectedRevision: 1,
+        tables: expect.arrayContaining([expect.objectContaining({ tableId, x: 900 })]),
+      }),
+    );
+    expect(api.publishLayout).toHaveBeenCalledWith('manager-token', {
+      versionId: clone.versionId,
+      expectedRevision: 2,
+    });
+    expect(api.registerLayoutTable).not.toHaveBeenCalled();
+    expect(api.retireLayoutTable).not.toHaveBeenCalled();
   });
 });

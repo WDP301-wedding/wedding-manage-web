@@ -84,7 +84,7 @@ export const cx = {
   mediaOrderActions: 'flex gap-1.5 px-4 pb-4',
   mediaUploadForm:
     'grid items-end gap-4 rounded-xl bg-muted p-4 sm:grid-cols-2 lg:grid-cols-[repeat(3,minmax(0,1fr))_auto] [&>div:first-child]:col-span-full',
-  layoutSection: '[&>form]:m-6 [&>div:last-child]:mx-6 [&>div:last-child]:mb-6',
+  layoutSection: '',
   layoutCreate:
     'grid gap-4 sm:grid-cols-2 [&>button]:col-span-full [&>div:first-child]:col-span-full',
   layoutMetaGrid: 'grid gap-4 sm:grid-cols-2',
@@ -101,7 +101,7 @@ export const cx = {
   layoutTableEditor: `grid min-w-0 items-end gap-2.5 rounded-xl border border-border p-4 sm:grid-cols-4 2xl:grid-cols-[minmax(9rem,1.4fr)_repeat(7,minmax(5.5rem,0.7fr))_auto] [&_code]:col-span-full [&_code]:text-2xs [&_code]:break-all [&_label]:flex [&_label]:flex-col [&_label]:gap-1 [&_label]:text-xs [&_label]:font-semibold [&_legend]:px-1.5 [&_legend]:text-xs [&_legend]:font-semibold ${controls}`,
   layoutVersionSummary:
     '[&_small]:mt-1 [&_small]:block [&_small]:text-xs [&_small]:text-muted-foreground',
-  timelineEditor: 'm-6 overflow-hidden rounded-xl border border-border max-sm:m-4',
+  timelineEditor: 'min-w-0 overflow-hidden rounded-xl border border-border',
   timelineEditorHeading:
     'flex flex-wrap items-center justify-between gap-5 border-b border-border px-6 py-5 [&_h3]:text-base [&_h3]:font-semibold',
   timelineActions: 'px-6 pb-6',

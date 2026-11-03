@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { NotificationProvider } from '../../design-system/notifications';
 
 import { ApiClientError } from '../../lib/api/client';
-import type { VenueCatalogGateway } from './catalog-api';
+import type { CatalogGateway, VenueCatalogGateway } from './catalog-api';
 import { VenueCatalogWorkspace } from './catalog-page';
 
 const hallId = '00000000-0000-4000-8000-000000000011';
@@ -97,6 +97,21 @@ describe('VC-18 venue catalog workspace', () => {
     fireEvent.keyDown(screen.getByRole('tab', { name: 'Nhà hàng & sảnh' }), { key: 'ArrowRight' });
     expect(screen.getByRole('tabpanel')).toHaveAttribute('id', 'catalog-panel-food');
   });
+  it('removes the timeline image library while keeping timeline management available', async () => {
+    const api = {
+      ...gateway(),
+      loadTimelines: vi.fn(() => Promise.resolve({ timelines: [] })),
+      loadMediaResources: vi.fn(() => Promise.resolve([])),
+    } as unknown as CatalogGateway;
+    render(<VenueCatalogWorkspace role="MANAGER" gateway={api} authorize={authorize} />, {
+      wrapper: NotificationProvider,
+    });
+    await screen.findByRole('heading', { name: 'Danh mục địa điểm' });
+    fireEvent.click(screen.getByRole('tab', { name: 'Kịch bản tiệc' }));
+    expect(await screen.findByRole('button', { name: 'Thêm kịch bản' })).toBeVisible();
+    expect(screen.queryByText('Thư viện ảnh kịch bản tiệc')).not.toBeInTheDocument();
+  });
+
   it('loads Manager venue state and submits the server revision without inventing authority', async () => {
     const updateRestaurant = vi.fn(() => Promise.resolve());
     const api = gateway({ updateRestaurant });
@@ -143,13 +158,13 @@ describe('VC-18 venue catalog workspace', () => {
     });
 
     await screen.findByText('Sảnh Ánh Dương');
-    fireEvent.change(screen.getByLabelText('Lọc trạng thái sảnh'), {
+    fireEvent.change(screen.getByLabelText('Lọc trạng thái sảnh', { selector: 'select' }), {
       target: { value: 'RETIRED' },
     });
     expect(screen.queryByText('Sảnh Ánh Dương')).not.toBeInTheDocument();
     expect(screen.getByText('Sảnh Hoa Hồng')).toBeVisible();
 
-    fireEvent.change(screen.getByLabelText('Lọc trạng thái sảnh'), {
+    fireEvent.change(screen.getByLabelText('Lọc trạng thái sảnh', { selector: 'select' }), {
       target: { value: 'ACTIVE' },
     });
     const row = screen.getByRole('row', { name: /Sảnh Ánh Dương/u });

@@ -3,7 +3,7 @@ import { HySelect } from '../../components/ui/select-field';
 
 import { hasDirtyCatalogForms, useCatalogLiveRefresh } from './use-catalog-live-refresh';
 
-import { type FormEvent, useCallback, useEffect, useState } from 'react';
+import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 
 import type {
   Authorize,
@@ -14,11 +14,18 @@ import type {
   LayoutWrite,
 } from './catalog-types';
 import { notify } from '../../design-system/notifications';
-import { defaultTable, LayoutDraftEditor, type LayoutVersion } from './layout-draft-editor';
+import {
+  defaultTable,
+  LayoutCanvas,
+  LayoutDraftEditor,
+  type LayoutVersion,
+} from './layout-draft-editor';
 
 import { cx } from './catalog-classes';
 import { integer, layoutErrorMessage, text } from './layout-helpers';
-import { Badge } from '../../components/ui/badge';
+import { PrintOrderDialog } from '../print-orders/print-order-dialog';
+import { TemplateRecordRow, TemplateRecordTable } from './template-record-table';
+import { useTemplateDraft } from './use-template-draft';
 import { cn } from 'cn';
 
 export function LayoutPanel({
@@ -30,6 +37,15 @@ export function LayoutPanel({
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const [creating, setCreating] = useState(false);
+  const pendingRef = useRef(pending);
+  useEffect(() => {
+    pendingRef.current = pending;
+  }, [pending]);
+  const closeCreate = useCallback(() => {
+    if (!pendingRef.current) setCreating(false);
+  }, []);
 
   const load = useCallback(
     async (background = false) => {
@@ -91,30 +107,40 @@ export function LayoutPanel({
     <section className={cn(cx.section, cx.layoutSection)} aria-labelledby="layout-heading">
       <div className={cx.sectionHeading}>
         <h2 id="layout-heading">Mẫu bố trí bàn</h2>
-        <p>
-          Tọa độ chuẩn hóa giúp cùng một sơ đồ hiển thị nhất quán. Giá dịch vụ không được tính theo
-          khách tại đây.
-        </p>
+        <p>Theo dõi bản đang công bố, quản lý bản nháp và xem lịch sử bố cục theo sảnh.</p>
       </div>
       <PanelMessages error={error} message={message} />
-      <CreateLayoutForm
-        halls={halls.filter((hall) => hall.lifecycle === 'ACTIVE')}
-        pending={pending}
-        onSubmit={(input) =>
-          run('Đã tạo bản nháp bố trí.', (token) =>
-            gateway.createLayout(token, {
-              ...input,
-              templateId: crypto.randomUUID(),
-              versionId: crypto.randomUUID(),
-              displayOrder: layouts.length + 1,
-            }),
-          )
-        }
-      />
+      <div className="flex flex-wrap gap-3 border-b border-border p-4 sm:px-6">
+        <button className={cx.primaryButton} type="button" onClick={() => setCreating(true)}>
+          Thêm bố cục bàn
+        </button>
+      </div>
+      {creating && (
+        <PrintOrderDialog label="Thêm bố cục bàn" title="Thêm bố cục bàn" onClose={closeCreate}>
+          <CreateLayoutForm
+            halls={halls.filter((hall) => hall.lifecycle === 'ACTIVE')}
+            pending={pending}
+            onCancel={closeCreate}
+            onSubmit={(input) =>
+              run('Đã tạo bản nháp bố trí.', (token) =>
+                gateway.createLayout(token, {
+                  ...input,
+                  templateId: crypto.randomUUID(),
+                  versionId: crypto.randomUUID(),
+                  displayOrder: layouts.length + 1,
+                }),
+              ).then((ok) => {
+                if (ok) setCreating(false);
+                return ok;
+              })
+            }
+          />
+        </PrintOrderDialog>
+      )}
       {layouts.length === 0 ? (
         <p className={cx.empty}>Chưa có mẫu bố trí. Tạo mẫu đầu tiên cho một sảnh hoạt động.</p>
       ) : (
-        <div className={cx.aggregateList}>
+        <TemplateRecordTable label="Danh sách bố cục bàn" informationHeading="Sảnh & sức chứa">
           {layouts.map((layout) => (
             <LayoutAggregate
               key={layout.id}
@@ -126,17 +152,19 @@ export function LayoutPanel({
               setError={setError}
             />
           ))}
-        </div>
+        </TemplateRecordTable>
       )}
     </section>
   );
 }
 
 function CreateLayoutForm({
+  onCancel,
   halls,
   onSubmit,
   pending,
 }: Readonly<{
+  onCancel: () => void;
   halls: readonly CatalogHall[];
   onSubmit: (input: LayoutWrite & Readonly<{ hallId: string }>) => Promise<boolean>;
   pending: boolean;
@@ -180,6 +208,9 @@ function CreateLayoutForm({
       <LayoutTextField label="Mô tả" name="description" />
       <LayoutNumberField label="Khách tối thiểu" name="minGuests" min={1} defaultValue={1} />
       <LayoutNumberField label="Khách tối đa" name="maxGuests" min={1} defaultValue={10} />
+      <button className={cx.secondaryButton} type="button" disabled={pending} onClick={onCancel}>
+        Hủy
+      </button>
       <button className={cx.primaryButton} type="submit" disabled={pending || halls.length === 0}>
         Tạo với một bàn mẫu
       </button>
@@ -206,116 +237,154 @@ function LayoutAggregate({
   ) => Promise<boolean>;
   setError: (error: string | null) => void;
 }>) {
-  const label =
-    layout.versions.find(({ id }) => id === layout.currentPublishedVersionId)?.name ??
-    layout.versions[0]?.name ??
-    'Bố trí chưa đặt tên';
   return (
-    <article className={cx.aggregate}>
-      <header className={cx.aggregateHeader}>
-        <div>
-          <Badge variant={layout.lifecycle === 'ACTIVE' ? 'success' : 'neutral'}>
-            {layout.lifecycle === 'ACTIVE' ? 'Đang hoạt động' : 'Đã ngừng'}
-          </Badge>
-          <h3>{label}</h3>
-          <small>{hall?.name ?? 'Sảnh không còn khả dụng'}</small>
-        </div>
-        <button
-          className={cx.secondaryButton}
-          type="button"
-          disabled={pending}
-          onClick={() =>
-            void run(
-              layout.lifecycle === 'ACTIVE' ? 'Đã ngừng mẫu bố trí.' : 'Đã khôi phục mẫu bố trí.',
-              (token) =>
-                gateway.changeLayoutLifecycle(token, {
-                  id: layout.id,
-                  expectedRevision: layout.revision,
-                  transition: layout.lifecycle === 'ACTIVE' ? 'RETIRE' : 'RESTORE',
-                }),
-            )
-          }
-        >
-          {layout.lifecycle === 'ACTIVE' ? 'Ngừng' : 'Khôi phục'}
-        </button>
-      </header>
-      <div className={cx.history} role="region" aria-label={`Lịch sử ${label}`}>
-        {layout.versions.map((version) =>
-          version.state === 'DRAFT' ? (
-            <LayoutDraftEditor
-              key={version.id}
-              gateway={gateway}
-              hallMaximum={hall?.maxGuests ?? 0}
-              layout={layout}
-              pending={pending}
-              run={run}
-              setError={setError}
-              version={version}
-            />
-          ) : (
-            <LayoutVersionSummary
-              key={version.id}
-              canClone={layout.draftVersionId === null}
-              layout={layout}
-              pending={pending}
-              run={run}
-              gateway={gateway}
-              version={version}
-            />
-          ),
-        )}
-      </div>
-    </article>
+    <TemplateRecordRow
+      record={layout}
+      pending={pending}
+      information={(version) => (
+        <>
+          <p>{hall?.name ?? 'Sảnh không còn khả dụng'}</p>
+          <p className="mt-1 text-muted-foreground">
+            {version.tables.length} bàn · {version.totalSeatCapacity} ghế
+          </p>
+        </>
+      )}
+      renderVersion={(version) => <LayoutVersionContent hall={hall} version={version} />}
+      editor={(version, close) => (
+        <LayoutVersionEditor
+          key={version.id}
+          version={version}
+          layout={layout}
+          gateway={gateway}
+          hallMaximum={hall?.maxGuests ?? 0}
+          pending={pending}
+          run={run}
+          close={close}
+          setError={setError}
+        />
+      )}
+      onLifecycle={() =>
+        run('Đã cập nhật trạng thái bố cục bàn.', (token) =>
+          gateway.changeLayoutLifecycle(token, {
+            id: layout.id,
+            expectedRevision: layout.revision,
+            transition: layout.lifecycle === 'ACTIVE' ? 'RETIRE' : 'RESTORE',
+          }),
+        )
+      }
+    />
   );
 }
 
-function LayoutVersionSummary({
-  canClone,
-  gateway,
+function LayoutVersionEditor({
+  version,
   layout,
+  gateway,
+  hallMaximum,
   pending,
   run,
-  version,
+  close,
+  setError,
 }: Readonly<{
-  canClone: boolean;
-  gateway: CatalogGateway;
-  layout: CatalogLayout;
-  pending: boolean;
-  run: (successMessage: string, operation: (token: string) => Promise<void>) => Promise<boolean>;
   version: LayoutVersion;
+  layout: CatalogLayout;
+  gateway: CatalogGateway;
+  hallMaximum: number;
+  pending: boolean;
+  run: (success: string, operation: (token: string) => Promise<void>) => Promise<boolean>;
+  close: () => void;
+  setError: (error: string | null) => void;
 }>) {
+  const checkpoint = useTemplateDraft(version);
+  const keys = useRef(new Map<string, string>());
+  const commandKey = (command: string) => {
+    let key = keys.current.get(command);
+    if (!key) {
+      key = crypto.randomUUID();
+      keys.current.set(command, key);
+    }
+    return key;
+  };
   return (
-    <div className={cn(cx.versionRow, cx.layoutVersionSummary)}>
-      <div>
-        <span className={cx.versionState}>
-          {version.state === 'PUBLISHED' ? 'Đã công bố' : 'Đã thay thế'} · v
-          {version.versionNumber ?? '—'}
-        </span>
-        <strong>{version.name}</strong>
-        <small>
-          {version.totalSeatCapacity} ghế · {version.tables.length} bàn · chỉ đọc
-        </small>
-      </div>
-      {canClone ? (
-        <button
-          className={cx.secondaryButton}
-          type="button"
-          disabled={pending}
-          aria-label={`Nhân bản phiên bản ${version.versionNumber ?? ''}`}
-          onClick={() =>
-            void run('Đã nhân bản bố trí thành bản nháp.', (token) =>
-              gateway.cloneLayout(token, {
+    <LayoutDraftEditor
+      version={version}
+      hallMaximum={hallMaximum}
+      pending={pending}
+      onCancel={close}
+      setError={setError}
+      onSave={(input, retirements, publish) =>
+        run(publish ? 'Đã công bố bố cục bàn.' : 'Đã lưu bố trí nháp.', async (token) => {
+          const draft = await checkpoint.prepare((intent) =>
+            gateway.cloneLayout(token, { templateId: layout.id, ...intent }),
+          );
+          for (const table of input.tables) {
+            if (!layout.tables.some(({ id }) => id === table.tableId)) {
+              await gateway.registerLayoutTable(token, {
                 templateId: layout.id,
-                sourceVersionId: version.id,
-                versionId: crypto.randomUUID(),
-              }),
-            )
+                tableId: table.tableId,
+                idempotencyKey: commandKey(`register:${table.tableId}`),
+              });
+            }
           }
-        >
-          Nhân bản
-        </button>
-      ) : null}
-    </div>
+          await gateway.updateLayoutDraft(token, {
+            ...input,
+            versionId: draft.id,
+            expectedRevision: draft.revision,
+          });
+          checkpoint.saved();
+          for (const tableId of retirements) {
+            if (layout.tables.some((table) => table.id === tableId && table.retiredAt === null)) {
+              await gateway.retireLayoutTable(token, {
+                templateId: layout.id,
+                tableId,
+                idempotencyKey: commandKey(`retire:${tableId}`),
+              });
+            }
+          }
+          if (publish)
+            await gateway.publishLayout(token, {
+              versionId: draft.id,
+              expectedRevision: draft.revision + 1,
+            });
+        }).then((ok) => {
+          if (ok) close();
+          return ok;
+        })
+      }
+    />
+  );
+}
+
+function LayoutVersionContent({
+  hall,
+  version,
+}: Readonly<{ hall: CatalogHall | undefined; version: LayoutVersion }>) {
+  return (
+    <>
+      <p>
+        {hall?.name ?? 'Sảnh không còn khả dụng'} · {version.tables.length} bàn ·{' '}
+        {version.totalSeatCapacity} ghế
+      </p>
+      <p>
+        Khoảng khách {version.minGuests}–{version.maxGuests}
+      </p>
+      <LayoutCanvas tables={version.tables} />
+      <ul className="divide-y divide-border" aria-label="Danh sách bàn">
+        {[...version.tables]
+          .sort((a, b) => a.displayOrder - b.displayOrder)
+          .map((table) => (
+            <li key={table.tableId} className="py-3">
+              <p className="font-semibold">
+                {table.label} · {table.seatCapacity} ghế
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {table.shape === 'ROUND' ? 'Bàn tròn' : 'Bàn chữ nhật'} · Tọa độ ({table.x},{' '}
+                {table.y}) · {table.width} × {table.height} · Góc {table.rotationDegrees}°
+              </p>
+            </li>
+          ))}
+      </ul>
+    </>
   );
 }
 
