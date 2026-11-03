@@ -4,6 +4,7 @@ import { type FormEvent, useMemo, useState } from 'react';
 import type { CatalogGateway, CatalogMenu } from './catalog-api';
 import {
   AggregateHeader,
+  formatVnd,
   integer,
   LabeledInput,
   text,
@@ -22,7 +23,7 @@ export function MenuDraftEditor({
   run,
   version,
 }: Readonly<{
-  dishOptions: readonly { id: string; label: string }[];
+  dishOptions: readonly { id: string; label: string; priceVnd?: number | null }[];
   gateway: CatalogGateway;
   pending: boolean;
   run: (success: string, operation: (token: string) => Promise<void>) => Promise<boolean>;
@@ -43,6 +44,16 @@ export function MenuDraftEditor({
       (option, index, all) => all.findIndex(({ id }) => id === option.id) === index,
     );
   }, [dishOptions, version.items]);
+
+  const totalItemsPrice = useMemo(() => {
+    const priceMap = new Map<string, number>();
+    for (const opt of dishOptions) {
+      if (typeof opt.priceVnd === 'number') {
+        priceMap.set(opt.id, opt.priceVnd);
+      }
+    }
+    return items.reduce((sum, id) => sum + (priceMap.get(id) ?? 0), 0);
+  }, [items, dishOptions]);
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -103,6 +114,16 @@ export function MenuDraftEditor({
         </button>
       </div>
       <OrderedVersionList items={items} options={options} onChange={setItems} />
+      {totalItemsPrice > 0 ? (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-muted/60 px-3 py-2 text-xs">
+          <span className="text-muted-foreground">
+            Tổng giá các món đơn lẻ ({items.length} món):
+          </span>
+          <strong className="font-semibold text-foreground">
+            {formatVnd(totalItemsPrice)}
+          </strong>
+        </div>
+      ) : null}
       <div className={cx.formActions}>
         <button
           className={cx.secondaryButton}
@@ -141,7 +162,7 @@ export function MenuVersionRow({
   version,
 }: Readonly<{
   canClone: boolean;
-  dishOptions: readonly { id: string; label: string }[];
+  dishOptions: readonly { id: string; label: string; priceVnd?: number | null }[];
   gateway: CatalogGateway;
   menuId: string;
   pending: boolean;
@@ -191,7 +212,7 @@ export function MenuAggregate({
   pending,
   run,
 }: Readonly<{
-  dishOptions: readonly { id: string; label: string }[];
+  dishOptions: readonly { id: string; label: string; priceVnd?: number | null }[];
   gateway: CatalogGateway;
   menu: CatalogMenu;
   pending: boolean;

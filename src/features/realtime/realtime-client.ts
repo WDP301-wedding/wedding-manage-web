@@ -10,6 +10,7 @@ export type RealtimeEventType =
   | 'contract.updated'
   | 'deposit.received'
   | 'billing.updated'
+  | 'staff.updated'
   | 'guest.updated'
   | 'seating.updated'
   | 'print_order.updated'

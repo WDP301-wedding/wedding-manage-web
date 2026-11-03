@@ -1,4 +1,6 @@
-import { type FormEvent, useEffect, useState } from 'react';
+import { useStaffEventContext } from './use-staff-event-context';
+import { staffCommand } from './staff-command-intents';
+import { type FormEvent, useEffect, useRef, useState } from 'react';
 import { useLiveRefresh } from '../realtime/use-live-refresh';
 import {
   staffService,
@@ -8,26 +10,58 @@ import {
 import { notify } from '../../design-system/notifications';
 import { describeApiError } from '../../lib/api/api-errors';
 
-export type StaffTab = 'checkin' | 'management';
+export type StaffTab = 'checkin' | 'management' | 'timeline' | 'seating' | 'work';
 
 // BE ghi lý do vào nhật ký: hoàn tác, thu hồi phân công và mọi thao tác của quản lý cần ≥ 10 ký tự.
 const minReasonLength = 10;
-const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/iu;
 
 export function useStaffOperations({
   authenticated,
   isManager,
-}: Readonly<{ authenticated: boolean; isManager: boolean }>) {
+  accountId = '',
+}: Readonly<{ authenticated: boolean; isManager: boolean; accountId?: string }>) {
   const [pending, setPending] = useState(false);
   const [activeTab, setActiveTab] = useState<StaffTab>('checkin');
 
-  const [bookingId, setBookingId] = useState('');
+  const eventContext = useStaffEventContext(authenticated, accountId, pending);
+  const { bookingId, setBookingId, eventId, resolveEventId } = eventContext;
+  const input = bookingId.trim();
   const [searchQuery, setSearchQuery] = useState('');
-  const [guests, setGuests] = useState<readonly GuestSearchResultItem[]>([]);
+  const [result, setResult] = useState<{
+    bookingId: string;
+    accountId: string;
+    query: string;
+    items: readonly GuestSearchResultItem[];
+    nextCursor: string | null;
+  } | null>(null);
+  const inputRef = useRef(bookingId);
+  useEffect(() => {
+    inputRef.current = bookingId;
+  }, [bookingId]);
+  const currentSearch = useRef('');
+  useEffect(() => {
+    currentSearch.current = `${eventId}:${searchQuery.trim()}`;
+  }, [eventId, searchQuery]);
+  const guests =
+    result?.bookingId === eventId &&
+    result.accountId === accountId &&
+    result.query === searchQuery.trim()
+      ? result.items
+      : [];
+  const mutationLock = useRef(false);
+  const searchVersion = useRef(0);
   const [searching, setSearching] = useState(false);
   const [searched, setSearched] = useState(false);
 
-  const [assignments, setAssignments] = useState<readonly EventAssignmentItem[]>([]);
+  const [assignmentResult, setAssignmentResult] = useState<{
+    bookingId: string;
+    accountId: string;
+    items: readonly EventAssignmentItem[];
+  } | null>(null);
+  const assignments =
+    assignmentResult?.bookingId === eventId && assignmentResult.accountId === accountId
+      ? assignmentResult.items
+      : [];
   const [loadingAssignments, setLoadingAssignments] = useState(false);
   const [actionReason, setActionReason] = useState('');
   const reason = actionReason.trim();
@@ -37,45 +71,7 @@ export function useStaffOperations({
     return false;
   };
   const [staffAccountId, setStaffAccountId] = useState('');
-
-  // Ô "Mã tiệc" nhận mã HY (quản lý tra cứu được) hoặc mã UUID; API tác nghiệp chỉ nhận UUID.
-  const [resolved, setResolved] = useState<{ input: string; id: string } | null>(null);
-  const input = bookingId.trim();
-  const eventId = uuidPattern.test(input) ? input : resolved?.input === input ? resolved.id : '';
-
-  const resolveEventId = async (): Promise<string | null> => {
-    if (eventId) return eventId;
-    if (!input) {
-      notify.warning('Vui lòng nhập mã tiệc (ví dụ HY-000018).');
-      return null;
-    }
-    if (!isManager) {
-      notify.warning(
-        'Tài khoản nhân viên chưa tra cứu được mã HY. Hãy mở bàn đón khách bằng liên kết tiệc do quản lý gửi.',
-      );
-      return null;
-    }
-    const matches = await staffService.lookupBookings(input);
-    const exact = matches.filter((item) => item.bookingCode === input.toUpperCase());
-    const pick = exact.length === 1 ? exact : matches;
-    if (pick.length === 1 && pick[0]) {
-      setResolved({ input, id: pick[0].bookingId });
-      return pick[0].bookingId;
-    }
-    notify.warning(
-      pick.length === 0
-        ? `Không tìm thấy tiệc khớp “${input}”.`
-        : `Có ${pick.length} tiệc khớp “${input}”. Hãy nhập đủ mã HY.`,
-    );
-    return null;
-  };
-
-  useEffect(() => {
-    const bId = new URLSearchParams(window.location.search).get('bookingId');
-    if (bId !== null && /^[a-f0-9-]{36}$/iu.test(bId)) {
-      setBookingId(bId);
-    }
-  }, []);
+  const [staffAccountLabel, setStaffAccountLabel] = useState('');
 
   const handleSearchGuests = async (event?: FormEvent) => {
     if (event) event.preventDefault();
@@ -84,12 +80,21 @@ export function useStaffOperations({
       notify.warning('Nhập ít nhất 2 ký tự họ tên hoặc số điện thoại của khách.');
       return;
     }
+    const request = ++searchVersion.current;
     setSearching(true);
     try {
       const id = await resolveEventId();
       if (!id) return;
       const res = await staffService.searchGuests(id, searchQuery.trim());
-      setGuests(res.items);
+      // A different event/query must never inherit old search results.
+      if (
+        request === searchVersion.current &&
+        (currentSearch.current === `${id}:${searchQuery.trim()}` ||
+          (!eventId &&
+            inputRef.current.trim() === input &&
+            currentSearch.current.endsWith(`:${searchQuery.trim()}`)))
+      )
+        setResult({ bookingId: id, accountId, query: searchQuery.trim(), ...res });
       setSearched(true);
       if (res.items.length === 0) {
         notify.info('Không tìm thấy khách mời nào phù hợp.');
@@ -99,57 +104,103 @@ export function useStaffOperations({
         fallbackMessage: 'Không thể tra cứu khách mời. Vui lòng kiểm tra lại mã tiệc.',
       });
     } finally {
-      setSearching(false);
+      if (request === searchVersion.current) setSearching(false);
     }
   };
 
   const handleCheckIn = async (guestId: string) => {
+    if (mutationLock.current || !guests.some((g) => g.guestId === guestId)) return;
     if (
       isManager &&
       !requireReason('Tài khoản quản lý cần ghi lý do (ít nhất 10 ký tự) trước khi check-in.')
     )
       return;
+    mutationLock.current = true;
     setPending(true);
     try {
-      await staffService.checkInGuest(eventId, guestId, isManager ? reason : undefined);
+      await staffCommand(
+        `${accountId}:${eventId}:check-in:${guestId}:${guests.find((g) => g.guestId === guestId)?.ledgerRevision}`,
+        { guestId, ...(isManager ? { overrideReason: reason } : {}) },
+        (key) => staffService.checkInGuest(eventId, guestId, isManager ? reason : undefined, key),
+      );
       notify.success('Đã check-in thành công cho khách mời.');
       await handleSearchGuests();
     } catch (err) {
       notify.error(err, { fallbackMessage: describeApiError(err).message });
     } finally {
+      mutationLock.current = false;
       setPending(false);
     }
   };
 
   const handleUndoCheckIn = async (guestId: string) => {
+    if (mutationLock.current || !guests.some((g) => g.guestId === guestId)) return;
     if (!requireReason('Ghi lý do hoàn tác (ít nhất 10 ký tự) trước khi hoàn tác check-in.'))
       return;
+    mutationLock.current = true;
     setPending(true);
     try {
       const guest = guests.find((item) => item.guestId === guestId);
       if (!guest) return;
-      await staffService.undoCheckIn(
-        eventId,
-        guestId,
-        guest.ledgerRevision,
-        reason,
-        isManager ? reason : undefined,
+      await staffCommand(
+        `${accountId}:${eventId}:undo:${guestId}:${guest.ledgerRevision}`,
+        { guestId, revision: guest.ledgerRevision, reason, isManager },
+        (key) =>
+          staffService.undoCheckIn(
+            eventId,
+            guestId,
+            guest.ledgerRevision,
+            reason,
+            isManager ? reason : undefined,
+            key,
+            guest.checkInRecordId ?? undefined,
+          ),
       );
       notify.success('Đã hoàn tác check-in.');
       await handleSearchGuests();
     } catch (err) {
       notify.error(err, { fallbackMessage: describeApiError(err).message });
     } finally {
+      mutationLock.current = false;
       setPending(false);
     }
   };
 
+  const handleMoreGuests = async () => {
+    if (
+      !result?.nextCursor ||
+      searching ||
+      result.bookingId !== eventId ||
+      result.query !== searchQuery.trim()
+    )
+      return;
+    const scope = currentSearch.current;
+    const request = ++searchVersion.current;
+    setSearching(true);
+    try {
+      const res = await staffService.searchGuests(eventId, result.query, result.nextCursor);
+      if (request === searchVersion.current && currentSearch.current === scope)
+        setResult({
+          bookingId: eventId,
+          accountId,
+          query: result.query,
+          items: [...new Map([...result.items, ...res.items].map((g) => [g.guestId, g])).values()],
+          nextCursor: res.nextCursor,
+        });
+    } catch (err) {
+      notify.error(err);
+    } finally {
+      setSearching(false);
+    }
+  };
   const handleLoadAssignments = async () => {
     setLoadingAssignments(true);
     try {
       const id = await resolveEventId();
       if (!id) return;
-      setAssignments(await staffService.getEventAssignments(id));
+      const items = await staffService.getEventAssignments(id);
+      if (inputRef.current.trim() === input)
+        setAssignmentResult({ bookingId: id, accountId, items });
     } catch (err) {
       notify.error(err);
     } finally {
@@ -160,12 +211,14 @@ export function useStaffOperations({
   useLiveRefresh(
     async (isCurrent) => {
       try {
-        if (activeTab === 'checkin' && searched) {
+        if (activeTab === 'checkin' && searched && searchQuery.trim().length >= 2) {
+          const request = ++searchVersion.current;
           const res = await staffService.searchGuests(eventId, searchQuery.trim());
-          if (isCurrent()) setGuests(res.items);
+          if (isCurrent() && request === searchVersion.current)
+            setResult({ bookingId: eventId, accountId, query: searchQuery.trim(), ...res });
         } else if (activeTab === 'management' && isManager) {
           const res = await staffService.getEventAssignments(eventId);
-          if (isCurrent()) setAssignments(res);
+          if (isCurrent()) setAssignmentResult({ bookingId: eventId, accountId, items: res });
         }
       } catch (err) {
         if (isCurrent()) notify.error(err);
@@ -176,7 +229,8 @@ export function useStaffOperations({
       bookingId: eventId,
       enabled: Boolean(eventId) && authenticated,
       blocked: pending || searching || loadingAssignments,
-      types: ['guest.updated', 'booking.updated'],
+      invalidateOnBlock: true,
+      types: ['guest.updated', 'staff.updated', 'booking.updated'],
     },
   );
 
@@ -187,11 +241,16 @@ export function useStaffOperations({
 
     setPending(true);
     try {
-      const res = await staffService.provisionStaffAccount({ email });
+      const res = await staffCommand(
+        `${accountId}:staff-provision`,
+        { email: email.trim().toLowerCase() },
+        (key) => staffService.provisionStaffAccount({ email }, key),
+      );
       notify.success(
-        `Đã tạo/tìm thấy tài khoản nhân viên ${email} (ID: ${res.accountId}). Bạn có thể phân công ngay bên dưới.`,
+        `Đã chuẩn bị tài khoản ${email}. ${res.credentialSetupRequired ? 'Nhân viên cần thiết lập mật khẩu qua luồng Quên mật khẩu trước khi đăng nhập.' : 'Nhân viên dùng tài khoản hiện có.'}`,
       );
       setStaffAccountId(res.accountId);
+      setStaffAccountLabel(email);
       form.reset();
     } catch (err) {
       notify.error(err, { fallbackMessage: 'Không thể cấp tài khoản nhân viên.' });
@@ -211,16 +270,23 @@ export function useStaffOperations({
       const id = await resolveEventId();
       if (!id) return;
       // Cấp lại cho người đã từng được phân công thì gửi revision hiện tại; phân công mới là 0.
-      const previous = assignments.find((item) => item.staffAccountId === staffId.trim());
-      await staffService.assignStaff({
+      const latestAssignments = await staffService.getEventAssignments(id);
+      const previous = latestAssignments.find((item) => item.staffAccountId === staffId.trim());
+      const body = {
         bookingId: id,
         staffAccountId: staffId.trim(),
         expectedRevision: previous?.revision ?? 0,
-      });
+      };
+      await staffCommand(
+        `${accountId}:${id}:assign:${staffId.trim()}:${body.expectedRevision}`,
+        body,
+        (key) => staffService.assignStaff(body, key),
+      );
       notify.success('Phân công nhân sự vào tiệc thành công!');
       await handleLoadAssignments();
       form.reset();
       setStaffAccountId('');
+      setStaffAccountLabel('');
     } catch (err) {
       notify.error(err, { fallbackMessage: 'Phân công nhân sự thất bại.' });
     } finally {
@@ -234,7 +300,12 @@ export function useStaffOperations({
     if (!requireReason('Ghi lý do thu hồi (ít nhất 10 ký tự) trước khi thu hồi phân công.')) return;
     setPending(true);
     try {
-      await staffService.revokeAssignment(eventId, assignmentId, assignment.revision, reason);
+      await staffCommand(
+        `${accountId}:${eventId}:revoke:${assignmentId}:${assignment.revision}`,
+        { assignmentId, revision: assignment.revision, reason },
+        (key) =>
+          staffService.revokeAssignment(eventId, assignmentId, assignment.revision, reason, key),
+      );
       notify.success('Đã thu hồi phân công nhân sự.');
       await handleLoadAssignments();
     } catch (err) {
@@ -250,6 +321,11 @@ export function useStaffOperations({
   };
 
   return {
+    eventContext,
+    handleMoreGuests,
+    hasMoreGuests: Boolean(
+      result?.bookingId === eventId && result.query === searchQuery.trim() && result.nextCursor,
+    ),
     pending,
     activeTab,
     openTab,
@@ -262,6 +338,7 @@ export function useStaffOperations({
     assignments,
     loadingAssignments,
     staffAccountId,
+    staffAccountLabel,
     setStaffAccountId,
     actionReason,
     setActionReason,

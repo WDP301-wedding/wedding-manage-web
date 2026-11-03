@@ -101,6 +101,12 @@ const codeMessages: Record<string, string> = {
     'Bàn check-in chỉ mở trong khung giờ của tiệc. Ngoài giờ, quản lý check-in và ghi lý do.',
   MANAGER_OVERRIDE_REQUIRED: 'Tài khoản quản lý cần ghi lý do cho thao tác check-in này.',
   EVENT_ASSIGNMENT_REQUIRED: 'Bạn chưa được phân công vào tiệc này nên chưa mở được bàn check-in.',
+  STAFF_WORK_REVISION_STALE:
+    'Nội dung tác nghiệp đã có phiên bản mới. Đóng phần sửa và mở lại dữ liệu hiện tại.',
+  STAFF_WORK_ACTION_FORBIDDEN:
+    'Bạn chưa được phân công thực hiện thao tác này. Liên hệ Manager để điều phối.',
+  STAFF_HANDOVER_ACK_REQUIRED:
+    'Người nhận bàn giao phải khác người gửi và xác nhận đã nhận bàn giao.',
   CHECK_IN_DISABLED: 'Tiệc này chưa bật check-in theo tên khách.',
   GUEST_NOT_FOUND: 'Không tìm thấy thông tin khách mời trong danh sách tiệc.',
   GUEST_ALREADY_CHECKED_IN: 'Khách này đã được điểm danh trước đó.',

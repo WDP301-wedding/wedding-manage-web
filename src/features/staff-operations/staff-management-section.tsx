@@ -21,6 +21,7 @@ import {
 export interface StaffManagementSectionProps {
   bookingId: string;
   staffAccountId: string;
+  staffAccountLabel?: string;
   setStaffAccountId: (id: string) => void;
   pending: boolean;
   assignments: readonly EventAssignmentItem[];
@@ -47,7 +48,7 @@ function AssignmentsTable({
       <table className={tableClass}>
         <thead className="bg-muted">
           <tr>
-            <th className={thClass}>Mã nhân viên</th>
+            <th className={thClass}>Nhân viên</th>
             <th className={thClass}>Trạng thái</th>
             <th className={thClass}>Phiên bản</th>
             <th className={cn(thClass, 'text-right')}>Hành động</th>
@@ -57,7 +58,7 @@ function AssignmentsTable({
           {assignments.map((item) => (
             <tr key={item.assignmentId} className="border-t border-border">
               <td className={tdClass}>
-                <code className="font-mono text-xs break-all">{item.staffAccountId}</code>
+                <span>{item.staffLabel ?? 'Nhân viên chưa có tên hiển thị'}</span>
               </td>
               <td className={tdClass}>
                 {item.status === 'ACTIVE' ? (
@@ -91,7 +92,7 @@ function AssignmentsTable({
 export function StaffManagementSection({
   bookingId,
   staffAccountId,
-  setStaffAccountId,
+  staffAccountLabel = '',
   pending,
   assignments,
   loadingAssignments,
@@ -138,26 +139,25 @@ export function StaffManagementSection({
           </div>
           <form onSubmit={onAssignStaff} className="flex flex-col gap-3">
             <label className={labelClass}>
-              Mã tài khoản nhân sự
+              Nhân viên đã chuẩn bị
               <Input
                 className="font-normal"
-                name="staffAccountId"
-                required
-                value={staffAccountId}
-                onChange={(e) => setStaffAccountId(e.target.value)}
-                placeholder="Mã tài khoản nhân viên"
+                readOnly
+                value={staffAccountLabel}
+                placeholder="Cấp/tìm tài khoản bằng email trước"
               />
             </label>
+            <input type="hidden" name="staffAccountId" value={staffAccountId} />
             <Button
               type="submit"
               variant="outline"
               className="self-start"
-              disabled={pending || !bookingId.trim()}
+              disabled={pending || !bookingId.trim() || !staffAccountId}
             >
               Phân công vào tiệc hiện tại
             </Button>
             {!bookingId.trim() && (
-              <p className={cardHintClass}>Nhập mã tiệc ở tab Đón khách &amp; Check-in trước.</p>
+              <p className={cardHintClass}>Chọn tiệc ở đầu trang trước khi phân công.</p>
             )}
           </form>
         </div>

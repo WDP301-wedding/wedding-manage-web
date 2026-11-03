@@ -100,6 +100,17 @@ export function VenueHallsSection({
                         className={cx.secondaryButton}
                         type="button"
                         onClick={() => {
+                          const el = document.getElementById('media-hall');
+                          el?.scrollIntoView({ behavior: 'smooth' });
+                        }}
+                        aria-label={`Ảnh ${hall.name}`}
+                      >
+                        Ảnh
+                      </button>
+                      <button
+                        className={cx.secondaryButton}
+                        type="button"
+                        onClick={() => {
                           setCreatingHall(false);
                           setEditingHall(hall);
                         }}

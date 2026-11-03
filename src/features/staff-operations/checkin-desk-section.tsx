@@ -23,6 +23,8 @@ export interface CheckinDeskSectionProps {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   searching: boolean;
+  available?: boolean;
+  seatingStatus?: 'ABSENT' | 'DRAFT' | 'CONFIRMED' | 'REQUIRES_REVIEW';
   pending: boolean;
   guests: readonly GuestSearchResultItem[];
   onSearchGuests: (event?: FormEvent) => Promise<void>;
@@ -125,7 +127,8 @@ function GuestRow({
 
 export function CheckinDeskSection({
   bookingId,
-  setBookingId,
+  available = true,
+  seatingStatus = 'ABSENT',
   searchQuery,
   setSearchQuery,
   searching,
@@ -146,26 +149,18 @@ export function CheckinDeskSection({
             Bàn đón tiếp &amp; Tra cứu khách mời
           </h2>
           <p className={cardHintClass}>
-            Nhập mã tiệc (mã HY) và ít nhất 2 ký tự họ tên hoặc số điện thoại của khách.
+            Tra cứu trong tiệc đã chọn. Nhập ít nhất 2 ký tự họ tên hoặc số điện thoại của khách.
           </p>
         </div>
 
-        <form
-          onSubmit={onSearchGuests}
-          className="grid gap-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end"
-        >
-          <label className={labelClass}>
-            Mã tiệc
-            <Input
-              id="staff-booking-id"
-              className="font-normal"
-              required
-              placeholder="VD: HY-000018"
-              value={bookingId}
-              onChange={(e) => setBookingId(e.target.value)}
-              onBlur={() => setBookingId(bookingId.trim())}
-            />
-          </label>
+        {seatingStatus !== 'CONFIRMED' && (
+          <p className="text-sm text-muted-foreground">
+            {seatingStatus === 'ABSENT'
+              ? 'Chưa có sơ đồ bàn; liên hệ Manager để hướng dẫn khách.'
+              : 'Sơ đồ bàn đang là bản nháp hoặc cần rà soát. Xác nhận với Manager trước khi chỉ bàn cho khách.'}
+          </p>
+        )}
+        <form onSubmit={onSearchGuests} className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
           <label className={labelClass}>
             Họ tên hoặc SĐT khách
             <Input
@@ -176,7 +171,7 @@ export function CheckinDeskSection({
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </label>
-          <Button type="submit" disabled={searching || !bookingId.trim()}>
+          <Button type="submit" disabled={searching || !bookingId.trim() || !available}>
             {searching ? 'Đang tìm…' : 'Tra cứu khách'}
           </Button>
         </form>
@@ -203,7 +198,7 @@ export function CheckinDeskSection({
 
         {guests.length === 0 ? (
           <p className="rounded-xl border border-dashed border-input px-6 py-10 text-center text-muted-foreground">
-            Chưa có khách mời nào được hiển thị. Hãy nhập mã tiệc và bấm tra cứu.
+            Chưa có kết quả. Chọn tiệc và tra cứu khách để bắt đầu.
           </p>
         ) : (
           <div

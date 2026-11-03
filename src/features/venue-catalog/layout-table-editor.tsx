@@ -1,6 +1,7 @@
 'use client';
 
 import type { LayoutTableWrite } from './catalog-api';
+import { cn } from 'cn';
 
 import { cx } from './catalog-classes';
 export const CANVAS_SIZE = 10_000;
@@ -37,16 +38,24 @@ export function TableNumber({
 export function TableEditor({
   onChange,
   onRemove,
+  selected = false,
   table,
 }: Readonly<{
   onChange: (table: LayoutTableWrite) => void;
   onRemove: () => void;
+  selected?: boolean;
   table: LayoutTableWrite;
 }>) {
   const number = (key: keyof LayoutTableWrite, value: string) =>
     onChange({ ...table, [key]: Number.parseInt(value, 10) || 0 });
   return (
-    <fieldset className={cx.layoutTableEditor}>
+    <fieldset
+      id={`table-editor-${table.tableId}`}
+      className={cn(
+        cx.layoutTableEditor,
+        selected && 'border-primary ring-1 ring-primary bg-accent/10',
+      )}
+    >
       <legend>{table.label}</legend>
       <code title="Danh tính bàn ổn định">{table.tableId}</code>
       <label>

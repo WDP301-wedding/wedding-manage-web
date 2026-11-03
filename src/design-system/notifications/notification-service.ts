@@ -27,8 +27,7 @@ const KNOWN_CODE_TRANSLATIONS: Record<string, string> = {
   REQUEST_FAILED: 'Yêu cầu không thành công. Vui lòng thử lại sau.',
   NETWORK_ERROR: 'Lỗi kết nối mạng. Vui lòng kiểm tra lại đường truyền.',
   REQUEST_TIMEOUT: 'Yêu cầu vượt quá thời gian chờ. Vui lòng thử lại.',
-  IDEMPOTENCY_KEY_REUSED:
-    'Thao tác bị trùng khoá với yêu cầu trước đó. Vui lòng tải lại trang.',
+  IDEMPOTENCY_KEY_REUSED: 'Thao tác bị trùng khoá với yêu cầu trước đó. Vui lòng tải lại trang.',
   REQUEST_IN_PROGRESS: 'Yêu cầu trước đang được xử lý trên máy chủ. Vui lòng đợi trong giây lát.',
   VALIDATION_FAILED: 'Dữ liệu nhập chưa hợp lệ. Vui lòng kiểm tra lại các trường thông tin.',
   VALIDATION_ERROR: 'Dữ liệu không đáp ứng quy chuẩn. Vui lòng kiểm tra lại các trường thông tin.',
@@ -84,8 +83,7 @@ const KNOWN_CODE_TRANSLATIONS: Record<string, string> = {
   CONTRACT_PRINT_QUANTITY_ALLOCATED: 'Không thể giảm số lượng in đã đưa vào quy trình sản xuất.',
   CONTRACT_PRINT_TEMPLATE_CONFLICT:
     'Quy cách in không phù hợp với mẫu thiệp đã lưu trong hợp đồng.',
-  CONTRACT_PRINT_SOURCE_CONFLICT:
-    'Mẫu hoặc giá in không khớp với hợp đồng tiệc.',
+  CONTRACT_PRINT_SOURCE_CONFLICT: 'Mẫu hoặc giá in không khớp với hợp đồng tiệc.',
   SETTLED_CONTRACT_REQUIRED:
     'Tiệc này chưa có hợp đồng thương mại gốc đã cọc. Vui lòng lập và duyệt hợp đồng chính thức trước khi thao tác phụ lục.',
   APPENDIX_APPROVAL_REQUIRED: 'Phụ lục hợp đồng cần sự phê duyệt đồng thuận từ cả hai bên.',
@@ -95,15 +93,19 @@ const KNOWN_CODE_TRANSLATIONS: Record<string, string> = {
   BILLING_RECORD_NOT_FOUND: 'Không tìm thấy hồ sơ thanh toán.',
   BILLING_ACCESS_DENIED: 'Phiên đăng nhập hoặc quyền xem hồ sơ không còn hợp lệ.',
   STALE_BILLING_REVISION: 'Số dư đã thay đổi. Hãy làm mới và kiểm tra lại trước khi xác nhận.',
-  DEPOSIT_INTENT_ACTIVE: 'Đang có giao dịch đặt cọc chờ xử lý. Vui lòng kiểm tra lại sổ cái thanh toán.',
-  PAYMENT_ATTEMPT_ACTIVE: 'Đang có giao dịch chưa rõ kết quả. Vui lòng đối soát trước khi thao tác.',
-  DEPOSIT_NOT_ELIGIBLE: 'Hồ sơ chưa đủ điều kiện nhận cọc. Hãy kiểm tra lịch giữ chỗ và kịch bản đã duyệt.',
+  DEPOSIT_INTENT_ACTIVE:
+    'Đang có giao dịch đặt cọc chờ xử lý. Vui lòng kiểm tra lại sổ cái thanh toán.',
+  PAYMENT_ATTEMPT_ACTIVE:
+    'Đang có giao dịch chưa rõ kết quả. Vui lòng đối soát trước khi thao tác.',
+  DEPOSIT_NOT_ELIGIBLE:
+    'Hồ sơ chưa đủ điều kiện nhận cọc. Hãy kiểm tra lịch giữ chỗ và kịch bản đã duyệt.',
   DEPOSIT_NOT_SETTLED: 'Tiền cọc chưa được xác nhận hoàn tất.',
   PAYMENT_EVIDENCE_CONFLICT: 'Số tiền hoặc chứng từ không khớp với thỏa thuận cọc của hồ sơ tiệc.',
   PAYMENT_OUTCOME_UNKNOWN: 'Giao dịch chưa rõ kết quả. Vui lòng kiểm tra trạng thái thanh toán.',
   PAYMENT_QUERY_COOLDOWN: 'Cổng thanh toán yêu cầu chờ trước khi tra cứu lại giao dịch.',
   PAYMENT_PROVIDER_UNAVAILABLE: 'Chưa kết nối được cổng thanh toán để xác minh kết quả.',
-  EVENT_NOT_ENDED: 'Tiệc chưa kết thúc; chỉ được chốt chi phí phát sinh và hoá đơn sau khi tan tiệc.',
+  EVENT_NOT_ENDED:
+    'Tiệc chưa kết thúc; chỉ được chốt chi phí phát sinh và hoá đơn sau khi tan tiệc.',
   INVOICE_FINALIZED: 'Hoá đơn quyết toán cuối đã được chốt và khoá sổ.',
   INVOICE_FINALIZATION_REQUIRED: 'Cần chốt hoá đơn quyết toán trước khi hoàn tất thủ tục.',
   INVOICE_NOT_ELIGIBLE: 'Hồ sơ tiệc chưa đủ điều kiện lập hoá đơn quyết toán.',
@@ -123,12 +125,9 @@ const KNOWN_CODE_TRANSLATIONS: Record<string, string> = {
   // Kịch bản (Timeline)
   TIMELINE_APPROVAL_WITHDRAWAL_REQUIRED:
     'Kịch bản đã được hai bên duyệt. Rút phê duyệt trước khi chuẩn bị phiên bản mới.',
-  TIMELINE_APPROVAL_REQUIRES_ITEM:
-    'Hãy thêm và lưu ít nhất một mốc trước khi phê duyệt kịch bản.',
-  TIMELINE_WITHDRAWAL_NOT_ALLOWED:
-    'Không thể rút phê duyệt kịch bản ở giai đoạn hiện tại.',
-  TIMELINE_REVISION_SUPERSEDED:
-    'Kịch bản đã có phiên bản mới hơn. Vui lòng tải lại.',
+  TIMELINE_APPROVAL_REQUIRES_ITEM: 'Hãy thêm và lưu ít nhất một mốc trước khi phê duyệt kịch bản.',
+  TIMELINE_WITHDRAWAL_NOT_ALLOWED: 'Không thể rút phê duyệt kịch bản ở giai đoạn hiện tại.',
+  TIMELINE_REVISION_SUPERSEDED: 'Kịch bản đã có phiên bản mới hơn. Vui lòng tải lại.',
   TIMELINE_TEMPLATE_NOT_FOUND: 'Không tìm thấy mẫu kịch bản tiệc.',
 
   // Đơn in ấn & Thiệp
@@ -137,7 +136,8 @@ const KNOWN_CODE_TRANSLATIONS: Record<string, string> = {
   PRINT_ORDER_REVISION_STALE: 'Đơn in vừa được cập nhật ở nơi khác. Vui lòng tải lại danh sách.',
   PRINT_ASSET_LIMIT: 'Tổng dung lượng ảnh trên thiết kế vượt quá giới hạn in ấn.',
   PRINT_CONTENT_OVERFLOW: 'Nội dung quá dài so với kích thước khổ in cho phép.',
-  PRINTABLE_DIGEST_CONFLICT: 'Bản thiết kế vừa thay đổi trong lúc tạo file in. Hãy tạo lại file in.',
+  PRINTABLE_DIGEST_CONFLICT:
+    'Bản thiết kế vừa thay đổi trong lúc tạo file in. Hãy tạo lại file in.',
 
   // Khách & Sơ đồ bàn
   GUEST_GROUP_IN_USE: 'Nhóm khách còn người được xếp bàn. Vui lòng bỏ xếp bàn trước khi thao tác.',
@@ -148,8 +148,7 @@ const KNOWN_CODE_TRANSLATIONS: Record<string, string> = {
   SEATING_REVISION_STALE: 'Sơ đồ vừa được cập nhật. Vui lòng tải lại phiên bản mới.',
   HEADCOUNT_OUTSIDE_LAYOUT_RANGE:
     'Số lượng khách nằm ngoài phạm vi bố trí của mẫu sơ đồ. Hãy chọn mẫu khác hoặc duyệt ngoại lệ.',
-  GUEST_PLAN_CAPACITY_EXCEEDED:
-    'Số lượng khách dự kiến vượt quá sức chứa tối đa của sảnh.',
+  GUEST_PLAN_CAPACITY_EXCEEDED: 'Số lượng khách dự kiến vượt quá sức chứa tối đa của sảnh.',
   LAYOUT_RETIRED: 'Mẫu sơ đồ này đã ngừng sử dụng.',
   TABLE_NOT_IN_LAYOUT: 'Bàn tiệc không tồn tại trong sơ đồ hiện tại.',
   GUEST_GROUP_UNAVAILABLE: 'Nhóm khách không khả dụng hoặc đã bị lưu trữ.',
@@ -163,6 +162,12 @@ const KNOWN_CODE_TRANSLATIONS: Record<string, string> = {
     'Bàn check-in chỉ mở trong khung giờ của tiệc. Ngoài giờ, quản lý check-in và ghi lý do.',
   MANAGER_OVERRIDE_REQUIRED: 'Tài khoản quản lý cần ghi lý do cho thao tác check-in này.',
   EVENT_ASSIGNMENT_REQUIRED: 'Bạn chưa được phân công vào tiệc này nên chưa mở được bàn check-in.',
+  STAFF_WORK_REVISION_STALE:
+    'Nội dung tác nghiệp đã có phiên bản mới. Đóng phần sửa và mở lại dữ liệu hiện tại.',
+  STAFF_WORK_ACTION_FORBIDDEN:
+    'Bạn chưa được phân công thực hiện thao tác này. Liên hệ Manager để điều phối.',
+  STAFF_HANDOVER_ACK_REQUIRED:
+    'Người nhận bàn giao phải khác người gửi và xác nhận đã nhận bàn giao.',
   CHECK_IN_DISABLED: 'Tiệc này chưa bật check-in theo tên khách.',
   GUEST_NOT_FOUND: 'Không tìm thấy thông tin khách mời trong danh sách tiệc.',
   GUEST_ALREADY_CHECKED_IN: 'Khách này đã được điểm danh trước đó.',
@@ -180,7 +185,8 @@ const KNOWN_CODE_TRANSLATIONS: Record<string, string> = {
   LAYOUT_TEMPLATE_NOT_FOUND: 'Không tìm thấy mẫu sơ đồ bàn.',
   MEDIA_CUTOFF_REACHED: 'Đã quá hạn đăng tải hình ảnh cho tiệc.',
   NOTIFICATION_REVISION_STALE: 'Hộp thư thông báo vừa được cập nhật. Vui lòng làm mới.',
-  CATALOG_HALL_CAPACITY_CONFLICT: 'Sức chứa sảnh tiệc không hợp lệ hoặc xung đột với cấu hình hiện tại.',
+  CATALOG_HALL_CAPACITY_CONFLICT:
+    'Sức chứa sảnh tiệc không hợp lệ hoặc xung đột với cấu hình hiện tại.',
   CATALOG_DRAFT_CONFLICT: 'Bản nháp danh mục đang có xung đột phiên bản.',
   CATALOG_DISH_REFERENCE_CONFLICT: 'Món ăn đang được sử dụng trong gói thực đơn, không thể xoá.',
   CATALOG_LIFECYCLE_CONFLICT: 'Trạng thái danh mục không cho phép thực hiện thao tác này.',
@@ -368,11 +374,11 @@ class NotificationService {
         title = 'Dữ liệu chưa hợp lệ (422)';
         message =
           options?.fallbackMessage ??
-          ((translatedCode ??
+          (translatedCode ??
             (rawMsg && !isMachineCodeOrEnglishStatus(rawMsg)
               ? rawMsg
               : 'Dữ liệu nhập chưa hợp lệ. Vui lòng kiểm tra lại các trường thông tin.')) +
-            fieldHints);
+            fieldHints;
         return { title, message, requestId };
       }
 

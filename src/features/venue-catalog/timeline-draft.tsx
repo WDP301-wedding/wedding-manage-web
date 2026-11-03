@@ -56,13 +56,45 @@ export function TimelineItemsEditor({
   items: readonly TimelineItemWrite[];
   onChange: (items: TimelineItemWrite[]) => void;
 }>) {
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+
   const update = (index: number, patch: Partial<TimelineItemWrite>) =>
     onChange(items.map((item, itemIndex) => (itemIndex === index ? { ...item, ...patch } : item)));
+
+  const handleDragStart = (event: React.DragEvent, index: number) => {
+    setDraggedIndex(index);
+    event.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (event: React.DragEvent) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (event: React.DragEvent, targetIndex: number) => {
+    event.preventDefault();
+    if (draggedIndex === null || draggedIndex === targetIndex) return;
+    onChange(move(items, draggedIndex, targetIndex));
+    setDraggedIndex(null);
+  };
+
+  const roleTags = ['MC', 'Âm thanh', 'Ánh sáng', 'Bếp & Phục vụ', 'Khánh tiết'] as const;
+
   return (
     <ol className={cx.timelineItems} aria-label="Các mục kịch bản theo thứ tự">
       {items.map((item, index) => (
-        <li key={item.id}>
-          <div className={cx.timelineItemOrder}>
+        <li
+          key={item.id}
+          draggable
+          onDragStart={(event) => handleDragStart(event, index)}
+          onDragOver={handleDragOver}
+          onDrop={(event) => handleDrop(event, index)}
+          onDragEnd={() => setDraggedIndex(null)}
+          className={cn(
+            draggedIndex === index && 'opacity-50 border-dashed border-primary',
+          )}
+        >
+          <div className={cn(cx.timelineItemOrder, 'cursor-grab active:cursor-grabbing')}>
             <strong>{String(index + 1).padStart(2, '0')}</strong>
             <button
               type="button"
@@ -133,6 +165,25 @@ export function TimelineItemsEditor({
                   update(index, { description: event.currentTarget.value || null })
                 }
               />
+              <span className="mt-1 flex flex-wrap items-center gap-1.5 text-2xs text-muted-foreground">
+                <span>Gợi ý vai trò:</span>
+                {roleTags.map((tag) => (
+                  <button
+                    key={tag}
+                    type="button"
+                    className="rounded bg-muted px-1.5 py-0.5 text-2xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
+                    onClick={() => {
+                      const prefix = `[${tag}] `;
+                      const desc = item.description ?? '';
+                      if (!desc.includes(prefix)) {
+                        update(index, { description: prefix + desc });
+                      }
+                    }}
+                  >
+                    +{tag}
+                  </button>
+                ))}
+              </span>
             </label>
           </div>
           <button
@@ -186,13 +237,82 @@ export function TimelineDraft({
           <h3>{version.name}</h3>
           <p className={cx.help}>Bản nháp, phiên bản {version.revision}</p>
         </div>
-        <button
-          className={cx.secondaryButton}
-          type="button"
-          onClick={() => setItems([...items, newTimelineItem(items.length * 15)])}
-        >
-          Thêm mục
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            className={cx.secondaryButton}
+            type="button"
+            onClick={() => {
+              const standardWeddingPreset: TimelineItemWrite[] = [
+                {
+                  id: crypto.randomUUID(),
+                  title: 'Đón khách & Chụp ảnh lưu niệm',
+                  description: '[Lễ tân] Hướng dẫn khách ký tên và vào sảnh',
+                  offsetMinutes: 0,
+                  durationMinutes: 45,
+                  displayOrder: 1,
+                },
+                {
+                  id: crypto.randomUUID(),
+                  title: 'Ổn định sảnh tiệc & Chiếu clip cưới',
+                  description: '[MC] [Âm thanh] Mời khách vào bàn, chiếu phóng sự',
+                  offsetMinutes: 45,
+                  durationMinutes: 15,
+                  displayOrder: 2,
+                },
+                {
+                  id: crypto.randomUUID(),
+                  title: 'Khai mạc & Nghi thức Lễ cưới',
+                  description: '[MC] Giới thiệu hai bên gia đình và cô dâu chú rể',
+                  offsetMinutes: 60,
+                  durationMinutes: 15,
+                  displayOrder: 3,
+                },
+                {
+                  id: crypto.randomUUID(),
+                  title: 'Cắt bánh cưới & Khui champagne',
+                  description: '[Khánh tiết] Nghi thức cắt bánh và rót rượu chúc mừng',
+                  offsetMinutes: 75,
+                  durationMinutes: 15,
+                  displayOrder: 4,
+                },
+                {
+                  id: crypto.randomUUID(),
+                  title: 'Chúc rượu & Khai tiệc ẩm thực',
+                  description: '[Bếp & Phục vụ] Toàn thể nâng ly, lên món khai vị',
+                  offsetMinutes: 90,
+                  durationMinutes: 15,
+                  displayOrder: 5,
+                },
+                {
+                  id: crypto.randomUUID(),
+                  title: 'Giao lưu âm nhạc & Đi bàn chúc mừng',
+                  description: '[Âm thanh] Ban nhạc biểu diễn, chụp hình tại từng bàn',
+                  offsetMinutes: 105,
+                  durationMinutes: 60,
+                  displayOrder: 6,
+                },
+                {
+                  id: crypto.randomUUID(),
+                  title: 'Tiễn khách & Trao quà cảm ơn',
+                  description: '[Lễ tân] Tiễn khách tại sảnh đón và gửi quà lưu niệm',
+                  offsetMinutes: 165,
+                  durationMinutes: 30,
+                  displayOrder: 7,
+                },
+              ];
+              setItems(standardWeddingPreset);
+            }}
+          >
+            Nạp mẫu chuẩn tiệc cưới
+          </button>
+          <button
+            className={cx.secondaryButton}
+            type="button"
+            onClick={() => setItems([...items, newTimelineItem(items.length * 15)])}
+          >
+            Thêm mục
+          </button>
+        </div>
       </div>
       <div className={cx.formGrid}>
         <TimelineTextField label="Tên bản nháp" name="name" defaultValue={version.name} />
