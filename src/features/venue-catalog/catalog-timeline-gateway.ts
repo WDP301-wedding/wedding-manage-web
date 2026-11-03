@@ -82,8 +82,10 @@ export function createTimelineCatalogGateway(
       invalidateCatalogResource(accessToken, '/management/catalog/timeline-templates');
     },
 
-    async cloneTimeline(accessToken, { templateId, ...body }) {
-      const idempotencyKey = crypto.randomUUID();
+    async cloneTimeline(
+      accessToken,
+      { templateId, idempotencyKey = crypto.randomUUID(), ...body },
+    ) {
       await api().POST('/management/catalog/timeline-templates/{templateId}/versions', {
         headers: authorization(accessToken),
         params: {

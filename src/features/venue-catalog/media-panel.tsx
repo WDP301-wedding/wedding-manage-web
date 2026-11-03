@@ -205,107 +205,109 @@ export function MediaPanel({
         <p>{description}</p>
       </div>
       <PanelMessages error={error} message={message} />
-      <div className={cx.mediaToolbar}>
-        <label className={cx.field}>
-          <span>Tài nguyên danh mục</span>
-          <HySelect
-            value={selected === undefined ? '' : mediaResourceKey(selected)}
-            onChange={(event) => chooseResource(event.currentTarget.value)}
-            disabled={loading || resources.length === 0}
-          >
-            {resources.length === 0 ? <option value="">Chưa có tài nguyên</option> : null}
-            {resources.map((resource) => (
-              <option key={mediaResourceKey(resource)} value={mediaResourceKey(resource)}>
-                {resource.label}
-              </option>
-            ))}
-          </HySelect>
-        </label>
-        <button
-          className={cx.secondaryButton}
-          type="button"
-          disabled={selected === undefined || loading}
-          onClick={() =>
-            selected === undefined
-              ? undefined
-              : void loadAssets(selected).catch((caught: unknown) =>
-                  setError(mediaErrorMessage(caught)),
-                )
-          }
-        >
-          Làm mới đường dẫn ảnh
-        </button>
-      </div>
-      {loading && assets.length === 0 ? <p className={cx.empty}>Đang tải ảnh…</p> : null}
-      {!loading && selected !== undefined && assets.length === 0 ? (
-        <p className={cx.empty}>Tài nguyên này chưa có ảnh.</p>
-      ) : null}
-      {selected === undefined ? null : (
-        <>
-          <ol className={cx.mediaGallery} aria-label="Thứ tự ảnh danh mục">
-            {assets.map((asset, index) => (
-              <li key={asset.id}>
-                <div className={cx.mediaPreview}>
-                  <Image
-                    src={asset.signedUrl}
-                    alt={asset.alternativeText}
-                    width={480}
-                    height={320}
-                    sizes="(max-width: 620px) 100vw, 320px"
-                    unoptimized
-                  />
-                </div>
-                <div className={cx.mediaCardCopy}>
-                  <strong>{asset.alternativeText}</strong>
-                  <span>
-                    {formatBytes(asset.sizeBytes)} · {asset.contentType}
-                  </span>
-                  <small>URL ký số · {formatTtl(asset.signedUrlExpiresInSeconds)}</small>
-                </div>
-                <div className={cx.mediaOrderActions}>
-                  <button
-                    type="button"
-                    className={cx.orderButton}
-                    aria-label={`Đưa ảnh ${index + 1} lên`}
-                    disabled={pending || !selected.mutableOrder || index === 0}
-                    onClick={() => reorder(index, index - 1)}
-                  >
-                    <ArrowUp aria-hidden className="size-4" />
-                  </button>
-                  <button
-                    type="button"
-                    className={cx.orderButton}
-                    aria-label={`Đưa ảnh ${index + 1} xuống`}
-                    disabled={pending || !selected.mutableOrder || index === assets.length - 1}
-                    onClick={() => reorder(index, index + 1)}
-                  >
-                    <ArrowDown aria-hidden className="size-4" />
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ol>
-          {!selected.mutableOrder && assets.length > 1 ? (
-            <p className={cx.help}>Phiên bản lịch sử là chỉ đọc; thứ tự ảnh được giữ nguyên.</p>
-          ) : null}
-          <MediaUploadForm
-            assets={assets}
-            pending={pending}
-            onSubmit={(input) =>
-              run(
-                input.oldAssetId === undefined ? 'Đã tải ảnh lên.' : 'Đã thay thế ảnh.',
-                (token) =>
-                  gateway.uploadMedia(token, {
-                    ...input,
-                    assetId: crypto.randomUUID(),
-                    resourceType: selected.type,
-                    resourceId: selected.id,
-                  }),
-              )
+      <div className="flex min-w-0 flex-col gap-5 p-4 sm:p-6">
+        <div className={cx.mediaToolbar}>
+          <label className={cx.field}>
+            <span>Tài nguyên danh mục</span>
+            <HySelect
+              value={selected === undefined ? '' : mediaResourceKey(selected)}
+              onChange={(event) => chooseResource(event.currentTarget.value)}
+              disabled={loading || resources.length === 0}
+            >
+              {resources.length === 0 ? <option value="">Chưa có tài nguyên</option> : null}
+              {resources.map((resource) => (
+                <option key={mediaResourceKey(resource)} value={mediaResourceKey(resource)}>
+                  {resource.label}
+                </option>
+              ))}
+            </HySelect>
+          </label>
+          <button
+            className={cx.secondaryButton}
+            type="button"
+            disabled={selected === undefined || loading}
+            onClick={() =>
+              selected === undefined
+                ? undefined
+                : void loadAssets(selected).catch((caught: unknown) =>
+                    setError(mediaErrorMessage(caught)),
+                  )
             }
-          />
-        </>
-      )}
+          >
+            Làm mới đường dẫn ảnh
+          </button>
+        </div>
+        {loading && assets.length === 0 ? <p className={cx.empty}>Đang tải ảnh…</p> : null}
+        {!loading && selected !== undefined && assets.length === 0 ? (
+          <p className={cx.empty}>Tài nguyên này chưa có ảnh.</p>
+        ) : null}
+        {selected === undefined ? null : (
+          <>
+            <ol className={cx.mediaGallery} aria-label="Thứ tự ảnh danh mục">
+              {assets.map((asset, index) => (
+                <li key={asset.id}>
+                  <div className={cx.mediaPreview}>
+                    <Image
+                      src={asset.signedUrl}
+                      alt={asset.alternativeText}
+                      width={480}
+                      height={320}
+                      sizes="(max-width: 620px) 100vw, 320px"
+                      unoptimized
+                    />
+                  </div>
+                  <div className={cx.mediaCardCopy}>
+                    <strong>{asset.alternativeText}</strong>
+                    <span>
+                      {formatBytes(asset.sizeBytes)} · {asset.contentType}
+                    </span>
+                    <small>URL ký số · {formatTtl(asset.signedUrlExpiresInSeconds)}</small>
+                  </div>
+                  <div className={cx.mediaOrderActions}>
+                    <button
+                      type="button"
+                      className={cx.orderButton}
+                      aria-label={`Đưa ảnh ${index + 1} lên`}
+                      disabled={pending || !selected.mutableOrder || index === 0}
+                      onClick={() => reorder(index, index - 1)}
+                    >
+                      <ArrowUp aria-hidden className="size-4" />
+                    </button>
+                    <button
+                      type="button"
+                      className={cx.orderButton}
+                      aria-label={`Đưa ảnh ${index + 1} xuống`}
+                      disabled={pending || !selected.mutableOrder || index === assets.length - 1}
+                      onClick={() => reorder(index, index + 1)}
+                    >
+                      <ArrowDown aria-hidden className="size-4" />
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ol>
+            {!selected.mutableOrder && assets.length > 1 ? (
+              <p className={cx.help}>Phiên bản lịch sử là chỉ đọc; thứ tự ảnh được giữ nguyên.</p>
+            ) : null}
+            <MediaUploadForm
+              assets={assets}
+              pending={pending}
+              onSubmit={(input) =>
+                run(
+                  input.oldAssetId === undefined ? 'Đã tải ảnh lên.' : 'Đã thay thế ảnh.',
+                  (token) =>
+                    gateway.uploadMedia(token, {
+                      ...input,
+                      assetId: crypto.randomUUID(),
+                      resourceType: selected.type,
+                      resourceId: selected.id,
+                    }),
+                )
+              }
+            />
+          </>
+        )}
+      </div>
     </section>
   );
 }

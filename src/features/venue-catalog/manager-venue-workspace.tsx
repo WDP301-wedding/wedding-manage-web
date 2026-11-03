@@ -297,19 +297,7 @@ export function ManagerVenueWorkspace({
       >
         {visitedTabs.has('timeline') ? (
           supportsTimeline(gateway) ? (
-            <>
-              <TimelinePanel gateway={gateway} authorize={authorize} />
-              {supportsMedia(gateway) ? (
-                <MediaPanel
-                  gateway={gateway}
-                  authorize={authorize}
-                  active={activeTab === 'timeline'}
-                  allowedTypes={['TIMELINE_TEMPLATE_VERSION']}
-                  heading="Thư viện ảnh kịch bản tiệc"
-                  description="Quản lý ảnh minh họa cho các mẫu kịch bản chương trình tiệc cưới."
-                />
-              ) : null}
-            </>
+            <TimelinePanel gateway={gateway} authorize={authorize} />
           ) : (
             <p className={cx.empty}>Không hỗ trợ quản lý kịch bản.</p>
           )

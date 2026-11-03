@@ -92,7 +92,7 @@ describe('VC-22 shared catalog media', () => {
       { wrapper: NotificationProvider },
     );
 
-    const picker = await screen.findByLabelText('Tài nguyên danh mục');
+    const picker = await screen.findByLabelText('Tài nguyên danh mục', { selector: 'select' });
     fireEvent.change(picker, { target: { value: `restaurant:${resourceId}` } });
 
     await waitFor(() =>
@@ -116,7 +116,7 @@ describe('VC-22 shared catalog media', () => {
     fireEvent.change(within(form).getByLabelText('Văn bản thay thế'), {
       target: { value: 'Toàn cảnh sảnh tiệc' },
     });
-    fireEvent.change(within(form).getByLabelText('Chế độ tải lên'), {
+    fireEvent.change(within(form).getByLabelText('Chế độ tải lên', { selector: 'select' }), {
       target: { value: firstAssetId },
     });
     fireEvent.submit(form);
@@ -191,7 +191,13 @@ describe('VC-22 shared catalog media', () => {
     });
     fireEvent.submit(form);
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Nhà cung cấp lưu trữ');
+    await waitFor(() =>
+      expect(
+        screen
+          .getAllByRole('alert')
+          .some((alert) => alert.textContent?.includes('Nhà cung cấp lưu trữ')),
+      ).toBe(true),
+    );
     expect(within(form).getByRole('button', { name: 'Tải ảnh lên' })).toBeEnabled();
   });
 });

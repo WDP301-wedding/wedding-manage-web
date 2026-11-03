@@ -17,6 +17,7 @@ export function PrintOrderDialog({
   onClose,
   initialFocusRef,
   variant = 'modal',
+  size = 'default',
   children,
 }: Readonly<{
   label: string;
@@ -26,6 +27,7 @@ export function PrintOrderDialog({
   onClose: () => void;
   initialFocusRef?: RefObject<HTMLElement | null>;
   variant?: 'modal' | 'drawer';
+  size?: 'default' | 'wide';
   children: ReactNode;
 }>) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -55,7 +57,8 @@ export function PrintOrderDialog({
           'fixed z-[1001] flex flex-col overflow-y-auto bg-card shadow-hy-2 outline-none',
           drawer
             ? 'inset-y-0 right-0 w-full max-w-[560px] motion-safe:animate-in motion-safe:slide-in-from-right motion-safe:duration-300 motion-safe:ease-hy-decelerate'
-            : 'top-1/2 left-1/2 max-h-[calc(100vh-2rem)] w-[calc(100vw-2rem)] max-w-[560px] -translate-x-1/2 -translate-y-1/2 rounded-xl motion-safe:animate-in motion-safe:fade-in-0 motion-safe:zoom-in-95',
+            : 'top-1/2 left-1/2 max-h-[calc(100vh-2rem)] w-[calc(100vw-2rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl motion-safe:animate-in motion-safe:fade-in-0 motion-safe:zoom-in-95',
+          !drawer && (size === 'wide' ? 'max-w-5xl' : 'max-w-[560px]'),
         )}
       >
         <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-border bg-card px-6 py-4">

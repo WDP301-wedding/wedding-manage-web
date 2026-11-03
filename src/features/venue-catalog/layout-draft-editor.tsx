@@ -2,7 +2,7 @@
 import { HySelect } from '../../components/ui/select-field';
 
 import { type FormEvent, useMemo, useRef, useState } from 'react';
-import type { CatalogGateway, CatalogLayout, LayoutTableWrite } from './catalog-api';
+import type { CatalogLayout, LayoutTableWrite, LayoutWrite } from './catalog-api';
 import { CANVAS_SIZE, TableEditor, TableNumber } from './layout-table-editor';
 
 import { cx } from './catalog-classes';
@@ -168,23 +168,21 @@ export function LayoutCanvas({
 }
 
 export function LayoutDraftEditor({
-  gateway,
   hallMaximum,
-  layout,
   pending,
-  run,
+  onSave,
+  onCancel,
   setError,
   version,
 }: Readonly<{
-  gateway: CatalogGateway;
   hallMaximum: number;
-  layout: CatalogLayout;
   pending: boolean;
-  run: (
-    successMessage: string,
-    operation: (token: string) => Promise<void>,
-    options?: Readonly<{ reload?: boolean }>,
+  onSave: (
+    input: LayoutWrite,
+    retirements: readonly string[],
+    publish: boolean,
   ) => Promise<boolean>;
+  onCancel: () => void;
   setError: (error: string | null) => void;
   version: LayoutVersion;
 }>) {
@@ -216,13 +214,11 @@ export function LayoutDraftEditor({
   const addBatchTables = () => {
     const count = Math.min(Math.max(1, batchCount), 30);
     const newItems: LayoutTableWrite[] = [];
-    const tableIds: string[] = [];
     const startOrder = tables.length + 1;
 
     for (let i = 0; i < count; i++) {
       const id = crypto.randomUUID();
       const order = startOrder + i;
-      tableIds.push(id);
       newItems.push({
         tableId: id,
         label: `Bàn ${String(order).padStart(2, '0')}`,
@@ -237,19 +233,8 @@ export function LayoutDraftEditor({
       });
     }
 
-    void run(
-      `Đã tạo nhanh ${count} bàn mới. Hãy lưu bố trí để hoàn tất.`,
-      async (token) => {
-        await Promise.all(
-          tableIds.map((tableId) =>
-            gateway.registerLayoutTable(token, { templateId: layout.id, tableId }),
-          ),
-        );
-        setTables((current) => [...current, ...newItems]);
-        setShowBatchTools(false);
-      },
-      { reload: false },
-    );
+    setTables((current) => [...current, ...newItems]);
+    setShowBatchTools(false);
   };
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
@@ -270,34 +255,22 @@ export function LayoutDraftEditor({
       setError(validation);
       return;
     }
-    void run('Đã lưu bố trí và danh tính bàn ổn định.', async (token) => {
-      await gateway.updateLayoutDraft(token, {
-        versionId: version.id,
-        expectedRevision: version.revision,
+    void onSave(
+      {
         name: nameVal,
         description: descVal,
         minGuests: minVal,
         maxGuests: maxVal,
         tables: normalized,
-      });
-      await Promise.all(
-        retirements.map((tableId) =>
-          gateway.retireLayoutTable(token, { templateId: layout.id, tableId }),
-        ),
-      );
-    });
+      },
+      retirements,
+      (event.nativeEvent as SubmitEvent).submitter?.getAttribute('value') === 'publish',
+    );
   };
 
   const addTable = () => {
     const tableId = crypto.randomUUID();
-    void run(
-      'Đã đăng ký UUID bàn mới. Hãy lưu bố trí để hoàn tất.',
-      async (token) => {
-        await gateway.registerLayoutTable(token, { templateId: layout.id, tableId });
-        setTables((current) => [...current, defaultTable(tableId, current.length + 1)]);
-      },
-      { reload: false },
-    );
+    setTables((current) => [...current, defaultTable(tableId, current.length + 1)]);
   };
 
   return (
@@ -308,7 +281,11 @@ export function LayoutDraftEditor({
     >
       <div className={cx.layoutDraftHeading}>
         <div>
-          <span className={cx.versionState}>Bản nháp · revision {version.revision}</span>
+          <span className={cx.versionState}>
+            {version.state === 'DRAFT'
+              ? 'Bản nháp · chưa công bố'
+              : `Tạo bản nháp từ phiên bản ${version.versionNumber}`}
+          </span>
           <h4>Biên tập hình học bằng số</h4>
         </div>
         <div className={cx.layoutMetrics} aria-label="Ràng buộc bố trí">
@@ -463,26 +440,17 @@ export function LayoutDraftEditor({
         ) : null}
       </div>
       <div className={cx.formActions}>
+        <button className={cx.secondaryButton} type="button" disabled={pending} onClick={onCancel}>
+          Hủy
+        </button>
         <button className={cx.secondaryButton} type="button" disabled={pending} onClick={addTable}>
           Thêm bàn với UUID mới
         </button>
         <button className={cx.secondaryButton} type="submit" disabled={pending}>
           Lưu bố trí nháp
         </button>
-        <button
-          className={cx.primaryButton}
-          type="button"
-          disabled={pending}
-          onClick={() =>
-            void run('Đã công bố mẫu bố trí.', (token) =>
-              gateway.publishLayout(token, {
-                versionId: version.id,
-                expectedRevision: version.revision,
-              }),
-            )
-          }
-        >
-          Công bố bố trí
+        <button className={cx.primaryButton} type="submit" value="publish" disabled={pending}>
+          Lưu và công bố
         </button>
       </div>
     </form>

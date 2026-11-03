@@ -176,7 +176,12 @@ export interface TimelineCatalogGateway {
   ): Promise<void>;
   cloneTimeline(
     accessToken: string,
-    input: Readonly<{ templateId: string; sourceVersionId: string; versionId: string }>,
+    input: Readonly<{
+      templateId: string;
+      sourceVersionId: string;
+      versionId: string;
+      idempotencyKey?: string;
+    }>,
   ): Promise<void>;
   changeTimelineLifecycle(
     accessToken: string,
@@ -225,7 +230,12 @@ export interface LayoutCatalogGateway {
   ): Promise<void>;
   cloneLayout(
     accessToken: string,
-    input: Readonly<{ templateId: string; sourceVersionId: string; versionId: string }>,
+    input: Readonly<{
+      templateId: string;
+      sourceVersionId: string;
+      versionId: string;
+      idempotencyKey?: string;
+    }>,
   ): Promise<void>;
   changeLayoutLifecycle(
     accessToken: string,
@@ -233,11 +243,11 @@ export interface LayoutCatalogGateway {
   ): Promise<void>;
   registerLayoutTable(
     accessToken: string,
-    input: Readonly<{ templateId: string; tableId: string }>,
+    input: Readonly<{ templateId: string; tableId: string; idempotencyKey?: string }>,
   ): Promise<void>;
   retireLayoutTable(
     accessToken: string,
-    input: Readonly<{ templateId: string; tableId: string }>,
+    input: Readonly<{ templateId: string; tableId: string; idempotencyKey?: string }>,
   ): Promise<void>;
 }
 

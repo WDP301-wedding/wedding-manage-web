@@ -96,8 +96,7 @@ export function createLayoutCatalogGateway(
       invalidateCatalogResource(accessToken, '/management/catalog/layout-templates');
     },
 
-    async cloneLayout(accessToken, { templateId, ...body }) {
-      const idempotencyKey = crypto.randomUUID();
+    async cloneLayout(accessToken, { templateId, idempotencyKey = crypto.randomUUID(), ...body }) {
       await api().POST('/management/catalog/layout-templates/{templateId}/versions', {
         headers: authorization(accessToken),
         params: {
@@ -128,7 +127,7 @@ export function createLayoutCatalogGateway(
     },
 
     async registerLayoutTable(accessToken, input) {
-      const idempotencyKey = crypto.randomUUID();
+      const idempotencyKey = input.idempotencyKey ?? crypto.randomUUID();
       await api().POST('/management/catalog/layout-templates/{templateId}/tables', {
         headers: authorization(accessToken),
         params: {
@@ -141,7 +140,7 @@ export function createLayoutCatalogGateway(
     },
 
     async retireLayoutTable(accessToken, input) {
-      const idempotencyKey = crypto.randomUUID();
+      const idempotencyKey = input.idempotencyKey ?? crypto.randomUUID();
       await api().POST(
         '/management/catalog/layout-templates/{templateId}/tables/{tableId}/retirement',
         {

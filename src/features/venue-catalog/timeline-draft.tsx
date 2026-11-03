@@ -2,7 +2,7 @@
 
 import { ArrowDown, ArrowUp } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
-import type { CatalogGateway, CatalogTimeline, TimelineItemWrite } from './catalog-api';
+import type { CatalogTimeline, TimelineItemWrite, TimelineWrite } from './catalog-api';
 
 import { cx } from './catalog-classes';
 import { cn } from 'cn';
@@ -90,9 +90,7 @@ export function TimelineItemsEditor({
           onDragOver={handleDragOver}
           onDrop={(event) => handleDrop(event, index)}
           onDragEnd={() => setDraggedIndex(null)}
-          className={cn(
-            draggedIndex === index && 'opacity-50 border-dashed border-primary',
-          )}
+          className={cn(draggedIndex === index && 'opacity-50 border-dashed border-primary')}
         >
           <div className={cn(cx.timelineItemOrder, 'cursor-grab active:cursor-grabbing')}>
             <strong>{String(index + 1).padStart(2, '0')}</strong>
@@ -202,28 +200,27 @@ export function TimelineItemsEditor({
 }
 
 export function TimelineDraft({
-  gateway,
   pending,
-  run,
+  onSave,
+  onCancel,
   version,
 }: Readonly<{
-  gateway: CatalogGateway;
   pending: boolean;
-  run: (success: string, operation: (token: string) => Promise<void>) => Promise<boolean>;
+  onSave: (input: TimelineWrite, publish: boolean) => Promise<boolean>;
+  onCancel: () => void;
   version: TimelineVersion;
 }>) {
   const [items, setItems] = useState<TimelineItemWrite[]>(() => normalizeItems(version.items));
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
-    void run('Đã lưu kịch bản nháp.', (token) =>
-      gateway.updateTimelineDraft(token, {
-        versionId: version.id,
-        expectedRevision: version.revision,
+    void onSave(
+      {
         name: text(data, 'name'),
         description: text(data, 'description'),
         items: normalizeItems(items),
-      }),
+      },
+      (event.nativeEvent as SubmitEvent).submitter?.getAttribute('value') === 'publish',
     );
   };
   return (
@@ -235,7 +232,11 @@ export function TimelineDraft({
       <div className={cx.timelineEditorHeading}>
         <div>
           <h3>{version.name}</h3>
-          <p className={cx.help}>Bản nháp, phiên bản {version.revision}</p>
+          <p className={cx.help}>
+            {version.state === 'DRAFT'
+              ? 'Bản nháp · chưa công bố'
+              : `Tạo bản nháp từ phiên bản ${version.versionNumber}`}
+          </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <button
@@ -324,73 +325,16 @@ export function TimelineDraft({
       </div>
       <TimelineItemsEditor items={items} onChange={setItems} />
       <div className={cn(cx.formActions, cx.timelineActions)}>
+        <button className={cx.secondaryButton} type="button" disabled={pending} onClick={onCancel}>
+          Hủy
+        </button>
         <button className={cx.secondaryButton} type="submit" disabled={pending}>
           Lưu kịch bản nháp
         </button>
-        <button
-          className={cx.primaryButton}
-          type="button"
-          disabled={pending}
-          onClick={() =>
-            void run('Đã công bố kịch bản.', (token) =>
-              gateway.publishTimeline(token, {
-                versionId: version.id,
-                expectedRevision: version.revision,
-              }),
-            )
-          }
-        >
-          Công bố kịch bản
+        <button className={cx.primaryButton} type="submit" value="publish" disabled={pending}>
+          Lưu và công bố
         </button>
       </div>
     </form>
-  );
-}
-
-export function TimelineHistoryVersion({
-  canClone,
-  gateway,
-  pending,
-  run,
-  templateId,
-  version,
-}: Readonly<{
-  canClone: boolean;
-  gateway: CatalogGateway;
-  pending: boolean;
-  run: (success: string, operation: (token: string) => Promise<void>) => Promise<boolean>;
-  templateId: string;
-  version: TimelineVersion;
-}>) {
-  return (
-    <div className={cx.timelineHistoryVersion}>
-      <div>
-        <span className={cx.versionState}>
-          {version.state === 'PUBLISHED' ? 'Đã công bố' : 'Đã thay thế'} · v
-          {version.versionNumber ?? '—'}
-        </span>
-        <strong>{version.name}</strong>
-        <small>{version.items.length} mục · chỉ đọc</small>
-      </div>
-      {canClone ? (
-        <button
-          className={cx.secondaryButton}
-          type="button"
-          disabled={pending}
-          aria-label={`Nhân bản phiên bản ${version.versionNumber ?? ''}`}
-          onClick={() =>
-            void run('Đã nhân bản kịch bản thành bản nháp.', (token) =>
-              gateway.cloneTimeline(token, {
-                templateId,
-                sourceVersionId: version.id,
-                versionId: crypto.randomUUID(),
-              }),
-            )
-          }
-        >
-          Nhân bản
-        </button>
-      ) : null}
-    </div>
   );
 }
