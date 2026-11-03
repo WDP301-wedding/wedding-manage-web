@@ -75,9 +75,9 @@ export const cx = {
     'flex w-full max-w-[520px] flex-col items-start gap-3 rounded-xl border border-border bg-card p-8 shadow-hy-1 [&_h1]:text-xl [&_h1]:font-semibold',
   foodPanel: '',
   mediaSection: '',
-  mediaToolbar: `mb-4 flex flex-wrap items-end gap-4 [&>*]:min-w-[200px] [&>*]:flex-1 ${controls}`,
+  mediaToolbar: `grid min-w-0 items-end gap-4 sm:grid-cols-[minmax(0,1fr)_auto] [&>button]:w-full sm:[&>button]:w-auto ${controls}`,
   mediaGallery:
-    'mb-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 [&>li]:grid [&>li]:grid-rows-[auto_1fr_auto] [&>li]:overflow-hidden [&>li]:rounded-xl [&>li]:border [&>li]:border-border [&>li]:bg-card',
+    'grid gap-4 sm:grid-cols-2 lg:grid-cols-3 [&>li]:grid [&>li]:grid-rows-[auto_1fr_auto] [&>li]:overflow-hidden [&>li]:rounded-xl [&>li]:border [&>li]:border-border [&>li]:bg-card',
   mediaPreview: 'aspect-[3/2] overflow-hidden bg-muted [&_img]:size-full [&_img]:object-cover',
   mediaCardCopy:
     'flex flex-col gap-1 px-4 py-3.5 [&_small]:text-xs [&_small]:text-muted-foreground [&_span]:text-xs [&_span]:text-muted-foreground [&_strong]:font-semibold',
