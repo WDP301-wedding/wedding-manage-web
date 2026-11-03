@@ -3,16 +3,17 @@
 import { type FormEvent } from 'react';
 import type { CatalogDish, CatalogGateway, DishWrite } from './catalog-api';
 import {
-  AggregateHeader,
   EditorHeading,
   LabeledInput,
   optionalInteger,
   text,
   VersionSummary,
+  formatVnd,
   type DishVersion,
 } from './food-catalog-shared';
 
 import { cx } from './catalog-classes';
+import { FoodRecordCard, latestFoodVersion } from './food-record-card';
 export function CreateDishForm({
   onSubmit,
   pending,
@@ -35,8 +36,15 @@ export function CreateDishForm({
       <EditorHeading title="Tạo món ăn" />
       <LabeledInput label="Tên món" name="name" />
       <LabeledInput label="Nhóm món" name="categoryLabel" />
-      <LabeledInput label="Mô tả món" name="description" as="textarea" />
-      <LabeledInput label="Giá món (VND)" name="priceVnd" type="number" min={0} step={1} />
+      <LabeledInput label="Mô tả món" name="description" as="textarea" required={false} />
+      <LabeledInput
+        label="Giá món (VND)"
+        name="priceVnd"
+        type="number"
+        min={0}
+        step={1}
+        required={false}
+      />
       <button className={cx.primaryButton} type="submit" disabled={pending}>
         Tạo bản nháp món ăn
       </button>
@@ -55,45 +63,71 @@ export function DishAggregate({
   pending: boolean;
   run: (success: string, operation: (token: string) => Promise<void>) => Promise<boolean>;
 }>) {
-  const label =
-    dish.versions.find((version) => version.id === dish.currentPublishedVersionId)?.name ??
-    dish.versions[0]?.name ??
-    'Món chưa đặt tên';
+  const version = latestFoodVersion(dish);
+  if (!version) return null;
+  const label = version.name;
   return (
-    <article className={cx.aggregate}>
-      <AggregateHeader
-        label={label}
-        lifecycle={dish.lifecycle}
-        onLifecycle={() =>
-          run(dish.lifecycle === 'ACTIVE' ? 'Đã ngừng món ăn.' : 'Đã khôi phục món ăn.', (token) =>
-            gateway.changeDishLifecycle(token, {
-              id: dish.id,
-              expectedRevision: dish.revision,
-              transition: dish.lifecycle === 'ACTIVE' ? 'RETIRE' : 'RESTORE',
-            }),
-          )
-        }
-      />
-      <div className={cx.history} role="region" aria-label={`Lịch sử ${label}`}>
-        {dish.versions.map((version) => (
+    <FoodRecordCard
+      label={label}
+      lifecycle={dish.lifecycle}
+      draft={version.state === 'DRAFT'}
+      price={version.priceVnd}
+      pending={pending}
+      summary={<p>{version.categoryLabel}</p>}
+      details={
+        <>
+          <p className="text-sm text-muted-foreground">{version.description || 'Chưa có mô tả.'}</p>
+          <p className="text-sm">Nhóm món: {version.categoryLabel}</p>
+          <p className="font-semibold text-primary">
+            {version.priceVnd === null ? 'Chưa niêm yết giá' : formatVnd(version.priceVnd)}
+          </p>
+        </>
+      }
+      editor={
+        version.state === 'DRAFT' ? (
           <DishVersionRow
-            key={version.id}
+            key={`${version.id}-${version.revision}`}
             dishId={dish.id}
+            version={version}
             gateway={gateway}
             pending={pending}
             run={run}
-            version={version}
-            canClone={dish.draftVersionId === null}
+            canClone={false}
           />
-        ))}
-      </div>
-    </article>
+        ) : (
+          <p role="status">Đang mở trình chỉnh sửa…</p>
+        )
+      }
+      onEdit={() =>
+        version.state === 'DRAFT'
+          ? Promise.resolve(true)
+          : run('Đã mở bản chỉnh sửa món ăn.', (token) =>
+              gateway.cloneDish(token, {
+                dishId: dish.id,
+                sourceVersionId: version.id,
+                versionId: crypto.randomUUID(),
+              }),
+            )
+      }
+      onDelete={() =>
+        run('Đã xóa món ăn khỏi danh mục.', (token) =>
+          gateway.deleteDish(token, { id: dish.id, expectedRevision: dish.revision }),
+        )
+      }
+      onLifecycle={() =>
+        run(dish.lifecycle === 'ACTIVE' ? 'Đã ngừng món ăn.' : 'Đã khôi phục món ăn.', (token) =>
+          gateway.changeDishLifecycle(token, {
+            id: dish.id,
+            expectedRevision: dish.revision,
+            transition: dish.lifecycle === 'ACTIVE' ? 'RETIRE' : 'RESTORE',
+          }),
+        )
+      }
+    />
   );
 }
 
 export function DishVersionRow({
-  canClone,
-  dishId,
   gateway,
   pending,
   run,
@@ -110,45 +144,30 @@ export function DishVersionRow({
     return (
       <div className={cx.versionRow}>
         <VersionSummary version={version} price={version.priceVnd} />
-        {canClone ? (
-          <button
-            type="button"
-            className={cx.secondaryButton}
-            disabled={pending}
-            aria-label={`Nhân bản phiên bản ${version.versionNumber ?? ''}`}
-            onClick={() =>
-              void run('Đã nhân bản thành bản nháp độc lập.', (token) =>
-                gateway.cloneDish(token, {
-                  dishId,
-                  sourceVersionId: version.id,
-                  versionId: crypto.randomUUID(),
-                }),
-              )
-            }
-          >
-            Nhân bản
-          </button>
-        ) : null}
       </div>
     );
   }
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
-    void run('Đã lưu bản nháp món ăn.', (token) =>
-      gateway.updateDishDraft(token, {
+    const publish =
+      (event.nativeEvent as SubmitEvent).submitter?.getAttribute('value') === 'publish';
+    void run(publish ? 'Đã lưu và công bố món ăn.' : 'Đã lưu bản nháp món ăn.', async (token) => {
+      const revision = await gateway.updateDishDraft(token, {
         versionId: version.id,
         expectedRevision: version.revision,
         name: text(data, 'name'),
         description: text(data, 'description'),
         categoryLabel: text(data, 'categoryLabel'),
         priceVnd: optionalInteger(data, 'priceVnd'),
-      }),
-    );
+      });
+      if (publish)
+        await gateway.publishDish(token, { versionId: version.id, expectedRevision: revision });
+    });
   };
   return (
     <form className={cx.draftForm} aria-label={`Bản nháp ${version.name}`} onSubmit={submit}>
-      <span className={cx.versionState}>Bản nháp · revision {version.revision}</span>
+      <span className={cx.versionState}>Chỉnh sửa món ăn</span>
       <LabeledInput label="Tên món bản nháp" name="name" defaultValue={version.name} />
       <LabeledInput
         label="Nhóm món bản nháp"
@@ -160,6 +179,7 @@ export function DishVersionRow({
         name="description"
         as="textarea"
         defaultValue={version.description}
+        required={false}
       />
       <LabeledInput
         label="Giá món bản nháp (VND)"
@@ -168,6 +188,7 @@ export function DishVersionRow({
         min={0}
         step={1}
         defaultValue={version.priceVnd ?? ''}
+        required={false}
       />
       <div className={cx.formActions}>
         <button className={cx.secondaryButton} type="submit" disabled={pending}>
@@ -175,18 +196,12 @@ export function DishVersionRow({
         </button>
         <button
           className={cx.primaryButton}
-          type="button"
+          type="submit"
+          name="action"
+          value="publish"
           disabled={pending}
-          onClick={() =>
-            void run('Đã công bố phiên bản món ăn.', (token) =>
-              gateway.publishDish(token, {
-                versionId: version.id,
-                expectedRevision: version.revision,
-              }),
-            )
-          }
         >
-          Công bố
+          Lưu và công bố
         </button>
       </div>
     </form>

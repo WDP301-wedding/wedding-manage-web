@@ -136,6 +136,8 @@ export function createVenueCatalogGateway(client?: ApiClient): CatalogGateway {
 
     // Food domain methods delegated to FoodCatalogGateway
     loadFood: (token) => foodGateway.loadFood(token),
+    deleteDish: (token, input) => foodGateway.deleteDish(token, input),
+    deleteMenu: (token, input) => foodGateway.deleteMenu(token, input),
     createDish: (token, input) => foodGateway.createDish(token, input),
     updateDishDraft: (token, input) => foodGateway.updateDishDraft(token, input),
     publishDish: (token, input) => foodGateway.publishDish(token, input),

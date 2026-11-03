@@ -83,6 +83,14 @@ export type MenuWrite = Readonly<{
 }>;
 
 export interface FoodCatalogGateway {
+  deleteDish(
+    accessToken: string,
+    input: Readonly<{ id: string; expectedRevision: number }>,
+  ): Promise<void>;
+  deleteMenu(
+    accessToken: string,
+    input: Readonly<{ id: string; expectedRevision: number }>,
+  ): Promise<void>;
   loadFood(accessToken: string): Promise<FoodCatalogSnapshot>;
   createDish(
     accessToken: string,
@@ -91,7 +99,7 @@ export interface FoodCatalogGateway {
   updateDishDraft(
     accessToken: string,
     input: DishWrite & Readonly<{ versionId: string; expectedRevision: number }>,
-  ): Promise<void>;
+  ): Promise<number>;
   publishDish(
     accessToken: string,
     input: Readonly<{ versionId: string; expectedRevision: number }>,
@@ -111,7 +119,7 @@ export interface FoodCatalogGateway {
   updateMenuDraft(
     accessToken: string,
     input: MenuWrite & Readonly<{ versionId: string; expectedRevision: number }>,
-  ): Promise<void>;
+  ): Promise<number>;
   publishMenu(
     accessToken: string,
     input: Readonly<{ versionId: string; expectedRevision: number }>,

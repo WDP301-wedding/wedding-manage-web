@@ -58,12 +58,14 @@ function gateway(overrides: Record<string, unknown> = {}): CatalogGateway {
   return {
     loadFood: vi.fn(() => Promise.resolve(foodSnapshot)),
     createDish: vi.fn(() => Promise.resolve()),
-    updateDishDraft: vi.fn(() => Promise.resolve()),
+    updateDishDraft: vi.fn(() => Promise.resolve(2)),
+    deleteDish: vi.fn(() => Promise.resolve()),
+    deleteMenu: vi.fn(() => Promise.resolve()),
     publishDish: vi.fn(() => Promise.resolve()),
     cloneDish: vi.fn(() => Promise.resolve()),
     changeDishLifecycle: vi.fn(() => Promise.resolve()),
     createMenu: vi.fn(() => Promise.resolve()),
-    updateMenuDraft: vi.fn(() => Promise.resolve()),
+    updateMenuDraft: vi.fn(() => Promise.resolve(2)),
     publishMenu: vi.fn(() => Promise.resolve()),
     cloneMenu: vi.fn(() => Promise.resolve()),
     changeMenuLifecycle: vi.fn(() => Promise.resolve()),
@@ -72,12 +74,52 @@ function gateway(overrides: Record<string, unknown> = {}): CatalogGateway {
 }
 
 describe('VC-19 dish and menu administration', () => {
+  it('confirms deletion before calling the real gateway and removes the record after refresh', async () => {
+    const deleteDish = vi.fn(async () => {});
+    const loadFood = vi
+      .fn()
+      .mockResolvedValueOnce(foodSnapshot)
+      .mockResolvedValue({ dishes: [], menus: [] });
+    render(<DishMenuPanel gateway={gateway({ deleteDish, loadFood })} authorize={authorize} />);
+    const dish = await screen.findByRole('article', { name: 'Gỏi ngó sen mới' });
+    fireEvent.click(within(dish).getByRole('button', { name: 'Xóa' }));
+    expect(deleteDish).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Xác nhận xóa' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('article', { name: 'Gỏi ngó sen mới' })).not.toBeInTheDocument(),
+    );
+    expect(deleteDish).toHaveBeenCalledWith('manager-token', { id: dishId, expectedRevision: 4 });
+  });
+
+  it('saves the entered values before publishing with the revision returned by the server', async () => {
+    const updateDishDraft = vi.fn(() => Promise.resolve(9));
+    const publishDish = vi.fn(async () => {});
+    render(
+      <DishMenuPanel gateway={gateway({ updateDishDraft, publishDish })} authorize={authorize} />,
+    );
+    const dish = await screen.findByRole('article', { name: 'Gỏi ngó sen mới' });
+    fireEvent.click(within(dish).getByRole('button', { name: 'Chỉnh sửa' }));
+    const input = await screen.findByRole('textbox', { name: 'Tên món bản nháp' });
+    fireEvent.change(input, { target: { value: 'Gỏi ngó sen cập nhật' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Lưu và công bố' }));
+    await waitFor(() =>
+      expect(publishDish).toHaveBeenCalledWith('manager-token', {
+        versionId: draftDishVersionId,
+        expectedRevision: 9,
+      }),
+    );
+    expect(updateDishDraft).toHaveBeenCalledWith(
+      'manager-token',
+      expect.objectContaining({ name: 'Gỏi ngó sen cập nhật', expectedRevision: 1 }),
+    );
+  });
   it('formats integer VND and creates a dish without floating-point calculation', async () => {
     const createDish = vi.fn(() => Promise.resolve());
     const api = gateway({ createDish });
     render(<DishMenuPanel gateway={api} authorize={authorize} />);
 
-    expect(await screen.findByText(/120\.000/u)).toHaveTextContent('₫');
+    expect(await screen.findByText(/130\.000/u)).toHaveTextContent('₫');
+    fireEvent.click(screen.getByRole('button', { name: 'Thêm món ăn' }));
     const form = screen.getByRole('form', { name: 'Tạo món ăn' });
     fireEvent.change(within(form).getByLabelText('Tên món'), { target: { value: 'Súp bí đỏ' } });
     fireEvent.change(within(form).getByLabelText('Nhóm món'), { target: { value: 'Khai vị' } });
@@ -99,7 +141,8 @@ describe('VC-19 dish and menu administration', () => {
     const createMenu = vi.fn(() => Promise.resolve());
     const api = gateway({ createMenu });
     render(<DishMenuPanel gateway={api} authorize={authorize} />);
-    expect((await screen.findAllByText('Gỏi ngó sen')).length).toBeGreaterThan(0);
+    await screen.findByRole('button', { name: 'Thêm gói thực đơn' });
+    fireEvent.click(screen.getByRole('button', { name: 'Thêm gói thực đơn' }));
 
     const form = screen.getByRole('form', { name: 'Tạo gói thực đơn' });
     fireEvent.change(within(form).getByLabelText('Tên gói'), {
@@ -129,7 +172,7 @@ describe('VC-19 dish and menu administration', () => {
     );
   });
 
-  it('keeps published history read-only and offers clone instead of in-place editing', async () => {
+  it('offers edit on the latest published dish using a new draft behind the scenes', async () => {
     const cloneDish = vi.fn(() => Promise.resolve());
     const api = gateway({
       cloneDish,
@@ -148,12 +191,9 @@ describe('VC-19 dish and menu administration', () => {
     });
     render(<DishMenuPanel gateway={api} authorize={authorize} />);
 
-    const history = await screen.findByRole('region', { name: 'Lịch sử Gỏi ngó sen' });
-    expect(within(history).getByText('Đã công bố · v1')).toBeVisible();
-    expect(
-      within(history).queryByRole('textbox', { name: /Gỏi ngó sen/u }),
-    ).not.toBeInTheDocument();
-    fireEvent.click(within(history).getByRole('button', { name: 'Nhân bản phiên bản 1' }));
+    const dish = await screen.findByRole('article', { name: 'Gỏi ngó sen' });
+    expect(within(dish).queryByRole('textbox')).not.toBeInTheDocument();
+    fireEvent.click(within(dish).getByRole('button', { name: 'Chỉnh sửa' }));
 
     await waitFor(() =>
       expect(cloneDish).toHaveBeenCalledWith(
@@ -161,5 +201,76 @@ describe('VC-19 dish and menu administration', () => {
         expect.objectContaining({ dishId, sourceVersionId: publishedDishVersionId }),
       ),
     );
+  });
+
+  it('shows only the latest dish and keeps its draft editor closed until editing', async () => {
+    render(<DishMenuPanel gateway={gateway()} authorize={authorize} />);
+    const dish = await screen.findByRole('article', { name: 'Gỏi ngó sen mới' });
+    expect(within(dish).queryByText('Gỏi ngó sen')).not.toBeInTheDocument();
+    expect(screen.queryByRole('textbox', { name: 'Tên món bản nháp' })).not.toBeInTheDocument();
+    fireEvent.click(within(dish).getByRole('button', { name: 'Chỉnh sửa' }));
+    expect(await screen.findByRole('textbox', { name: 'Tên món bản nháp' })).toHaveValue(
+      'Gỏi ngó sen mới',
+    );
+  });
+
+  it('opens menu details without creating a draft', async () => {
+    const cloneMenu = vi.fn();
+    render(
+      <DishMenuPanel
+        gateway={gateway({
+          cloneMenu,
+          loadFood: vi.fn(() =>
+            Promise.resolve({
+              ...foodSnapshot,
+              menus: [
+                {
+                  id: 'menu-1',
+                  lifecycle: 'ACTIVE',
+                  revision: 2,
+                  displayOrder: 1,
+                  retiredAt: null,
+                  draftVersionId: null,
+                  currentPublishedVersionId: 'menu-v2',
+                  versions: [
+                    {
+                      id: 'menu-v2',
+                      state: 'PUBLISHED',
+                      revision: 2,
+                      versionNumber: 2,
+                      name: 'Gói Mùa Thu',
+                      description: 'Tiệc 10 khách',
+                      priceVndPerTable: 4500000,
+                      items: [
+                        {
+                          dishId,
+                          dishVersionId: publishedDishVersionId,
+                          dishVersionNumber: 1,
+                          name: 'Gỏi ngó sen',
+                          description: 'Tôm và rau thơm',
+                          categoryLabel: 'Khai vị',
+                          priceVnd: 120000,
+                          displayOrder: 1,
+                        },
+                      ],
+                      createdAt: '2026-10-01T00:00:00.000Z',
+                      updatedAt: '2026-10-02T00:00:00.000Z',
+                      publishedAt: '2026-10-02T00:00:00.000Z',
+                    },
+                  ],
+                },
+              ],
+            }),
+          ),
+        })}
+        authorize={authorize}
+      />,
+    );
+    const menu = await screen.findByRole('article', { name: 'Gói Mùa Thu' });
+    fireEvent.click(within(menu).getByRole('button', { name: 'Xem chi tiết' }));
+    const dialog = screen.getByRole('dialog', { name: 'Chi tiết Gói Mùa Thu' });
+    expect(within(dialog).getByText('Gỏi ngó sen')).toBeVisible();
+    expect(within(dialog).getByText('Tôm và rau thơm')).toBeVisible();
+    expect(cloneMenu).not.toHaveBeenCalled();
   });
 });

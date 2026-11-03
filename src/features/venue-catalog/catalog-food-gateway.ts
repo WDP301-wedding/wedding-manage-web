@@ -29,26 +29,55 @@ export function createFoodCatalogGateway(
     return fetchShared ? fetchShared(accessToken, endpoint, params, fetcher) : fetcher();
   };
 
+  const readAll = async <T>(accessToken: string, endpoint: string): Promise<T[]> => {
+    const items: T[] = [];
+    let cursor: string | null = null;
+    const seen = new Set<string>();
+    do {
+      const result: { data?: { data: { items: T[]; nextCursor: string | null } } } = await read(
+        accessToken,
+        endpoint,
+        { limit: 100, ...(cursor ? { cursor } : {}) },
+      );
+      const page = required(result.data, 'Food catalog read').data;
+      items.push(...page.items);
+      cursor = page.nextCursor;
+      if (cursor) {
+        if (seen.has(cursor)) throw new Error('Food catalog returned a repeated cursor.');
+        seen.add(cursor);
+      }
+    } while (cursor);
+    return items;
+  };
+
   return {
+    async deleteDish(accessToken, { id, expectedRevision }) {
+      await api().DELETE('/management/catalog/dishes/{dishId}', {
+        headers: authorization(accessToken),
+        params: { path: { dishId: id }, header: { 'Idempotency-Key': crypto.randomUUID() } },
+        body: { expectedRevision },
+      });
+      invalidateCatalogResource(accessToken, '/management/catalog/dishes');
+    },
+    async deleteMenu(accessToken, { id, expectedRevision }) {
+      await api().DELETE('/management/catalog/menu-packages/{packageId}', {
+        headers: authorization(accessToken),
+        params: { path: { packageId: id }, header: { 'Idempotency-Key': crypto.randomUUID() } },
+        body: { expectedRevision },
+      });
+      invalidateCatalogResource(accessToken, '/management/catalog/menu-packages');
+    },
     async loadFood(accessToken) {
       const [dishes, menus] = await Promise.all([
-        read<{ data?: { data: { items: readonly CatalogDish[] } } }>(
-          accessToken,
-          '/management/catalog/dishes',
-          { limit: 100 },
-        ),
-        read<{ data?: { data: { items: readonly CatalogMenu[] } } }>(
-          accessToken,
-          '/management/catalog/menu-packages',
-          { limit: 100 },
-        ),
+        readAll<CatalogDish>(accessToken, '/management/catalog/dishes'),
+        readAll<CatalogMenu>(accessToken, '/management/catalog/menu-packages'),
       ]);
       return {
-        dishes: Array.from(required(dishes.data, 'Dish read').data.items, (dish): CatalogDish => ({
+        dishes: Array.from(dishes, (dish): CatalogDish => ({
           ...dish,
           versions: Array.from(dish.versions, (version) => ({ ...version })),
         })),
-        menus: Array.from(required(menus.data, 'Menu read').data.items, (menu): CatalogMenu => ({
+        menus: Array.from(menus, (menu): CatalogMenu => ({
           ...menu,
           versions: Array.from(menu.versions, (version) => ({
             ...version,
@@ -69,12 +98,13 @@ export function createFoodCatalogGateway(
     },
 
     async updateDishDraft(accessToken, { versionId, ...body }) {
-      await api().PATCH('/management/catalog/dish-versions/{versionId}', {
+      const result = await api().PATCH('/management/catalog/dish-versions/{versionId}', {
         headers: authorization(accessToken),
         params: { path: { versionId } },
         body,
       });
       invalidateCatalogResource(accessToken, '/management/catalog/dishes');
+      return required(result.data, 'Dish update').data.revision;
     },
 
     async publishDish(accessToken, { versionId, ...body }) {
@@ -132,12 +162,13 @@ export function createFoodCatalogGateway(
     },
 
     async updateMenuDraft(accessToken, { versionId, ...body }) {
-      await api().PATCH('/management/catalog/menu-package-versions/{versionId}', {
+      const result = await api().PATCH('/management/catalog/menu-package-versions/{versionId}', {
         headers: authorization(accessToken),
         params: { path: { versionId } },
         body: { ...body, items: [...body.items] },
       });
       invalidateCatalogResource(accessToken, '/management/catalog/menu-packages');
+      return required(result.data, 'Menu update').data.revision;
     },
 
     async publishMenu(accessToken, { versionId, ...body }) {

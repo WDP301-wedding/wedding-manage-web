@@ -32,6 +32,9 @@ import {
 
 import { cx } from './catalog-classes';
 import { cn } from 'cn';
+import { Plus, Search } from 'lucide-react';
+import { PrintOrderDialog } from '../print-orders/print-order-dialog';
+import { currentDishOptions, latestFoodVersion } from './food-record-card';
 export {
   AggregateHeader,
   CreateDishForm,
@@ -65,6 +68,9 @@ export function DishMenuPanel({
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [creating, setCreating] = useState<'dish' | 'menu' | null>(null);
+  const [search, setSearch] = useState('');
+  const [status, setStatus] = useState('ALL');
 
   const load = useCallback(
     async (background = false) => {
@@ -95,6 +101,7 @@ export function DishMenuPanel({
       await load();
       return true;
     } catch (caught) {
+      await load();
       setError(foodErrorMessage(caught));
       return false;
     } finally {
@@ -128,81 +135,156 @@ export function DishMenuPanel({
     <section className={cn(cx.section, cx.foodPanel)} id="food" aria-labelledby="food-title">
       <div className={cx.sectionHeading}>
         <h2 id="food-title">Món ăn &amp; thực đơn</h2>
+        <p>Quản lý bản mới nhất, xem chi tiết và cập nhật danh mục nhà hàng.</p>
       </div>
       <PanelMessages message={message} error={error} />
-
-      <div className={cx.splitGrid}>
-        <CreateDishForm
-          pending={pending}
-          onSubmit={(input) =>
-            run('Đã tạo bản nháp món ăn.', (token) =>
-              gateway.createDish(token, {
-                ...input,
-                dishId: crypto.randomUUID(),
-                versionId: crypto.randomUUID(),
-                displayOrder: snapshot.dishes.length,
-              }),
-            )
-          }
-        />
-        <CreateMenuForm
-          dishes={snapshot.dishes}
-          pending={pending}
-          onSubmit={(input) =>
-            run('Đã tạo bản nháp thực đơn.', (token) =>
-              gateway.createMenu(token, {
-                ...input,
-                menuPackageId: crypto.randomUUID(),
-                versionId: crypto.randomUUID(),
-                displayOrder: snapshot.menus.length,
-              }),
-            )
-          }
-        />
+      {error && (
+        <p className={cx.error} role="alert">
+          {error}
+        </p>
+      )}
+      <div className="flex flex-wrap items-end gap-3 border-b border-border p-5">
+        <label className={`${cx.field} min-w-0 flex-1`}>
+          <span>Tìm món ăn hoặc gói thực đơn</span>
+          <span className="relative">
+            <Search
+              aria-hidden
+              className="pointer-events-none absolute top-3.5 left-3 size-4 text-muted-foreground"
+            />
+            <input
+              className="pl-9!"
+              placeholder="Nhập tên, nhóm món…"
+              value={search}
+              onChange={(event) => setSearch(event.currentTarget.value)}
+            />
+          </span>
+        </label>
+        <label className={cx.field}>
+          Trạng thái
+          <select value={status} onChange={(event) => setStatus(event.currentTarget.value)}>
+            <option value="ALL">Tất cả trạng thái</option>
+            <option value="ACTIVE">Đang hoạt động</option>
+            <option value="RETIRED">Đã ngừng</option>
+          </select>
+        </label>
+        <button
+          type="button"
+          className={cx.secondaryButton}
+          disabled={pending}
+          onClick={() => setCreating('dish')}
+        >
+          <Plus aria-hidden />
+          Thêm món ăn
+        </button>
+        <button
+          type="button"
+          className={cx.primaryButton}
+          disabled={pending}
+          onClick={() => setCreating('menu')}
+        >
+          <Plus aria-hidden />
+          Thêm gói thực đơn
+        </button>
       </div>
+      {creating !== null && (
+        <PrintOrderDialog
+          label={creating === 'dish' ? 'Thêm món ăn' : 'Thêm gói thực đơn'}
+          title={creating === 'dish' ? 'Thêm món ăn' : 'Thêm gói thực đơn'}
+          onClose={() => {
+            if (!pending) setCreating(null);
+          }}
+        >
+          {creating === 'dish' ? (
+            <CreateDishForm
+              pending={pending}
+              onSubmit={(input) =>
+                run('Đã tạo bản nháp món ăn.', (token) =>
+                  gateway.createDish(token, {
+                    ...input,
+                    dishId: crypto.randomUUID(),
+                    versionId: crypto.randomUUID(),
+                    displayOrder: snapshot.dishes.length,
+                  }),
+                ).then((ok) => {
+                  if (ok) setCreating(null);
+                  return ok;
+                })
+              }
+            />
+          ) : (
+            <CreateMenuForm
+              dishes={snapshot.dishes}
+              pending={pending}
+              onSubmit={(input) =>
+                run('Đã tạo bản nháp thực đơn.', (token) =>
+                  gateway.createMenu(token, {
+                    ...input,
+                    menuPackageId: crypto.randomUUID(),
+                    versionId: crypto.randomUUID(),
+                    displayOrder: snapshot.menus.length,
+                  }),
+                ).then((ok) => {
+                  if (ok) setCreating(null);
+                  return ok;
+                })
+              }
+            />
+          )}
+        </PrintOrderDialog>
+      )}
 
       <div className={cx.versionColumns}>
         <div>
-          <h3 className={cx.subheading}>Món ăn</h3>
-          {snapshot.dishes.length === 0 ? (
-            <p className={cx.empty}>Chưa có món ăn. Tạo bản nháp đầu tiên ở phía trên.</p>
+          <h3 className={cx.subheading}>Món ăn ({snapshot.dishes.filter(matches).length})</h3>
+          {snapshot.dishes.filter(matches).length === 0 ? (
+            <p className={cx.empty}>Không có món ăn phù hợp. Thêm món mới hoặc thay đổi bộ lọc.</p>
           ) : (
-            snapshot.dishes.map((dish) => (
-              <DishAggregate
-                key={dish.id}
-                dish={dish}
-                pending={pending}
-                run={run}
-                gateway={gateway}
-              />
-            ))
+            snapshot.dishes
+              .filter(matches)
+              .map((dish) => (
+                <DishAggregate
+                  key={dish.id}
+                  dish={dish}
+                  pending={pending}
+                  run={run}
+                  gateway={gateway}
+                />
+              ))
           )}
         </div>
         <div>
-          <h3 className={cx.subheading}>Gói thực đơn</h3>
-          {snapshot.menus.length === 0 ? (
-            <p className={cx.empty}>Chưa có gói thực đơn.</p>
+          <h3 className={cx.subheading}>Gói thực đơn ({snapshot.menus.filter(matches).length})</h3>
+          {snapshot.menus.filter(matches).length === 0 ? (
+            <p className={cx.empty}>
+              Không có gói thực đơn phù hợp. Thêm gói mới hoặc thay đổi bộ lọc.
+            </p>
           ) : (
-            snapshot.menus.map((menu) => (
-              <MenuAggregate
-                key={menu.id}
-                dishOptions={snapshot.dishes.flatMap((dish) =>
-                  dish.versions
-                    .filter((version) => version.state === 'PUBLISHED')
-                    .map((version) => ({
-                      id: version.id,
-                      label: `${version.name} · phiên bản ${version.versionNumber ?? '—'}`,
-                    })),
-                )}
-                menu={menu}
-                pending={pending}
-                run={run}
-                gateway={gateway}
-              />
-            ))
+            snapshot.menus
+              .filter(matches)
+              .map((menu) => (
+                <MenuAggregate
+                  key={menu.id}
+                  dishOptions={currentDishOptions(snapshot.dishes)}
+                  menu={menu}
+                  pending={pending}
+                  run={run}
+                  gateway={gateway}
+                />
+              ))
           )}
         </div>
       </div>
     </section>
   );
+
+  function matches(
+    record: FoodCatalogSnapshot['dishes'][number] | FoodCatalogSnapshot['menus'][number],
+  ) {
+    const version = latestFoodVersion(record);
+    if (!version || (status !== 'ALL' && record.lifecycle !== status)) return false;
+    const normalize = (value: string) =>
+      value.normalize('NFD').replace(/\p{M}/gu, '').replaceAll('đ', 'd').toLocaleLowerCase('vi-VN');
+    const content = `${version.name} ${'categoryLabel' in version ? version.categoryLabel : ''}`;
+    return normalize(content).includes(normalize(search.trim()));
+  }
 }

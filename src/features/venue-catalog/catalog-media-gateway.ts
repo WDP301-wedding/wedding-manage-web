@@ -16,6 +16,8 @@ export type SharedCatalogFetcher = <T>(
 
 type CatalogAggregateItem = {
   readonly id: string;
+  readonly currentPublishedVersionId: string | null;
+  readonly draftVersionId: string | null;
   readonly versions: readonly {
     readonly id: string;
     readonly name: string;
@@ -24,6 +26,15 @@ type CatalogAggregateItem = {
     readonly versionNumber: number | null;
   }[];
 };
+
+function latestFoodVersions(items: readonly CatalogAggregateItem[]) {
+  return items.map((record) => ({
+    ...record,
+    versions: record.versions.filter(
+      ({ id }) => id === (record.draftVersionId ?? record.currentPublishedVersionId),
+    ),
+  }));
+}
 
 export function createMediaCatalogGateway(
   api: () => ApiClient,
@@ -142,13 +153,13 @@ export function createMediaCatalogGateway(
           versions: Array.from(aggregate.versions, (version) => ({ ...version })),
         }));
       appendVersions(
-        normalizeVersions(required(dishes.data, 'Media dish read').data.items),
+        normalizeVersions(latestFoodVersions(required(dishes.data, 'Media dish read').data.items)),
         'dish-versions',
         'DISH_VERSION',
         'Món',
       );
       appendVersions(
-        normalizeVersions(required(menus.data, 'Media menu read').data.items),
+        normalizeVersions(latestFoodVersions(required(menus.data, 'Media menu read').data.items)),
         'menu-package-versions',
         'MENU_PACKAGE_VERSION',
         'Thực đơn',
