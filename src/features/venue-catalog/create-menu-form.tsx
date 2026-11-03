@@ -7,14 +7,17 @@ import type { CatalogDish, MenuWrite } from './catalog-api';
 import { EditorHeading, formatVnd, integer, LabeledInput, move, text } from './food-catalog-shared';
 
 import { cx } from './catalog-classes';
+import { currentDishOptions } from './food-record-card';
 export function OrderedVersionList({
   items,
   onChange,
   options,
+  disabled = false,
 }: Readonly<{
   items: readonly string[];
   onChange: (items: string[]) => void;
   options: readonly { id: string; label: string }[];
+  disabled?: boolean;
 }>) {
   return (
     <ol className={cx.orderList} aria-label="Thứ tự món trong gói">
@@ -26,7 +29,7 @@ export function OrderedVersionList({
               type="button"
               className={cx.orderButton}
               aria-label={`Đưa món ${index + 1} lên`}
-              disabled={index === 0}
+              disabled={disabled || index === 0}
               onClick={() => onChange(move(items, index, index - 1))}
             >
               <ArrowUp aria-hidden className="size-4" />
@@ -35,7 +38,7 @@ export function OrderedVersionList({
               type="button"
               className={cx.orderButton}
               aria-label={`Đưa món ${index + 1} xuống`}
-              disabled={index === items.length - 1}
+              disabled={disabled || index === items.length - 1}
               onClick={() => onChange(move(items, index, index + 1))}
             >
               <ArrowDown aria-hidden className="size-4" />
@@ -44,6 +47,7 @@ export function OrderedVersionList({
               type="button"
               className={cx.orderButton}
               aria-label={`Bỏ món ${index + 1}`}
+              disabled={disabled}
               onClick={() => onChange(items.filter((item) => item !== id))}
             >
               <X aria-hidden className="size-4" />
@@ -64,18 +68,7 @@ export function CreateMenuForm({
   onSubmit: (input: MenuWrite) => Promise<boolean>;
   pending: boolean;
 }>) {
-  const options = useMemo(
-    () =>
-      dishes.flatMap((dish) =>
-        dish.versions
-          .filter((version) => version.state === 'PUBLISHED')
-          .map((version) => ({
-            id: version.id,
-            label: `${version.name} · phiên bản ${version.versionNumber ?? '—'}`,
-          })),
-      ),
-    [dishes],
-  );
+  const options = useMemo(() => currentDishOptions(dishes), [dishes]);
   const [selectedVersionId, setSelectedVersionId] = useState('');
   const [items, setItems] = useState<string[]>([]);
 
@@ -118,7 +111,7 @@ export function CreateMenuForm({
     <form className={cx.editor} aria-label="Tạo gói thực đơn" onSubmit={submit}>
       <EditorHeading title="Tạo gói thực đơn" />
       <LabeledInput label="Tên gói" name="name" />
-      <LabeledInput label="Mô tả gói" name="description" as="textarea" />
+      <LabeledInput label="Mô tả gói" name="description" as="textarea" required={false} />
       <LabeledInput
         label="Giá mỗi bàn (VND)"
         name="priceVndPerTable"
@@ -144,7 +137,7 @@ export function CreateMenuForm({
           <button
             type="button"
             className={cx.secondaryButton}
-            disabled={selectedVersionId === ''}
+            disabled={pending || selectedVersionId === ''}
             onClick={() => {
               if (selectedVersionId !== '' && !items.includes(selectedVersionId)) {
                 setItems((current) => [...current, selectedVersionId]);
@@ -156,7 +149,7 @@ export function CreateMenuForm({
           </button>
         </div>
       </div>
-      <OrderedVersionList items={items} options={options} onChange={setItems} />
+      <OrderedVersionList items={items} options={options} onChange={setItems} disabled={pending} />
       {items.length > 0 ? (
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-muted/60 px-3 py-2 text-xs">
           <span className="text-muted-foreground">

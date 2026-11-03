@@ -73,9 +73,15 @@ export function LabeledInput({
     <div className={cx.field}>
       <label htmlFor={id}>{label}</label>
       {as === 'textarea' ? (
-        <textarea id={id} name={name} required defaultValue={String(props.defaultValue ?? '')} />
+        <textarea
+          id={id}
+          name={name}
+          required={props.required ?? true}
+          disabled={props.disabled}
+          defaultValue={String(props.defaultValue ?? '')}
+        />
       ) : (
-        <input {...props} id={id} name={name} required />
+        <input {...props} id={id} name={name} required={props.required ?? true} />
       )}
     </div>
   );
@@ -110,7 +116,7 @@ export function PanelMessages({
 
 export function text(data: FormData, name: string): string {
   const value = data.get(name);
-  return typeof value === 'string' ? value.trim() : '';
+  return typeof value === 'string' ? value.trim().normalize('NFC') : '';
 }
 
 export function integer(data: FormData, name: string): number {
