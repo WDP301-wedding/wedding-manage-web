@@ -170,8 +170,7 @@ export function ManagementBillingWorkspace({
             />
           )}
 
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-xl font-semibold">Công nợ đã ghi nhận</h2>
+          <div className="flex justify-end">
             <Button
               variant="outline"
               size="sm"
@@ -183,12 +182,7 @@ export function ManagementBillingWorkspace({
               Cập nhật thông tin
             </Button>
           </div>
-
-          <p className="-mt-3 text-sm text-muted-foreground">
-            Số liệu từ sổ công nợ, không bao gồm giá trị hợp đồng chưa được ghi nhận. Trước khi nhận
-            cọc, xem nghĩa vụ dự kiến hoặc đã cam kết ở phần Hợp đồng và tiền cọc phía trên.
-          </p>
-          <BillingSummary view={view} />
+          {archiveMode && <BillingSummary view={view} />}
 
           <div className="flex flex-wrap items-start gap-6">
             <BillingMutationsSection

@@ -1,51 +1,26 @@
 import Link from 'next/link';
 import type { FinancialOverview } from './billing-financial-overview.contract';
 import { money } from './billing-display';
-
 const stateLabels: Record<FinancialOverview['state'], string> = {
   NOT_CREATED: 'Chưa có hợp đồng',
-  DRAFT: 'Bản nháp — số tiền dự kiến',
+  DRAFT: 'Bản nháp · Giá trị dự kiến',
   AWAITING_APPROVAL: 'Chờ hai bên phê duyệt',
   APPROVED: 'Hai bên đã phê duyệt',
   SUPERSEDED: 'Phiên bản đã được thay thế',
 };
-
 export function BillingFinancialOverview({
   bookingId,
   overview,
-}: Readonly<{
-  bookingId: string;
-  overview: FinancialOverview | undefined;
-}>) {
-  if (overview === undefined)
-    return (
-      <section
-        className="rounded-xl border border-border bg-card p-5"
-        aria-label="Hợp đồng và tiền cọc"
-      >
-        <h2 className="text-lg font-semibold">Hợp đồng và tiền cọc</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Máy chủ chưa cung cấp thông tin hợp đồng tại trang này. Mở hồ sơ tiệc để xem tổng giá trị
-          và tiền cọc; không dùng số công nợ bằng 0 để kết luận chưa có khoản cần thu.
-        </p>
-        <Link
-          className="mt-3 inline-flex text-sm font-semibold text-primary hover:underline"
-          href={`/bookings?bookingId=${encodeURIComponent(bookingId)}`}
-        >
-          Xem hợp đồng trong hồ sơ tiệc
-        </Link>
-      </section>
-    );
-  const approved = overview.state === 'APPROVED';
-  const cancelled = overview.phase === 'CANCELLED';
+}: Readonly<{ bookingId: string; overview: FinancialOverview | undefined }>) {
+  const summary = overview?.settlementSummary;
   const values = [
+    ['Tổng hợp đồng', summary?.effectiveContractVnd ?? overview?.totalVnd ?? null],
     [
-      overview.source === 'LEGACY_PROPOSAL' ? 'Tổng giá trị đề xuất cũ' : 'Tổng hợp đồng ban đầu',
-      overview.totalVnd,
+      overview?.state === 'APPROVED' ? 'Tiền cọc cam kết' : 'Tiền cọc dự kiến',
+      overview?.requiredDepositVnd ?? null,
     ],
-    [approved ? 'Tiền cọc cam kết' : 'Tiền cọc dự kiến', overview.requiredDepositVnd],
-    ['Cọc đã ghi nhận', overview.depositReceivedVnd],
-    [approved ? 'Cọc chưa thu' : 'Cọc còn thiếu dự kiến', overview.depositRemainingVnd],
+    ['Tổng thu sau hoàn', summary?.netReceivedVnd ?? null],
+    ['Còn phải thu', summary?.outstandingVnd ?? null],
   ] as const;
   return (
     <section
@@ -53,19 +28,22 @@ export function BillingFinancialOverview({
       aria-labelledby="contract-deposit-title"
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex flex-col gap-1">
+        <div>
           <h2 id="contract-deposit-title" className="text-lg font-semibold">
             Hợp đồng và tiền cọc
           </h2>
-          <p className="text-sm text-muted-foreground">
-            {cancelled ? 'Hồ sơ đã hủy · ' : ''}
-            {stateLabels[overview.state]}
-            {overview.revisionNumber !== null ? ` · Phiên bản ${overview.revisionNumber}` : ''}
+          <p className="mt-1 text-sm text-muted-foreground">
+            {overview ? stateLabels[overview.state] : 'Chưa có dữ liệu hợp đồng'}
+            {overview?.phase === 'CANCELLED' ? ' · Tiệc đã hủy' : ''}
           </p>
         </div>
         <Link
           className="text-sm font-semibold text-primary hover:underline"
-          href={`/bookings?bookingId=${encodeURIComponent(bookingId)}`}
+          href={
+            overview?.phase === 'CANCELLED'
+              ? '/cancelled-bookings?bookingId=' + encodeURIComponent(bookingId)
+              : '/bookings?bookingId=' + encodeURIComponent(bookingId)
+          }
         >
           Xem hồ sơ tiệc
         </Link>
@@ -81,22 +59,28 @@ export function BillingFinancialOverview({
         ))}
       </dl>
       <p className="text-sm text-muted-foreground">
-        {cancelled
-          ? 'Các số tiền trên được giữ để đối chiếu lịch sử, không phải yêu cầu thu cọc mới. Khoản hoàn theo dõi ở phần giao dịch bên dưới.'
-          : overview.source === 'NONE'
-            ? 'Chưa có hợp đồng. Lập và hoàn tất phê duyệt hợp đồng trong hồ sơ tiệc để xác định số tiền cần cọc.'
-            : !approved
-              ? 'Số tiền đang dự kiến; chưa phải căn cứ thu cọc. Hoàn tất phê duyệt của cả hai bên và các điều kiện giữ sảnh, kịch bản trước khi thu.'
-              : overview.depositApplied
-                ? 'Đã áp dụng khoản cọc vào hồ sơ tiệc. Tổng trên là hợp đồng ban đầu; phụ lục và các điều chỉnh đã có hiệu lực được theo dõi trong công nợ bên dưới.'
-                : overview.depositReceivedVnd > 0
-                  ? 'Đã ghi nhận tiền cọc; việc xác nhận hồ sơ tiệc còn được đối chiếu. Kiểm tra trạng thái trước khi tạo thêm giao dịch.'
-                  : 'Đã xác định tiền cọc theo hợp đồng. Khi ghi nhận thu, máy chủ vẫn kiểm tra lại phiên bản hợp đồng và điều kiện nhận cọc.'}
+        Tổng hợp đồng gồm các phụ lục đã được hai bên phê duyệt. Tổng thu là số tiền đã nhận trừ
+        khoản hoàn thành công. Phát sinh nháp chưa được tính vào số còn phải thu.
       </p>
-      <p className="text-xs text-muted-foreground">
-        Thông tin hợp đồng hiện hành, tách biệt với sổ công nợ. Cọc đã ghi nhận là khoản thu cọc
-        thực tế trước hoàn tiền; các khoản hoàn nằm trong lịch sử giao dịch.
-      </p>
+      {summary?.payableVnd != null && (
+        <p className="text-sm">
+          Tổng nghĩa vụ đã xác định, gồm phát sinh đã chốt:{' '}
+          <strong>{money(summary.payableVnd)}</strong>
+          {summary.creditVnd > 0 ? ' · Thu thừa: ' + money(summary.creditVnd) : ''}
+        </p>
+      )}
+      {overview?.state !== 'APPROVED' && (
+        <p className="text-xs text-muted-foreground">
+          Hoàn tất phê duyệt hợp đồng để xác định nghĩa vụ cần thu; giá trị nháp không phải khoản
+          phải thu.
+        </p>
+      )}
+      {!summary && (
+        <p role="status" className="text-xs text-muted-foreground">
+          Máy chủ chưa cung cấp số tổng hợp thu và công nợ hiện hành. Không coi dữ liệu chưa có là
+          số tiền bằng 0.
+        </p>
+      )}
     </section>
   );
 }

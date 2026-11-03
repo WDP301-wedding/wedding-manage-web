@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Lock, Plus } from 'lucide-react';
+import { useLiveRefresh } from '../realtime/use-live-refresh';
 import {
   billingService,
   type IncidentalExpensesResponse,
@@ -37,9 +38,13 @@ export function IncidentalsPanel({
   const [showFinalizeConfirm, setShowFinalizeConfirm] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const activeBookingIdRef = useRef(bookingId);
+  const loadSequence = useRef(0);
+  const invoiceIntent = useRef<{ fingerprint: string; key: string } | null>(null);
+  const busy = disabled || finalizing || showAddForm || showFinalizeConfirm;
 
   const loadData = async (targetId = bookingId) => {
     if (!targetId) return;
+    const sequence = ++loadSequence.current;
     setLoading(true);
     setLoadError(null);
     try {
@@ -48,7 +53,7 @@ export function IncidentalsPanel({
         billingService.getFinalInvoices(targetId),
         contractService.getAppendices(targetId),
       ]);
-      if (activeBookingIdRef.current !== targetId) return;
+      if (activeBookingIdRef.current !== targetId || loadSequence.current !== sequence) return;
 
       const errors: string[] = [];
       if (incRes.status === 'fulfilled') {
@@ -67,16 +72,19 @@ export function IncidentalsPanel({
 
       if (appRes.status === 'fulfilled') {
         setAppendices(appRes.value);
+      } else {
+        setAppendices(null);
+        errors.push('Phụ lục: ' + describeApiError(appRes.reason).message);
       }
 
       if (errors.length > 0) {
         setLoadError(errors.join(' '));
       }
     } catch (err) {
-      if (activeBookingIdRef.current !== targetId) return;
+      if (activeBookingIdRef.current !== targetId || loadSequence.current !== sequence) return;
       setLoadError(describeApiError(err).message);
     } finally {
-      if (activeBookingIdRef.current === targetId) {
+      if (activeBookingIdRef.current === targetId && loadSequence.current === sequence) {
         setLoading(false);
       }
     }
@@ -88,8 +96,22 @@ export function IncidentalsPanel({
     setFinalInvoices(null);
     setAppendices(null);
     setShowFinalizeConfirm(false);
-    void loadData(bookingId);
+    invoiceIntent.current = null;
+    loadSequence.current++;
   }, [bookingId]);
+
+  useLiveRefresh(
+    async () => {
+      await loadData(bookingId);
+    },
+    {
+      scope: 'settlement:' + bookingId + ':' + billingRevision,
+      bookingId,
+      initial: true,
+      blocked: busy,
+      types: ['billing.updated', 'contract.updated', 'booking.updated', 'deposit.received'],
+    },
+  );
 
   const handleCreateIncidental = async (formData: IncidentalFormData) => {
     setLoading(true);
@@ -130,7 +152,7 @@ export function IncidentalsPanel({
   };
 
   const handleFinalizeInvoice = async () => {
-    if (!appendices?.effectiveRevisionId) {
+    if (!appendices?.effectiveRevisionId || !incidentals || loadError || loading) {
       const msg =
         'Chưa thể chốt hoá đơn: không tìm thấy thoả thuận thương mại hiệu lực của booking.';
       notify.error(msg);
@@ -138,11 +160,16 @@ export function IncidentalsPanel({
     }
     setFinalizing(true);
     try {
-      await billingService.finalizeInvoice(bookingId, {
+      const body = {
         expectedBillingRevision: billingRevision,
         expectedCommercialRevisionId: appendices.effectiveRevisionId,
         expectedDraftRevision: incidentals?.revision ?? 0,
-      });
+      };
+      const fingerprint = JSON.stringify([bookingId, body]);
+      if (invoiceIntent.current?.fingerprint !== fingerprint)
+        invoiceIntent.current = { fingerprint, key: crypto.randomUUID() };
+      await billingService.finalizeInvoice(bookingId, body, invoiceIntent.current.key);
+      invoiceIntent.current = null;
       const msg = 'Đã chốt hoá đơn quyết toán cuối thành công. Sổ cái công nợ đã được khoá sổ.';
       notify.success(msg);
       setShowFinalizeConfirm(false);
@@ -155,7 +182,21 @@ export function IncidentalsPanel({
         INVOICE_FINALIZED: 'Hoá đơn quyết toán cuối đã được chốt và khoá sổ từ trước.',
         COMMERCIAL_PREDECESSOR_STALE: 'Thoả thuận thương mại vừa thay đổi. Vui lòng làm mới trang.',
         EXPENSE_REVISION_STALE: 'Dữ liệu phát sinh vừa thay đổi. Vui lòng làm mới trang.',
+        STALE_BILLING_REVISION:
+          'Số tiền vừa thay đổi. Đóng xác nhận và làm mới trước khi chốt lại.',
+        FINANCIAL_SOURCE_CONFLICT:
+          'Hồ sơ tài chính chưa khớp. Không chốt lại cho đến khi đối chiếu xong.',
+        PAYMENT_ATTEMPT_ACTIVE:
+          'Có giao dịch chưa rõ kết quả. Đối soát giao dịch trước khi chốt hóa đơn.',
+        INVOICE_STORAGE_NOT_READY:
+          'Máy chủ chưa cập nhật đủ cấu trúc hóa đơn. Cần hoàn tất migration BE trước khi chốt.',
       });
+      if (friendly.status === 409) {
+        setShowFinalizeConfirm(false);
+        invoiceIntent.current = null;
+        await loadData();
+        onRefresh();
+      }
       notify.error(err, { message: friendly.message });
     } finally {
       setFinalizing(false);
@@ -163,9 +204,10 @@ export function IncidentalsPanel({
   };
 
   const hasFinalizedInvoice = Boolean(finalInvoices && finalInvoices.revisions.length > 0);
-  const commercialTotal = appendices?.effectiveTotalVnd ?? 0;
-  const incidentalTotal = incidentals?.totalVnd ?? 0;
-  const projectedTotal = commercialTotal + incidentalTotal;
+  const commercialTotal = appendices?.effectiveTotalVnd ?? null;
+  const incidentalTotal = incidentals?.totalVnd ?? null;
+  const projectedTotal =
+    commercialTotal === null || incidentalTotal === null ? null : commercialTotal + incidentalTotal;
 
   return (
     <section className="flex flex-col gap-5 rounded-xl border border-border bg-card p-6 shadow-hy-1">
@@ -219,7 +261,14 @@ export function IncidentalsPanel({
 
                 <Button
                   type="button"
-                  disabled={disabled || loading || finalizing || !appendices?.effectiveRevisionId}
+                  disabled={
+                    disabled ||
+                    loading ||
+                    finalizing ||
+                    Boolean(loadError) ||
+                    !incidentals ||
+                    !appendices?.effectiveRevisionId
+                  }
                   onClick={() => setShowFinalizeConfirm(true)}
                 >
                   Chốt hoá đơn quyết toán
@@ -232,7 +281,9 @@ export function IncidentalsPanel({
                   <dt className="text-2xs text-muted-foreground">
                     Thoả thuận thương mại hiệu lực:
                   </dt>
-                  <dd className="font-semibold tabular-nums">{formatVnd(commercialTotal)}</dd>
+                  <dd className="font-semibold tabular-nums">
+                    {commercialTotal === null ? 'Chưa xác định' : formatVnd(commercialTotal)}
+                  </dd>
                   {appendices?.effectiveRevisionId ? (
                     <small className="text-2xs text-muted-foreground">
                       Phiên bản: {appendices.effectiveRevisionId.slice(0, 8)}…
@@ -244,13 +295,15 @@ export function IncidentalsPanel({
                   <dt className="text-2xs text-muted-foreground">
                     Tổng phát sinh ({incidentals?.lines?.length ?? 0} khoản):
                   </dt>
-                  <dd className="font-semibold tabular-nums">{formatVnd(incidentalTotal)}</dd>
+                  <dd className="font-semibold tabular-nums">
+                    {incidentalTotal === null ? 'Chưa xác định' : formatVnd(incidentalTotal)}
+                  </dd>
                 </div>
 
                 <div className="flex flex-col">
                   <dt className="text-2xs text-muted-foreground">Tổng quyết toán cuối dự kiến:</dt>
                   <dd className="text-lg font-bold text-primary tabular-nums">
-                    {formatVnd(projectedTotal)}
+                    {projectedTotal === null ? 'Chưa xác định' : formatVnd(projectedTotal)}
                   </dd>
                 </div>
               </dl>
@@ -269,7 +322,10 @@ export function IncidentalsPanel({
                     Hoá đơn sau khi chốt là <strong>chứng từ pháp lý và kế toán bất biến</strong>.
                     Toàn bộ chi phí phát sinh nháp (Bản {incidentals?.revision ?? 0}) sẽ được đóng
                     sổ và tích hợp chính thức vào công nợ cuối cùng của tiệc với tổng tiền{' '}
-                    <strong>{formatVnd(projectedTotal)}</strong>.
+                    <strong>
+                      {projectedTotal === null ? 'Chưa xác định' : formatVnd(projectedTotal)}
+                    </strong>
+                    .
                   </p>
                   <div className="flex flex-wrap justify-end gap-2">
                     <Button

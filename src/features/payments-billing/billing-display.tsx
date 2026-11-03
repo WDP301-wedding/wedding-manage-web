@@ -115,19 +115,25 @@ export function BillingSummary({ view }: Readonly<{ view: BillingView }>) {
 }
 export function BillingHistory({ view }: Readonly<{ view: BillingView }>) {
   const transactions = view.history.filter(
-    (entry) => entry.kind === 'PAYMENT' || entry.kind === 'REFUND',
+    (entry) =>
+      entry.kind === 'PAYMENT' ||
+      entry.kind === 'REFUND' ||
+      entry.sourceType === 'CONTRACT_APPENDIX' ||
+      entry.sourceType === 'INCIDENTAL_FINALIZATION' ||
+      entry.sourceType === 'INVOICE_ADJUSTMENT',
   );
   return (
     <section className="flex flex-col gap-3">
       <h2 className="text-lg font-semibold">Lịch sử giao dịch</h2>
       <p className="text-xs text-muted-foreground">
-        Chỉ gồm các khoản đã thu hoặc hoàn. Khoản phải thu vẫn hiển thị riêng ở phần tổng hợp.
+        Các khoản thu, hoàn và biến động nghĩa vụ từ phụ lục, phát sinh đã chốt hoặc điều chỉnh hóa
+        đơn. Điều chỉnh nghĩa vụ không phải giao dịch thu tiền.
       </p>
       {transactions.length === 0 ? (
         <p className="rounded-lg border border-dashed border-input p-4 text-center text-xs text-muted-foreground">
           {view.nextCursor
-            ? 'Chưa có khoản thu/hoàn trong các trang đã tải. Tải thêm lịch sử để xem giao dịch trước.'
-            : 'Chưa có giao dịch thu/hoàn.'}
+            ? 'Chưa có biến động trong các trang đã tải. Tải thêm lịch sử để xem giao dịch trước.'
+            : 'Chưa có biến động đã ghi nhận.'}
         </p>
       ) : (
         <div

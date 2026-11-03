@@ -14,6 +14,15 @@ export const financialOverviewSchema = z.strictObject({
   depositReceivedVnd: amount,
   depositRemainingVnd: amount.nullable(),
   depositApplied: z.boolean(),
+  settlementSummary: z
+    .strictObject({
+      effectiveContractVnd: amount.nullable(),
+      payableVnd: amount.nullable(),
+      netReceivedVnd: amount,
+      outstandingVnd: amount.nullable(),
+      creditVnd: amount,
+    })
+    .optional(),
 });
 export const financialOverviewExtension = z.object({
   financialOverview: financialOverviewSchema.optional(),
