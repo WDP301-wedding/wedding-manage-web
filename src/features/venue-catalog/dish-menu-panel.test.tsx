@@ -348,11 +348,13 @@ describe('VC-19 dish and menu administration', () => {
     fireEvent.change(within(form).getByLabelText('Giá mỗi bàn (VND)'), {
       target: { value: '4500000' },
     });
-    fireEvent.change(within(form).getByLabelText('Món phiên bản'), {
+    fireEvent.change(within(form).getByLabelText('Món phiên bản', { selector: 'select' }), {
       target: { value: publishedDishVersionId },
     });
     fireEvent.click(within(form).getByRole('button', { name: 'Thêm món vào gói' }));
-    expect(within(form).getAllByText('Gỏi ngó sen · phiên bản 1')).toHaveLength(2);
+    const selectedDishes = within(form).getByRole('list', { name: 'Thứ tự món trong gói' });
+    expect(within(selectedDishes).getAllByRole('listitem')).toHaveLength(1);
+    expect(selectedDishes).toHaveTextContent('Gỏi ngó sen · phiên bản 1');
     fireEvent.click(within(form).getByRole('button', { name: 'Tạo bản nháp thực đơn' }));
 
     await waitFor(() =>
