@@ -83,6 +83,14 @@ export type MenuWrite = Readonly<{
 }>;
 
 export interface FoodCatalogGateway {
+  deleteDish(
+    accessToken: string,
+    input: Readonly<{ id: string; expectedRevision: number }>,
+  ): Promise<void>;
+  deleteMenu(
+    accessToken: string,
+    input: Readonly<{ id: string; expectedRevision: number }>,
+  ): Promise<void>;
   loadFood(accessToken: string): Promise<FoodCatalogSnapshot>;
   createDish(
     accessToken: string,
@@ -91,14 +99,19 @@ export interface FoodCatalogGateway {
   updateDishDraft(
     accessToken: string,
     input: DishWrite & Readonly<{ versionId: string; expectedRevision: number }>,
-  ): Promise<void>;
+  ): Promise<number>;
   publishDish(
     accessToken: string,
     input: Readonly<{ versionId: string; expectedRevision: number }>,
   ): Promise<void>;
   cloneDish(
     accessToken: string,
-    input: Readonly<{ dishId: string; sourceVersionId: string; versionId: string }>,
+    input: Readonly<{
+      dishId: string;
+      sourceVersionId: string;
+      versionId: string;
+      idempotencyKey?: string;
+    }>,
   ): Promise<void>;
   changeDishLifecycle(
     accessToken: string,
@@ -111,14 +124,19 @@ export interface FoodCatalogGateway {
   updateMenuDraft(
     accessToken: string,
     input: MenuWrite & Readonly<{ versionId: string; expectedRevision: number }>,
-  ): Promise<void>;
+  ): Promise<number>;
   publishMenu(
     accessToken: string,
     input: Readonly<{ versionId: string; expectedRevision: number }>,
   ): Promise<void>;
   cloneMenu(
     accessToken: string,
-    input: Readonly<{ packageId: string; sourceVersionId: string; versionId: string }>,
+    input: Readonly<{
+      packageId: string;
+      sourceVersionId: string;
+      versionId: string;
+      idempotencyKey?: string;
+    }>,
   ): Promise<void>;
   changeMenuLifecycle(
     accessToken: string,
