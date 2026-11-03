@@ -7,7 +7,6 @@ export interface PrintOrderSpecsCardProps {
 }
 
 export function PrintOrderSpecsCard({ selectedOrder }: Readonly<PrintOrderSpecsCardProps>) {
-  const first = selectedOrder.lines[0];
   return (
     <section className={cardClass}>
       <div className="flex items-center justify-between gap-2">
@@ -53,16 +52,9 @@ export function PrintOrderSpecsCard({ selectedOrder }: Readonly<PrintOrderSpecsC
         })}
       </ul>
 
-      <div className="flex flex-col gap-1 rounded-lg border border-dashed border-input px-4 py-5 text-center">
-        <strong className="text-sm font-semibold">Chưa có bản xem trước kỹ thuật số</strong>
-        <span className={hintClass}>
-          Mã thiết kế: {first?.designId ?? 'Chưa xác định'}, phiên bản in:{' '}
-          {first?.printableRevisionId ?? 'Chưa gán phiên bản in ấn'}
-        </span>
-        <small className={hintClass}>
-          Bản vẽ in ấn số hóa sẽ được đồng bộ khi studio thiệp cưới xuất bản bản in chính thức.
-        </small>
-      </div>
+      {!selectedOrder.lines.some((line) => line.printableRevisionId) ? (
+        <p className={hintClass}>Các dòng in lịch sử này chưa có bản xem trước được lưu.</p>
+      ) : null}
     </section>
   );
 }

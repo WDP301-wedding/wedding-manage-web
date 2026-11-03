@@ -361,7 +361,7 @@ describe('Management Print Orders Workspace (M09–M14)', () => {
     ).toBeVisible();
   });
 
-  it('explains the business rule that Manager cannot create orders on behalf of Couple', async () => {
+  it('tracks effective print orders without a manual create-order entry', async () => {
     const gateway = createFixturePrintOrdersGateway();
     render(
       <PrintOrdersWorkspace
@@ -376,19 +376,10 @@ describe('Management Print Orders Workspace (M09–M14)', () => {
     );
 
     await screen.findByRole('heading', { level: 1, name: 'Hàng đợi đơn in' });
-    fireEvent.click(screen.getByRole('button', { name: /Tạo đơn in/ }));
-
-    expect(screen.getByRole('dialog', { name: 'Quy trình khởi tạo đơn in' })).toBeVisible();
+    expect(screen.queryByRole('button', { name: /Tạo đơn in/ })).not.toBeInTheDocument();
     expect(
-      screen.getByText(
-        /Theo quy định nghiệp vụ hệ thống, đơn in ấn vật lý do Couple khởi tạo trực tiếp/,
-      ),
+      screen.getByText(/Đơn in mới chỉ xuất hiện sau khi phụ lục được cả hai bên duyệt/),
     ).toBeVisible();
-
-    fireEvent.click(screen.getByRole('button', { name: 'Đã hiểu' }));
-    expect(
-      screen.queryByRole('dialog', { name: 'Quy trình khởi tạo đơn in' }),
-    ).not.toBeInTheDocument();
   });
 
   it('closes modals with Escape key', async () => {

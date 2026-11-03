@@ -163,7 +163,15 @@ export function useBookingWorkspaceState({
         setContextStatus('ready');
         if (shouldSwitchTab) {
           switchTab('manage');
-          window.history.replaceState(null, '', '/bookings?bookingId=' + result.bookingId);
+          const currentParams = new URLSearchParams(window.location.search);
+          const appendixRevisionId =
+            currentParams.get('bookingId') === result.bookingId
+              ? currentParams.get('appendixRevisionId')
+              : null;
+          const nextParams = new URLSearchParams({ bookingId: result.bookingId });
+          if (appendixRevisionId && /^[a-f0-9-]{36}$/iu.test(appendixRevisionId))
+            nextParams.set('appendixRevisionId', appendixRevisionId);
+          window.history.replaceState(null, '', '/bookings?' + nextParams.toString());
         }
       } catch (caught) {
         if (sequence !== contextSequence.current) return;

@@ -51,6 +51,11 @@ export interface CommercialRevisionView {
 }
 
 export interface PrintOrderView {
+  readonly appendixSource?: {
+    readonly requestId: string;
+    readonly appendixRevisionId: string;
+    readonly pendingAppendixRevisionId?: string | null;
+  };
   readonly purchase?: {
     readonly cancellationRequested?: boolean;
     readonly appendixRevisionId: string;
@@ -181,7 +186,7 @@ export function deriveProductionStatus(order: PrintOrderView): StatusBadgeDescri
  * Action eligibility helpers strictly conforming to domain/print-policy.ts
  */
 export function canQuoteOrder(order: PrintOrderView): boolean {
-  if (order.purchase) return false;
+  if (order.purchase || order.appendixSource) return false;
   if (order.status === 'REQUESTED') return true;
   if (order.status === 'QUOTED') {
     return isCommercialRevisionExpired(order.currentCommercialRevision);
@@ -192,6 +197,7 @@ export function canQuoteOrder(order: PrintOrderView): boolean {
 export function canStartProduction(order: PrintOrderView): boolean {
   return (
     !order.purchase?.cancellationRequested &&
+    !order.appendixSource?.pendingAppendixRevisionId &&
     order.status === 'APPROVED' &&
     order.pendingReplacementProposal === null
   );
@@ -206,13 +212,17 @@ export function canMarkHandedOver(order: PrintOrderView): boolean {
 }
 
 export function canCancelOrder(order: PrintOrderView): boolean {
+  if (order.appendixSource) return false;
   // Only orders not yet in production or completed can be cancelled
   return order.status === 'REQUESTED' || order.status === 'QUOTED' || order.status === 'APPROVED';
 }
 
 export function canProposeReplacement(order: PrintOrderView): boolean {
   return (
-    !order.purchase && order.status === 'APPROVED' && order.pendingReplacementProposal === null
+    !order.purchase &&
+    !order.appendixSource &&
+    order.status === 'APPROVED' &&
+    order.pendingReplacementProposal === null
   );
 }
 

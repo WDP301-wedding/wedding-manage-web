@@ -50,6 +50,55 @@ export function PrintOrderTimelineCard({ selectedOrder }: Readonly<PrintOrderTim
   const producing =
     status === 'IN_PRODUCTION' || status === 'READY_FOR_HANDOVER' || status === 'HANDED_OVER';
 
+  if (selectedOrder.appendixSource)
+    return (
+      <section className={cardClass}>
+        <h3 className={cardTitleClass}>Dòng thời gian đơn in</h3>
+        <ol className="flex flex-col">
+          <Step
+            state="done"
+            title="Phụ lục được hai bên duyệt"
+            when={formatVietnameseDateTime(selectedOrder.createdAt)}
+            note="Đơn in được tạo sau khi cả hai bên đồng ý. Chi phí được ghi nhận qua phụ lục."
+          />
+          <Step
+            state={cancelled ? 'cancelled' : producing ? 'done' : 'current'}
+            title={cancelled ? 'Đã hủy theo phụ lục điều chỉnh' : 'Sản xuất bản in đã chốt'}
+            when={
+              cancelled ? 'Đã dừng' : producing ? 'Đã bắt đầu sản xuất' : 'Chờ bắt đầu sản xuất'
+            }
+            note={
+              cancelled
+                ? 'Không tiếp tục sản xuất đơn này.'
+                : 'Sử dụng đúng các mẫu và số lượng trong phụ lục đang có hiệu lực.'
+            }
+          />
+          <Step
+            state={
+              status === 'HANDED_OVER'
+                ? 'done'
+                : status === 'READY_FOR_HANDOVER'
+                  ? 'current'
+                  : 'pending'
+            }
+            title="Bàn giao tại nhà hàng"
+            when={
+              selectedOrder.handedOverAt
+                ? formatVietnameseDateTime(selectedOrder.handedOverAt)
+                : status === 'READY_FOR_HANDOVER'
+                  ? 'Sẵn sàng giao nhận'
+                  : 'Chưa khả dụng'
+            }
+            note={
+              selectedOrder.handedOverAt
+                ? `Đã bàn giao, mã chứng từ: ${selectedOrder.evidenceReference ?? 'chưa có'}`
+                : 'Xác nhận bàn giao sau khi hoàn thành in.'
+            }
+          />
+        </ol>
+      </section>
+    );
+
   return (
     <section className={cardClass}>
       <h3 className={cardTitleClass}>Dòng thời gian đơn in</h3>

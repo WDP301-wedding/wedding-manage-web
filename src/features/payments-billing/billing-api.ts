@@ -96,10 +96,9 @@ export function createManagementBillingGateway(client?: ApiClient): ManagementBi
         cache: 'no-store',
       });
       const value = required(data);
-      const { financialOverview } = financialOverviewExtension.parse(value);
+      financialOverviewExtension.parse(value);
       return {
         ...value,
-        ...(financialOverview === undefined ? {} : { financialOverview }),
         history: Array.from(value.history),
         balancePaymentEligibility: value.balancePaymentEligibility.canPay
           ? { ...value.balancePaymentEligibility, reasonCode: null }

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import Link from 'next/link';
 import { Button } from '../../components/ui/button';
 import {
   canCancelOrder,
@@ -51,6 +52,19 @@ export function PrintOrdersDetail({
             (Hợp đồng: {selectedOrder.bookingId})
           </span>
         </div>
+        {selectedOrder.appendixSource ? (
+          <p className="text-sm text-muted-foreground">
+            Đơn in được tạo từ phụ lục đã được cả hai bên duyệt. Chi phí chỉ được ghi nhận một lần
+            qua phụ lục.{' '}
+            <Link
+              href={`/bookings?bookingId=${encodeURIComponent(selectedOrder.bookingId)}&appendixRevisionId=${encodeURIComponent(selectedOrder.appendixSource.appendixRevisionId)}`}
+              className="text-primary underline"
+            >
+              Xem phụ lục của đơn in
+            </Link>
+            . Thay đổi số lượng hoặc hủy in cần lập phụ lục điều chỉnh và được hai bên đồng ý lại.
+          </p>
+        ) : null}
         {selectedOrder.purchase ? (
           <p className="text-sm text-muted-foreground">
             {selectedOrder.purchase.cancellationRequested
@@ -60,6 +74,11 @@ export function PrintOrdersDetail({
             {selectedOrder.currentCommercialRevision?.orderTotalVnd.toLocaleString('vi-VN')} đ.
             Duyệt đơn đồng thời xác nhận phụ lục phía nhà hàng, không thu lại tiền cọc. Muốn thay
             đổi nội dung hoặc giá: hủy yêu cầu chờ duyệt để Couple chọn và xác nhận lại.
+          </p>
+        ) : null}
+        {selectedOrder.appendixSource?.pendingAppendixRevisionId ? (
+          <p role="status" className="text-sm text-muted-foreground">
+            Sản xuất tạm dừng trong khi phụ lục điều chỉnh đang chờ hai bên duyệt.
           </p>
         ) : null}
         <div className="flex flex-wrap gap-2">

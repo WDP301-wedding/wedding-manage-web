@@ -1,17 +1,12 @@
 import { PrintPurchasePreview } from './print-purchase-preview';
 import { useCallback, useRef, useState } from 'react';
-import { Clock3, Plus, RefreshCw } from 'lucide-react';
+import { Clock3, RefreshCw } from 'lucide-react';
 import { cn } from 'cn';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { OperationsShell } from '../identity-access/operations-shell';
 import type { ManagementSessionSnapshot } from '../identity-access/session';
-import {
-  CancelOrderModal,
-  CreateOrderNoticeModal,
-  HandoverModal,
-  HistoryModal,
-} from './print-order-modals';
+import { CancelOrderModal, HandoverModal, HistoryModal } from './print-order-modals';
 import type { ManagementPrintOrdersGateway } from './print-orders-api';
 import { PrintOrdersDetail } from './print-orders-detail';
 import { DEMO_MANAGER_SNAPSHOT } from './print-orders-fixtures';
@@ -78,7 +73,6 @@ export function PrintOrdersWorkspace({
   const [handoverModalOpen, setHandoverModalOpen] = useState(false);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
-  const [createOrderNoticeOpen, setCreateOrderNoticeOpen] = useState(false);
 
   // Notifications
   const showToast = useCallback((msg: string) => {
@@ -188,6 +182,10 @@ export function PrintOrdersWorkspace({
         <header className="flex flex-wrap items-end justify-between gap-4">
           <div className="flex flex-col gap-1">
             <h1 className="text-2xl font-bold">Hàng đợi đơn in</h1>
+            <p className="max-w-2xl text-sm text-muted-foreground">
+              Theo dõi các mẫu in và tiến độ bàn giao. Đơn in mới chỉ xuất hiện sau khi phụ lục được
+              cả hai bên duyệt; mọi điều chỉnh chi phí được thực hiện tại phụ lục.
+            </p>
             <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
               {isFixtureMode ? <Badge variant="info">Dữ liệu mẫu</Badge> : null}
               <span>Cập nhật lúc {lastRefreshed}</span>
@@ -212,10 +210,6 @@ export function PrintOrdersWorkspace({
             <Button variant="outline" onClick={() => setHistoryModalOpen(true)}>
               <Clock3 aria-hidden className="size-4" />
               Xem lịch sử
-            </Button>
-            <Button onClick={() => setCreateOrderNoticeOpen(true)}>
-              <Plus aria-hidden className="size-4" />
-              Tạo đơn in
             </Button>
           </div>
         </header>
@@ -265,7 +259,7 @@ export function PrintOrdersWorkspace({
             <PrintOrdersDetail
               selectedOrder={selectedOrder}
               purchasePreview={
-                selectedOrder.purchase ? (
+                selectedOrder.lines.some((line) => line.printableRevisionId) ? (
                   <PrintPurchasePreview
                     key={selectedOrder.orderId}
                     order={selectedOrder}
@@ -337,11 +331,6 @@ export function PrintOrdersWorkspace({
             void handleConfirmCancel(reason);
           }}
         />
-      ) : null}
-
-      {/* Create Order Notice Modal */}
-      {createOrderNoticeOpen ? (
-        <CreateOrderNoticeModal onClose={() => setCreateOrderNoticeOpen(false)} />
       ) : null}
 
       {/* History Modal */}

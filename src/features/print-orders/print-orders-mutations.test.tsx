@@ -130,7 +130,7 @@ describe('Management Print Orders Mutations and Authorization', () => {
     // IN-2408-018 has 2 lines: line_18_1 (220 qty) and line_18_2 (220 qty)
     await screen.findByRole('button', { name: /Chọn đơn in IN-2408-018/ });
     expect(screen.getAllByText(/Thiệp gập · Ivory/).length).toBeGreaterThan(0);
-    expect(screen.getByText(/Thiệp cảm ơn đi kèm/)).toBeVisible();
+    expect(screen.getAllByText(/Thiệp cảm ơn đi kèm/).every((item) => item.isConnected)).toBe(true);
     expect(screen.getByText('440 bản in')).toBeVisible();
     expect(screen.getByText('18.700.000 ₫')).toBeVisible();
   });
