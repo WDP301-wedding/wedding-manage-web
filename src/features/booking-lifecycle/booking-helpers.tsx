@@ -161,7 +161,19 @@ export function errorMessage(error: unknown, shift?: ProposalView['proposal']['s
   return messages[error.code] ?? describeApiError(error).message;
 }
 
-export function bookingPhaseLabel(phase: string): string {
+export function isEventPast(eventDate?: string | null, now = new Date()): boolean {
+  if (!eventDate) return false;
+  const isoMatch = /^(\d{4}-\d{2}-\d{2})/.exec(eventDate);
+  const dateStr = isoMatch ? isoMatch[1] : '';
+  if (!dateStr) return false;
+  const today = now.toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' });
+  return dateStr < today;
+}
+
+export function bookingPhaseLabel(phase: string, eventDate?: string | null): string {
+  if ((phase === 'DRAFT' || phase === 'AWAITING_DEPOSIT') && isEventPast(eventDate)) {
+    return 'Quá hạn tổ chức';
+  }
   const labels: Record<string, string> = {
     DRAFT: 'Đang chuẩn bị nội dung tiệc',
     AWAITING_DEPOSIT: 'Chờ đặt cọc',
@@ -174,7 +186,10 @@ export function bookingPhaseLabel(phase: string): string {
 
 export type BadgeTone = 'neutral' | 'brand' | 'success' | 'warning' | 'error' | 'info';
 
-export function bookingPhaseTone(phase: string): BadgeTone {
+export function bookingPhaseTone(phase: string, eventDate?: string | null): BadgeTone {
+  if ((phase === 'DRAFT' || phase === 'AWAITING_DEPOSIT') && isEventPast(eventDate)) {
+    return 'error';
+  }
   const tones: Record<string, BadgeTone> = {
     DRAFT: 'neutral',
     AWAITING_DEPOSIT: 'warning',

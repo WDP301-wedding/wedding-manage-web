@@ -105,8 +105,8 @@ export function ManagementBookingWorkspace({
             {proposal ? (
               <>
                 <span className="tabular-nums">Ngày: {formatDate(proposal.eventDate)}</span>
-                <Badge variant={bookingPhaseTone(proposal.phase)}>
-                  {bookingPhaseLabel(proposal.phase)}
+                <Badge variant={bookingPhaseTone(proposal.phase, proposal.eventDate)}>
+                  {bookingPhaseLabel(proposal.phase, proposal.eventDate)}
                 </Badge>
               </>
             ) : (

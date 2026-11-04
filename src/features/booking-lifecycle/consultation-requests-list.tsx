@@ -32,8 +32,8 @@ function statusBadge(item: Item): { tone: BadgeTone; label: string } {
   if (item.status === 'CLOSED') return { tone: 'neutral', label: 'Lưu trữ' };
   if (item.bookingId) {
     return {
-      tone: bookingPhaseTone(item.bookingPhase ?? ''),
-      label: bookingPhaseLabel(item.bookingPhase ?? ''),
+      tone: bookingPhaseTone(item.bookingPhase ?? '', item.preferredDate),
+      label: bookingPhaseLabel(item.bookingPhase ?? '', item.preferredDate),
     };
   }
   return { tone: 'info', label: 'Đang tư vấn · Chưa lập tiệc' };

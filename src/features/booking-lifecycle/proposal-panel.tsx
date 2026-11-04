@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Check, Lock, Pencil } from 'lucide-react';
 
 import { createVenueCatalogGateway } from '../venue-catalog/catalog-api';
-import { bookingPhaseLabel, bookingPhaseTone, formatDate, money } from './booking-helpers';
+import { bookingPhaseLabel, bookingPhaseTone, formatDate, isEventPast, money } from './booking-helpers';
 import { contractService } from '../../services/contract.service';
 import type { useContractPanel } from './use-contract-panel';
 import { ContractPanel } from './contract-panel';
@@ -93,13 +93,27 @@ export function ProposalPanel({
     </p>
   );
 
+  const isOverdue =
+    (proposal.phase === 'DRAFT' || proposal.phase === 'AWAITING_DEPOSIT') &&
+    isEventPast(proposal.eventDate);
+
   return (
     <div className="flex flex-col gap-6" data-view="proposal">
+      {isOverdue && (
+        <div className="flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-destructive">
+          <div className="flex flex-col gap-1">
+            <span className="font-semibold">Hồ sơ đã quá ngày tổ chức dự kiến</span>
+            <p className="text-sm">
+              Tiệc cưới này đã quá ngày diễn ra ({formatDate(proposal.eventDate)}) nhưng chưa hoàn tất thủ tục đặt cọc và xác nhận. Quản lý có thể liên hệ với cặp đôi để thống nhất dời ngày hoặc thực hiện hủy/đóng hồ sơ này ở mục dưới.
+            </p>
+          </div>
+        </div>
+      )}
       <div className="flex flex-wrap items-start gap-6">
         <article className={`${cardClass} flex-[1_1_340px]`}>
           <div className="flex flex-wrap items-center gap-2">
-            <Badge variant={bookingPhaseTone(proposal.phase)}>
-              {bookingPhaseLabel(proposal.phase)}
+            <Badge variant={bookingPhaseTone(proposal.phase, proposal.eventDate)}>
+              {bookingPhaseLabel(proposal.phase, proposal.eventDate)}
             </Badge>
             <span className="text-2xs text-muted-foreground">Phiên bản {proposal.revision}</span>
           </div>

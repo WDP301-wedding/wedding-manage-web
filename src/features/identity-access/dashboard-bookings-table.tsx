@@ -18,7 +18,7 @@ import {
 } from './dashboard-classes';
 import type { NavigationBooking } from '../../services/booking-navigation.service';
 import { SortHeader } from './table-controls';
-import { formatDate } from '../booking-lifecycle/booking-helpers';
+import { formatDate, isEventPast } from '../booking-lifecycle/booking-helpers';
 
 export type DashboardBookingItem = NavigationBooking;
 
@@ -160,9 +160,16 @@ export function DashboardBookingsTable({
                   <BookingProfile booking={booking} />
                 </td>
                 <td className={tdClass}>
-                  <Badge variant={phase?.variant ?? 'neutral'}>
-                    {phase?.label ?? booking.phase}
-                  </Badge>
+                  {(() => {
+                    const isOverdue =
+                      (booking.phase === 'DRAFT' || booking.phase === 'AWAITING_DEPOSIT') &&
+                      isEventPast(booking.eventDate);
+                    return (
+                      <Badge variant={isOverdue ? 'error' : (phase?.variant ?? 'neutral')}>
+                        {isOverdue ? 'Quá hạn tổ chức' : (phase?.label ?? booking.phase)}
+                      </Badge>
+                    );
+                  })()}
                 </td>
                 <td className={tdClass}>
                   <BookingActions
