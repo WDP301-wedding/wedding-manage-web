@@ -18,17 +18,21 @@ import { FinalInvoicesList } from './final-invoices-list';
 import { notify } from '../../design-system/notifications';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
+import type { BillingView } from './billing-api';
+import { SettlementNotice } from './settlement-notice';
 
 export function IncidentalsPanel({
   bookingId,
   disabled,
   billingRevision,
+  billing,
   onRefresh,
   onEditingChange,
 }: Readonly<{
   bookingId: string;
   disabled: boolean;
   billingRevision: number;
+  billing: BillingView;
   onRefresh: () => void;
   onEditingChange?: (value: boolean) => void;
 }>) {
@@ -247,6 +251,10 @@ export function IncidentalsPanel({
           {loading ? 'Đang tải…' : 'Làm mới'}
         </Button>
       </div>
+
+      {!loading && !loadError ? (
+        <SettlementNotice billing={billing} invoices={finalInvoices} />
+      ) : null}
 
       {/* Lỗi tải hiện ngay trong khung (không dùng toast) để người dùng biết vì sao bảng trống. */}
       {loadError && (

@@ -272,6 +272,7 @@ export function ManagementBillingWorkspace({
           {!archiveMode && (
             <IncidentalsPanel
               bookingId={view.bookingId}
+              billing={view}
               billingRevision={view.billingRevision}
               disabled={
                 pending ||
