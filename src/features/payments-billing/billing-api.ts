@@ -9,6 +9,8 @@ import type { components, operations, paths } from '../../lib/api/generated/sche
 export type BillingView = components['schemas']['BookingBillingResponse']['data'] & {
   financialOverview?: FinancialOverview;
 };
+export type RecordingContext =
+  operations['getManagementBillingRecording']['responses'][200]['content']['application/json']['data'];
 export type AttemptView = components['schemas']['BillingAttemptResponse']['data'];
 type OptionalRecordingEvidence<T> = Omit<T, 'reason' | 'evidenceReference'> & {
   reason?: string;
@@ -21,6 +23,7 @@ export type RefundBody = OptionalRecordingEvidence<components['schemas']['Billin
 export type RefundApprovalBody = components['schemas']['BillingRefundApprovalBody'];
 export type BillingPageQuery = operations['getBookingBilling']['parameters']['query'];
 export interface ManagementBillingGateway {
+  recording?(token: string, bookingId: string, afterRevision?: number): Promise<RecordingContext>;
   approveRefund(
     this: void,
     token: string,
@@ -80,6 +83,15 @@ export function createManagementBillingGateway(client?: ApiClient): ManagementBi
   const recordingApi = () => api() as Client<RecordingPaths>;
   const headers = (token: string) => ({ Authorization: `Bearer ${token}` });
   return {
+    async recording(token, bookingId, afterRevision = 0) {
+      const { data } = await api().GET('/management/bookings/{bookingId}/billing-recording', {
+        params: { path: { bookingId }, query: { afterRevision, limit: 25 } },
+        headers: headers(token),
+        cache: 'no-store',
+      });
+      const value = required(data);
+      return { ...value, refundablePayments: Array.from(value.refundablePayments) };
+    },
     async approveRefund(token, body, key) {
       const { data } = await api().POST('/management/billing/refund-approvals', {
         body,

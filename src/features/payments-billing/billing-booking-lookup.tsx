@@ -1,4 +1,5 @@
 'use client';
+import { useId, useRef } from 'react';
 
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -8,7 +9,12 @@ import type { BookingIdentity } from '../booking-lifecycle/use-booking-lookup';
 function BookingMatch({
   item,
   onSelect,
-}: Readonly<{ item: BookingIdentity; onSelect: (item: BookingIdentity) => void }>) {
+  disabled,
+}: Readonly<{
+  disabled: boolean;
+  item: BookingIdentity;
+  onSelect: (item: BookingIdentity) => void;
+}>) {
   const couple = [item.groomName, item.brideName].filter(Boolean).join(' & ');
   const contactInfo = [item.phone ? `SĐT: ${item.phone}` : null, item.email]
     .filter(Boolean)
@@ -18,6 +24,9 @@ function BookingMatch({
     <button
       type="button"
       className="flex w-full flex-col items-start gap-0.5 rounded-lg p-3 text-left transition-colors [overflow-wrap:anywhere] hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+      disabled={disabled}
+      role="option"
+      aria-selected={false}
       onClick={() => onSelect(item)}
     >
       <strong className="font-semibold">
@@ -45,6 +54,7 @@ export function BillingBookingLookup({
   onFocus,
   onSelect,
   onSubmit,
+  onClose,
 }: Readonly<{
   value: string;
   disabled: boolean;
@@ -54,10 +64,16 @@ export function BillingBookingLookup({
   onFocus: () => void;
   onSelect: (item: BookingIdentity) => void;
   onSubmit: () => void;
+  onClose?: (() => void) | undefined;
 }>) {
+  const listId = useId();
+  const input = useRef<HTMLInputElement>(null);
   return (
     <form
       className="flex w-full min-w-0 flex-col gap-1.5 sm:w-[480px] sm:max-w-full"
+      onBlurCapture={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) onClose?.();
+      }}
       onSubmit={(event) => {
         event.preventDefault();
         onSubmit();
@@ -69,6 +85,23 @@ export function BillingBookingLookup({
             Mã hồ sơ đặt tiệc
             <Input
               className="font-normal"
+              ref={input}
+              aria-autocomplete="list"
+              aria-expanded={open}
+              aria-controls={open ? listId : undefined}
+              onKeyDown={(event) => {
+                if (event.key === 'Escape') onClose?.();
+                if (open && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
+                  event.preventDefault();
+                  const options =
+                    event.currentTarget.form?.querySelectorAll<HTMLButtonElement>(
+                      '[role="option"]',
+                    );
+                  const target =
+                    event.key === 'ArrowDown' ? options?.[0] : options?.[options.length - 1];
+                  target?.focus();
+                }
+              }}
               value={value}
               onChange={(event) => onChange(event.target.value)}
               onFocus={onFocus}
@@ -80,10 +113,41 @@ export function BillingBookingLookup({
           {open && matches.length > 0 && (
             <div
               className="absolute inset-x-0 top-full z-20 mt-1 flex max-h-80 flex-col gap-1 overflow-y-auto rounded-xl border border-border bg-popover p-2 shadow-hy-2 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-top-1"
+              id={listId}
               role="listbox"
+              aria-label="Hồ sơ tiệc phù hợp"
+              onKeyDown={(event) => {
+                const options = Array.from(
+                  event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="option"]'),
+                );
+                const index = options.indexOf(document.activeElement as HTMLButtonElement);
+                if (event.key === 'Escape') {
+                  event.preventDefault();
+                  onClose?.();
+                  input.current?.focus();
+                } else if (
+                  ['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key) &&
+                  options.length
+                ) {
+                  event.preventDefault();
+                  const next =
+                    event.key === 'Home'
+                      ? 0
+                      : event.key === 'End'
+                        ? options.length - 1
+                        : (index + (event.key === 'ArrowDown' ? 1 : -1) + options.length) %
+                          options.length;
+                  options[next]?.focus();
+                }
+              }}
             >
               {matches.map((item) => (
-                <BookingMatch key={item.bookingId} item={item} onSelect={onSelect} />
+                <BookingMatch
+                  key={item.bookingId}
+                  item={item}
+                  onSelect={onSelect}
+                  disabled={disabled}
+                />
               ))}
             </div>
           )}

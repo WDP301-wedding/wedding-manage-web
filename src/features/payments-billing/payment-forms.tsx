@@ -1,13 +1,13 @@
 'use client';
 import { HySelect } from '../../components/ui/select-field';
 
-import { useRef, useState, type FormEvent } from 'react';
-import type { BillingView, ManualPaymentBody, RefundBody } from './billing-api';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
+import type { BillingView, ManualPaymentBody, RefundBody, RecordingContext } from './billing-api';
 import { Info } from 'lucide-react';
 import { notify } from '../../design-system/notifications';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
-import { formatDate, formatDateTime } from '../booking-lifecycle/booking-helpers';
+import { formatDateTime } from '../booking-lifecycle/booking-helpers';
 
 import {
   confirmClass,
@@ -76,15 +76,43 @@ function ConfirmPayment({
 export function ManualPaymentForm({
   bookingId,
   disabled,
+  recording,
+  onEditingChange,
   onConfirm,
 }: Readonly<{
   bookingId: string;
   disabled: boolean;
+  recording?: RecordingContext | null | undefined;
+  onEditingChange?: (value: boolean) => void;
   onConfirm: (body: ManualPaymentBody) => Promise<CommandOutcome>;
 }>) {
   const form = useRef<HTMLFormElement>(null);
   const [draft, setDraft] = useState<ManualPaymentBody | null>(null);
   const [retry, setRetry] = useState(false);
+  const [dirty, setDirty] = useState(false);
+  const [purpose, setPurpose] = useState<'DEPOSIT' | 'BALANCE'>(() =>
+    recording?.deposit.canRecord ? 'DEPOSIT' : recording?.balance.canRecord ? 'BALANCE' : 'DEPOSIT',
+  );
+  useEffect(() => {
+    if (dirty || draft !== null || !recording) return;
+    if (purpose === 'DEPOSIT' && !recording.deposit.canRecord && recording.balance.canRecord)
+      setPurpose('BALANCE');
+    else if (purpose === 'BALANCE' && !recording.balance.canRecord && recording.deposit.canRecord)
+      setPurpose('DEPOSIT');
+  }, [recording, purpose, dirty, draft]);
+  const eligibility = purpose === 'DEPOSIT' ? recording?.deposit : recording?.balance;
+  const maximum =
+    purpose === 'DEPOSIT' ? recording?.deposit.amountVnd : recording?.balance.maxAmountVnd;
+  useEffect(() => {
+    onEditingChange?.(dirty || draft !== null);
+  }, [dirty, draft, onEditingChange]);
+  useEffect(() => () => onEditingChange?.(false), [onEditingChange]);
+  const discard = () => {
+    form.current?.reset();
+    setDraft(null);
+    setRetry(false);
+    setDirty(false);
+  };
   const review = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
@@ -94,9 +122,32 @@ export function ManualPaymentForm({
       notify.warning('Nhập số tiền nguyên dương và thời điểm nhận tiền hợp lệ.');
       return;
     }
+    if (
+      !eligibility?.canRecord ||
+      maximum === undefined ||
+      (purpose === 'DEPOSIT' ? amountVnd !== maximum : amountVnd > maximum)
+    ) {
+      notify.warning('Số tiền không phù hợp với điều kiện thu hiện tại. Kiểm tra số tiền cần thu.');
+      return;
+    }
+    setDirty(true);
     setDraft({
       bookingId,
-      purpose: data.get('purpose') === 'BALANCE' ? 'BALANCE' : 'DEPOSIT',
+      purpose,
+      ...(purpose === 'BALANCE' && recording
+        ? { expectedBillingRevision: recording.billingRevision }
+        : {}),
+      ...(purpose === 'DEPOSIT' && recording?.deposit.timelineRevisionId
+        ? { timelineRevisionId: recording.deposit.timelineRevisionId }
+        : {}),
+      ...(purpose === 'DEPOSIT' && recording?.deposit.contractRevisionId
+        ? {
+            contractRevisionId: recording.deposit.contractRevisionId,
+            ...(recording.deposit.documentDigest
+              ? { documentDigest: recording.deposit.documentDigest }
+              : {}),
+          }
+        : {}),
       amountVnd,
       settledAt: date.toISOString(),
     });
@@ -104,7 +155,10 @@ export function ManualPaymentForm({
   const confirm = async () => {
     if (draft === null) return;
     const result = await onConfirm(draft);
-    if (result === 'succeeded') form.current?.reset();
+    if (result === 'succeeded') {
+      form.current?.reset();
+      setDirty(false);
+    }
     setRetry(result === 'retry');
     if (result !== 'retry') setDraft(null);
   };
@@ -116,14 +170,26 @@ export function ManualPaymentForm({
           Ghi nhận tiền mặt hoặc chuyển khoản đã nhận bên ngoài hệ thống.
         </p>
       </div>
-      <form ref={form} onSubmit={review}>
+      <form ref={form} onSubmit={review} onChangeCapture={() => setDirty(true)}>
         <fieldset disabled={disabled || draft !== null} className={fieldsetClass}>
           <div className={rowClass}>
             <label className={labelClass}>
               Loại khoản thu
-              <HySelect name="purpose" className={selectClass}>
-                <option value="DEPOSIT">Đặt cọc</option>
-                <option value="BALANCE">Thanh toán còn lại</option>
+              <HySelect
+                name="purpose"
+                className={selectClass}
+                value={purpose}
+                onChange={(event) => {
+                  setPurpose(event.target.value === 'BALANCE' ? 'BALANCE' : 'DEPOSIT');
+                  setDirty(true);
+                }}
+              >
+                <option value="DEPOSIT" disabled={!recording?.deposit.canRecord}>
+                  Đặt cọc{!recording?.deposit.canRecord ? ' · Chưa đủ điều kiện' : ''}
+                </option>
+                <option value="BALANCE" disabled={!recording?.balance.canRecord}>
+                  Thanh toán còn lại{!recording?.balance.canRecord ? ' · Chưa đủ điều kiện' : ''}
+                </option>
               </HySelect>
             </label>
             <label className={labelClass}>
@@ -131,9 +197,13 @@ export function ManualPaymentForm({
               <Input
                 className={inputClass}
                 name="amount"
+                disabled={!eligibility?.canRecord}
+                key={purpose + ':' + recording?.billingRevision + ':' + recording?.bookingRevision}
+                defaultValue={maximum}
+                onFocus={(event) => event.currentTarget.select()}
                 type="number"
                 min={1}
-                max={Number.MAX_SAFE_INTEGER}
+                max={maximum ?? 0}
                 step={1}
                 required
               />
@@ -150,14 +220,31 @@ export function ManualPaymentForm({
           <div className={rowClass}>
             <label className={labelClass}>
               Thời điểm nhận tiền
-              <Input className={inputClass} name="settledAt" type="datetime-local" required />
+              <Input
+                className={inputClass}
+                name="settledAt"
+                type="datetime-local"
+                required
+                disabled={!eligibility?.canRecord}
+              />
             </label>
           </div>
-          <Button type="submit" className="self-start">
+          <p className="text-xs" role="status">
+            {eligibility?.canRecord
+              ? (purpose === 'DEPOSIT' ? 'Tiền cọc cần ghi nhận: ' : 'Có thể thu tối đa: ') +
+                money(maximum ?? 0)
+              : recordingReason(eligibility?.reasonCode)}
+          </p>
+          <Button type="submit" className="self-start" disabled={!eligibility?.canRecord}>
             Kiểm tra khoản thu
           </Button>
         </fieldset>
       </form>
+      {dirty && !retry && draft === null ? (
+        <Button type="button" variant="ghost" disabled={disabled} onClick={discard}>
+          Bỏ nội dung đang nhập
+        </Button>
+      ) : null}
       {draft !== null && (
         <>
           <p className="text-xs">
@@ -183,16 +270,36 @@ export function ManualPaymentForm({
 export function RefundForm({
   booking,
   disabled,
+  recording,
+  onLoadMore,
+  onEditingChange,
   onConfirm,
 }: Readonly<{
   booking: BillingView;
   disabled: boolean;
+  recording?: RecordingContext | null | undefined;
+  onLoadMore?: (() => void) | undefined;
+  onEditingChange?: (value: boolean) => void;
   onConfirm: (body: RefundBody) => Promise<CommandOutcome>;
 }>) {
   const form = useRef<HTMLFormElement>(null);
   const [draft, setDraft] = useState<RefundBody | null>(null);
   const [retry, setRetry] = useState(false);
-  const payments = booking.history.filter((entry) => entry.kind === 'PAYMENT');
+  const [dirty, setDirty] = useState(false);
+  const [sourceId, setSourceId] = useState('');
+  const payments = recording?.refundablePayments.filter((entry) => entry.maxRefundVnd > 0) ?? [];
+  const selected = payments.find((entry) => entry.paymentId === sourceId);
+  useEffect(() => {
+    onEditingChange?.(dirty || draft !== null);
+  }, [dirty, draft, onEditingChange]);
+  useEffect(() => () => onEditingChange?.(false), [onEditingChange]);
+  const discard = () => {
+    form.current?.reset();
+    setDraft(null);
+    setRetry(false);
+    setDirty(false);
+    setSourceId('');
+  };
   const review = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
@@ -201,21 +308,28 @@ export function RefundForm({
     if (
       !Number.isSafeInteger(amountVnd) ||
       amountVnd <= 0 ||
-      !payments.some((payment) => payment.ledgerEntryId === sourcePaymentId)
+      !payments.some(
+        (payment) => payment.paymentId === sourcePaymentId && amountVnd <= payment.maxRefundVnd,
+      )
     ) {
       notify.warning('Chọn khoản thanh toán gốc và nhập số tiền nguyên dương hợp lệ.');
       return;
     }
+    setDirty(true);
     setDraft({
       sourcePaymentId,
       amountVnd,
-      expectedBillingRevision: booking.billingRevision,
+      expectedBillingRevision: recording?.billingRevision ?? booking.billingRevision,
     });
   };
   const confirm = async () => {
     if (draft === null) return;
     const result = await onConfirm(draft);
-    if (result === 'succeeded') form.current?.reset();
+    if (result === 'succeeded') {
+      form.current?.reset();
+      setDirty(false);
+      setSourceId('');
+    }
     setRetry(result === 'retry');
     if (result !== 'retry') setDraft(null);
   };
@@ -228,7 +342,7 @@ export function RefundForm({
           hoàn và lưu xác nhận trong cùng thao tác.
         </p>
       </div>
-      <form ref={form} onSubmit={review}>
+      <form ref={form} onSubmit={review} onChangeCapture={() => setDirty(true)}>
         <fieldset
           className={fieldsetClass}
           disabled={
@@ -238,12 +352,31 @@ export function RefundForm({
           <div className={rowClass}>
             <label className={labelClass}>
               Khoản thanh toán gốc
-              <HySelect name="source" required defaultValue="" className={selectClass}>
+              <HySelect
+                name="source"
+                required
+                value={sourceId}
+                onChange={(event) => {
+                  setSourceId(event.target.value);
+                  setDirty(true);
+                }}
+                className={selectClass}
+              >
                 <option value="">Chọn khoản thanh toán</option>
                 {payments.map((entry) => (
-                  <option key={entry.ledgerEntryId} value={entry.ledgerEntryId}>
-                    {money(entry.amountVnd)} · {formatDate(entry.occurredAt)} ·{' '}
-                    {entry.ledgerEntryId}
+                  <option key={entry.paymentId} value={entry.paymentId}>
+                    {entry.purpose === 'DEPOSIT'
+                      ? 'Cọc'
+                      : entry.purpose === 'BALANCE'
+                        ? 'Thu số dư'
+                        : 'Khoản thu'}{' '}
+                    ·{' '}
+                    {entry.provider === 'VNPAY'
+                      ? 'VNPay'
+                      : entry.provider === 'MANUAL'
+                        ? 'Ngoài hệ thống'
+                        : 'Chưa có phương thức'}{' '}
+                    · {formatDateTime(entry.occurredAt)} · Còn hoàn {money(entry.maxRefundVnd)}
                   </option>
                 ))}
               </HySelect>
@@ -253,31 +386,53 @@ export function RefundForm({
               <Input
                 className={inputClass}
                 name="amount"
+                disabled={!selected}
                 type="number"
                 min={1}
-                max={Number.MAX_SAFE_INTEGER}
+                max={selected?.maxRefundVnd ?? 0}
                 step={1}
                 required
               />
             </label>
           </div>
-          <Button type="submit" className="self-start">
+          <p className="text-xs" role="status">
+            {selected
+              ? 'Số tiền còn được hoàn cho giao dịch này: ' + money(selected.maxRefundVnd)
+              : 'Chọn giao dịch gốc để xem số tiền được hoàn.'}
+          </p>
+          <Button type="submit" className="self-start" disabled={!selected}>
             Kiểm tra khoản hoàn
           </Button>
         </fieldset>
       </form>
       {payments.length === 0 && (
         <p className="text-xs text-muted-foreground">
-          Chưa có khoản thanh toán trong các trang đã tải. Tải thêm lịch sử để tìm khoản gốc.
+          Chưa có giao dịch được phép hoàn trong danh sách hiện tại. Hệ thống chỉ cho hoàn trong hạn
+          mức có căn cứ.
         </p>
       )}
+      {recording?.nextAfterRevision != null ? (
+        <Button
+          type="button"
+          variant="outline"
+          disabled={disabled || draft !== null}
+          onClick={onLoadMore}
+        >
+          Tải thêm giao dịch có thể hoàn
+        </Button>
+      ) : null}
+      {dirty && !retry && draft === null ? (
+        <Button type="button" variant="ghost" disabled={disabled} onClick={discard}>
+          Bỏ nội dung đang nhập
+        </Button>
+      ) : null}
       {draft !== null && (
         <>
           <p className="text-xs">
             Khoản gốc:{' '}
-            <code className="rounded-md bg-secondary px-1.5 py-0.5 font-mono break-all">
-              {draft.sourcePaymentId}
-            </code>
+            {selected
+              ? formatDateTime(selected.occurredAt) + ' · Đã thu ' + money(selected.amountVnd)
+              : 'Giao dịch đã chọn'}
           </p>
           <ConfirmPayment
             amount={draft.amountVnd}
@@ -293,4 +448,21 @@ export function RefundForm({
       )}
     </section>
   );
+}
+
+export function recordingReason(code: string | null | undefined): string {
+  const reasons: Record<string, string> = {
+    BOOKING_NOT_PAYABLE: 'Tiệc không còn ở giai đoạn nhận cọc.',
+    PAYMENT_ATTEMPT_ACTIVE: 'Có giao dịch chưa rõ kết quả. Đối chiếu giao dịch trước khi ghi nhận.',
+    TIMELINE_NOT_MUTUALLY_APPROVED: 'Kịch bản cần được hai bên duyệt cùng phiên bản.',
+    CONTRACT_APPROVAL_REQUIRED: 'Hợp đồng hiện tại cần được hai bên phê duyệt.',
+    BALANCE_NOT_ELIGIBLE: 'Hồ sơ chưa đủ điều kiện thu số dư.',
+    INVOICE_FINALIZATION_REQUIRED: 'Cần chốt hóa đơn cuối trước khi thu số dư.',
+    BILLING_BALANCE_LIMIT_EXCEEDED: 'Không còn số dư cần thu.',
+    FINANCIAL_SOURCE_CONFLICT: 'Dữ liệu tài chính cần được đối chiếu trước khi thu tiền.',
+    STALE_BILLING_REVISION: 'Công nợ đã thay đổi. Bỏ nội dung đang nhập và cập nhật lại.',
+  };
+  return code
+    ? (reasons[code] ?? 'Chưa đủ điều kiện ghi nhận. Kiểm tra lại hồ sơ và công nợ.')
+    : 'Đang chờ dữ liệu điều kiện thu/hoàn từ máy chủ.';
 }
