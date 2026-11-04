@@ -23,10 +23,10 @@ it('lets the session refresh an expired bearer before loading the retained PDF',
   vi.stubGlobal(
     'URL',
     class extends URL {
-      static createObjectURL() {
+      static override createObjectURL() {
         return 'blob:retained-print';
       }
-      static revokeObjectURL() {}
+      static override revokeObjectURL() {}
     },
   );
   let expiredStatus: number | undefined;
