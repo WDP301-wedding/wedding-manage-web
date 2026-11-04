@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Button } from '../../components/ui/button';
 import { axiosApiClient } from '../../lib/api/axios-client';
 import { readPublicEnv } from '../../lib/env';
+import { ApiClientError } from '../../lib/api/client';
 
 type Authorize = <T>(work: (token: string) => Promise<T>) => Promise<T>;
 
@@ -48,8 +49,21 @@ export function RetainedPrintPreview({
                 signal: AbortSignal.any([operation.signal, AbortSignal.timeout(30000)]),
               },
             );
-            if (!response.ok || !response.headers.get('content-type')?.includes('application/pdf'))
-              throw new Error('Không thể tải bản in đã chốt. Vui lòng thử lại.');
+            if (!response.ok) {
+              throw new ApiClientError({
+                kind: 'api',
+                status: response.status,
+                code:
+                  response.status === 401 ? 'AUTHENTICATION_REQUIRED' : 'PRINT_FILE_UNAVAILABLE',
+                requestId: response.headers.get('x-request-id') ?? crypto.randomUUID(),
+                message:
+                  response.status === 502 || response.status === 503
+                    ? 'Máy chủ đang tạm gián đoạn. Vui lòng thử tải bản in lại.'
+                    : 'Không thể tải bản in đã chốt. Vui lòng thử lại.',
+              });
+            }
+            if (!response.headers.get('content-type')?.includes('application/pdf'))
+              throw new Error('Bản in trả về không đúng định dạng PDF.');
             return response.blob();
           })
         : (

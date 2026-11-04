@@ -6,6 +6,7 @@ import { toneBadge } from './print-order-classes';
 import {
   deriveCommercialStatus,
   deriveProductionStatus,
+  printOrderDisplay,
   formatVietnameseDateTime,
   type PrintOrderView,
 } from './print-orders-types';
@@ -67,6 +68,7 @@ function OrderRow({
 }: Readonly<{ order: PrintOrderView; selected: boolean; onSelect: () => void }>) {
   const commercial = deriveCommercialStatus(order);
   const production = deriveProductionStatus(order);
+  const display = printOrderDisplay(order);
   const totalCopies = order.lines.reduce((s, l) => s + l.quantity, 0);
   return (
     <tr
@@ -92,12 +94,12 @@ function OrderRow({
         </button>
       </td>
       <td className={tdClass}>
-        <strong className="font-semibold">{order.displayCouple ?? 'Chưa gán thông tin'}</strong>
+        <strong className="font-semibold">{display.couple}</strong>
         <small className="block text-xs text-muted-foreground">
-          {order.displayEventDate ?? 'Chưa có thông tin ngày tiệc'}
+          {display.eventDate}
         </small>
       </td>
-      <td className={tdClass}>{order.displayHall ?? 'Chưa gán thông tin'}</td>
+      <td className={tdClass}>{display.hall}</td>
       <td className={cn(tdClass, 'text-right tabular-nums')}>
         <strong className="font-semibold">{totalCopies} bản</strong>
         <small className="block text-xs text-muted-foreground">
