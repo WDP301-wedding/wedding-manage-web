@@ -3,6 +3,7 @@ import type { ManagementPrintOrdersGateway } from './print-orders-api';
 import {
   formatVietnameseDateTime,
   isCommercialRevisionExpired,
+  printOrderDisplay,
   type PrintOrderView,
 } from './print-orders-types';
 import { useRealtimeSubscription } from '../realtime/use-realtime';
@@ -156,9 +157,10 @@ export function usePrintOrdersData({
 
   const filteredOrders = useMemo(() => {
     return orders.filter((order) => {
+      const display = printOrderDisplay(order);
       const matchesQuery =
         !query ||
-        `${order.orderId} ${order.bookingId} ${order.displayCouple ?? ''} ${order.displayHall ?? ''}`
+        `${order.orderId} ${order.bookingId} ${order.bookingSummary?.bookingCode ?? ''} ${display.couple} ${display.hall}`
           .toLowerCase()
           .includes(query.toLowerCase());
 

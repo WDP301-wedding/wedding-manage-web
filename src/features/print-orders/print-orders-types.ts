@@ -51,6 +51,13 @@ export interface CommercialRevisionView {
 }
 
 export interface PrintOrderView {
+  readonly bookingSummary?: {
+    readonly bookingCode: string;
+    readonly brideName: string | null;
+    readonly groomName: string | null;
+    readonly eventDate: string;
+    readonly hallName: string | null;
+  };
   readonly appendixSource?: {
     readonly requestId: string;
     readonly appendixRevisionId: string;
@@ -87,6 +94,20 @@ export interface PrintOrderView {
 export interface PrintOrderListResult {
   readonly items: readonly PrintOrderView[];
   readonly nextCursor: string | null;
+}
+
+export function printOrderDisplay(order: PrintOrderView) {
+  const summary = order.bookingSummary;
+  const names = summary && [summary.brideName, summary.groomName].filter(Boolean).join(' & ');
+  const eventDate = summary && new Date(`${summary.eventDate}T00:00:00Z`);
+  return {
+    couple: names || order.displayCouple || 'Chưa cập nhật tên cặp đôi',
+    eventDate:
+      eventDate && Number.isFinite(eventDate.getTime())
+        ? new Intl.DateTimeFormat('vi-VN', { timeZone: 'UTC' }).format(eventDate)
+        : (order.displayEventDate ?? 'Chưa có thông tin ngày tiệc'),
+    hall: summary?.hallName ?? order.displayHall ?? 'Chưa có thông tin sảnh',
+  };
 }
 
 export interface ManagementPrintOrderListQuery {
