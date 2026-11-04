@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
+import { notify } from '../../design-system/notifications';
 import type { Authorize, ConsultationCustomer, ManagementBookingGateway } from './booking-api';
 
 export function ExistingCustomerPicker({
@@ -18,7 +19,6 @@ export function ExistingCustomerPicker({
   const [query, setQuery] = useState('');
   const [customers, setCustomers] = useState<readonly ConsultationCustomer[]>([]);
   const [pending, setPending] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
   const request = useRef<AbortController | null>(null);
 
   useEffect(() => () => request.current?.abort(), []);
@@ -30,7 +30,6 @@ export function ExistingCustomerPicker({
     const controller = new AbortController();
     request.current = controller;
     setPending(true);
-    setNotice(null);
     setCustomers([]);
     try {
       const items = await authorize((token) =>
@@ -38,14 +37,18 @@ export function ExistingCustomerPicker({
       );
       if (controller.signal.aborted) return;
       setCustomers(items);
-      setNotice(
-        items.length === 0
-          ? 'Không tìm thấy khách trong hồ sơ bạn quản lý. Có thể nhập thông tin khách mới bên cạnh.'
-          : null,
-      );
+      if (items.length === 0) {
+        notify.info(
+          'Không tìm thấy khách trong hồ sơ bạn quản lý. Có thể nhập thông tin khách mới bên cạnh.',
+          { title: 'Tìm khách hàng' },
+        );
+      }
     } catch {
-      if (!controller.signal.aborted)
-        setNotice('Chưa tìm được khách. Hãy thử lại; không cần tạo lại tài khoản.');
+      if (!controller.signal.aborted) {
+        notify.error('Chưa tìm được khách. Hãy thử lại; không cần tạo lại tài khoản.', {
+          title: 'Tìm khách hàng',
+        });
+      }
     } finally {
       if (!controller.signal.aborted) setPending(false);
     }
@@ -79,7 +82,6 @@ export function ExistingCustomerPicker({
             onChange={(event) => {
               setQuery(event.target.value);
               setCustomers([]);
-              setNotice(null);
             }}
           />
         </label>
@@ -91,12 +93,6 @@ export function ExistingCustomerPicker({
           {pending ? 'Đang tìm…' : 'Tìm khách đã có'}
         </Button>
       </form>
-
-      {notice ? (
-        <p className="rounded-lg bg-hy-info-bg px-4 py-3 text-xs text-hy-info" role="status">
-          {notice}
-        </p>
-      ) : null}
 
       {customers.length ? (
         <ul aria-label="Khách đã có" className="overflow-hidden rounded-lg border border-border">

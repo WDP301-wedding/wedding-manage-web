@@ -235,7 +235,9 @@ export function useBookingWorkspaceState({
 
   const prepareBooking = async () => {
     if (!consultation) {
-      setError('Tạo hoặc chọn hồ sơ tư vấn trước khi lập tiệc.');
+      const err = 'Tạo hoặc chọn hồ sơ tư vấn trước khi lập tiệc.';
+      setError(err);
+      notify.warning(err);
       return null;
     }
     const context = await run('context', () =>
@@ -276,13 +278,15 @@ export function useBookingWorkspaceState({
     },
   });
 
-  const refresh = async (success: string) => {
-    setMessage(success);
-    notify.success(success);
+  const refresh = async (success?: string) => {
+    if (success) {
+      setMessage(success);
+      notify.success(success);
+    }
     if (proposal !== null) await proposalRefresh.refresh();
   };
 
-  const resetConsultation = () => {
+  const resetConsultation = (options?: { silent?: boolean; message?: string }) => {
     contextSequence.current++;
     resumeTarget.current = {};
     setPending(null);
@@ -294,10 +298,13 @@ export function useBookingWorkspaceState({
     setPrefill({});
     window.history.replaceState(null, '', '/bookings');
     switchTab('consultation');
-    const msg =
-      'Đã xóa mã tư vấn cũ. Hãy nhập thông tin cặp đôi mới ở Bước 01 rồi bấm "Tạo hồ sơ tư vấn".';
-    setMessage(msg);
-    notify.info(msg);
+    if (!options?.silent) {
+      const msg =
+        options?.message ??
+        'Đã hủy chọn khách cũ. Hãy nhập thông tin mới ở Bước 01 rồi bấm "Tạo hồ sơ tư vấn".';
+      setMessage(msg);
+      notify.info(msg);
+    }
   };
 
   useEffect(() => {

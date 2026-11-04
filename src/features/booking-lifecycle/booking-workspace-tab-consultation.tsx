@@ -2,6 +2,7 @@
 
 import { ArrowRight } from 'lucide-react';
 import { Button } from '../../components/ui/button';
+import { notify } from '../../design-system/notifications';
 import { ExistingCustomerPicker } from './existing-customer-picker';
 import { ConsultationPanel } from './consultation-panel';
 import { stepHiddenClass } from './booking-classes';
@@ -20,7 +21,7 @@ export interface BookingWorkspaceTabConsultationProps {
   inviteLogs: readonly InviteLogEntry[];
   setInviteLogs: React.Dispatch<React.SetStateAction<readonly InviteLogEntry[]>>;
   sendWorkspaceInvite: () => Promise<void>;
-  resetConsultation: () => void;
+  resetConsultation: (options?: { silent?: boolean; message?: string }) => void;
   setPrefill: React.Dispatch<React.SetStateAction<BookingPrefill>>;
   setMessage: (msg: string | null) => void;
   setConsultation: (c: { id: string; revision: number } | null) => void;
@@ -57,15 +58,17 @@ export function BookingWorkspaceTabConsultation({
           gateway={gateway}
           disabled={disabled}
           onChoose={(customer) => {
-            resetConsultation();
+            resetConsultation({ silent: true });
             setPrefill({
               displayName: customer.displayName,
               email: customer.email,
               sourceConsultationId: customer.consultationId,
             });
-            setMessage(
-              'Đã chọn khách cũ. Khi tạo hồ sơ mới, hệ thống sẽ liên kết tài khoản đã có quyền truy cập trong các hồ sơ bạn quản lí. Hồ sơ và quyền của tiệc cũ được giữ nguyên.',
-            );
+            const msg = `Đã chọn khách cũ ${customer.displayName} (${customer.email}). Thông tin đã được điền ở Bước 01 để tạo tiệc mới.`;
+            setMessage(msg);
+            notify.success(msg, {
+              title: 'Đã chọn khách cũ',
+            });
           }}
         />
         <Button
@@ -109,7 +112,11 @@ export function BookingWorkspaceTabConsultation({
                 preferredMenuName: prev.preferredMenuName || choices.menuName,
                 preferredShift: prev.preferredShift || choices.shift,
               }));
-              setMessage('Đã tạo hồ sơ tư vấn.');
+              const msg = 'Đã tạo hồ sơ tư vấn thành công.';
+              setMessage(msg);
+              notify.success(msg, {
+                title: 'Hồ sơ tư vấn',
+              });
               switchTab('booking');
             }
           }}

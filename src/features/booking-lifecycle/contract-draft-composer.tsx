@@ -168,10 +168,6 @@ export function ContractDraftComposer({
           Hồ sơ đã thay đổi trong lúc soạn. Đóng bản soạn và mở lại để dùng đúng phiên bản mới nhất.
         </p>
       ) : null}
-      <ContractLinesTable
-        lines={seed}
-        title="Dữ liệu điền sẵn: thực đơn, số bàn & các hạng mục đã chọn"
-      />
       <p className="text-xs text-muted-foreground">
         Tổng dữ liệu điền sẵn:{' '}
         <strong className="text-foreground tabular-nums">{formatVnd(seedTotalVnd)}</strong>. Đây là
@@ -201,98 +197,102 @@ export function ContractDraftComposer({
         </p>
       ) : (
         <>
-          {missing.map((line) => (
-            <div
-              key={keyOf(line)}
-              role="alert"
-              className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-hy-error-bg px-4 py-3 text-xs text-hy-error"
-            >
-              <span>
-                {initial.find((l) => keyOf(l) === keyOf(line))?.name ?? line.sourceId} không còn
-                trong danh mục đang bán. Chọn hạng mục thay thế trước khi lưu.
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                className="border-hy-error text-hy-error"
-                disabled={pending}
-                type="button"
-                onClick={() => setLines((prev) => prev.filter((l) => keyOf(l) !== keyOf(line)))}
-              >
-                Bỏ hạng mục
-              </Button>
-            </div>
-          ))}
-          <div className="overflow-x-auto rounded-lg border border-border">
-            <table className="w-full min-w-[560px] border-collapse text-left">
-              <thead className="bg-muted text-xs">
-                <tr>
-                  <th className="px-3 py-2 font-semibold">Hạng mục</th>
-                  <th className="px-3 py-2 font-semibold">Đơn giá hiện hành</th>
-                  <th className="w-36 px-3 py-2 font-semibold">Số lượng</th>
-                </tr>
-              </thead>
-              <tbody>
-                {choices.map((choice) => {
-                  const selected = lines.find((l) => keyOf(l) === keyOf(choice));
-                  return (
-                    <tr
-                      key={keyOf(choice)}
-                      className={cn(
-                        'border-t border-border',
-                        selected ? 'bg-accent/40' : undefined,
-                      )}
-                    >
-                      <td className="px-3 py-2">
-                        <strong className="block font-semibold">{choice.name}</strong>
-                        <small className="text-2xs text-muted-foreground">
-                          {categoryLabels[choice.category]}
-                        </small>
-                      </td>
-                      <td className="px-3 py-2 tabular-nums">
-                        <div className="flex flex-wrap items-center gap-2">
-                          {formatVnd(choice.unitPriceVnd)}/{choice.unit}
-                          {selected && selected.sourceRevisionId !== choice.sourceRevisionId ? (
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              disabled={pending}
-                              onClick={() => update(choice, selected.quantity)}
-                            >
-                              Dùng giá hiện hành
-                            </Button>
-                          ) : null}
-                        </div>
-                      </td>
-                      <td className="px-3 py-2">
-                        <Input
-                          type="number"
-                          inputMode="numeric"
-                          className="w-28 tabular-nums"
-                          aria-label={'Số lượng ' + choice.name}
-                          min={0}
-                          max={choice.category === 'MENU' ? 500 : 10000}
-                          step={1}
-                          value={selected?.quantity ?? 0}
-                          disabled={pending}
-                          onChange={(event) => update(choice, Number(event.target.value))}
-                        />
-                      </td>
+          {!priced ? (
+            <>
+              {missing.map((line) => (
+                <div
+                  key={keyOf(line)}
+                  role="alert"
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-hy-error-bg px-4 py-3 text-xs text-hy-error"
+                >
+                  <span>
+                    {initial.find((l) => keyOf(l) === keyOf(line))?.name ?? line.sourceId} không còn
+                    trong danh mục đang bán. Chọn hạng mục thay thế trước khi lưu.
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="border-hy-error text-hy-error"
+                    disabled={pending}
+                    type="button"
+                    onClick={() => setLines((prev) => prev.filter((l) => keyOf(l) !== keyOf(line)))}
+                  >
+                    Bỏ hạng mục
+                  </Button>
+                </div>
+              ))}
+              <div className="overflow-x-auto rounded-lg border border-border">
+                <table className="w-full min-w-[560px] border-collapse text-left">
+                  <thead className="bg-muted text-xs">
+                    <tr>
+                      <th className="px-3 py-2 font-semibold">Hạng mục</th>
+                      <th className="px-3 py-2 font-semibold">Đơn giá hiện hành</th>
+                      <th className="w-36 px-3 py-2 font-semibold">Số lượng</th>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-          {stale ? (
-            <p
-              role="alert"
-              className="rounded-lg bg-hy-warning-bg px-4 py-3 text-xs text-hy-warning"
-            >
-              Có hạng mục đã đổi phiên bản giá. Chọn “Dùng giá hiện hành” sau khi thống nhất lại với
-              khách; hệ thống không tự đổi giá đã chọn.
-            </p>
+                  </thead>
+                  <tbody>
+                    {choices.map((choice) => {
+                      const selected = lines.find((l) => keyOf(l) === keyOf(choice));
+                      return (
+                        <tr
+                          key={keyOf(choice)}
+                          className={cn(
+                            'border-t border-border',
+                            selected ? 'bg-accent/40' : undefined,
+                          )}
+                        >
+                          <td className="px-3 py-2">
+                            <strong className="block font-semibold">{choice.name}</strong>
+                            <small className="text-2xs text-muted-foreground">
+                              {categoryLabels[choice.category]}
+                            </small>
+                          </td>
+                          <td className="px-3 py-2 tabular-nums">
+                            <div className="flex flex-wrap items-center gap-2">
+                              {formatVnd(choice.unitPriceVnd)}/{choice.unit}
+                              {selected && selected.sourceRevisionId !== choice.sourceRevisionId ? (
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={pending}
+                                  onClick={() => update(choice, selected.quantity)}
+                                >
+                                  Dùng giá hiện hành
+                                </Button>
+                              ) : null}
+                            </div>
+                          </td>
+                          <td className="px-3 py-2">
+                            <Input
+                              type="number"
+                              inputMode="numeric"
+                              className="w-28 tabular-nums"
+                              aria-label={'Số lượng ' + choice.name}
+                              min={0}
+                              max={choice.category === 'MENU' ? 500 : 10000}
+                              step={1}
+                              value={selected?.quantity ?? 0}
+                              disabled={pending}
+                              onChange={(event) => update(choice, Number(event.target.value))}
+                            />
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              {stale ? (
+                <p
+                  role="alert"
+                  className="rounded-lg bg-hy-warning-bg px-4 py-3 text-xs text-hy-warning"
+                >
+                  Có hạng mục đã đổi phiên bản giá. Chọn “Dùng giá hiện hành” sau khi thống nhất lại
+                  với khách; hệ thống không tự đổi giá đã chọn.
+                </p>
+              ) : null}
+            </>
           ) : null}
           {priced ? (
             <div className="flex flex-col gap-3 rounded-lg bg-hy-success-bg p-4">
@@ -317,10 +317,17 @@ export function ContractDraftComposer({
             <Button
               type="button"
               variant="outline"
-              disabled={pending || invalid || missing.length > 0 || stale}
-              onClick={() => void execute(false)}
+              disabled={pending || (!priced && (invalid || missing.length > 0 || stale))}
+              onClick={() => {
+                if (priced) setPreview(null);
+                else void execute(false);
+              }}
             >
-              {pending ? 'Đang xử lý…' : 'Kiểm tra giá & xem trước'}
+              {pending
+                ? 'Đang xử lý…'
+                : priced
+                  ? 'Quay lại & chỉnh sửa'
+                  : 'Kiểm tra giá & xem trước'}
             </Button>
             <Button
               type="button"

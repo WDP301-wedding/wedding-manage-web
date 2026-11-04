@@ -114,7 +114,7 @@ export function ManagementBookingWorkspace({
             )}
           </p>
         ) : null}
-        {/* empty:sr-only giữ vùng thông báo trong cây trợ năng nhưng không chiếm chỗ khi trống. */}
+        {/* Vùng thông báo ẩn cho trợ năng (screen reader); toàn bộ thông báo giao diện hiển thị qua Toast */}
         <div className="flex flex-col gap-2 empty:sr-only" aria-live="polite">
           {pending === null ? null : (
             <span
@@ -125,16 +125,12 @@ export function ManagementBookingWorkspace({
               Đang xử lý yêu cầu…
             </span>
           )}
-          {message === null ? null : (
-            <span role="status" className="rounded-lg bg-hy-info-bg px-4 py-3 text-hy-info">
-              {message}
-            </span>
-          )}
-          {error === null ? null : (
-            <span role="alert" className="rounded-lg bg-hy-error-bg px-4 py-3 text-hy-error">
+          {message ? <span className="sr-only">{message}</span> : null}
+          {error ? (
+            <span role="alert" className="sr-only">
               {error}
             </span>
-          )}
+          ) : null}
           {contextStatus === 'error' ? (
             <Button variant="outline" size="sm" className="self-start" onClick={retryContext}>
               Tải lại hồ sơ
