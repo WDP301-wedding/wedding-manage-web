@@ -122,9 +122,10 @@ export const billingService = {
     });
   },
 
-  async getFinalInvoices(bookingId: string): Promise<FinalInvoicesResponse> {
+  async getFinalInvoices(bookingId: string, cursor?: string): Promise<FinalInvoicesResponse> {
     const response = await axiosApiClient.get<{ data: FinalInvoicesResponse }>(
       `/bookings/${bookingId}/final-invoices`,
+      { params: cursor ? { cursor } : {} },
     );
     return response.data.data;
   },
@@ -148,6 +149,7 @@ export const billingService = {
     body: {
       expectedBillingRevision: number;
       expectedInvoiceRevisionId: string;
+      reason: string;
       lines: readonly {
         kind: 'DEBIT' | 'CREDIT';
         name: string;

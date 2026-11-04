@@ -12,11 +12,12 @@ import { OperationsShell } from '../identity-access/operations-shell';
 import { useManagementSession } from '../identity-access/use-management-session';
 import { notify } from '../../design-system/notifications';
 import { createManagementBillingGateway, type ManagementBillingGateway } from './billing-api';
-import type { createBillingIntents } from './billing-intents';
+import type { BillingIntents } from './billing-intents';
 import { BillingHistory, BillingSummary } from './billing-display';
 import { BillingFinancialOverview } from './billing-financial-overview';
 import { BillingMutationsSection } from './billing-mutations-section';
 import { IncidentalsPanel } from './incidentals-panel';
+import { BillingRecoveryPanel } from './billing-recovery-panel';
 import { BillingBookingLookup } from './billing-booking-lookup';
 import { cardClass, pageStateClass } from './billing-form-classes';
 import { type Authorize, useBillingWorkspace } from './use-billing-workspace';
@@ -99,7 +100,7 @@ export function ManagementBillingWorkspace({
   accountId: string;
   authorize: Authorize;
   gateway: ManagementBillingGateway;
-  intents?: ReturnType<typeof createBillingIntents>;
+  intents?: BillingIntents;
   archiveMode?: boolean;
 }>) {
   const billing = useBillingWorkspace({ accountId, authorize, gateway, intents });
@@ -135,7 +136,9 @@ export function ManagementBillingWorkspace({
         {!archiveMode && (
           <BillingBookingLookup
             value={billing.bookingId}
-            disabled={pending || uncertain !== null}
+            disabled={
+              pending || uncertain !== null || billing.editing || billing.refreshingAfterWrite
+            }
             matches={billing.searchMatches}
             open={billing.showDropdown}
             onChange={billing.handleBookingInputChange}
@@ -144,10 +147,32 @@ export function ManagementBillingWorkspace({
             }}
             onSelect={billing.selectLookupBooking}
             onSubmit={billing.submitLookup}
+            onClose={() => billing.setShowDropdown(false)}
           />
         )}
       </header>
 
+      {billing.lookupError ? (
+        <p role="alert" className="text-sm text-hy-error">
+          {billing.lookupError}
+        </p>
+      ) : null}
+      {billing.waiting ? (
+        <p role="status" className="text-sm text-muted-foreground">
+          Có cập nhật mới. Dữ liệu sẽ đồng bộ khi bạn hoàn tất hoặc bỏ nội dung đang nhập.
+        </p>
+      ) : null}
+      {billing.refreshingAfterWrite ? (
+        <p role="status" className="text-sm text-muted-foreground">
+          Đang cập nhật số liệu sau ghi nhận. Chỉ mở thao tác mới khi sổ đã đồng bộ.
+        </p>
+      ) : null}
+      {billing.editing ? (
+        <p className="text-xs text-muted-foreground">
+          Đang giữ nội dung bạn nhập. Bỏ hoặc hoàn tất thao tác để nhận cập nhật mới; dữ liệu gửi
+          vẫn được máy chủ kiểm tra lại.
+        </p>
+      ) : null}
       {/* empty:sr-only giữ vùng thông báo trong cây trợ năng nhưng không chiếm chỗ khi trống. */}
       <div className="empty:sr-only" aria-live="polite">
         {pending && (
@@ -163,6 +188,28 @@ export function ManagementBillingWorkspace({
 
       {view !== null && (
         <>
+          {billing.identity ? (
+            <p className="rounded-lg bg-muted p-3 text-sm">
+              <strong>
+                {billing.identity.bookingCode} · {billing.identity.customerName}
+              </strong>{' '}
+              · {billing.identity.hallName} ·{' '}
+              {billing.identity.eventDate.split('-').reverse().join('/')} ·{' '}
+              {billing.identity.shiftCode === 'LUNCH' ? 'Trưa' : 'Tối'}
+            </p>
+          ) : null}
+          {billing.recordingError ? (
+            <p role="alert" className="text-sm text-hy-error">
+              {billing.recordingError}
+            </p>
+          ) : null}
+          {billing.recovery ? (
+            <BillingRecoveryPanel
+              recovery={billing.recovery}
+              pending={pending}
+              onRetry={() => void billing.retryRecovery()}
+            />
+          ) : null}
           {!archiveMode && (
             <BillingFinancialOverview
               bookingId={view.bookingId}
@@ -174,10 +221,8 @@ export function ManagementBillingWorkspace({
             <Button
               variant="outline"
               size="sm"
-              disabled={pending}
-              onClick={() => {
-                void billing.run(() => billing.load(view.bookingId));
-              }}
+              disabled={pending || billing.editing}
+              onClick={() => void billing.refresh()}
             >
               Cập nhật thông tin
             </Button>
@@ -185,15 +230,26 @@ export function ManagementBillingWorkspace({
           {archiveMode && <BillingSummary view={view} />}
 
           <div className="flex flex-wrap items-start gap-6">
-            <BillingMutationsSection
-              view={view}
-              archiveMode={archiveMode}
-              pending={pending}
-              uncertain={uncertain}
-              refundRevision={billing.refundRevision}
-              approvalRevision={billing.approvalRevision}
-              onMutate={billing.mutate}
-            />
+            <div className={billing.recovery?.body ? 'hidden' : 'contents'}>
+              <BillingMutationsSection
+                view={view}
+                archiveMode={archiveMode}
+                pending={
+                  pending ||
+                  billing.refreshingAfterWrite ||
+                  billing.settlementEditing ||
+                  !billing.recording
+                }
+                uncertain={uncertain}
+                refundRevision={billing.refundRevision}
+                approvalRevision={billing.approvalRevision}
+                recording={billing.recording}
+                formEpoch={billing.formEpoch}
+                onEditingChange={billing.setPaymentEditing}
+                onLoadMoreSources={billing.loadRefundSources}
+                onMutate={billing.mutate}
+              />
+            </div>
 
             <div className={`${cardClass} flex-[1_1_440px]`}>
               <BillingHistory view={view} />
@@ -218,10 +274,14 @@ export function ManagementBillingWorkspace({
               bookingId={view.bookingId}
               billing={view}
               billingRevision={view.billingRevision}
-              disabled={pending}
-              onRefresh={() => {
-                void billing.run(() => billing.load(view.bookingId));
-              }}
+              disabled={
+                pending ||
+                billing.refreshingAfterWrite ||
+                billing.paymentEditing ||
+                billing.recovery !== null
+              }
+              onEditingChange={billing.setSettlementEditing}
+              onRefresh={billing.scheduleRefresh}
             />
           )}
         </>

@@ -1,7 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import type { BillingView, ManualPaymentBody, RefundBody, RefundApprovalBody } from './billing-api';
+import type {
+  BillingView,
+  ManualPaymentBody,
+  RefundBody,
+  RefundApprovalBody,
+  RecordingContext,
+} from './billing-api';
 import { ManualPaymentForm, RefundForm, type CommandOutcome } from './payment-forms';
 
 export interface BillingMutationsSectionProps {
@@ -11,6 +17,10 @@ export interface BillingMutationsSectionProps {
   uncertain: 'manual' | 'refund' | 'approval' | null;
   refundRevision: number | null;
   approvalRevision: number | null;
+  formEpoch?: number;
+  recording?: RecordingContext | null | undefined;
+  onEditingChange?: (value: boolean) => void;
+  onLoadMoreSources?: (() => void) | undefined;
   onMutate: (
     kind: 'manual' | 'refund' | 'approval',
     body: ManualPaymentBody | RefundBody | RefundApprovalBody,
@@ -26,12 +36,21 @@ export function BillingMutationsSection({
   pending,
   uncertain,
   refundRevision,
+  recording,
+  formEpoch = 0,
+  onEditingChange,
+  onLoadMoreSources,
   onMutate,
 }: Readonly<BillingMutationsSectionProps>) {
   const [activeTab, setActiveTab] = useState<'manual' | 'refund'>(
     archiveMode ? 'refund' : 'manual',
   );
 
+  const [manualDirty, setManualDirty] = useState(false);
+  const [refundDirty, setRefundDirty] = useState(false);
+  useEffect(() => {
+    onEditingChange?.(manualDirty || refundDirty);
+  }, [manualDirty, refundDirty, onEditingChange]);
   useEffect(() => {
     if (uncertain === 'manual' || uncertain === 'refund') {
       setActiveTab(uncertain);
@@ -64,6 +83,7 @@ export function BillingMutationsSection({
             type="button"
             role="tab"
             aria-selected={activeTab === 'manual'}
+            disabled={pending || (activeTab !== 'manual' && (manualDirty || refundDirty))}
             className={tabClass}
             onClick={() => setActiveTab('manual')}
           >
@@ -74,6 +94,7 @@ export function BillingMutationsSection({
           type="button"
           role="tab"
           aria-selected={activeTab === 'refund'}
+          disabled={pending || (activeTab !== 'refund' && (manualDirty || refundDirty))}
           className={tabClass}
           onClick={() => setActiveTab('refund')}
         >
@@ -84,8 +105,10 @@ export function BillingMutationsSection({
       {(!archiveMode || uncertain === 'manual') && (
         <div className={pane('manual')}>
           <ManualPaymentForm
-            key={`manual:${view.bookingId}`}
+            key={`manual:${view.bookingId}:${formEpoch}`}
             bookingId={view.bookingId}
+            recording={recording}
+            onEditingChange={setManualDirty}
             disabled={pending || (uncertain !== null && uncertain !== 'manual')}
             onConfirm={(body) => onMutate('manual', body)}
           />
@@ -94,7 +117,10 @@ export function BillingMutationsSection({
 
       <div className={pane('refund')}>
         <RefundForm
-          key={`refund:${view.bookingId}`}
+          key={`refund:${view.bookingId}:${formEpoch}`}
+          recording={recording}
+          onEditingChange={setRefundDirty}
+          onLoadMore={onLoadMoreSources}
           booking={refundRevision === null ? view : { ...view, billingRevision: refundRevision }}
           disabled={pending || (uncertain !== null && uncertain !== 'refund')}
           onConfirm={(body) => onMutate('refund', body)}

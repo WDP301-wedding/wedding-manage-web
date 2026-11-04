@@ -43,6 +43,8 @@ export function ContractPanel({
       ? 'appendix'
       : 'contract',
   );
+  const [isCustomerSelectionExpanded, setIsCustomerSelectionExpanded] = useState(false);
+  const [showWithdrawForm, setShowWithdrawForm] = useState(false);
   const {
     editing,
     setEditing,
@@ -61,6 +63,7 @@ export function ContractPanel({
 
   const data = rawData?.bookingId === bookingId ? rawData : null;
 
+  const showComposer = editing && Boolean(data?.capabilities?.canManageDraft);
   const commandsDisabled =
     disabled || loading || Boolean(error) || data?.bookingRevision !== bookingRevision;
 
@@ -153,76 +156,6 @@ export function ContractPanel({
           </Button>
         </p>
       ) : null}
-      {actionMessage ? (
-        <p role="status" className="rounded-lg bg-hy-info-bg px-4 py-3 text-xs text-hy-info">
-          {actionMessage}
-        </p>
-      ) : null}
-      {subTab === 'contract' && data?.customerSelection ? (
-        <section className="flex flex-col gap-2 rounded-lg bg-muted p-4">
-          <h4 className="flex flex-wrap items-center gap-2 font-semibold">
-            Lựa chọn của khách
-            <Badge
-              variant={
-                data.customerSelection.status === 'SUBMITTED'
-                  ? 'success'
-                  : data.customerSelection.status === 'DRAFT'
-                    ? 'warning'
-                    : 'neutral'
-              }
-            >
-              {data.customerSelection.status === 'SUBMITTED'
-                ? 'Đã gửi, khách không tự sửa'
-                : data.customerSelection.status === 'DRAFT'
-                  ? 'Khách đang chọn, chưa gửi'
-                  : 'Khách chưa gửi lựa chọn'}
-            </Badge>
-          </h4>
-          <details className="group">
-            <summary className="inline-flex h-9 cursor-pointer list-none items-center gap-1.5 rounded-lg text-xs font-semibold text-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none [&::-webkit-details-marker]:hidden">
-              <ChevronRight
-                aria-hidden
-                className="size-4 transition-transform group-open:rotate-90"
-              />
-              Xem các hạng mục và số bàn
-            </summary>
-            <div className="flex flex-col gap-2 pt-2">
-              <ContractLinesTable
-                lines={data.customerSelection.lines}
-                title="Thông tin từ phía khách"
-              />
-              <p>
-                Tổng lựa chọn:{' '}
-                <strong className="tabular-nums">
-                  {formatVnd(data.customerSelection.totalVnd)}
-                </strong>
-              </p>
-            </div>
-          </details>
-          {data.customerSelection.status !== 'SUBMITTED' && !currentRevision ? (
-            <p className="text-xs text-muted-foreground">
-              Chờ khách lưu nháp và gửi lựa chọn ở mục Thoả thuận, thẻ Hợp đồng. Sau khi gửi, hệ
-              thống mới mở lập hợp đồng và điền sẵn toàn bộ các hạng mục.
-            </p>
-          ) : null}
-        </section>
-      ) : null}
-      {subTab === 'contract' && data?.capabilities?.canManageDraft && !editing ? (
-        <div className="flex flex-wrap items-center gap-3">
-          <Button
-            type="button"
-            disabled={commandsDisabled || !proposal.timeline}
-            onClick={() => setEditing(true)}
-          >
-            {currentRevision ? 'Chỉnh sửa bản hợp đồng' : 'Lập hợp đồng từ lựa chọn khách'}
-          </Button>
-          {!proposal.timeline ? (
-            <p className="text-xs text-muted-foreground">
-              Cần lưu kịch bản tiệc trước khi lập hợp đồng.
-            </p>
-          ) : null}
-        </div>
-      ) : null}
       {subTab === 'contract' && editing && data?.capabilities?.canManageDraft ? (
         <ContractDraftComposer
           key={
@@ -256,9 +189,79 @@ export function ContractPanel({
           onCancel={() => setEditing(false)}
           onSaved={() => {
             setEditing(false);
+            setIsCustomerSelectionExpanded(false);
             onRefresh();
           }}
         />
+      ) : null}
+      {subTab === 'contract' && !showComposer && data?.customerSelection ? (
+        <section className="flex flex-col gap-2 rounded-lg bg-muted p-4">
+          <h4 className="flex flex-wrap items-center gap-2 font-semibold">
+            Lựa chọn của khách
+            <Badge
+              variant={
+                data.customerSelection.status === 'SUBMITTED'
+                  ? 'success'
+                  : data.customerSelection.status === 'DRAFT'
+                    ? 'warning'
+                    : 'neutral'
+              }
+            >
+              {data.customerSelection.status === 'SUBMITTED'
+                ? 'Đã gửi, khách không tự sửa'
+                : data.customerSelection.status === 'DRAFT'
+                  ? 'Khách đang chọn, chưa gửi'
+                  : 'Khách chưa gửi lựa chọn'}
+            </Badge>
+          </h4>
+          <details
+            className="group"
+            open={isCustomerSelectionExpanded}
+            onToggle={(event) => setIsCustomerSelectionExpanded(event.currentTarget.open)}
+          >
+            <summary className="inline-flex h-9 cursor-pointer list-none items-center gap-1.5 rounded-lg text-xs font-semibold text-primary focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none [&::-webkit-details-marker]:hidden">
+              <ChevronRight
+                aria-hidden
+                className="size-4 transition-transform group-open:rotate-90"
+              />
+              Xem các hạng mục và số bàn
+            </summary>
+            <div className="flex flex-col gap-2 pt-2">
+              <ContractLinesTable
+                lines={data.customerSelection.lines}
+                title="Thông tin từ phía khách"
+              />
+              <p>
+                Tổng lựa chọn:{' '}
+                <strong className="tabular-nums">
+                  {formatVnd(data.customerSelection.totalVnd)}
+                </strong>
+              </p>
+            </div>
+          </details>
+          {data.customerSelection.status !== 'SUBMITTED' && !currentRevision ? (
+            <p className="text-xs text-muted-foreground">
+              Chờ khách lưu nháp và gửi lựa chọn ở mục Thoả thuận, thẻ Hợp đồng. Sau khi gửi, hệ
+              thống mới mở lập hợp đồng và điền sẵn toàn bộ các hạng mục.
+            </p>
+          ) : null}
+        </section>
+      ) : null}
+      {subTab === 'contract' && data?.capabilities?.canManageDraft && !showComposer ? (
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            type="button"
+            disabled={commandsDisabled || !proposal.timeline}
+            onClick={() => setEditing(true)}
+          >
+            {currentRevision ? 'Chỉnh sửa bản hợp đồng' : 'Lập hợp đồng từ lựa chọn khách'}
+          </Button>
+          {!proposal.timeline ? (
+            <p className="text-xs text-muted-foreground">
+              Cần lưu kịch bản tiệc trước khi lập hợp đồng.
+            </p>
+          ) : null}
+        </div>
       ) : null}
       {subTab === 'appendix' ? (
         <AppendixPanel
@@ -268,7 +271,7 @@ export function ContractPanel({
           onRefresh={onRefresh}
           panelState={appendixState}
         />
-      ) : (
+      ) : showComposer ? null : (
         <>
           {appendixState.pendingApprovalsCount > 0 ? (
             <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-hy-warning-bg px-4 py-3">
@@ -335,29 +338,63 @@ export function ContractPanel({
               />
 
               {data?.capabilities?.canWithdrawApproval ? (
-                <form
-                  className="flex flex-col gap-2"
-                  onSubmit={(event) => {
-                    event.preventDefault();
-                    const reason = String(
-                      new FormData(event.currentTarget).get('reason') ?? '',
-                    ).trim();
-                    if (reason) void panelState.handleWithdraw(reason);
-                  }}
-                >
-                  <label className="flex flex-col gap-1 text-xs font-semibold">
-                    Lý do cần thay đổi sau khi đã duyệt
-                    <Textarea className="font-normal" name="reason" required maxLength={500} />
-                  </label>
+                showWithdrawForm ? (
+                  <form
+                    className="flex flex-col gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-4"
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      const reason = String(
+                        new FormData(event.currentTarget).get('reason') ?? '',
+                      ).trim();
+                      if (reason) {
+                        void panelState.handleWithdraw(reason);
+                        setShowWithdrawForm(false);
+                      }
+                    }}
+                  >
+                    <label className="flex flex-col gap-1 text-xs font-semibold">
+                      <span>
+                        Lý do cần thay đổi sau khi đã duyệt <span className="text-destructive">*</span>
+                      </span>
+                      <Textarea
+                        className="font-normal"
+                        name="reason"
+                        required
+                        maxLength={500}
+                        placeholder="Nhập lý do rút duyệt để chuẩn bị phiên bản hợp đồng mới..."
+                        autoFocus
+                      />
+                    </label>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        disabled={commandsDisabled}
+                        type="submit"
+                      >
+                        Xác nhận rút duyệt
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        type="button"
+                        onClick={() => setShowWithdrawForm(false)}
+                      >
+                        Hủy
+                      </Button>
+                    </div>
+                  </form>
+                ) : (
                   <Button
                     variant="outline"
-                    className="self-start"
+                    className="self-start text-destructive hover:bg-destructive/10"
                     disabled={commandsDisabled}
-                    type="submit"
+                    type="button"
+                    onClick={() => setShowWithdrawForm(true)}
                   >
                     Rút duyệt để chuẩn bị bản mới
                   </Button>
-                </form>
+                )
               ) : null}
               <div className="flex flex-wrap justify-end gap-2 border-t border-border pt-4">
                 <Button

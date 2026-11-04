@@ -95,14 +95,16 @@ export function TimelineTemplatePicker({
         hay phê duyệt kịch bản.
       </p>
       <div className="flex flex-wrap items-end gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          disabled={disabled || loading}
-          onClick={() => void load()}
-        >
-          {replaceExisting ? 'Đổi mẫu kịch bản' : 'Tải mẫu kịch bản'}
-        </Button>
+        {!versions?.length ? (
+          <Button
+            type="button"
+            variant="outline"
+            disabled={disabled || loading}
+            onClick={() => void load()}
+          >
+            {replaceExisting ? 'Đổi mẫu kịch bản' : 'Tải mẫu kịch bản'}
+          </Button>
+        ) : null}
         {versions !== null && versions.length > 0 ? (
           <>
             <label className="flex min-w-0 flex-[1_1_240px] flex-col gap-1 text-xs font-semibold">

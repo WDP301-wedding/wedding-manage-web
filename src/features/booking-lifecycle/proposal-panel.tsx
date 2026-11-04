@@ -31,7 +31,7 @@ export interface ProposalPanelProps {
   disabled: boolean;
   gateway: ManagementBookingGateway;
   proposal: ProposalView;
-  refresh: (message: string) => Promise<void>;
+  refresh: (message?: string) => Promise<void>;
   run: <T>(label: string, operation: () => Promise<T>) => Promise<T | null>;
 }
 
@@ -45,6 +45,8 @@ export function ProposalPanel({
   run,
 }: Readonly<ProposalPanelProps>) {
   const [isEditingTimeline, setIsEditingTimeline] = useState(false);
+  const [withdrawFor, setWithdrawFor] = useState<string | null>(null);
+  const timelineKey = proposal.bookingId + ':' + proposal.timeline?.revisionId;
   const command = async (
     label: string,
     success: string,
@@ -248,37 +250,60 @@ export function ProposalPanel({
                 </p>
               ) : null}
               {proposal.capabilities.canWithdrawApproval && proposal.timeline?.managerApprovedAt ? (
-                <form
-                  className="flex flex-col gap-2"
-                  onSubmit={(event) => {
-                    event.preventDefault();
-                    const reason = String(
-                      new FormData(event.currentTarget).get('reason') ?? '',
-                    ).trim();
-                    if (reason)
-                      void command('withdraw-timeline', 'Đã rút phê duyệt kịch bản.', () =>
-                        contractService.withdrawTimeline(
-                          proposal.bookingId,
-                          proposal.timeline!.revisionId,
-                          proposal.revision,
-                          reason,
-                        ),
-                      );
-                  }}
-                >
-                  <label className="flex flex-col gap-1 text-xs font-semibold">
-                    Lý do thay đổi kịch bản
-                    <Textarea className="font-normal" name="reason" required maxLength={500} />
-                  </label>
+                withdrawFor !== timelineKey ? (
                   <Button
-                    type="submit"
+                    type="button"
                     variant="outline"
                     className="self-start"
                     disabled={disabled}
+                    onClick={() => setWithdrawFor(timelineKey)}
                   >
                     Rút phê duyệt kịch bản
                   </Button>
-                </form>
+                ) : (
+                  <form
+                    className="flex flex-col gap-2"
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      const reason = String(
+                        new FormData(event.currentTarget).get('reason') ?? '',
+                      ).trim();
+                      if (reason)
+                        void command('withdraw-timeline', 'Đã rút phê duyệt kịch bản.', () =>
+                          contractService.withdrawTimeline(
+                            proposal.bookingId,
+                            proposal.timeline!.revisionId,
+                            proposal.revision,
+                            reason,
+                          ),
+                        ).then((success) => {
+                          if (success) setWithdrawFor(null);
+                        });
+                    }}
+                  >
+                    <label className="flex flex-col gap-1 text-xs font-semibold">
+                      Lý do thay đổi kịch bản
+                      <Textarea className="font-normal" name="reason" required maxLength={500} />
+                    </label>
+                    <Button
+                      type="submit"
+                      variant="outline"
+                      className="self-start"
+                      disabled={disabled}
+                    >
+                      Xác nhận rút phê duyệt
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="self-start"
+                      disabled={disabled}
+                      onClick={() => setWithdrawFor(null)}
+                    >
+                      Giữ phê duyệt
+                    </Button>
+                  </form>
+                )
               ) : null}
               {proposal.capabilities.canEditTimeline ? (
                 <details open={isEditingTimeline}>
@@ -302,7 +327,7 @@ export function ProposalPanel({
               ) : null}
             </>
           )}
-          {proposal.timeline === null ? null : (
+          {proposal.timeline === null || proposal.timeline.managerApprovedAt ? null : (
             <Button
               variant="outline"
               className="self-start"
@@ -330,7 +355,7 @@ export function ProposalPanel({
         bookingId={proposal.bookingId}
         bookingRevision={proposal.revision}
         disabled={disabled}
-        onRefresh={() => void refresh('Đã làm mới dữ liệu hợp đồng.')}
+        onRefresh={() => void refresh()}
       />
       <ProposalLifecycleClosure
         proposal={proposal}

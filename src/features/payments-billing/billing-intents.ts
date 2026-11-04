@@ -34,10 +34,32 @@ const metadataSchema = z.strictObject({
   expectedBillingRevision: z.number().int().positive().optional(),
   timelineRevisionId: z.uuid().optional(),
 });
+const recoveryBodySchema = z.union([
+  z.strictObject({
+    bookingId: z.uuid(),
+    purpose: z.enum(['DEPOSIT', 'BALANCE']),
+    amountVnd: z.int().positive().max(Number.MAX_SAFE_INTEGER),
+    settledAt: z.iso.datetime({ offset: true }),
+    expectedBillingRevision: z.int().positive().optional(),
+    timelineRevisionId: z.uuid().optional(),
+    contractRevisionId: z.uuid().optional(),
+    documentDigest: z
+      .string()
+      .regex(/^[a-f0-9]{64}$/)
+      .optional(),
+  }),
+  z.strictObject({
+    sourcePaymentId: z.uuid(),
+    amountVnd: z.int().positive().max(Number.MAX_SAFE_INTEGER),
+    expectedBillingRevision: z.int().positive(),
+  }),
+]);
+export type RecoveryBody = z.infer<typeof recoveryBodySchema>;
 const recordSchema = z.strictObject({
   key: z.uuid(),
   hash: z.string().regex(/^[a-f0-9]{64}$/),
   metadata: metadataSchema.default({}),
+  body: recoveryBodySchema.optional(),
 });
 const browserStorage: IntentStorage = {
   read: (key) => Promise.resolve(sessionStorage.getItem(key)),
@@ -55,7 +77,8 @@ async function digest(value: string): Promise<string> {
   return Array.from(new Uint8Array(bytes), (byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
-// Keep the original server revision for recovery, never tokens or receipt text.
+// Session-local, account/booking-scoped recovery stores only validated amounts, IDs and time.
+// No tokens, customer contacts, receipt text or external evidence are persisted.
 export function createBillingIntents(
   accountId: string,
   storage: IntentStorage = browserStorage,
@@ -68,6 +91,16 @@ export function createBillingIntents(
     async pending(scope: string) {
       const saved = await storage.read(await slotFor(scope));
       return saved === null ? null : recordSchema.parse(JSON.parse(saved) as unknown).metadata;
+    },
+    async inspect(scope: string) {
+      const saved = await storage.read(await slotFor(scope));
+      if (saved === null) return null;
+      const record = recordSchema.parse(JSON.parse(saved) as unknown);
+      const body =
+        record.body && (await hash(canonicalBody(record.body))) === record.hash
+          ? record.body
+          : null;
+      return { metadata: record.metadata, body };
     },
     async run<T>(
       scope: string,
@@ -93,7 +126,13 @@ export function createBillingIntents(
           });
         const stableBody = { ...body, ...metadata };
         const fingerprint = await hash(canonicalBody(stableBody));
-        const record = previous ?? { key: crypto.randomUUID(), hash: fingerprint, metadata };
+        const recoverable = recoveryBodySchema.safeParse(stableBody);
+        const record = previous ?? {
+          key: crypto.randomUUID(),
+          hash: fingerprint,
+          metadata,
+          ...(recoverable.success ? { body: recoverable.data } : {}),
+        };
         if (record.hash !== fingerprint) throw new BillingIntentMismatchError();
         await storage.write(slot, JSON.stringify(record));
         try {
@@ -119,3 +158,7 @@ export function createBillingIntents(
     },
   };
 }
+
+/** Older adapters may supply only pending/run; recovery then stays in explicit legacy mode. */
+export type BillingIntents = Pick<ReturnType<typeof createBillingIntents>, 'pending' | 'run'> &
+  Partial<Pick<ReturnType<typeof createBillingIntents>, 'inspect'>>;

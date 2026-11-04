@@ -10,8 +10,12 @@ import { Button } from '../../components/ui/button';
 
 export function FinalInvoicesList({
   finalInvoices,
+  onAdjust,
+  disabled = false,
 }: Readonly<{
   finalInvoices: FinalInvoicesResponse | null;
+  onAdjust?: (() => void) | undefined;
+  disabled?: boolean;
 }>) {
   const [expandedInvoiceId, setExpandedInvoiceId] = useState<string | null>(null);
 
@@ -28,6 +32,7 @@ export function FinalInvoicesList({
       ) : (
         <div className="grid gap-3">
           {revisions.map((inv) => {
+            const isCurrent = inv.invoiceRevisionId === finalInvoices?.currentRevisionId;
             const isExpanded = expandedInvoiceId === inv.invoiceRevisionId;
             const incidentalLines = inv.document.incidentalLines ?? [];
             return (
@@ -39,11 +44,11 @@ export function FinalInvoicesList({
                   <div className="flex flex-col gap-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <strong className="text-base font-semibold">
-                        Hoá đơn {inv.invoiceNumber} · Bản {inv.revisionNumber}
+                        Hoá đơn quyết toán · Bản {inv.revisionNumber}
                       </strong>
-                      <Badge variant="success">
+                      <Badge variant={isCurrent ? 'success' : 'neutral'}>
                         <Lock aria-hidden />
-                        Bất biến &amp; Đã khoá sổ
+                        {isCurrent ? 'Bản hiện hành · Bất biến' : 'Bản lịch sử · Bất biến'}
                       </Badge>
                     </div>
                     <div className="text-xs text-muted-foreground tabular-nums">
@@ -79,11 +84,47 @@ export function FinalInvoicesList({
                   </div>
 
                   <div className="flex flex-col">
-                    <dt className="text-2xs text-muted-foreground">Số dư công nợ:</dt>
-                    <dd className="font-semibold text-primary">Căn cứ tất toán cuối cùng</dd>
+                    <dt className="text-2xs text-muted-foreground">Điều chỉnh được ghi nhận:</dt>
+                    <dd className="font-semibold text-primary">
+                      {inv.document.adjustments.length} lần
+                    </dd>
                   </div>
                 </dl>
 
+                <details className="text-xs">
+                  <summary className="cursor-pointer">Thông tin đối chiếu hóa đơn</summary>
+                  <p>{inv.invoiceNumber}</p>
+                </details>
+                {isCurrent && onAdjust ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="self-start"
+                    disabled={disabled}
+                    onClick={onAdjust}
+                  >
+                    Lập điều chỉnh hóa đơn
+                  </Button>
+                ) : null}
+                {inv.document.adjustments.map((adjustment) => (
+                  <details
+                    key={adjustment.id}
+                    className="rounded-lg border border-border p-3 text-xs"
+                  >
+                    <summary className="cursor-pointer font-semibold">
+                      Điều chỉnh {formatDateTime(adjustment.occurredAt)} ·{' '}
+                      {adjustment.deltaVnd >= 0 ? '+' : ''}
+                      {formatVnd(adjustment.deltaVnd)}
+                    </summary>
+                    <p className="mt-2">{adjustment.reason}</p>
+                    {adjustment.lines.map((line) => (
+                      <p key={line.id}>
+                        {line.kind === 'DEBIT' ? 'Tăng' : 'Giảm'}: {line.name} · {line.quantity}{' '}
+                        {line.unit} × {formatVnd(line.unitPriceVnd)} = {formatVnd(line.totalVnd)}
+                      </p>
+                    ))}
+                  </details>
+                ))}
                 {/* Xem chi tiết phát sinh trong hoá đơn nếu có */}
                 {incidentalLines.length > 0 ? (
                   <div className="flex flex-col gap-2">

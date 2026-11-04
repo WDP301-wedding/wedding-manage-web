@@ -25,7 +25,7 @@ export interface BookingWorkspaceTabManageProps {
   run: <T>(label: string, operation: () => Promise<T>) => Promise<T | null>;
   authorize: Authorize;
   gateway: ManagementBookingGateway;
-  refresh: (msg: string) => Promise<void>;
+  refresh: (msg?: string) => Promise<void>;
 }
 
 export function BookingWorkspaceTabManage({

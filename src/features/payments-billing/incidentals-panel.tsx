@@ -13,6 +13,7 @@ import { describeApiError } from '../../lib/api/api-errors';
 import { formatVnd } from '../../lib/formatters';
 import { IncidentalCreateForm, type IncidentalFormData } from './incidental-create-form';
 import { IncidentalTable } from './incidental-table';
+import { InvoiceAdjustmentForm } from './invoice-adjustment-form';
 import { FinalInvoicesList } from './final-invoices-list';
 import { notify } from '../../design-system/notifications';
 import { Badge } from '../../components/ui/badge';
@@ -26,25 +27,39 @@ export function IncidentalsPanel({
   billingRevision,
   billing,
   onRefresh,
+  onEditingChange,
 }: Readonly<{
   bookingId: string;
   disabled: boolean;
   billingRevision: number;
   billing: BillingView;
   onRefresh: () => void;
+  onEditingChange?: (value: boolean) => void;
 }>) {
   const [loading, setLoading] = useState(false);
   const [finalizing, setFinalizing] = useState(false);
   const [incidentals, setIncidentals] = useState<IncidentalExpensesResponse | null>(null);
   const [finalInvoices, setFinalInvoices] = useState<FinalInvoicesResponse | null>(null);
   const [appendices, setAppendices] = useState<AppendixListData | null>(null);
+  const [showAdjustment, setShowAdjustment] = useState(false);
+  const [invoicePageLoading, setInvoicePageLoading] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [showFinalizeConfirm, setShowFinalizeConfirm] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const activeBookingIdRef = useRef(bookingId);
   const loadSequence = useRef(0);
   const invoiceIntent = useRef<{ fingerprint: string; key: string } | null>(null);
-  const busy = disabled || finalizing || showAddForm || showFinalizeConfirm;
+  const busy =
+    disabled ||
+    finalizing ||
+    showAddForm ||
+    showFinalizeConfirm ||
+    showAdjustment ||
+    loading ||
+    invoicePageLoading;
+  useEffect(() => {
+    onEditingChange?.(showAddForm || showFinalizeConfirm || showAdjustment || finalizing);
+  }, [showAddForm, showFinalizeConfirm, showAdjustment, finalizing, onEditingChange]);
 
   const loadData = async (targetId = bookingId) => {
     if (!targetId) return;
@@ -100,16 +115,18 @@ export function IncidentalsPanel({
     setFinalInvoices(null);
     setAppendices(null);
     setShowFinalizeConfirm(false);
+    setShowAddForm(false);
+    setShowAdjustment(false);
     invoiceIntent.current = null;
     loadSequence.current++;
   }, [bookingId]);
 
-  useLiveRefresh(
+  const live = useLiveRefresh(
     async () => {
       await loadData(bookingId);
     },
     {
-      scope: 'settlement:' + bookingId + ':' + billingRevision,
+      scope: 'settlement:' + bookingId,
       bookingId,
       initial: true,
       blocked: busy,
@@ -118,16 +135,17 @@ export function IncidentalsPanel({
   );
 
   const handleCreateIncidental = async (formData: IncidentalFormData) => {
+    if (!incidentals || loadError) return;
     setLoading(true);
     try {
       await billingService.createIncidental(bookingId, {
         ...formData,
-        expectedRevision: incidentals?.revision ?? 1,
+        expectedRevision: incidentals.revision,
       });
       const msg = 'Đã thêm chi phí phát sinh thành công.';
       notify.success(msg);
       setShowAddForm(false);
-      await loadData();
+      live.schedule();
       onRefresh();
     } catch (err) {
       const friendly = describeApiError(err, {
@@ -140,12 +158,13 @@ export function IncidentalsPanel({
   };
 
   const handleDeleteLine = async (lineId: string) => {
+    if (!incidentals || loadError || loading || finalizing) return;
     setLoading(true);
     try {
-      await billingService.deleteIncidental(bookingId, lineId, incidentals?.revision ?? 1);
+      await billingService.deleteIncidental(bookingId, lineId, incidentals.revision);
       const msg = 'Đã xoá dòng phát sinh.';
       notify.success(msg);
-      await loadData();
+      live.schedule();
       onRefresh();
     } catch (err) {
       const friendly = describeApiError(err);
@@ -177,7 +196,7 @@ export function IncidentalsPanel({
       const msg = 'Đã chốt hoá đơn quyết toán cuối thành công. Sổ cái công nợ đã được khoá sổ.';
       notify.success(msg);
       setShowFinalizeConfirm(false);
-      await loadData();
+      live.schedule();
       onRefresh();
     } catch (err) {
       const friendly = describeApiError(err, {
@@ -198,7 +217,7 @@ export function IncidentalsPanel({
       if (friendly.status === 409) {
         setShowFinalizeConfirm(false);
         invoiceIntent.current = null;
-        await loadData();
+        live.schedule();
         onRefresh();
       }
       notify.error(err, { message: friendly.message });
@@ -226,7 +245,7 @@ export function IncidentalsPanel({
           type="button"
           variant="outline"
           size="sm"
-          disabled={disabled || loading || finalizing}
+          disabled={busy}
           onClick={() => void loadData()}
         >
           {loading ? 'Đang tải…' : 'Làm mới'}
@@ -354,7 +373,66 @@ export function IncidentalsPanel({
           ) : null}
 
           {/* Danh sách hoá đơn cuối đã chốt */}
-          <FinalInvoicesList finalInvoices={finalInvoices} />
+          {showAdjustment &&
+          finalInvoices?.revisions.find(
+            (item) => item.invoiceRevisionId === finalInvoices.currentRevisionId,
+          ) ? (
+            <InvoiceAdjustmentForm
+              key={finalInvoices.currentRevisionId}
+              bookingId={bookingId}
+              current={finalInvoices.revisions.find(
+                (item) => item.invoiceRevisionId === finalInvoices.currentRevisionId,
+              )!}
+              billingRevision={billingRevision}
+              disabled={disabled || loading}
+              onCancel={() => setShowAdjustment(false)}
+              onSaved={() => {
+                setShowAdjustment(false);
+                live.schedule();
+                onRefresh();
+              }}
+            />
+          ) : null}
+          {!showAdjustment ? (
+            <FinalInvoicesList
+              finalInvoices={finalInvoices}
+              disabled={disabled || loading || busy || Boolean(loadError)}
+              onAdjust={() => setShowAdjustment(true)}
+            />
+          ) : null}
+          {finalInvoices?.nextCursor ? (
+            <Button
+              type="button"
+              variant="outline"
+              disabled={invoicePageLoading || busy}
+              onClick={() => {
+                const previous = finalInvoices;
+                const sequence = loadSequence.current;
+                setInvoicePageLoading(true);
+                void billingService
+                  .getFinalInvoices(bookingId, previous.nextCursor ?? undefined)
+                  .then((page) => {
+                    if (
+                      activeBookingIdRef.current !== bookingId ||
+                      sequence !== loadSequence.current
+                    )
+                      return;
+                    if (page.currentRevisionId !== previous.currentRevisionId) {
+                      notify.warning('Có hóa đơn mới. Hãy làm mới trước khi xem tiếp.');
+                      return;
+                    }
+                    setFinalInvoices({
+                      ...page,
+                      revisions: [...previous.revisions, ...page.revisions],
+                    });
+                  })
+                  .catch((cause: unknown) => notify.error(cause))
+                  .finally(() => setInvoicePageLoading(false));
+              }}
+            >
+              Xem phiên bản hóa đơn cũ hơn
+            </Button>
+          ) : null}
         </div>
 
         {/* CỘT PHẢI: Chi phí phát sinh nháp & Bảng kê */}
@@ -377,7 +455,15 @@ export function IncidentalsPanel({
               <Button
                 type="button"
                 size="sm"
-                disabled={disabled || loading || finalizing}
+                disabled={
+                  disabled ||
+                  loading ||
+                  finalizing ||
+                  showFinalizeConfirm ||
+                  showAdjustment ||
+                  Boolean(loadError) ||
+                  !incidentals
+                }
                 onClick={() => setShowAddForm(true)}
               >
                 <Plus aria-hidden />
@@ -397,7 +483,14 @@ export function IncidentalsPanel({
 
           <IncidentalTable
             incidentals={incidentals}
-            disabled={disabled || hasFinalizedInvoice}
+            disabled={
+              disabled ||
+              hasFinalizedInvoice ||
+              finalizing ||
+              showFinalizeConfirm ||
+              showAdjustment ||
+              Boolean(loadError)
+            }
             loading={loading}
             onDeleteLine={handleDeleteLine}
           />
