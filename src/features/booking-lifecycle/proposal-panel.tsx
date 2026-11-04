@@ -101,6 +101,12 @@ export function ProposalPanel({
             </Badge>
             <span className="text-2xs text-muted-foreground">Phiên bản {proposal.revision}</span>
           </div>
+          {proposal.phase === 'COMPLETED' ? (
+            <p role="status" className="rounded-lg bg-muted p-3 text-sm">
+              Tiệc đã hoàn thành. Xem hoá đơn và tình trạng tất toán tại Thanh toán &amp; quyết
+              toán.
+            </p>
+          ) : null}
           <div className="flex flex-col gap-0.5">
             <h3 className="text-lg font-semibold">{proposal.proposal.hall.name}</h3>
             <p className="text-muted-foreground tabular-nums">
@@ -147,27 +153,29 @@ export function ProposalPanel({
             )}
             <a
               href={`/billing?bookingId=${proposal.bookingId}`}
-              aria-label="Mở thanh toán & Thu cọc tiệc này"
+              aria-label="Mở thanh toán & quyết toán tiệc này"
               className={buttonVariants({ variant: 'outline', size: 'sm' })}
             >
-              <span>Thanh toán &amp; thu cọc</span>
+              <span>Thanh toán &amp; quyết toán</span>
             </a>
-            <Button
-              size="sm"
-              disabled={disabled || proposal.phase !== 'CONFIRMED'}
-              type="button"
-              onClick={() =>
-                void command('complete', 'Booking đã hoàn thành.', (token) =>
-                  gateway.complete(token, {
-                    bookingId: proposal.bookingId,
-                    expectedRevision: proposal.revision,
-                  }),
-                )
-              }
-            >
-              <Check aria-hidden />
-              <span>Đánh dấu hoàn thành</span>
-            </Button>
+            {proposal.phase === 'CONFIRMED' ? (
+              <Button
+                size="sm"
+                disabled={disabled || proposal.phase !== 'CONFIRMED'}
+                type="button"
+                onClick={() =>
+                  void command('complete', 'Booking đã hoàn thành.', (token) =>
+                    gateway.complete(token, {
+                      bookingId: proposal.bookingId,
+                      expectedRevision: proposal.revision,
+                    }),
+                  )
+                }
+              >
+                <Check aria-hidden />
+                <span>Đánh dấu tiệc đã tổ chức xong</span>
+              </Button>
+            ) : null}
           </div>
         </article>
 

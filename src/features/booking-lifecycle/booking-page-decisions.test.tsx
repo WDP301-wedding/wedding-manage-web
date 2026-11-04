@@ -139,6 +139,24 @@ afterEach(() => {
 });
 
 describe('ManagementBookingWorkspace cancellation decisions and calculations', () => {
+  it('shows a completed event with access to settlement and no repeat completion command', async () => {
+    const gateway = fakeGateway();
+    vi.mocked(gateway.loadProposal).mockResolvedValue({ ...proposal, phase: 'COMPLETED' });
+    render(<ManagementBookingWorkspace authorize={authorize} gateway={gateway} />);
+    fireEvent.change(screen.getByLabelText('Tìm hồ sơ tiệc'), {
+      target: { value: proposal.bookingId },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Mở hồ sơ' }));
+    expect(await screen.findByText(/Tiệc đã hoàn thành\. Xem hoá đơn/)).toBeVisible();
+    expect(
+      screen.getByRole('link', { name: 'Mở thanh toán & quyết toán tiệc này' }),
+    ).toHaveAttribute('href', `/billing?bookingId=${proposal.bookingId}`);
+    expect(
+      screen.queryByRole('button', { name: 'Đánh dấu tiệc đã tổ chức xong' }),
+    ).not.toBeInTheDocument();
+    expect(gateway.complete).not.toHaveBeenCalled();
+  });
+
   it('lets the Manager decide a pending request using the current server revision', async () => {
     const gateway = fakeGateway();
     vi.mocked(gateway.loadProposal).mockResolvedValue({
