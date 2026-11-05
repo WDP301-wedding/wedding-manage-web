@@ -91,7 +91,10 @@ export function AccountSettings({
       })
       .catch((caught: unknown) => {
         if (active) {
-          if (caught instanceof ApiClientError && caught.status === 401) onSessionExpired?.();
+          if (caught instanceof ApiClientError && caught.status === 401) {
+            onSessionExpired?.();
+            notify.warning('Phiên làm việc đã hết hạn. Hãy đăng nhập lại.');
+          }
           setError('Chưa tải được hồ sơ. Hãy thử lại.');
         }
       });

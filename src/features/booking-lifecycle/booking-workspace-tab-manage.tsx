@@ -49,7 +49,7 @@ export function BookingWorkspaceTabManage({
     bookingId: proposal?.bookingId ?? '',
     bookingRevision: proposal?.revision ?? 0,
     onRefresh: () => {
-      void refresh('Đã làm mới hợp đồng.');
+      void refresh();
     },
   });
   const timelineApproved = Boolean(

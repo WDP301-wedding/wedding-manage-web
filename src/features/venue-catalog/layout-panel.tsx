@@ -35,8 +35,9 @@ export function LayoutPanel({
   const [snapshot, setSnapshot] = useState<LayoutCatalogSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [pending, setPending] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const reportValidationError = useCallback((message: string | null) => {
+    if (message) notify.error(message);
+  }, []);
 
   const [creating, setCreating] = useState(false);
   const pendingRef = useRef(pending);
@@ -50,12 +51,11 @@ export function LayoutPanel({
   const load = useCallback(
     async (background = false) => {
       setLoading(true);
-      setError(null);
       try {
         const next = await authorize((token) => gateway.loadLayouts(token));
         if (!background || !hasDirtyCatalogForms()) setSnapshot(next);
       } catch (caught) {
-        setError(layoutErrorMessage(caught));
+        notify.error(caught, { fallbackMessage: layoutErrorMessage(caught) });
       } finally {
         setLoading(false);
       }
@@ -64,7 +64,13 @@ export function LayoutPanel({
   );
 
   useEffect(() => {
-    queueMicrotask(() => void load());
+    let active = true;
+    queueMicrotask(() => {
+      if (active) void load();
+    });
+    return () => {
+      active = false;
+    };
   }, [load]);
 
   useCatalogLiveRefresh(load);
@@ -75,17 +81,13 @@ export function LayoutPanel({
     options: Readonly<{ reload?: boolean }> = {},
   ) => {
     setPending(true);
-    setError(null);
-    setMessage(null);
     try {
       await authorize(operation);
-      setMessage(successMessage);
       notify.success(successMessage);
       if (options.reload !== false) await load();
       return true;
     } catch (caught) {
       const msg = layoutErrorMessage(caught);
-      setError(msg);
       notify.error(caught, { fallbackMessage: msg });
       return false;
     } finally {
@@ -109,7 +111,6 @@ export function LayoutPanel({
         <h2 id="layout-heading">Mẫu bố trí bàn</h2>
         <p>Theo dõi bản đang công bố, quản lý bản nháp và xem lịch sử bố cục theo sảnh.</p>
       </div>
-      <PanelMessages error={error} message={message} />
       <div className="flex flex-wrap gap-3 border-b border-border p-4 sm:px-6">
         <button className={cx.primaryButton} type="button" onClick={() => setCreating(true)}>
           Thêm bố cục bàn
@@ -149,7 +150,7 @@ export function LayoutPanel({
               layout={layout}
               pending={pending}
               run={run}
-              setError={setError}
+              setError={reportValidationError}
             />
           ))}
         </TemplateRecordTable>
@@ -414,23 +415,4 @@ function LayoutNumberField({
       <input name={name} type="number" min={min} step={1} defaultValue={defaultValue} required />
     </label>
   );
-}
-
-function PanelMessages({
-  error,
-  message,
-}: Readonly<{ error: string | null; message: string | null }>) {
-  useEffect(() => {
-    if (error) {
-      notify.error(error);
-    }
-  }, [error]);
-
-  useEffect(() => {
-    if (message) {
-      notify.success(message);
-    }
-  }, [message]);
-
-  return null;
 }

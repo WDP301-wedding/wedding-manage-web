@@ -32,7 +32,6 @@ export function ManagementAccountExperience({ session }: { session: ManagementId
 
   const sessionExpired = useCallback(() => {
     setSnapshot(session.snapshot());
-    notify.warning('Phiên làm việc đã hết hạn. Hãy đăng nhập lại.');
   }, [session, setSnapshot]);
 
   const authenticated = snapshot?.status === 'authenticated' && snapshot.presentation !== 'denied';
@@ -63,7 +62,6 @@ export function ManagementAccountExperience({ session }: { session: ManagementId
             onSessionExpired={sessionExpired}
             onSignedOut={() => {
               setSnapshot(session.snapshot());
-              notify.success('Đã đổi mật khẩu thành công. Hãy đăng nhập lại bằng mật khẩu mới.');
             }}
           />
         ) : (

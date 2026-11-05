@@ -1,6 +1,8 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { NotificationProvider } from '../../design-system/notifications';
+import { ApiClientError } from '../../lib/api/client';
+import { StrictMode } from 'react';
 
 import type { CatalogGateway } from './catalog-api';
 import { LayoutPanel } from './layout-panel';
@@ -102,6 +104,52 @@ function gateway(overrides: Record<string, unknown> = {}): CatalogGateway {
 }
 
 describe('VC-21 layout template editor', () => {
+  it.each([false, true])('shows one toast per lifecycle action (failure: %s)', async (fails) => {
+    const changeLayoutLifecycle = vi.fn(() => {
+      if (fails) {
+        return Promise.reject(
+          new ApiClientError({
+            kind: 'api',
+            code: 'VERSION_CONFLICT',
+            message: 'Phiên bản đã thay đổi.',
+            requestId: 'layout-request-001',
+            status: 409,
+          }),
+        );
+      }
+      return Promise.resolve();
+    });
+    render(<LayoutPanel gateway={gateway({ changeLayoutLifecycle })} authorize={authorize} />, {
+      wrapper: NotificationProvider,
+    });
+
+    const button = await screen.findByRole('button', { name: 'Ngừng' });
+    await act(() => {
+      fireEvent.click(button);
+      return Promise.resolve();
+    });
+
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Ngừng' })).toBeEnabled());
+    expect(changeLayoutLifecycle).toHaveBeenCalledTimes(1);
+    expect(screen.getAllByRole(fails ? 'alert' : 'status')).toHaveLength(1);
+    if (fails) expect(screen.getByRole('alert')).toHaveTextContent('Mã yêu cầu: layout-r');
+    else expect(screen.getByRole('status')).toHaveTextContent('Đã cập nhật trạng thái bố cục bàn.');
+  });
+
+  it('shows a toast when the initial layout load fails', async () => {
+    const loadLayouts = vi.fn().mockRejectedValue(new Error('Lỗi tải bố trí.'));
+    render(
+      <StrictMode>
+        <NotificationProvider>
+          <LayoutPanel gateway={gateway({ loadLayouts })} authorize={authorize} />
+        </NotificationProvider>
+      </StrictMode>,
+    );
+    expect(await screen.findByRole('alert')).toBeVisible();
+    expect(screen.getAllByRole('alert')).toHaveLength(1);
+    expect(loadLayouts).toHaveBeenCalledTimes(1);
+  });
+
   it('shows capacity and canvas constraints and preserves a table UUID during numeric edits', async () => {
     const updateLayoutDraft = vi.fn<CatalogGateway['updateLayoutDraft']>(() => Promise.resolve());
     render(<LayoutPanel gateway={gateway({ updateLayoutDraft })} authorize={authorize} />, {
