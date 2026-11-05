@@ -176,6 +176,17 @@ export function useStaffEventContext(authenticated: boolean, accountId: string, 
       ],
     },
   );
+  useEffect(() => {
+    if (!workspace || !authenticated) return;
+    const now = Date.now();
+    const next = workspace.windowOpen
+      ? Date.parse(workspace.windowClosesAt) + 1
+      : Date.parse(workspace.windowOpensAt);
+    if (next <= now || next - now > 2_147_483_647) return;
+    const timer = window.setTimeout(() => void refreshWorkspace(), next - now + 250);
+    return () => window.clearTimeout(timer);
+  }, [workspace, authenticated]);
+
   const configure = async () => {
     if (!workspace || configuring) return;
     setConfiguring(true);

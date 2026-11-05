@@ -21,7 +21,8 @@ export function useStaffOperations({
   accountId = '',
 }: Readonly<{ authenticated: boolean; isManager: boolean; accountId?: string }>) {
   const [pending, setPending] = useState(false);
-  const [activeTab, setActiveTab] = useState<StaffTab>('checkin');
+  const [selectedTab, setActiveTab] = useState<StaffTab | null>(null);
+  const activeTab = selectedTab ?? (isManager ? 'management' : 'checkin');
 
   const eventContext = useStaffEventContext(authenticated, accountId, pending);
   const { bookingId, setBookingId, eventId, resolveEventId } = eventContext;
@@ -63,15 +64,10 @@ export function useStaffOperations({
       ? assignmentResult.items
       : [];
   const [loadingAssignments, setLoadingAssignments] = useState(false);
-  const [actionReason, setActionReason] = useState('');
-  const reason = actionReason.trim();
-  const requireReason = (message: string) => {
-    if (reason.length >= minReasonLength) return true;
-    notify.warning(message);
-    return false;
-  };
+  const [assignmentError, setAssignmentError] = useState<string | null>(null);
   const [staffAccountId, setStaffAccountId] = useState('');
   const [staffAccountLabel, setStaffAccountLabel] = useState('');
+  const [needsPassword, setNeedsPassword] = useState(false);
 
   const handleSearchGuests = async (event?: FormEvent) => {
     if (event) event.preventDefault();
@@ -108,13 +104,9 @@ export function useStaffOperations({
     }
   };
 
-  const handleCheckIn = async (guestId: string) => {
+  const handleCheckIn = async (guestId: string, reason = '') => {
     if (mutationLock.current || !guests.some((g) => g.guestId === guestId)) return;
-    if (
-      isManager &&
-      !requireReason('Tài khoản quản lý cần ghi lý do (ít nhất 10 ký tự) trước khi check-in.')
-    )
-      return;
+    if (isManager && reason.length < minReasonLength) return;
     mutationLock.current = true;
     setPending(true);
     try {
@@ -126,6 +118,7 @@ export function useStaffOperations({
       notify.success('Đã check-in thành công cho khách mời.');
       await handleSearchGuests();
     } catch (err) {
+      if (isManager) throw err;
       notify.error(err, { fallbackMessage: describeApiError(err).message });
     } finally {
       mutationLock.current = false;
@@ -133,10 +126,9 @@ export function useStaffOperations({
     }
   };
 
-  const handleUndoCheckIn = async (guestId: string) => {
+  const handleUndoCheckIn = async (guestId: string, reason: string) => {
     if (mutationLock.current || !guests.some((g) => g.guestId === guestId)) return;
-    if (!requireReason('Ghi lý do hoàn tác (ít nhất 10 ký tự) trước khi hoàn tác check-in.'))
-      return;
+    if (reason.length < minReasonLength) return;
     mutationLock.current = true;
     setPending(true);
     try {
@@ -158,8 +150,6 @@ export function useStaffOperations({
       );
       notify.success('Đã hoàn tác check-in.');
       await handleSearchGuests();
-    } catch (err) {
-      notify.error(err, { fallbackMessage: describeApiError(err).message });
     } finally {
       mutationLock.current = false;
       setPending(false);
@@ -195,6 +185,7 @@ export function useStaffOperations({
   };
   const handleLoadAssignments = async () => {
     setLoadingAssignments(true);
+    setAssignmentError(null);
     try {
       const id = await resolveEventId();
       if (!id) return;
@@ -202,11 +193,16 @@ export function useStaffOperations({
       if (inputRef.current.trim() === input)
         setAssignmentResult({ bookingId: id, accountId, items });
     } catch (err) {
-      notify.error(err);
+      if (inputRef.current.trim() === input) setAssignmentError(describeApiError(err).message);
     } finally {
-      setLoadingAssignments(false);
+      if (inputRef.current.trim() === input) setLoadingAssignments(false);
     }
   };
+
+  useEffect(() => {
+    if (authenticated && isManager && activeTab === 'management' && eventId)
+      void handleLoadAssignments();
+  }, [authenticated, isManager, activeTab, eventId, accountId]);
 
   useLiveRefresh(
     async (isCurrent) => {
@@ -251,6 +247,7 @@ export function useStaffOperations({
       );
       setStaffAccountId(res.accountId);
       setStaffAccountLabel(email);
+      setNeedsPassword(res.credentialSetupRequired);
       form.reset();
     } catch (err) {
       notify.error(err, { fallbackMessage: 'Không thể cấp tài khoản nhân viên.' });
@@ -272,6 +269,10 @@ export function useStaffOperations({
       // Cấp lại cho người đã từng được phân công thì gửi revision hiện tại; phân công mới là 0.
       const latestAssignments = await staffService.getEventAssignments(id);
       const previous = latestAssignments.find((item) => item.staffAccountId === staffId.trim());
+      if (previous?.status === 'ACTIVE') {
+        notify.info('Nhân viên này đã được phân công cho tiệc.');
+        return;
+      }
       const body = {
         bookingId: id,
         staffAccountId: staffId.trim(),
@@ -294,10 +295,10 @@ export function useStaffOperations({
     }
   };
 
-  const handleRevokeAssignment = async (assignmentId: string) => {
+  const handleRevokeAssignment = async (assignmentId: string, reason: string) => {
     const assignment = assignments.find((item) => item.assignmentId === assignmentId);
     if (!eventId || !assignment) return;
-    if (!requireReason('Ghi lý do thu hồi (ít nhất 10 ký tự) trước khi thu hồi phân công.')) return;
+    if (reason.length < minReasonLength) return;
     setPending(true);
     try {
       await staffCommand(
@@ -308,8 +309,6 @@ export function useStaffOperations({
       );
       notify.success('Đã thu hồi phân công nhân sự.');
       await handleLoadAssignments();
-    } catch (err) {
-      notify.error(err, { fallbackMessage: 'Thu hồi phân công thất bại.' });
     } finally {
       setPending(false);
     }
@@ -317,7 +316,6 @@ export function useStaffOperations({
 
   const openTab = (tab: StaffTab) => {
     setActiveTab(tab);
-    if (tab === 'management' && input) void handleLoadAssignments();
   };
 
   return {
@@ -339,9 +337,15 @@ export function useStaffOperations({
     loadingAssignments,
     staffAccountId,
     staffAccountLabel,
-    setStaffAccountId,
-    actionReason,
-    setActionReason,
+    assignmentError,
+    assignmentsReady:
+      assignmentResult?.bookingId === eventId && assignmentResult.accountId === accountId,
+    needsPassword,
+    selectStaff: (id: string, label: string, setup: boolean) => {
+      setStaffAccountId(id);
+      setStaffAccountLabel(label);
+      setNeedsPassword(setup);
+    },
     handleSearchGuests,
     handleCheckIn,
     handleUndoCheckIn,

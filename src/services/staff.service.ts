@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { axiosApiClient } from '../lib/api/axios-client';
 import type { operations } from '../lib/api/generated/schema';
 
@@ -12,7 +13,32 @@ export type GuestSearchResultItem =
 export type ProvisionStaffAccountResponse =
   operations['provisionStaffAccount']['responses'][201]['content']['application/json']['data'];
 
+const directoryPage = z.strictObject({
+  items: z.array(
+    z.strictObject({
+      accountId: z.uuid(),
+      email: z.string(),
+      credentialSetupRequired: z.boolean(),
+    }),
+  ),
+  nextAfterId: z.uuid().nullable(),
+});
+export type DirectoryStaff = z.infer<typeof directoryPage>['items'][number];
+
 export const staffService = {
+  async directory(q: string, afterId?: string) {
+    const response = await axiosApiClient.get<{ data: unknown }>('/management/staff-accounts', {
+      params: { q, afterId },
+    });
+    return directoryPage.parse(response.data.data);
+  },
+  async setOperationalAccess(accountId: string, enabled: boolean, reason: string, key: string) {
+    await axiosApiClient.post(
+      `/management/staff-accounts/${accountId}/operational-access`,
+      { enabled, reason },
+      { headers: { 'Idempotency-Key': key } },
+    );
+  },
   async provisionStaffAccount(
     input: {
       email: string;

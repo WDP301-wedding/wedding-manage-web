@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import type { useStaffEventContext } from './use-staff-event-context';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -15,7 +14,6 @@ export function StaffEventSelector({
   disabled: boolean;
   isManager: boolean;
 }>) {
-  const [lookup, setLookup] = useState('');
   return (
     <section className={cardClass} aria-label="Chọn tiệc tác nghiệp">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -29,13 +27,6 @@ export function StaffEventSelector({
               : 'Chọn tiệc trước khi tác nghiệp. Chỉ hiển thị tiệc thuộc quyền truy cập.'}
           </p>
         </div>
-        <Button
-          variant="outline"
-          disabled={disabled || context.loadingEvents}
-          onClick={() => void context.loadEvents()}
-        >
-          Tải danh sách tiệc
-        </Button>
       </div>
       <details
         open={!context.workspace}
@@ -111,7 +102,9 @@ export function StaffEventSelector({
             </ul>
           ) : (
             <p className="text-sm text-muted-foreground">
-              Nhấn Tải danh sách tiệc hoặc tìm mã HY. Staff cần được quản lý phân công trước.
+              {context.loadingEvents
+                ? 'Đang tải danh sách tiệc…'
+                : 'Không có tiệc phù hợp. Thử đổi trạng thái hoặc từ khóa.'}
             </p>
           )}
           {context.nextEvent && (
@@ -123,32 +116,6 @@ export function StaffEventSelector({
               Tải thêm tiệc
             </Button>
           )}
-          <form
-            className="flex flex-wrap items-end gap-2"
-            onSubmit={(e) => {
-              e.preventDefault();
-              context.setBookingId(lookup.trim());
-            }}
-          >
-            <label className="min-w-0 flex-1 text-sm">
-              Mở trực tiếp bằng mã HY
-              <Input
-                value={lookup}
-                disabled={disabled}
-                placeholder="HY-…"
-                maxLength={32}
-                onChange={(e) => setLookup(e.target.value)}
-              />
-            </label>
-            <Button type="submit" variant="outline" disabled={disabled || !lookup.trim()}>
-              Chọn mã tiệc
-            </Button>
-            {context.bookingId && !context.eventId && (
-              <Button disabled={disabled} onClick={() => void context.resolveEventId()}>
-                Mở tiệc đã chọn
-              </Button>
-            )}
-          </form>
         </div>
       </details>
       {context.loading && (

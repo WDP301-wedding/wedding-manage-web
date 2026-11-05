@@ -40,7 +40,16 @@ export function StaffWorkBoard({
   const [editing, setEditing] = useState<WorkItem | null>(null);
   const [history, setHistory] = useState<{ item: WorkItem; page: History } | null>(null);
   const historyEpoch = useRef(0);
-  const rows = page?.kind === kind ? page.items : [];
+  const priority = (item: WorkItem) => {
+    if (item.status === 'DONE') return 3;
+    if (!view.isManager && item.assignedAccountId === accountId) return 0;
+    if (view.isManager && (item.kind === 'INCIDENT' || item.assignedAccountId === null)) return 0;
+    return item.priority === 'URGENT' ? 1 : 2;
+  };
+  const rows =
+    page?.kind === kind
+      ? [...page.items].sort((left, right) => priority(left) - priority(right))
+      : [];
   const members = new Map(view.members.map((m) => [m.accountId, m.label]));
   const load = async (more = false) => {
     const version = ++loadVersion.current;
@@ -83,7 +92,7 @@ export function StaffWorkBoard({
       scope: `staff-work:${view.bookingId}:${kind}`,
       bookingId: view.bookingId,
       initial: true,
-      blocked: pending,
+      blocked: pending || editing !== null || history !== null,
       invalidateOnBlock: true,
       types: ['staff.updated'],
     },
@@ -200,11 +209,106 @@ export function StaffWorkBoard({
     </label>
   );
   const canCreate = view.isManager || kind !== 'TASK';
+  const editor = editing && (
+    <form
+      key={`${editing.id}:${editing.revision}`}
+      onSubmit={(e) => void update(e)}
+      className="grid gap-3 rounded-lg border border-primary p-4"
+      aria-label="Xác nhận cập nhật tác nghiệp"
+    >
+      <h3 className="font-semibold">
+        {editing.title} · phiên bản {editing.revision}
+      </h3>
+      {rows.some((i) => i.id === editing.id && i.revision !== editing.revision) && (
+        <p role="alert" className="text-sm text-primary">
+          Dữ liệu đã thay đổi. Đóng phần sửa và mở lại phiên bản hiện tại; nội dung đang nhập chưa
+          được gửi.
+        </p>
+      )}
+      <label className={labelClass}>
+        Trạng thái
+        <HySelect
+          name="status"
+          defaultValue={editing.kind === 'HANDOVER' ? 'DONE' : editing.status}
+          disabled={pending}
+          className={selectClass}
+        >
+          {(editing.kind === 'HANDOVER'
+            ? (['DONE'] as const)
+            : (['OPEN', 'IN_PROGRESS', 'DONE'] as const)
+          ).map((s) => (
+            <option key={s} value={s}>
+              {editing.kind === 'HANDOVER' ? 'Đã nhận bàn giao' : statuses[s]}
+            </option>
+          ))}
+        </HySelect>
+      </label>
+      {view.isManager && assigneeField(editing.assignedAccountId)}
+      <label className={labelClass}>
+        Ghi chú xác nhận
+        <Textarea name="note" required maxLength={2000} disabled={pending} />
+      </label>
+      <div className="flex gap-2">
+        <Button
+          type="submit"
+          disabled={
+            pending || rows.some((i) => i.id === editing.id && i.revision !== editing.revision)
+          }
+        >
+          Lưu thay đổi
+        </Button>
+        <Button type="button" variant="outline" disabled={pending} onClick={() => setEditing(null)}>
+          Đóng
+        </Button>
+      </div>
+    </form>
+  );
+  const historyPanel = history && (
+    <section className="rounded-lg bg-muted p-4" aria-label="Lịch sử tác nghiệp">
+      <div className="flex flex-wrap justify-between gap-2">
+        <h3 className="font-semibold">Lịch sử: {history.item.title}</h3>
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => {
+            historyEpoch.current++;
+            setHistory(null);
+          }}
+        >
+          Đóng lịch sử
+        </Button>
+      </div>
+      <ol className="mt-3 space-y-3">
+        {history.page.items.map((h) => (
+          <li key={h.revision} className="text-sm">
+            <strong>Phiên bản {h.revision}</strong> · {formatDateTime(h.createdAt)}
+            <p className="whitespace-pre-wrap text-muted-foreground">
+              {typeof h.snapshot.note === 'string'
+                ? h.snapshot.note === 'CREATED'
+                  ? 'Đã tạo ghi nhận'
+                  : h.snapshot.note
+                : 'Đã cập nhật'}{' '}
+              · {members.get(h.actorAccountId) ?? 'Người thao tác được lưu trong nhật ký'}
+            </p>
+          </li>
+        ))}
+      </ol>
+      {history.page.nextAfterRevision && (
+        <Button size="sm" variant="outline" onClick={() => void openHistory(history.item, true)}>
+          Tải thêm lịch sử
+        </Button>
+      )}
+    </section>
+  );
   return (
     <section className={cardClass} aria-label="Công việc, sự cố và bàn giao">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-lg font-semibold">Công việc và bàn giao vận hành</h2>
-        <Button variant="outline" disabled={loading || pending} onClick={() => void load()}>
+        <Button
+          variant="outline"
+          disabled={loading || pending || editing !== null || history !== null}
+          onClick={() => void load()}
+        >
           Cập nhật danh sách
         </Button>
       </div>
@@ -289,6 +393,14 @@ export function StaffWorkBoard({
                     ? 'Đã nhận bàn giao'
                     : statuses[item.status]}
                   {item.priority === 'URGENT' ? ' · Khẩn' : ''}
+                  {!view.isManager && item.assignedAccountId === accountId && item.status !== 'DONE'
+                    ? item.kind === 'HANDOVER'
+                      ? ' · Chờ bạn nhận'
+                      : ' · Việc của bạn'
+                    : ''}
+                  {view.isManager && item.assignedAccountId === null && item.status !== 'DONE'
+                    ? ' · Chưa phân công'
+                    : ''}
                 </span>
               </div>
               <p className="whitespace-pre-wrap text-sm">{item.description}</p>
@@ -305,7 +417,11 @@ export function StaffWorkBoard({
                     size="sm"
                     variant="outline"
                     disabled={pending}
-                    onClick={() => setEditing({ ...item })}
+                    onClick={() => {
+                      setHistory(null);
+                      historyEpoch.current++;
+                      setEditing({ ...item });
+                    }}
                   >
                     {item.kind === 'HANDOVER'
                       ? 'Xác nhận nhận bàn giao'
@@ -318,11 +434,16 @@ export function StaffWorkBoard({
                   size="sm"
                   variant="ghost"
                   disabled={pending}
-                  onClick={() => void openHistory(item)}
+                  onClick={() => {
+                    setEditing(null);
+                    void openHistory(item);
+                  }}
                 >
                   Xem lịch sử
                 </Button>
               </div>
+              {editing?.id === item.id && editor}
+              {history?.item.id === item.id && historyPanel}
             </li>
           );
         })}
@@ -331,106 +452,6 @@ export function StaffWorkBoard({
         <Button variant="outline" disabled={loading || pending} onClick={() => void load(true)}>
           Tải thêm
         </Button>
-      )}
-      {editing && (
-        <form
-          key={`${editing.id}:${editing.revision}`}
-          onSubmit={(e) => void update(e)}
-          className="grid gap-3 rounded-lg border border-primary p-4"
-          aria-label="Xác nhận cập nhật tác nghiệp"
-        >
-          <h3 className="font-semibold">
-            {editing.title} · phiên bản {editing.revision}
-          </h3>
-          {rows.some((i) => i.id === editing.id && i.revision !== editing.revision) && (
-            <p role="alert" className="text-sm text-primary">
-              Dữ liệu đã thay đổi. Đóng phần sửa và mở lại phiên bản hiện tại; nội dung đang nhập
-              chưa được gửi.
-            </p>
-          )}
-          <label className={labelClass}>
-            Trạng thái
-            <HySelect
-              name="status"
-              defaultValue={editing.kind === 'HANDOVER' ? 'DONE' : editing.status}
-              disabled={pending}
-              className={selectClass}
-            >
-              {(editing.kind === 'HANDOVER'
-                ? (['DONE'] as const)
-                : (['OPEN', 'IN_PROGRESS', 'DONE'] as const)
-              ).map((s) => (
-                <option key={s} value={s}>
-                  {editing.kind === 'HANDOVER' ? 'Đã nhận bàn giao' : statuses[s]}
-                </option>
-              ))}
-            </HySelect>
-          </label>
-          {view.isManager && assigneeField(editing.assignedAccountId)}
-          <label className={labelClass}>
-            Ghi chú xác nhận
-            <Textarea name="note" required maxLength={2000} disabled={pending} />
-          </label>
-          <div className="flex gap-2">
-            <Button
-              type="submit"
-              disabled={
-                pending || rows.some((i) => i.id === editing.id && i.revision !== editing.revision)
-              }
-            >
-              Lưu thay đổi
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              disabled={pending}
-              onClick={() => setEditing(null)}
-            >
-              Đóng
-            </Button>
-          </div>
-        </form>
-      )}
-      {history && (
-        <section className="rounded-lg bg-muted p-4" aria-label="Lịch sử tác nghiệp">
-          <div className="flex flex-wrap justify-between gap-2">
-            <h3 className="font-semibold">Lịch sử: {history.item.title}</h3>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => {
-                historyEpoch.current++;
-                setHistory(null);
-              }}
-            >
-              Đóng lịch sử
-            </Button>
-          </div>
-          <ol className="mt-3 space-y-3">
-            {history.page.items.map((h) => (
-              <li key={h.revision} className="text-sm">
-                <strong>Phiên bản {h.revision}</strong> · {formatDateTime(h.createdAt)}
-                <p className="whitespace-pre-wrap text-muted-foreground">
-                  {typeof h.snapshot.note === 'string'
-                    ? h.snapshot.note === 'CREATED'
-                      ? 'Đã tạo ghi nhận'
-                      : h.snapshot.note
-                    : 'Đã cập nhật'}{' '}
-                  · {members.get(h.actorAccountId) ?? 'Người thao tác được lưu trong nhật ký'}
-                </p>
-              </li>
-            ))}
-          </ol>
-          {history.page.nextAfterRevision && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => void openHistory(history.item, true)}
-            >
-              Tải thêm lịch sử
-            </Button>
-          )}
-        </section>
       )}
       <p className="text-xs text-muted-foreground">
         Bàn giao chỉ hoàn tất khi người nhận khác người gửi xác nhận. Mọi thay đổi được lưu lịch sử;

@@ -1,5 +1,7 @@
 'use client';
 import Link from 'next/link';
+import { useState } from 'react';
+import { StaffReasonDialog } from './staff-reason-dialog';
 import { OperationsShell } from '../identity-access/operations-shell';
 import {
   type ManagementIdentitySession,
@@ -29,6 +31,14 @@ export function StaffOperationsPage({
   const staff = useStaffOperations({ authenticated: allowed, isManager, accountId });
   const context = staff.eventContext,
     view = context.workspace;
+  const [reasonAction, setReasonAction] = useState<{
+    scope: string;
+    title: string;
+    submit: (reason: string) => Promise<void>;
+  } | null>(null);
+  const reasonScope = `${accountId}:${context.eventId}`;
+  const requestReason = (title: string, submit: (reason: string) => Promise<void>) =>
+    setReasonAction({ scope: reasonScope, title, submit });
   const canSearch = Boolean(
     view && view.settings.checkInMode === 'BY_GUEST_NAME' && (isManager || view.windowOpen),
   );
@@ -73,7 +83,7 @@ export function StaffOperationsPage({
             />
             <StaffCheckinReadiness context={context} disabled={staff.pending} />
             <Tabs
-              defaultValue="checkin"
+              defaultValue={isManager ? 'management' : 'checkin'}
               onValueChange={(value: unknown) => {
                 if (
                   value === 'checkin' ||
@@ -116,15 +126,28 @@ export function StaffOperationsPage({
                   pending={staff.pending || !canSearch}
                   available={canSearch}
                   seatingStatus={view?.seating.status ?? 'ABSENT'}
-                  guests={staff.guests}
+                  guests={canSearch ? staff.guests : []}
                   onSearchGuests={staff.handleSearchGuests}
-                  onCheckIn={staff.handleCheckIn}
-                  onUndoCheckIn={staff.handleUndoCheckIn}
+                  onCheckIn={(id) => {
+                    const guest = staff.guests.find((item) => item.guestId === id);
+                    if (!guest) return Promise.resolve();
+                    if (!isManager) return staff.handleCheckIn(id);
+                    requestReason(`Check-in cho ${guest.name}?`, (reason) =>
+                      staff.handleCheckIn(id, reason),
+                    );
+                    return Promise.resolve();
+                  }}
+                  onUndoCheckIn={(id) => {
+                    const guest = staff.guests.find((item) => item.guestId === id);
+                    if (guest)
+                      requestReason(`Hoàn tác check-in của ${guest.name}?`, (reason) =>
+                        staff.handleUndoCheckIn(id, reason),
+                      );
+                    return Promise.resolve();
+                  }}
                   isManager={isManager}
-                  actionReason={staff.actionReason}
-                  setActionReason={staff.setActionReason}
                 />
-                {staff.hasMoreGuests && (
+                {canSearch && staff.hasMoreGuests && (
                   <button
                     type="button"
                     className="mt-4 rounded-lg border border-border px-4 py-2 text-sm font-semibold"
@@ -155,23 +178,40 @@ export function StaffOperationsPage({
               {isManager && (
                 <TabsContent value="management" className="pt-4">
                   <StaffManagementSection
-                    bookingId={staff.bookingId}
+                    bookingId={view?.bookingId ?? ''}
                     staffAccountId={staff.staffAccountId}
                     staffAccountLabel={staff.staffAccountLabel}
-                    setStaffAccountId={staff.setStaffAccountId}
+                    accountId={accountId}
+                    needsPassword={staff.needsPassword}
+                    onSelectStaff={staff.selectStaff}
+                    onReason={requestReason}
+                    assignmentsReady={staff.assignmentsReady}
+                    assignmentError={staff.assignmentError}
                     pending={staff.pending}
                     assignments={staff.assignments}
                     loadingAssignments={staff.loadingAssignments}
                     onLoadAssignments={staff.handleLoadAssignments}
                     onProvisionStaff={staff.handleProvisionStaff}
                     onAssignStaff={staff.handleAssignStaff}
-                    onRevokeAssignment={staff.handleRevokeAssignment}
-                    actionReason={staff.actionReason}
-                    setActionReason={staff.setActionReason}
+                    onRevokeAssignment={(id) => {
+                      const person = staff.assignments.find((item) => item.assignmentId === id);
+                      if (person)
+                        requestReason(
+                          `Thu hồi phân công của ${person.staffLabel ?? 'nhân viên này'} tại tiệc hiện tại?`,
+                          (reason) => staff.handleRevokeAssignment(id, reason),
+                        );
+                    }}
                   />
                 </TabsContent>
               )}
             </Tabs>
+            {reasonAction?.scope === reasonScope && (
+              <StaffReasonDialog
+                title={reasonAction.title}
+                onSubmit={reasonAction.submit}
+                onClose={() => setReasonAction(null)}
+              />
+            )}
           </>
         )}
       </main>

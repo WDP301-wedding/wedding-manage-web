@@ -1,6 +1,8 @@
 'use client';
 
 import type { FormEvent } from 'react';
+import { StaffDirectory } from './staff-directory';
+import type { StaffReasonAction } from './staff-reason-dialog';
 import { RefreshCw } from 'lucide-react';
 import { cn } from 'cn';
 import type { EventAssignmentItem } from '../../services/staff.service';
@@ -22,16 +24,19 @@ export interface StaffManagementSectionProps {
   bookingId: string;
   staffAccountId: string;
   staffAccountLabel?: string;
-  setStaffAccountId: (id: string) => void;
+  accountId: string;
+  needsPassword: boolean;
+  onSelectStaff: (id: string, label: string, setup: boolean) => void;
+  onReason: StaffReasonAction;
+  assignmentsReady: boolean;
+  assignmentError: string | null;
   pending: boolean;
   assignments: readonly EventAssignmentItem[];
   loadingAssignments: boolean;
   onLoadAssignments: () => Promise<void>;
   onProvisionStaff: (event: FormEvent<HTMLFormElement>) => Promise<void>;
   onAssignStaff: (event: FormEvent<HTMLFormElement>) => Promise<void>;
-  onRevokeAssignment: (assignmentId: string) => Promise<void>;
-  actionReason: string;
-  setActionReason: (reason: string) => void;
+  onRevokeAssignment: (assignmentId: string) => void;
 }
 
 function AssignmentsTable({
@@ -41,7 +46,7 @@ function AssignmentsTable({
 }: Readonly<{
   assignments: readonly EventAssignmentItem[];
   pending: boolean;
-  onRevokeAssignment: (assignmentId: string) => Promise<void>;
+  onRevokeAssignment: (assignmentId: string) => void;
 }>) {
   return (
     <div className={tableWrapClass}>
@@ -50,7 +55,6 @@ function AssignmentsTable({
           <tr>
             <th className={thClass}>Nhân viên</th>
             <th className={thClass}>Trạng thái</th>
-            <th className={thClass}>Phiên bản</th>
             <th className={cn(thClass, 'text-right')}>Hành động</th>
           </tr>
         </thead>
@@ -62,12 +66,11 @@ function AssignmentsTable({
               </td>
               <td className={tdClass}>
                 {item.status === 'ACTIVE' ? (
-                  <Badge variant="success">Đang hoạt động</Badge>
+                  <Badge variant="success">Đang phân công</Badge>
                 ) : (
                   <Badge variant="neutral">Đã thu hồi</Badge>
                 )}
               </td>
-              <td className={cn(tdClass, 'tabular-nums')}>{item.revision}</td>
               <td className={cn(tdClass, 'text-right')}>
                 {item.status === 'ACTIVE' ? (
                   <Button
@@ -100,19 +103,23 @@ export function StaffManagementSection({
   onProvisionStaff,
   onAssignStaff,
   onRevokeAssignment,
-  actionReason,
-  setActionReason,
+  accountId,
+  needsPassword,
+  onSelectStaff,
+  onReason,
+  assignmentsReady,
+  assignmentError,
 }: Readonly<StaffManagementSectionProps>) {
   return (
     <section aria-label="Tài khoản và phân công nhân sự" className="flex flex-col gap-6">
       <div className="flex flex-wrap items-start gap-6">
-        <div className={cn(cardClass, 'flex-[1_1_380px]')}>
-          <div className="flex flex-col gap-0.5">
-            <h3 className={cardTitleClass}>Cấp tài khoản Staff mới</h3>
-            <p className={cardHintClass}>
-              Tạo tài khoản nhân viên vận hành sảnh để phân công công việc.
-            </p>
-          </div>
+        <details className={cn(cardClass, 'order-last w-full')}>
+          <summary className="cursor-pointer font-semibold">
+            Cấp hoặc khôi phục quyền nhân viên
+          </summary>
+          <p className={cardHintClass}>
+            Dùng email để cấp tài khoản mới hoặc cấp lại quyền tác nghiệp.
+          </p>
           <form onSubmit={onProvisionStaff} className="flex flex-col gap-3">
             <label className={labelClass}>
               Email nhân viên
@@ -128,7 +135,7 @@ export function StaffManagementSection({
               Cấp tài khoản
             </Button>
           </form>
-        </div>
+        </details>
 
         <div className={cn(cardClass, 'flex-[1_1_380px]')}>
           <div className="flex flex-col gap-0.5">
@@ -137,6 +144,18 @@ export function StaffManagementSection({
               Nhân viên được phân công mới mở được bàn đón khách của tiệc.
             </p>
           </div>
+          <StaffDirectory
+            selectedId={staffAccountId}
+            onSelect={onSelectStaff}
+            pending={pending}
+            accountId={accountId}
+            onReason={onReason}
+          />
+          {needsPassword && staffAccountId && (
+            <p role="status" className={cardHintClass}>
+              Nhân viên cần dùng chức năng Quên mật khẩu để thiết lập mật khẩu trước khi đăng nhập.
+            </p>
+          )}
           <form onSubmit={onAssignStaff} className="flex flex-col gap-3">
             <label className={labelClass}>
               Nhân viên đã chuẩn bị
@@ -144,7 +163,7 @@ export function StaffManagementSection({
                 className="font-normal"
                 readOnly
                 value={staffAccountLabel}
-                placeholder="Cấp/tìm tài khoản bằng email trước"
+                placeholder="Chọn nhân viên trong danh bạ"
               />
             </label>
             <input type="hidden" name="staffAccountId" value={staffAccountId} />
@@ -181,23 +200,17 @@ export function StaffManagementSection({
             {loadingAssignments ? 'Đang tải…' : 'Làm mới'}
           </Button>
         </div>
-        {assignments.length > 0 ? (
-          <div className="max-w-xl">
-            <label className={labelClass} htmlFor="staff-revoke-reason">
-              Lý do thu hồi phân công
-              <Input
-                id="staff-revoke-reason"
-                className="font-normal"
-                maxLength={500}
-                placeholder="Ví dụ: Khách đến sớm, quản lý đón trực tiếp"
-                value={actionReason}
-                onChange={(e) => setActionReason(e.target.value)}
-              />
-              <span className={cardHintClass}>Bắt buộc khi thu hồi (ít nhất 10 ký tự).</span>
-            </label>
-          </div>
-        ) : null}
-        {assignments.length === 0 ? (
+        {!bookingId ? (
+          <p className={cardHintClass}>Chọn tiệc để xem phân công.</p>
+        ) : assignmentError ? (
+          <p role="alert" className="text-sm text-destructive">
+            {assignmentError}
+          </p>
+        ) : loadingAssignments || !assignmentsReady ? (
+          <p role="status" className={cardHintClass}>
+            Đang tải phân công…
+          </p>
+        ) : assignments.length === 0 ? (
           <p className="rounded-xl border border-dashed border-input px-6 py-8 text-center text-muted-foreground">
             Chưa có nhân sự nào được phân công cho tiệc này.
           </p>
