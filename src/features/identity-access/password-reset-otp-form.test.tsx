@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPasswordOtpGateway } from './password-otp-api';
 import { NotificationProvider } from '../../design-system/notifications';
 import { PasswordResetOtpForm } from './password-reset-otp-form';
+import { ManagementIdentityExperience } from './identity-page';
+import { createIdentityApi, ManagementIdentitySession } from './session';
 vi.mock('./password-otp-api', () => {
   const gateway = { request: vi.fn(), complete: vi.fn() };
   return { createPasswordOtpGateway: () => gateway };
@@ -19,6 +21,31 @@ beforeEach(() => {
   gateway.complete.mockResolvedValue(undefined);
 });
 describe('email OTP password recovery', () => {
+  it('shows only one success toast when the parent returns to login', async () => {
+    render(
+      <ManagementIdentityExperience
+        session={new ManagementIdentitySession(createIdentityApi())}
+        initialResetToken="local-reset-fixture"
+      />,
+      { wrapper: NotificationProvider },
+    );
+    fireEvent.change(await screen.findByLabelText('Email'), {
+      target: { value: 'operator@example.com' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Gửi mã OTP' }));
+    await screen.findByLabelText('Mã OTP');
+    for (const [name, value] of [
+      ['Mã OTP', '123456'],
+      ['Mật khẩu mới', 'replacement-password-123'],
+      ['Xác nhận mật khẩu mới', 'replacement-password-123'],
+    ] as const)
+      fireEvent.change(screen.getByLabelText(name), { target: { value } });
+    fireEvent.click(screen.getByRole('button', { name: 'Xác nhận và cập nhật mật khẩu' }));
+    await screen.findByRole('button', { name: 'Đăng nhập' });
+    expect(screen.getAllByText('Thao tác thành công')).toHaveLength(1);
+    expect(gateway.complete).toHaveBeenCalledTimes(1);
+  });
+
   it('requires confirmation and sends the entered code before returning to login', async () => {
     const done = vi.fn();
     render(<PasswordResetOtpForm onCompleted={done} />, { wrapper: NotificationProvider });

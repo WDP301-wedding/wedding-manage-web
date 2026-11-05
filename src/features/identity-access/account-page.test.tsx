@@ -82,7 +82,9 @@ describe('Management account access', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Gửi mã OTP' }));
     fireEvent.change(await screen.findByLabelText('Mã OTP'), { target: { value: '123456' } });
     fireEvent.click(screen.getByRole('button', { name: 'Xác nhận và cập nhật mật khẩu' }));
-    expect(await screen.findByText(/Đã đổi mật khẩu thành công/)).toBeVisible();
+    expect(await screen.findByText('Cần đăng nhập')).toBeVisible();
+    const notifications = screen.getByLabelText('Khu vực thông báo hệ thống');
+    expect(within(notifications).getAllByText('Thao tác thành công')).toHaveLength(1);
     expect(session.snapshot()).toEqual({ status: 'anonymous', denial: null });
     await expect(session.authorize(() => Promise.resolve())).rejects.toThrow(
       'Authentication is required',
@@ -105,6 +107,32 @@ describe('Management account access', () => {
     render(<ManagementAccountExperience session={session} />, { wrapper: NotificationProvider });
     expect(await screen.findByRole('alert')).toHaveTextContent('Phiên làm việc đã hết hạn');
     await waitFor(() => expect(screen.getByText('Cần đăng nhập')).toBeVisible());
+    expect(screen.getAllByRole('alert')).toHaveLength(1);
     expect(session.snapshot().status).toBe('anonymous');
+  });
+
+  it('shows one toast when the session expires while sending an OTP', async () => {
+    gateway.requestPasswordChange.mockRejectedValue(
+      new ApiClientError({
+        kind: 'api',
+        code: 'UNAUTHORIZED',
+        status: 401,
+        message: 'Expired',
+        requestId: 'request',
+      }),
+    );
+    render(<ManagementAccountExperience session={createSession(['MANAGER'])} />, {
+      wrapper: NotificationProvider,
+    });
+    await screen.findByLabelText('Mật khẩu hiện tại');
+    for (const [name, value] of [
+      ['Mật khẩu hiện tại', 'Current-password-123'],
+      ['Mật khẩu mới', 'New-password-123'],
+      ['Xác nhận mật khẩu mới', 'New-password-123'],
+    ] as const)
+      fireEvent.change(screen.getByLabelText(name), { target: { value } });
+    fireEvent.click(screen.getByRole('button', { name: 'Gửi mã OTP' }));
+    await screen.findByText('Cần đăng nhập');
+    expect(screen.getAllByRole('alert')).toHaveLength(1);
   });
 });

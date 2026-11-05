@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { NotificationProvider } from '../../design-system/notifications';
 
@@ -56,6 +56,53 @@ function gateway(overrides: Record<string, unknown> = {}): CatalogGateway {
 }
 
 describe('VC-22 shared catalog media', () => {
+  it.each([false, true])('shows one toast per reorder action (failure: %s)', async (fails) => {
+    const reorderMedia = vi.fn(() => {
+      if (fails) {
+        return Promise.reject(
+          new ApiClientError({
+            kind: 'api',
+            code: 'STORAGE_PROVIDER_UNAVAILABLE',
+            message: 'provider failed',
+            requestId: 'media-request-001',
+            status: 503,
+          }),
+        );
+      }
+      return Promise.resolve();
+    });
+    render(<MediaPanel gateway={gateway({ reorderMedia })} authorize={authorize} />, {
+      wrapper: NotificationProvider,
+    });
+
+    const gallery = await screen.findByRole('list', { name: 'Thứ tự ảnh danh mục' });
+    await act(() => {
+      fireEvent.click(within(gallery).getByRole('button', { name: 'Đưa ảnh 2 lên' }));
+      return Promise.resolve();
+    });
+
+    await waitFor(() =>
+      expect(within(gallery).getByRole('button', { name: 'Đưa ảnh 2 lên' })).toBeEnabled(),
+    );
+    expect(reorderMedia).toHaveBeenCalledTimes(1);
+    expect(screen.getAllByRole(fails ? 'alert' : 'status')).toHaveLength(1);
+    if (fails) expect(screen.getByRole('alert')).toHaveTextContent('Mã yêu cầu: media-re');
+    else expect(screen.getByRole('status')).toHaveTextContent('Đã lưu thứ tự ảnh.');
+  });
+
+  it('shows a toast when refreshing image URLs fails', async () => {
+    const loadMedia = vi
+      .fn()
+      .mockResolvedValueOnce(assets)
+      .mockRejectedValue(new Error('Lỗi tải ảnh.'));
+    render(<MediaPanel gateway={gateway({ loadMedia })} authorize={authorize} />, {
+      wrapper: NotificationProvider,
+    });
+    fireEvent.click(await screen.findByRole('button', { name: 'Làm mới đường dẫn ảnh' }));
+    expect(await screen.findByRole('alert')).toBeVisible();
+    expect(screen.getAllByRole('alert')).toHaveLength(1);
+  });
+
   it('shows signed previews without storage internals and refreshes expiring URLs', async () => {
     const loadMedia = vi.fn(() => Promise.resolve(assets));
     render(<MediaPanel gateway={gateway({ loadMedia })} authorize={authorize} />, {

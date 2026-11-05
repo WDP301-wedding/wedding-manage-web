@@ -8,6 +8,7 @@ import Image from 'next/image';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 
 import { ApiClientError } from '../../lib/api/client';
+import { presentError } from '../../lib/api/error-presentation';
 import type {
   CatalogGateway,
   CatalogMedia,
@@ -42,8 +43,6 @@ export function MediaPanel({
   const [assets, setAssets] = useState<readonly CatalogMedia[]>([]);
   const [loading, setLoading] = useState(true);
   const [pending, setPending] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const assetsLoadedAtRef = useRef<number>(0);
   const initialLoadStarted = useRef(false);
   const inFlightRenewRef = useRef<boolean>(false);
@@ -69,7 +68,6 @@ export function MediaPanel({
   const load = useCallback(
     async (preferredKey?: string, background = false) => {
       setLoading(true);
-      setError(null);
       try {
         const allResources = await authorize((token) => gateway.loadMediaResources(token));
         const nextResources = allowedTypes
@@ -91,7 +89,7 @@ export function MediaPanel({
           await loadAssets(next, background);
         }
       } catch (caught) {
-        setError(mediaErrorMessage(caught));
+        reportMediaError(caught);
       } finally {
         setLoading(false);
       }
@@ -129,7 +127,7 @@ export function MediaPanel({
       if (inFlightRenewRef.current) return;
       inFlightRenewRef.current = true;
       void loadAssets(selected)
-        .catch((caught: unknown) => setError(mediaErrorMessage(caught)))
+        .catch(reportMediaError)
         .finally(() => {
           inFlightRenewRef.current = false;
         });
@@ -153,18 +151,13 @@ export function MediaPanel({
   const run = async (success: string, operation: (token: string) => Promise<void>) => {
     if (selected === undefined) return false;
     setPending(true);
-    setMessage(null);
-    setError(null);
     try {
       await authorize(operation);
-      setMessage(success);
       notify.success(success);
       await loadAssets(selected);
       return true;
     } catch (caught) {
-      const msg = mediaErrorMessage(caught);
-      setError(msg);
-      notify.error(caught, { fallbackMessage: msg });
+      reportMediaError(caught);
       return false;
     } finally {
       setPending(false);
@@ -176,9 +169,8 @@ export function MediaPanel({
     if (resource === undefined) return;
     setSelectedKey(mediaResourceKey(resource));
     setLoading(true);
-    setError(null);
     void loadAssets(resource)
-      .catch((caught: unknown) => setError(mediaErrorMessage(caught)))
+      .catch(reportMediaError)
       .finally(() => setLoading(false));
   };
 
@@ -204,7 +196,6 @@ export function MediaPanel({
         <h2 id={headingId}>{heading}</h2>
         <p>{description}</p>
       </div>
-      <PanelMessages error={error} message={message} />
       <div className="flex min-w-0 flex-col gap-5 p-4 sm:p-6">
         <div className={cx.mediaToolbar}>
           <label className={cx.field}>
@@ -227,11 +218,7 @@ export function MediaPanel({
             type="button"
             disabled={selected === undefined || loading}
             onClick={() =>
-              selected === undefined
-                ? undefined
-                : void loadAssets(selected).catch((caught: unknown) =>
-                    setError(mediaErrorMessage(caught)),
-                  )
+              selected === undefined ? undefined : void loadAssets(selected).catch(reportMediaError)
             }
           >
             Làm mới đường dẫn ảnh
@@ -312,25 +299,6 @@ export function MediaPanel({
   );
 }
 
-function PanelMessages({
-  error,
-  message,
-}: Readonly<{ error: string | null; message: string | null }>) {
-  useEffect(() => {
-    if (error) {
-      notify.error(error);
-    }
-  }, [error]);
-
-  useEffect(() => {
-    if (message) {
-      notify.success(message);
-    }
-  }, [message]);
-
-  return null;
-}
-
 function mediaResourceKey(resource: Pick<CatalogMediaResource, 'path' | 'id'>): string {
   return `${resource.path}:${resource.id}`;
 }
@@ -343,6 +311,10 @@ function formatBytes(bytes: number): string {
 
 function formatTtl(seconds: number): string {
   return seconds >= 60 ? `${Math.floor(seconds / 60)} phút` : `${seconds} giây`;
+}
+
+function reportMediaError(error: unknown): void {
+  notify.error(mediaErrorMessage(error), { requestId: presentError(error).requestId ?? undefined });
 }
 
 function mediaErrorMessage(error: unknown): string {

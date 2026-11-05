@@ -188,7 +188,6 @@ export function ManagementIdentityExperience({
             <PasswordResetOtpForm
               onCompleted={() => {
                 setView('login');
-                notify.success('Mật khẩu đã được cập nhật. Hãy đăng nhập lại.');
               }}
             />
           ) : null}
