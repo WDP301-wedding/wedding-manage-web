@@ -1,9 +1,13 @@
-import { fireEvent, render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { axiosApiClient } from '../../lib/api/axios-client';
+import { selectOption } from '../../test/select-option';
 import type { PublicHall } from '../../services/catalog.service';
 import type { ConsultationRequestItem } from '../../services/consultation.service';
 import { DashboardConsultationsSection } from './dashboard-consultations-section';
 import { DashboardVenueHalls } from './dashboard-venue-halls';
+
+vi.mock('../../lib/api/axios-client', () => ({ axiosApiClient: { get: vi.fn() } }));
 
 describe('DashboardConsultationsSection pagination and sorting', () => {
   const mockConsultations: ConsultationRequestItem[] = [
@@ -99,7 +103,34 @@ describe('DashboardConsultationsSection pagination and sorting', () => {
     },
   ];
 
-  it('renders with pagination and displays correct page slice', () => {
+  const serverRows = mockConsultations.map((item, index) => ({
+    ...item,
+    id: `00000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`,
+    consultationId: item.consultationId
+      ? `10000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`
+      : null,
+  }));
+  const newest = [serverRows[5]!, serverRows[4]!, serverRows[3]!, serverRows[1]!, serverRows[0]!];
+  function page(items = newest, total = 6, current = 1) {
+    return {
+      data: {
+        data: {
+          items,
+          total,
+          page: current,
+          pageSize: 5,
+          totalPages: Math.ceil(total / 5),
+          counts: { total: 6, pending: 3 },
+        },
+      },
+    };
+  }
+  beforeEach(() => {
+    vi.mocked(axiosApiClient.get).mockReset();
+    vi.mocked(axiosApiClient.get).mockResolvedValue(page());
+  });
+
+  it('requests server pages and displays the returned page slice', async () => {
     render(
       <DashboardConsultationsSection
         isManager={true}
@@ -108,6 +139,7 @@ describe('DashboardConsultationsSection pagination and sorting', () => {
       />,
     );
 
+    await screen.findByText('Hùng & Mai');
     expect(screen.getByText('Yêu cầu tư vấn gần đây')).toBeVisible();
     // Default page size is 5, total is 6. Page 1 displays 5 items.
     expect(screen.getByText(/yêu cầu tư vấn/)).toHaveTextContent(
@@ -124,7 +156,12 @@ describe('DashboardConsultationsSection pagination and sorting', () => {
     expect(screen.queryByText('Tuấn & Chi')).not.toBeInTheDocument();
 
     // Navigate to page 2
+    vi.mocked(axiosApiClient.get).mockResolvedValueOnce(page([serverRows[2]!], 6, 2));
     fireEvent.click(screen.getByRole('button', { name: '2' }));
+    await screen.findByText('Tuấn & Chi');
+    expect(axiosApiClient.get).toHaveBeenLastCalledWith('/management/consultation-page', {
+      params: { q: '', status: 'ALL', sort: 'createdAt', order: 'desc', page: 2, pageSize: 5 },
+    });
     expect(screen.getByText(/yêu cầu tư vấn/)).toHaveTextContent(
       'Hiển thị 6 – 6 / 6 yêu cầu tư vấn',
     );
@@ -132,7 +169,7 @@ describe('DashboardConsultationsSection pagination and sorting', () => {
     expect(screen.queryByText('Hùng & Mai')).not.toBeInTheDocument();
   });
 
-  it('filters consultations by search query and status', () => {
+  it('requests search and status filters and displays the matching server results', async () => {
     render(
       <DashboardConsultationsSection
         isManager={true}
@@ -142,25 +179,45 @@ describe('DashboardConsultationsSection pagination and sorting', () => {
     );
 
     // Search for "Ly"
-    const searchInput = screen.getByLabelText('Tìm kiếm yêu cầu tư vấn');
+    const searchInput = await screen.findByLabelText('Tìm kiếm yêu cầu tư vấn');
+    vi.mocked(axiosApiClient.get).mockResolvedValueOnce(page([serverRows[3]!], 1));
     fireEvent.change(searchInput, { target: { value: 'ly' } });
 
-    expect(screen.getByText('Khánh & Ly')).toBeVisible();
+    await screen.findByText('Khánh & Ly');
+    await waitFor(() =>
+      expect(axiosApiClient.get).toHaveBeenLastCalledWith('/management/consultation-page', {
+        params: { q: 'ly', status: 'ALL', sort: 'createdAt', order: 'desc', page: 1, pageSize: 5 },
+      }),
+    );
     expect(screen.queryByText('Hùng & Mai')).not.toBeInTheDocument();
 
     // Reset search
-    fireEvent.change(searchInput, { target: { value: '' } });
+    fireEvent.change(screen.getByLabelText('Tìm kiếm yêu cầu tư vấn'), {
+      target: { value: '' },
+    });
+    await screen.findByText('Hùng & Mai');
 
     // Filter by status: CONVERTED
-    const statusSelect = screen.getByLabelText('Lọc theo trạng thái yêu cầu');
-    fireEvent.change(statusSelect, { target: { value: 'CONVERTED' } });
+    vi.mocked(axiosApiClient.get).mockResolvedValueOnce(page([serverRows[1]!, serverRows[4]!], 2));
+    await selectOption('Lọc theo trạng thái yêu cầu', 'Đã chuyển đổi');
+    await screen.findByText('Đạt & Quỳnh');
+    expect(axiosApiClient.get).toHaveBeenLastCalledWith('/management/consultation-page', {
+      params: {
+        q: '',
+        status: 'CONVERTED',
+        sort: 'createdAt',
+        order: 'desc',
+        page: 1,
+        pageSize: 5,
+      },
+    });
 
     expect(screen.getByText('Bảo & Vy')).toBeVisible();
     expect(screen.getByText('Đạt & Quỳnh')).toBeVisible();
     expect(screen.queryByText('Minh & An')).not.toBeInTheDocument();
   });
 
-  it('sorts consultations by customer name A-Z when column header clicked', () => {
+  it('requests sorting by customer name and displays the returned order', async () => {
     render(
       <DashboardConsultationsSection
         isManager={true}
@@ -169,11 +226,21 @@ describe('DashboardConsultationsSection pagination and sorting', () => {
       />,
     );
 
+    await screen.findByText('Hùng & Mai');
+    vi.mocked(axiosApiClient.get).mockResolvedValueOnce(
+      page([serverRows[1]!, serverRows[4]!, serverRows[5]!, serverRows[3]!, serverRows[0]!]),
+    );
     const sortCustomerBtn = screen.getByRole('button', { name: /Khách hàng/ });
     fireEvent.click(sortCustomerBtn);
 
-    // Sorted A-Z by displayName: Bảo & Vy should be first
-    expect(screen.getByText('Bảo & Vy')).toBeVisible();
+    await waitFor(() =>
+      expect(axiosApiClient.get).toHaveBeenLastCalledWith('/management/consultation-page', {
+        params: { q: '', status: 'ALL', sort: 'displayName', order: 'asc', page: 1, pageSize: 5 },
+      }),
+    );
+    await screen.findByText('Bảo & Vy');
+    const rows = screen.getAllByRole('row');
+    expect(within(rows[1]!).getByText('Bảo & Vy')).toBeVisible();
   });
 });
 
