@@ -188,7 +188,9 @@ describe('VC-20 timeline template editor', () => {
     const editor = await screen.findByRole('form', { name: 'Bản nháp Tiệc tối điều chỉnh' });
     fireEvent.click(within(editor).getByRole('button', { name: 'Lưu và công bố' }));
 
-    expect(await screen.findByRole('alert')).toHaveTextContent('Tải lại lịch sử');
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Danh mục vừa thay đổi. Hãy tải lại trước khi lưu.',
+    );
     expect(within(editor).getByRole('button', { name: 'Lưu và công bố' })).toBeEnabled();
   });
   it('shows published information in one row and isolates draft and historical details', async () => {

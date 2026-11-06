@@ -1,8 +1,12 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { StaffOperationsPage } from './staff-page';
-import { staffService } from '../../services/staff.service';
+import { webcrypto } from 'node:crypto';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { NotificationProvider } from '../../design-system/notifications';
+import { staffService, type GuestSearchResultItem } from '../../services/staff.service';
+import { staffWorkspaceService } from '../../services/staff-workspace.service';
+import type { StaffEvent, StaffWorkspace } from '../../services/staff-workspace.contracts';
 import type { ManagementIdentitySession } from '../identity-access/session';
+import { StaffOperationsPage } from './staff-page';
 
 vi.mock('../../services/staff.service', () => ({
   staffService: {
@@ -14,253 +18,287 @@ vi.mock('../../services/staff.service', () => ({
     revokeAssignment: vi.fn(),
     getEventAssignments: vi.fn(),
     lookupBookings: vi.fn(),
+    directory: vi.fn(),
   },
 }));
+vi.mock('../../services/staff-workspace.service', () => ({
+  staffWorkspaceService: { events: vi.fn(), read: vi.fn(), configure: vi.fn() },
+}));
 
-function createMockSession(isManager = true): ManagementIdentitySession {
+const bookingId = '11111111-1111-4111-8111-111111111111';
+const uuidPattern = /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
+const assignedEvent: StaffEvent = {
+  bookingId,
+  bookingCode: 'HY-000018',
+  alias: 'Tiệc Lan và Minh',
+  eventDate: '2026-11-15',
+  hallName: 'Sảnh Ánh Dương',
+  shiftCode: 'DINNER',
+  phase: 'CONFIRMED',
+};
+function workspace(
+  isManager: boolean,
+  mode: 'BY_GUEST_NAME' | 'NONE' = 'BY_GUEST_NAME',
+): StaffWorkspace {
   return {
-    restore: vi.fn().mockResolvedValue({
-      status: 'authenticated',
-      presentation: isManager ? 'manager' : 'staff',
-      actor: {
-        accountId: '10000000-0000-4000-8000-000000000001',
-        displayEmail: 'manager@example.com',
-        roles: isManager ? ['MANAGER'] : ['STAFF'],
-      },
-    }),
-    snapshot: vi.fn().mockReturnValue({
-      status: 'authenticated',
-      presentation: isManager ? 'manager' : 'staff',
-      actor: {
-        accountId: '10000000-0000-4000-8000-000000000001',
-        displayEmail: 'manager@example.com',
-        roles: isManager ? ['MANAGER'] : ['STAFF'],
-      },
-    }),
+    bookingId,
+    bookingCode: assignedEvent.bookingCode,
+    alias: assignedEvent.alias,
+    isManager,
+    settings: { bookingId, checkInMode: mode, revision: 1, locked: false },
+    attendance: {
+      measurementStatus: mode === 'NONE' ? 'NOT_RECORDED' : 'LISTED_GUESTS_ONLY',
+      checkedInGuestCount: mode === 'NONE' ? null : 0,
+      ledgerRevision: 0,
+    },
+    listedGuestCount: 1,
+    planningHeadcount: 150,
+    windowOpen: true,
+    windowOpensAt: '2026-11-15T09:00:00Z',
+    windowClosesAt: '2026-11-15T16:00:00Z',
+    timeline: {
+      eventDate: assignedEvent.eventDate,
+      hallName: assignedEvent.hallName,
+      revisionNumber: 1,
+      shiftStartTime: '17:00',
+      shiftEndTime: '22:00',
+      items: [],
+    },
+    seating: { status: 'CONFIRMED', renderSnapshot: [] },
+    members: [],
+  };
+}
+function guest(overrides: Partial<GuestSearchResultItem> = {}): GuestSearchResultItem {
+  return {
+    guestId: '20000000-0000-4000-8000-000000000001',
+    name: 'Nguyễn Văn Khách',
+    phoneLast4: '1234',
+    groupName: 'Groom Side',
+    groupColor: '#10b981',
+    tableLabels: ['Bàn 01'],
+    checkedIn: false,
+    guestGroupId: '30000000-0000-4000-8000-000000000001',
+    ledgerRevision: 1,
+    warning: null,
+    ...overrides,
+  };
+}
+function createMockSession(isManager = true): ManagementIdentitySession {
+  const snapshot = {
+    status: 'authenticated',
+    denial: null,
+    presentation: isManager ? 'manager' : 'staff',
+    actor: {
+      accountId: '10000000-0000-4000-8000-000000000001',
+      displayEmail: isManager ? 'manager@example.com' : 'staff@example.com',
+      roles: isManager ? ['MANAGER'] : ['STAFF'],
+    },
+  };
+  return {
+    restore: vi.fn().mockResolvedValue(snapshot),
+    snapshot: vi.fn().mockReturnValue(snapshot),
     logout: vi.fn().mockResolvedValue(undefined),
   } as unknown as ManagementIdentitySession;
 }
+function renderPage(isManager: boolean) {
+  render(<StaffOperationsPage session={createMockSession(isManager)} />, {
+    wrapper: NotificationProvider,
+  });
+}
+async function openCheckin(isManager: boolean, fromUrl = false) {
+  vi.mocked(staffWorkspaceService.read).mockResolvedValue(workspace(isManager));
+  if (fromUrl) window.history.replaceState({}, '', `/?bookingId=${bookingId}`);
+  renderPage(isManager);
+  if (isManager) expect(await screen.findByRole('tab', { name: 'Nhân sự' })).toBeVisible();
+  if (!fromUrl)
+    fireEvent.click(await screen.findByRole('button', { name: /HY-000018 · Tiệc Lan và Minh/ }));
+  fireEvent.click(await screen.findByRole('tab', { name: 'Đón khách & Check-in' }));
+  await waitFor(() => expect(staffWorkspaceService.read).toHaveBeenCalledWith(bookingId));
+  await waitFor(() => expect(screen.getByLabelText('Họ tên hoặc SĐT khách')).toBeEnabled());
+}
+function searchGuests(query = 'Nguyễn') {
+  fireEvent.change(screen.getByLabelText('Họ tên hoặc SĐT khách'), { target: { value: query } });
+  fireEvent.click(screen.getByRole('button', { name: 'Tra cứu khách' }));
+}
+
+// jsdom does not implement the browser's modal dialog lifecycle.
+const dialogMethods = {
+  showModal: Object.getOwnPropertyDescriptor(HTMLDialogElement.prototype, 'showModal'),
+  close: Object.getOwnPropertyDescriptor(HTMLDialogElement.prototype, 'close'),
+};
+beforeAll(() => {
+  Object.defineProperties(HTMLDialogElement.prototype, {
+    showModal: {
+      configurable: true,
+      value: function (this: HTMLDialogElement) {
+        this.open = true;
+      },
+    },
+    close: {
+      configurable: true,
+      value: function (this: HTMLDialogElement) {
+        this.open = false;
+      },
+    },
+  });
+});
+afterAll(() => {
+  for (const [name, descriptor] of Object.entries(dialogMethods)) {
+    if (descriptor) Object.defineProperty(HTMLDialogElement.prototype, name, descriptor);
+    else Reflect.deleteProperty(HTMLDialogElement.prototype, name);
+  }
+});
+
+beforeEach(() => {
+  vi.resetAllMocks();
+  vi.stubGlobal('crypto', webcrypto);
+  sessionStorage.clear();
+  window.history.replaceState({}, '', '/');
+  vi.mocked(staffWorkspaceService.events).mockResolvedValue({
+    items: [assignedEvent],
+    nextAfterId: null,
+  });
+  vi.mocked(staffService.getEventAssignments).mockResolvedValue([]);
+  vi.mocked(staffService.directory).mockResolvedValue({ items: [], nextAfterId: null });
+  vi.mocked(staffService.searchGuests).mockResolvedValue({ items: [], nextCursor: null });
+  vi.mocked(staffService.checkInGuest).mockResolvedValue(undefined);
+  vi.mocked(staffService.undoCheckIn).mockResolvedValue(undefined);
+});
+afterEach(() => {
+  vi.unstubAllGlobals();
+  sessionStorage.clear();
+  window.history.replaceState({}, '', '/');
+});
 
 describe('StaffOperationsPage (M6, S1, S2)', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
+  it('loads the UUID-linked event workspace before allowing guest search', async () => {
+    vi.mocked(staffService.searchGuests).mockResolvedValue({ items: [guest()], nextCursor: null });
+    await openCheckin(true, true);
+    searchGuests();
+    expect(await screen.findByText('Nguyễn Văn Khách')).toBeVisible();
+    expect(staffService.searchGuests).toHaveBeenCalledWith(bookingId, 'Nguyễn');
+    expect(screen.getByText('…1234')).toBeVisible();
+    expect(screen.getByText('Nhà trai')).toBeVisible();
+    expect(screen.getByText('Bàn 01')).toBeVisible();
   });
 
-  it('renders check-in desk and allows searching guests', async () => {
-    const mockSession = createMockSession(true);
-    vi.mocked(staffService.searchGuests).mockResolvedValue({
-      items: [
-        {
-          guestId: 'guest-1',
-          name: 'Nguyễn Văn Khách',
-          phoneLast4: '1234',
-          groupName: 'Nhà trai',
-          groupColor: '#10b981',
-          tableLabels: ['Bàn 01'],
-          checkedIn: false,
-          guestGroupId: 'group-1',
-          ledgerRevision: 1,
-          warning: null,
-        },
-      ],
-      nextCursor: null,
+  it('finds an accessible event by HY code before searching its guests', async () => {
+    vi.mocked(staffWorkspaceService.read).mockResolvedValue(workspace(true));
+    renderPage(true);
+    await screen.findByRole('tab', { name: 'Nhân sự' });
+    fireEvent.change(screen.getByLabelText('Tìm mã HY hoặc tên tiệc'), {
+      target: { value: 'hy-000018' },
     });
-
-    render(<StaffOperationsPage session={mockSession} />);
-
-    await waitFor(() => {
-      expect(screen.getByText('Nhân sự & Tác nghiệp')).toBeDefined();
-    });
-
-    const bookingInput = screen.getByLabelText('Mã tiệc');
-    fireEvent.change(bookingInput, { target: { value: '11111111-1111-4111-8111-111111111111' } });
-    fireEvent.change(screen.getByLabelText('Họ tên hoặc SĐT khách'), {
-      target: { value: 'Nguyễn' },
-    });
-
-    const searchBtn = screen.getByRole('button', { name: 'Tra cứu khách' });
-    fireEvent.click(searchBtn);
-
-    await waitFor(() => {
-      expect(staffService.searchGuests).toHaveBeenCalledWith(
-        '11111111-1111-4111-8111-111111111111',
-        'Nguyễn',
-      );
-      expect(screen.getByText('Nguyễn Văn Khách')).toBeDefined();
-      expect(screen.getByText('…1234')).toBeDefined();
-      expect(screen.getByText('Bàn 01')).toBeDefined();
-    });
-  });
-
-  it('resolves an HY booking code before searching guests', async () => {
-    vi.mocked(staffService.lookupBookings).mockResolvedValue([
-      { bookingId: '22222222-2222-4222-8222-222222222222', bookingCode: 'HY-000018' },
-    ]);
-    vi.mocked(staffService.searchGuests).mockResolvedValue({ items: [], nextCursor: null });
-    render(<StaffOperationsPage session={createMockSession(true)} />);
-    // Chờ phiên quản lý sẵn sàng (tab phân công chỉ hiện với quản lý).
-    await screen.findByRole('tab', { name: /Quản lý tài khoản/ });
-
-    fireEvent.change(screen.getByLabelText('Mã tiệc'), { target: { value: 'hy-000018' } });
-    fireEvent.change(screen.getByLabelText('Họ tên hoặc SĐT khách'), {
-      target: { value: 'Nguyễn' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: 'Tra cứu khách' }));
-
+    fireEvent.click(screen.getByRole('button', { name: 'Tìm tiệc' }));
     await waitFor(() =>
-      expect(staffService.searchGuests).toHaveBeenCalledWith(
-        '22222222-2222-4222-8222-222222222222',
-        'Nguyễn',
+      expect(staffWorkspaceService.events).toHaveBeenCalledWith(
+        'hy-000018',
+        undefined,
+        'CONFIRMED',
       ),
     );
-    expect(staffService.lookupBookings).toHaveBeenCalledWith('hy-000018');
+    fireEvent.click(await screen.findByRole('button', { name: /HY-000018 · Tiệc Lan và Minh/ }));
+    fireEvent.click(screen.getByRole('tab', { name: 'Đón khách & Check-in' }));
+    await waitFor(() => expect(screen.getByLabelText('Họ tên hoặc SĐT khách')).toBeEnabled());
+    searchGuests();
+    await waitFor(() =>
+      expect(staffService.searchGuests).toHaveBeenCalledWith(bookingId, 'Nguyễn'),
+    );
+    expect(staffWorkspaceService.read).toHaveBeenCalledWith(bookingId);
+    expect(staffService.lookupBookings).not.toHaveBeenCalled();
   });
 
-  it('performs check-in action with large high-contrast button', async () => {
-    const mockSession = createMockSession(false);
-    vi.mocked(staffService.searchGuests).mockResolvedValue({
-      items: [
-        {
-          guestId: 'guest-1',
-          name: 'Trần Thị Khách',
-          phoneLast4: '5678',
-          groupName: 'Nhà gái',
-          groupColor: '#ec4899',
-          tableLabels: ['Bàn VIP'],
-          checkedIn: false,
-          guestGroupId: 'group-2',
-          ledgerRevision: 1,
-          warning: null,
-        },
-      ],
-      nextCursor: null,
-    });
-    vi.mocked(staffService.checkInGuest).mockResolvedValue(undefined);
-
-    render(<StaffOperationsPage session={mockSession} />);
-
-    const bookingInput = screen.getByLabelText('Mã tiệc');
-    fireEvent.change(bookingInput, { target: { value: '11111111-1111-4111-8111-111111111111' } });
-    fireEvent.change(screen.getByLabelText('Họ tên hoặc SĐT khách'), {
-      target: { value: 'Nguyễn' },
-    });
-
-    const searchBtn = screen.getByRole('button', { name: 'Tra cứu khách' });
-    fireEvent.click(searchBtn);
-
-    await waitFor(() => {
-      expect(screen.getByText('Trần Thị Khách')).toBeDefined();
-    });
-
-    const checkInBtn = screen.getByRole('button', { name: 'Check-in cho khách Trần Thị Khách' });
-    fireEvent.click(checkInBtn);
-
-    await waitFor(() => {
+  it('lets assigned staff check in a listed guest with an idempotency key', async () => {
+    const person = guest({ name: 'Trần Thị Khách' });
+    vi.mocked(staffService.searchGuests).mockResolvedValue({ items: [person], nextCursor: null });
+    await openCheckin(false);
+    expect(screen.queryByRole('tab', { name: 'Nhân sự' })).not.toBeInTheDocument();
+    searchGuests('Trần');
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Check-in cho khách Trần Thị Khách' }),
+    );
+    await waitFor(() =>
       expect(staffService.checkInGuest).toHaveBeenCalledWith(
-        '11111111-1111-4111-8111-111111111111',
-        'guest-1',
+        bookingId,
+        person.guestId,
         undefined,
-      );
-    });
+        expect.stringMatching(uuidPattern),
+      ),
+    );
   });
 
-  it('asks a manager for a reason and sends it as the override reason', async () => {
-    vi.mocked(staffService.searchGuests).mockResolvedValue({
-      items: [
-        {
-          guestId: 'guest-1',
-          name: 'Trần Thị Khách',
-          phoneLast4: null,
-          groupName: 'Groom Side',
-          groupColor: '#10b981',
-          tableLabels: [],
-          checkedIn: false,
-          guestGroupId: 'group-1',
-          ledgerRevision: 1,
-          warning: null,
-        },
-      ],
-      nextCursor: null,
-    });
-    render(<StaffOperationsPage session={createMockSession(true)} />);
-    await screen.findByRole('tab', { name: /Quản lý tài khoản/ });
-    fireEvent.change(screen.getByLabelText('Mã tiệc'), {
-      target: { value: '11111111-1111-4111-8111-111111111111' },
-    });
-    fireEvent.change(screen.getByLabelText('Họ tên hoặc SĐT khách'), {
-      target: { value: 'Trần' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: 'Tra cứu khách' }));
-    expect(await screen.findByText('Nhà trai')).toBeDefined();
-
-    const checkIn = screen.getByRole('button', { name: 'Check-in cho khách Trần Thị Khách' });
-    fireEvent.click(checkIn);
+  it('requires a manager to confirm a valid override reason before check-in', async () => {
+    const person = guest({ name: 'Trần Thị Khách', phoneLast4: null, tableLabels: [] });
+    vi.mocked(staffService.searchGuests).mockResolvedValue({ items: [person], nextCursor: null });
+    await openCheckin(true);
+    searchGuests('Trần');
+    expect(await screen.findByText('Nhà trai')).toBeVisible();
+    fireEvent.click(screen.getByRole('button', { name: 'Check-in cho khách Trần Thị Khách' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Check-in cho Trần Thị Khách?' });
+    const confirm = within(dialog).getByRole('button', { name: 'Xác nhận' });
+    expect(confirm).toBeDisabled();
     expect(staffService.checkInGuest).not.toHaveBeenCalled();
-
-    fireEvent.change(screen.getByLabelText(/Lý do thao tác/), {
+    fireEvent.change(within(dialog).getByLabelText(/Lý do/), {
       target: { value: 'Khách đến sớm, quản lý đón trực tiếp' },
     });
-    fireEvent.click(checkIn);
+    fireEvent.click(confirm);
     await waitFor(() =>
       expect(staffService.checkInGuest).toHaveBeenCalledWith(
-        '11111111-1111-4111-8111-111111111111',
-        'guest-1',
+        bookingId,
+        person.guestId,
         'Khách đến sớm, quản lý đón trực tiếp',
+        expect.stringMatching(uuidPattern),
       ),
     );
   });
 
-  it('allows undoing check-in when guest is already checked-in', async () => {
-    const mockSession = createMockSession(false);
-    vi.mocked(staffService.searchGuests).mockResolvedValue({
-      items: [
-        {
-          guestId: 'guest-2',
-          name: 'Lê Văn An',
-          phoneLast4: '9999',
-          groupName: 'Bạn bè',
-          groupColor: '#3b82f6',
-          tableLabels: ['Bàn 05'],
-          checkedIn: true,
-          guestGroupId: 'group-3',
-          ledgerRevision: 2,
-          warning: null,
-        },
-      ],
-      nextCursor: null,
+  it('confirms the undo reason and sends the displayed ledger revision and record ID', async () => {
+    const person = guest({
+      name: 'Lê Văn An',
+      checkedIn: true,
+      ledgerRevision: 2,
+      checkInRecordId: '40000000-0000-4000-8000-000000000001',
     });
-    vi.mocked(staffService.undoCheckIn).mockResolvedValue(undefined);
-
-    render(<StaffOperationsPage session={mockSession} />);
-
-    const bookingInput = screen.getByLabelText('Mã tiệc');
-    fireEvent.change(bookingInput, { target: { value: '11111111-1111-4111-8111-111111111111' } });
-    fireEvent.change(screen.getByLabelText('Họ tên hoặc SĐT khách'), {
-      target: { value: 'Nguyễn' },
-    });
-
-    const searchBtn = screen.getByRole('button', { name: 'Tra cứu khách' });
-    fireEvent.click(searchBtn);
-
-    await waitFor(() => {
-      expect(screen.getByText('Lê Văn An')).toBeDefined();
-      expect(screen.getByText('Đã check-in')).toBeDefined();
-    });
-
-    fireEvent.change(screen.getByLabelText(/Lý do thao tác/), {
+    vi.mocked(staffService.searchGuests).mockResolvedValue({ items: [person], nextCursor: null });
+    await openCheckin(false);
+    searchGuests('Lê');
+    expect(await screen.findByText('Đã check-in')).toBeVisible();
+    fireEvent.click(screen.getByRole('button', { name: 'Hoàn tác check-in cho khách Lê Văn An' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Hoàn tác check-in của Lê Văn An?' });
+    expect(staffService.undoCheckIn).not.toHaveBeenCalled();
+    expect(within(dialog).getByRole('button', { name: 'Xác nhận' })).toBeDisabled();
+    fireEvent.change(within(dialog).getByLabelText(/Lý do/), {
       target: { value: 'Khách báo nhầm người, hoàn tác' },
     });
-    const undoBtn = screen.getByRole('button', { name: 'Hoàn tác check-in cho khách Lê Văn An' });
-    fireEvent.click(undoBtn);
-
-    await waitFor(() => {
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Xác nhận' }));
+    await waitFor(() =>
       expect(staffService.undoCheckIn).toHaveBeenCalledWith(
-        '11111111-1111-4111-8111-111111111111',
-        'guest-2',
+        bookingId,
+        person.guestId,
         2,
         'Khách báo nhầm người, hoàn tác',
         undefined,
-      );
-    });
+        expect.stringMatching(uuidPattern),
+        person.checkInRecordId,
+      ),
+    );
+  });
+
+  it('keeps check-in unavailable and attendance unknown when name-based check-in is disabled', async () => {
+    vi.mocked(staffWorkspaceService.read).mockResolvedValue(workspace(false, 'NONE'));
+    renderPage(false);
+    fireEvent.click(await screen.findByRole('button', { name: /HY-000018 · Tiệc Lan và Minh/ }));
+    expect(
+      await screen.findByText(
+        'Check-in chưa được bật cho tiệc này. Manager có thể bật tại phần Điều kiện đón khách.',
+      ),
+    ).toBeVisible();
+    expect(screen.getByLabelText('Họ tên hoặc SĐT khách')).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Tra cứu khách' })).toBeDisabled();
+    expect(screen.getByText('Chưa ghi nhận')).toBeVisible();
+    expect(staffService.searchGuests).not.toHaveBeenCalled();
+    expect(staffService.checkInGuest).not.toHaveBeenCalled();
+    expect(staffService.undoCheckIn).not.toHaveBeenCalled();
+    expect(staffWorkspaceService.configure).not.toHaveBeenCalled();
   });
 });

@@ -173,7 +173,7 @@ describe('VC-18 venue catalog workspace', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Lưu thay đổi sảnh' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Sức chứa mới thấp hơn bố cục đang được công bố',
+      'Sức chứa sảnh tiệc không hợp lệ hoặc xung đột với cấu hình hiện tại.',
     );
     expect(screen.getByRole('button', { name: 'Lưu thay đổi sảnh' })).toBeEnabled();
   });

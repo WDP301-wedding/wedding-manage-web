@@ -27,15 +27,11 @@ describe('staffService check-in commands', () => {
     );
   });
 
-  it('undoes the latest check-in that has not been undone yet', async () => {
+  it('undoes the check-in at the displayed ledger revision using a bounded history request', async () => {
     vi.mocked(axiosApiClient.get).mockResolvedValue({
       data: {
         data: {
-          items: [
-            { checkInRecordId: 'r1', action: 'CHECK_IN', originalCheckInRecordId: null },
-            { checkInRecordId: 'u1', action: 'UNDO', originalCheckInRecordId: 'r1' },
-            { checkInRecordId: 'r2', action: 'CHECK_IN', originalCheckInRecordId: null },
-          ],
+          items: [{ checkInRecordId: 'r2', action: 'CHECK_IN', ledgerRevision: 4 }],
         },
       },
     });
@@ -47,10 +43,67 @@ describe('staffService check-in commands', () => {
       undefined,
       'key-2',
     );
+    expect(axiosApiClient.get).toHaveBeenCalledWith(
+      '/staff/events/booking/guests/guest/check-ins',
+      { params: { afterRevision: 3, limit: 1 } },
+    );
     expect(axiosApiClient.post).toHaveBeenCalledWith(
       '/staff/events/booking/guests/guest/check-in-undos',
       { checkInRecordId: 'r2', expectedLedgerRevision: 4, reason: 'Lý do hoàn tác đủ dài' },
       { headers: { 'Idempotency-Key': 'key-2' } },
+    );
+  });
+
+  it.each([
+    { scenario: 'empty history', items: [] },
+    {
+      scenario: 'already undone',
+      items: [{ checkInRecordId: 'u1', action: 'UNDO', ledgerRevision: 4 }],
+    },
+    {
+      scenario: 'changed revision',
+      items: [{ checkInRecordId: 'r3', action: 'CHECK_IN', ledgerRevision: 5 }],
+    },
+  ])(
+    'requires a refreshed guest when the requested ledger head is unavailable: $scenario',
+    async ({ items }) => {
+      vi.mocked(axiosApiClient.get).mockResolvedValue({ data: { data: { items } } });
+
+      await expect(
+        staffService.undoCheckIn(
+          'booking',
+          'guest',
+          4,
+          'Lý do hoàn tác đủ dài',
+          undefined,
+          'key-4',
+        ),
+      ).rejects.toThrow('Trạng thái khách đã thay đổi. Tra cứu lại trước khi hoàn tác.');
+      expect(axiosApiClient.post).not.toHaveBeenCalled();
+    },
+  );
+
+  it('uses the selected immutable record ID without scanning history', async () => {
+    await staffService.undoCheckIn(
+      'booking',
+      'guest',
+      4,
+      'Lý do hoàn tác đủ dài',
+      'Quản lý xác nhận hoàn tác',
+      'key-5',
+      'r2',
+    );
+
+    expect(axiosApiClient.get).not.toHaveBeenCalled();
+    expect(axiosApiClient.post).toHaveBeenCalledWith(
+      '/staff/events/booking/guests/guest/check-in-undos',
+      {
+        checkInRecordId: 'r2',
+        expectedLedgerRevision: 4,
+        reason: 'Lý do hoàn tác đủ dài',
+        overrideReason: 'Quản lý xác nhận hoàn tác',
+      },
+      { headers: { 'Idempotency-Key': 'key-5' } },
     );
   });
 });
