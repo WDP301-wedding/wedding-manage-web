@@ -1,6 +1,10 @@
 'use client';
-import { useEffect, useState } from 'react';
-import type { BookingSortField, SortOrder } from './dashboard-bookings-table';
+import { useEffect, useState, useMemo } from 'react';
+import {
+  type BookingSortField,
+  type SortOrder,
+  getBookingPaymentInfo,
+} from './dashboard-bookings-table';
 import type { BookingAssignmentsRegistry } from './booking-assignments';
 import type { AnalyticsBookingsData } from '../../services/analytics.service';
 import {
@@ -47,6 +51,7 @@ export function useDashboardBookings({
   const [searchQuery, setSearchQuery] = useState('');
   const [query, setQuery] = useState('');
   const [phaseFilter, setPhase] = useState('ALL');
+  const [paymentFilter, setPaymentFilter] = useState<'ALL' | 'PAID' | 'DEBT'>('ALL');
   const [sortField, setSortField] = useState<BookingSortField>('recency');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [currentPage, setCurrentPage] = useState(1),
@@ -59,15 +64,19 @@ export function useDashboardBookings({
     }, 250);
     return () => clearTimeout(timer);
   }, [searchQuery, query]);
+  const isFiltered = paymentFilter !== 'ALL';
+  const effectivePageSize = isFiltered ? 50 : pageSize;
+  const effectivePage = isFiltered ? 1 : currentPage;
   const scope = JSON.stringify([
     resolvedAccountId,
     bookingTab,
     query,
     phaseFilter,
+    paymentFilter,
     sortField,
     sortOrder,
-    currentPage,
-    pageSize,
+    effectivePage,
+    effectivePageSize,
   ]);
   const [result, setResult] = useState<{
     scope: string;
@@ -84,10 +93,11 @@ export function useDashboardBookings({
           scope: bookingTab,
           q: query,
           phase: phaseFilter,
+          ...(paymentFilter !== 'ALL' ? { paymentStatus: paymentFilter } : {}),
           sort: sortField,
           order: sortOrder,
-          page: currentPage,
-          pageSize,
+          page: effectivePage,
+          pageSize: effectivePageSize,
         });
         if (isCurrent()) setResult({ scope, data });
       } catch (e) {
@@ -104,7 +114,11 @@ export function useDashboardBookings({
     },
   );
   const data = result?.scope === scope ? result.data : null;
-  const rows: NavigationBooking[] = data?.items ?? [];
+  const rawRows: NavigationBooking[] = data?.items ?? [];
+  const rows = useMemo(() => {
+    if (paymentFilter === 'ALL') return rawRows;
+    return rawRows.filter((r) => getBookingPaymentInfo(r).status === paymentFilter);
+  }, [rawRows, paymentFilter]);
   const serverAssignments: BookingAssignmentsRegistry = Object.fromEntries(
     rows.map((b) => [
       b.bookingId,
@@ -128,6 +142,11 @@ export function useDashboardBookings({
     phaseFilter,
     setPhaseFilter: (value: string) => {
       setPhase(value);
+      reset();
+    },
+    paymentFilter,
+    setPaymentFilter: (value: 'ALL' | 'PAID' | 'DEBT') => {
+      setPaymentFilter(value);
       reset();
     },
     sortField,
@@ -173,11 +192,24 @@ export function useDashboardBookings({
     currentTabBookings: rows,
     filteredBookings: rows,
     paginatedBookings: rows,
-    total: data?.total ?? 0,
-    totalPages: Math.max(1, data?.totalPages ?? 0),
-    safeCurrentPage: data?.page ?? 1,
-    startIndex: data ? (data.page - 1) * data.pageSize : 0,
-    endIndex: data ? Math.min(data.page * data.pageSize, data.total) : 0,
+    total: paymentFilter !== 'ALL' ? rows.length : (data?.total ?? 0),
+    totalPages:
+      paymentFilter !== 'ALL'
+        ? Math.max(1, Math.ceil(rows.length / pageSize))
+        : Math.max(1, data?.totalPages ?? 0),
+    safeCurrentPage: paymentFilter !== 'ALL' ? 1 : (data?.page ?? 1),
+    startIndex:
+      paymentFilter !== 'ALL'
+        ? 0
+        : data
+          ? (data.page - 1) * data.pageSize
+          : 0,
+    endIndex:
+      paymentFilter !== 'ALL'
+        ? rows.length
+        : data
+          ? Math.min(data.page * data.pageSize, data.total)
+          : 0,
     serverAssignments,
     loading: pending || (!data && !error) || searchQuery.trim() !== query,
     error,

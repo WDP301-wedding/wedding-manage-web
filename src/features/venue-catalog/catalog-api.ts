@@ -83,7 +83,7 @@ export function createVenueCatalogGateway(client?: ApiClient): CatalogGateway {
     async updateRestaurant(accessToken, input) {
       await api().PATCH('/management/catalog/restaurant', {
         headers: authorization(accessToken),
-        body: input,
+        body: input as any,
       });
       invalidateCatalogResource(accessToken, '/management/catalog/restaurant');
     },

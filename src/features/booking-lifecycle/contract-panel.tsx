@@ -335,7 +335,18 @@ export function ContractPanel({
                   </dd>
                 </div>
                 <div className="flex flex-col gap-0.5">
-                  <dt className="text-xs text-muted-foreground">Tiền cọc cam kết (30%)</dt>
+                  <dt className="text-xs text-muted-foreground">
+                    Tiền cọc cam kết (
+                    {/* TODO(BE): Đọc depositRate từ contract document khi BE bổ sung trường */}
+                    {currentRevision.document.contractTotalVnd > 0
+                      ? Math.round(
+                          (currentRevision.document.depositAmountVnd /
+                            currentRevision.document.contractTotalVnd) *
+                            100,
+                        )
+                      : 30}
+                    % theo hợp đồng)
+                  </dt>
                   <dd className="text-lg font-bold tabular-nums">
                     {formatVnd(currentRevision.document.depositAmountVnd)}
                   </dd>

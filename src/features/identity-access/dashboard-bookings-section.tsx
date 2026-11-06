@@ -96,6 +96,8 @@ export function DashboardBookingsSection({
         setSearchQuery={view.setSearchQuery}
         phaseFilter={view.phaseFilter}
         setPhaseFilter={view.setPhaseFilter}
+        paymentFilter={view.paymentFilter}
+        setPaymentFilter={view.setPaymentFilter}
         sortField={view.sortField}
         sortOrder={view.sortOrder}
         onQuickSortChange={view.handleQuickSortChange}

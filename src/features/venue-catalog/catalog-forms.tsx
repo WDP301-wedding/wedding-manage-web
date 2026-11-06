@@ -24,18 +24,33 @@ export function RestaurantForm({
   pending: boolean;
   restaurant: ManagerRestaurant;
 }>) {
-  const submit = (event: FormEvent<HTMLFormElement>) => {
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
-    void onSubmit({
+    const depositPct = Math.min(
+      100,
+      Math.max(10, parseInt(String(data.get('depositPercentage') || '30'), 10) || 30),
+    );
+    const ok = await onSubmit({
       displayName: field(data, 'displayName'),
       description: field(data, 'description'),
       address: field(data, 'address'),
       publicPhone: nullableField(data, 'publicPhone'),
       publicEmail: nullableField(data, 'publicEmail'),
+      depositPercentage: depositPct,
       expectedRevision: restaurant.revision,
     });
+    if (ok) {
+      // Chỉ lưu local khi lưu thành công trên máy chủ
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('wedding_deposit_percentage', String(depositPct));
+      }
+    }
   };
+  // TODO(BE): Đọc depositPercentage từ restaurant object khi BE bổ sung trường.
+  // Fallback: localStorage → mặc định 30%.
+  const savedDepositPct = readDepositPercentage(restaurant);
+
   return (
     <form className={cx.formGrid} onSubmit={submit} key={restaurant.revision}>
       <Field label="Tên hiển thị" name="displayName" defaultValue={restaurant.displayName} />
@@ -51,6 +66,18 @@ export function RestaurantForm({
         name="publicPhone"
         defaultValue={restaurant.publicPhone ?? ''}
       />
+      <Field
+        label="Tỷ lệ đặt cọc yêu cầu (%)"
+        name="depositPercentage"
+        type="number"
+        min={10}
+        max={100}
+        step={1}
+        defaultValue={savedDepositPct}
+      />
+      <p className="col-span-full -mt-2 text-xs text-muted-foreground">
+        Tỷ lệ cọc do Quản lý thiết lập để cam kết giữ sảnh khi tạo hợp đồng mới (mặc định 30%, cho phép từ 10% đến 100%). Các hợp đồng đã ký trước đó giữ nguyên tỷ lệ theo điều khoản lúc lập.
+      </p>
       <Field
         className={cx.fieldWide}
         label="Mô tả"
@@ -301,4 +328,28 @@ export function catalogErrorMessage(error: unknown): string {
     }
   }
   return 'Không thể hoàn tất thao tác. Vui lòng thử lại.';
+}
+
+/**
+ * Đọc tỷ lệ đặt cọc (%) từ nguồn ưu tiên:
+ * 1. Trường `depositPercentage` trên object restaurant (khi BE bổ sung)
+ * 2. Fallback localStorage (tạm thời trong phiên FE)
+ * 3. Mặc định 30%
+ */
+export function readDepositPercentage(restaurant?: unknown): string {
+  // Ưu tiên 1: BE trả về trường depositPercentage
+  const fromApi =
+    restaurant && typeof restaurant === 'object' && 'depositPercentage' in restaurant
+      ? (restaurant as { depositPercentage?: unknown }).depositPercentage
+      : undefined;
+  if (typeof fromApi === 'number' && fromApi >= 10 && fromApi <= 100) {
+    return String(fromApi);
+  }
+  // Ưu tiên 2: localStorage (tạm)
+  if (typeof window !== 'undefined') {
+    const stored = localStorage.getItem('wedding_deposit_percentage');
+    if (stored) return stored;
+  }
+  // Mặc định
+  return '30';
 }

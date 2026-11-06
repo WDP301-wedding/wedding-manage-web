@@ -109,6 +109,24 @@ export function DashboardKpiStrip({
                   : 'Sổ cái đã chốt'
             }
           />
+          <Metric
+            label="Công nợ khách hàng"
+            value={
+              isLoading
+                ? '…'
+                : !analytics
+                  ? '0 đ'
+                  : formatVndNullable(analytics.receivablesVnd) || '0 đ'
+            }
+            detail={
+              isLoading
+                ? 'Đang kiểm tra…'
+                : (analytics?.receivablesVnd ?? 0) > 0
+                  ? 'Có khách đang nợ quyết toán'
+                  : 'Khách đã trả hết (Không dư nợ)'
+            }
+            attention={(analytics?.receivablesVnd ?? 0) > 0}
+          />
         </>
       ) : (
         <Metric

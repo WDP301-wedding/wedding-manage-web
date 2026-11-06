@@ -8,6 +8,7 @@ import { DashboardConsultationsSection } from './dashboard-consultations-section
 import { DashboardKpiStrip } from './dashboard-kpi-strip';
 import { DashboardVenueCard } from './dashboard-venue-card';
 import { DashboardVenueHalls } from './dashboard-venue-halls';
+import { DashboardAnalyticsExtra } from './dashboard-analytics-extra';
 import { useBookingClaims } from './use-booking-claims';
 import { useDashboardData } from './use-dashboard-data';
 
@@ -55,6 +56,13 @@ export function DashboardLiveView({
         consultations={data.consultations}
         analytics={data.analytics}
         restaurant={data.restaurant}
+      />
+
+      <DashboardAnalyticsExtra
+        analytics={data.analytics}
+        halls={data.halls}
+        bookings={data.bookings}
+        isManager={isManager}
       />
 
       <DashboardBookingsSection

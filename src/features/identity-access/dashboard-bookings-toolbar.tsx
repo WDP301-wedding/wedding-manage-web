@@ -16,6 +16,8 @@ export interface DashboardBookingsToolbarProps {
   setSearchQuery: (q: string) => void;
   phaseFilter: string;
   setPhaseFilter: (p: string) => void;
+  paymentFilter?: 'ALL' | 'PAID' | 'DEBT';
+  setPaymentFilter?: (p: 'ALL' | 'PAID' | 'DEBT') => void;
   sortField: BookingSortField;
   sortOrder: SortOrder;
   onQuickSortChange: (val: string) => void;
@@ -34,6 +36,8 @@ export function DashboardBookingsToolbar({
   setSearchQuery,
   phaseFilter,
   setPhaseFilter,
+  paymentFilter = 'ALL',
+  setPaymentFilter,
   sortField,
   sortOrder,
   onQuickSortChange,
@@ -91,6 +95,20 @@ export function DashboardBookingsToolbar({
         <option value="DRAFT">Bản nháp</option>
         <option value="COMPLETED">Hoàn thành</option>
       </HySelect>
+      {setPaymentFilter && (
+        <HySelect
+          value={paymentFilter}
+          onChange={(e) => {
+            setPaymentFilter(e.target.value as 'ALL' | 'PAID' | 'DEBT');
+          }}
+          aria-label="Lọc theo tình trạng thanh toán"
+          className={filterSelectClass}
+        >
+          <option value="ALL">Tất cả công nợ</option>
+          <option value="PAID">Khách đã trả hết</option>
+          <option value="DEBT">Khách đang nợ</option>
+        </HySelect>
+      )}
       <HySelect
         value={`${sortField}-${sortOrder}`}
         onChange={(e) => onQuickSortChange(e.target.value)}

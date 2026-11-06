@@ -12,6 +12,7 @@ import {
   type PublicHall,
   type PublicRestaurant,
 } from '../../services/catalog.service';
+import { navigationService } from '../../services/booking-navigation.service';
 import { type ConsultationRequestItem } from '../../services/consultation.service';
 import { describeApiError } from '../../lib/api/api-errors';
 import { notify } from '../../design-system/notifications';
@@ -69,10 +70,11 @@ export function useDashboardData(isManager: boolean) {
       const month = String(now.getMonth() + 1).padStart(2, '0');
       const dateFrom = `${now.getFullYear()}-${month}-01`;
       const dateTo = `${now.getFullYear()}-${month}-${new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()}`;
-      const [restaurantRes, hallsRes, analyticsRes] = await Promise.allSettled([
+      const [restaurantRes, hallsRes, analyticsRes, bookingsRes] = await Promise.allSettled([
         cachedCatalog ? Promise.resolve(cachedCatalog.restaurant) : catalogService.getRestaurant(),
         cachedCatalog ? Promise.resolve(cachedCatalog.halls) : catalogService.getPublicHalls(),
         isManager ? analyticsService.getOverview({ dateFrom, dateTo }) : Promise.resolve(null),
+        isManager ? navigationService.bookings({ pageSize: 50, scope: 'all' }) : Promise.resolve(null),
       ]);
 
       if (sequence !== dataSequence.current) return;
@@ -81,7 +83,8 @@ export function useDashboardData(isManager: boolean) {
       const consultations: readonly ConsultationRequestItem[] = [];
       const analytics =
         analyticsRes.status === 'fulfilled' && analyticsRes.value ? analyticsRes.value : null;
-      const bookings: readonly DashboardBookingItem[] = [];
+      const bookings =
+        bookingsRes.status === 'fulfilled' && bookingsRes.value?.items ? bookingsRes.value.items : [];
 
       if (
         generation === catalogGeneration.current &&

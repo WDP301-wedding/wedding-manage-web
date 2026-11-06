@@ -15,6 +15,7 @@ export type ManagerRestaurant = Readonly<{
   address: string;
   publicPhone: string | null;
   publicEmail: string | null;
+  depositPercentage?: number;
   revision: number;
 }>;
 

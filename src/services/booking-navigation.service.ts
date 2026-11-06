@@ -19,6 +19,9 @@ export const bookingRow = z.object({
   email: z.string().nullable(),
   managerAccountId: z.uuid(),
   managerEmail: z.string().nullable(),
+  paidVnd: z.number().nullable().optional(),
+  outstandingVnd: z.number().nullable().optional(),
+  paymentStatus: z.enum(['PAID', 'DEBT', 'AWAITING_DEPOSIT', 'DRAFT']).nullable().optional(),
 });
 const paging = {
   page: z.int().positive(),
