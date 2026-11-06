@@ -5,6 +5,7 @@ import { NotificationProvider } from '../../design-system/notifications';
 import type { BillingView, ManagementBillingGateway } from './billing-api';
 import { ManagementBillingPage, ManagementBillingWorkspace } from './billing-page';
 import { createIdentityApi, ManagementIdentitySession } from '../identity-access/session';
+import { AttemptStatus } from './billing-display';
 
 const view: BillingView = {
   balancePaymentEligibility: {
@@ -13,8 +14,28 @@ const view: BillingView = {
     nextAction: 'NONE',
     reasonCode: 'BALANCE_NOT_ELIGIBLE',
   },
-  bookingId: 'booking',
+  bookingId: '00000000-0000-4000-8000-000000000101',
   billingRevision: 4,
+  financialOverview: {
+    bookingRevision: 3,
+    phase: 'CONFIRMED',
+    source: 'CONTRACT',
+    state: 'APPROVED',
+    revisionId: '00000000-0000-4000-8000-000000000103',
+    revisionNumber: 1,
+    totalVnd: 10000000,
+    requiredDepositVnd: 3000000,
+    depositReceivedVnd: 3000000,
+    depositRemainingVnd: 0,
+    depositApplied: true,
+    settlementSummary: {
+      effectiveContractVnd: 10000000,
+      payableVnd: 10000000,
+      netReceivedVnd: 2900000,
+      outstandingVnd: 7100000,
+      creditVnd: 0,
+    },
+  },
   totals: {
     acceptedChargesVnd: 10000000,
     paidVnd: 3000000,
@@ -34,8 +55,24 @@ afterEach(() => vi.restoreAllMocks());
 function gateway(): ManagementBillingGateway {
   return {
     load: vi.fn().mockResolvedValue(view),
+    recording: vi.fn().mockResolvedValue({
+      bookingId: view.bookingId,
+      bookingRevision: 3,
+      billingRevision: 4,
+      deposit: {
+        canRecord: false,
+        amountVnd: 3000000,
+        reasonCode: 'DEPOSIT_ALREADY_RECEIVED',
+        timelineRevisionId: null,
+        contractRevisionId: null,
+        documentDigest: null,
+      },
+      balance: { canRecord: true, maxAmountVnd: 7100000, reasonCode: null },
+      refundablePayments: [],
+      nextAfterRevision: null,
+    }),
     loadAttempt: vi.fn().mockResolvedValue({
-      paymentAttemptId: 'attempt',
+      paymentAttemptId: '00000000-0000-4000-8000-000000000102',
       status: 'UNKNOWN',
       purpose: 'BALANCE',
       amountVnd: 7100000,
@@ -49,7 +86,9 @@ function gateway(): ManagementBillingGateway {
 }
 
 async function load() {
-  fireEvent.change(screen.getByLabelText('Mã hồ sơ đặt tiệc'), { target: { value: 'booking' } });
+  fireEvent.change(screen.getByLabelText('Mã hồ sơ đặt tiệc'), {
+    target: { value: '00000000-0000-4000-8000-000000000101' },
+  });
   fireEvent.click(screen.getByRole('button', { name: 'Xem thanh toán' }));
   await screen.findByText('Còn phải thu');
 }
@@ -100,7 +139,9 @@ describe('management billing access and recovery', () => {
     render(<ManagementBillingWorkspace accountId="actor" authorize={authorize} gateway={api} />, {
       wrapper: NotificationProvider,
     });
-    fireEvent.change(screen.getByLabelText('Mã hồ sơ đặt tiệc'), { target: { value: 'booking' } });
+    fireEvent.change(screen.getByLabelText('Mã hồ sơ đặt tiệc'), {
+      target: { value: '00000000-0000-4000-8000-000000000101' },
+    });
     fireEvent.click(screen.getByRole('button', { name: 'Xem thanh toán' }));
     fireEvent.click(screen.getByRole('button', { name: 'Xem thanh toán' }));
     expect(api.load).toHaveBeenCalledTimes(1);
@@ -150,9 +191,9 @@ describe('management billing access and recovery', () => {
             amountVnd: 3000000,
             occurredAt: '2026-10-09T10:00:00Z',
             sourceType: 'PAYMENT_ATTEMPT',
-            sourceRevisionId: 'attempt',
+            sourceRevisionId: '00000000-0000-4000-8000-000000000102',
             sourceEntryId: null,
-            paymentAttemptId: 'attempt',
+            paymentAttemptId: '00000000-0000-4000-8000-000000000102',
             revision: 4,
           },
         ],
@@ -161,13 +202,13 @@ describe('management billing access and recovery', () => {
     render(<ManagementBillingWorkspace accountId="actor" authorize={authorize} gateway={api} />, {
       wrapper: NotificationProvider,
     });
-    expect(screen.queryByText('Chưa có giao dịch')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Chưa có biến động/)).not.toBeInTheDocument();
     await load();
-    expect(screen.getByText('Chưa có giao dịch')).toBeInTheDocument();
-    expect(screen.getByText(/7\.100\.000/)).toBeInTheDocument();
+    expect(screen.getByText(/Chưa có biến động trong các trang đã tải/)).toBeInTheDocument();
+    expect(screen.getByText('Còn phải thu').parentElement).toHaveTextContent('7.100.000');
     fireEvent.click(screen.getByRole('button', { name: 'Tải thêm lịch sử' }));
     await waitFor(() =>
-      expect(api.load).toHaveBeenLastCalledWith('token', 'booking', {
+      expect(api.load).toHaveBeenLastCalledWith('token', '00000000-0000-4000-8000-000000000101', {
         cursor: 'page2',
         throughBillingRevision: 4,
       }),
@@ -200,31 +241,78 @@ describe('management billing access and recovery', () => {
     expect(screen.getAllByRole('alert').at(-1)).toHaveTextContent('quyền');
   });
 
-  it('reads UNKNOWN without guessing failure or offering another charge', async () => {
+  it('presents an UNKNOWN attempt without guessing failure or offering another charge', async () => {
     const api = gateway();
+    // Attempt lookup moved out of the ledger page; retain its read-only status contract.
+    const attempt = await api.loadAttempt(
+      'token',
+      view.bookingId,
+      '00000000-0000-4000-8000-000000000102',
+    );
+    render(<AttemptStatus attempt={attempt} />);
+    expect(await screen.findByText(/Chưa rõ kết quả/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Không tạo lần thanh toán khác khi chưa xác minh kết quả/),
+    ).toBeVisible();
+    expect(api.loadAttempt).toHaveBeenCalledWith(
+      'token',
+      '00000000-0000-4000-8000-000000000101',
+      '00000000-0000-4000-8000-000000000102',
+    );
+    expect(screen.queryByRole('button', { name: /Tạo lại thanh toán/ })).not.toBeInTheDocument();
+  });
+
+  it('blocks a replacement charge while the server reports an active payment attempt', async () => {
+    const api = gateway();
+    const current = await api.recording!('token', view.bookingId);
+    vi.mocked(api.recording!).mockResolvedValue({
+      ...current,
+      deposit: { ...current.deposit, canRecord: false, reasonCode: 'PAYMENT_ATTEMPT_ACTIVE' },
+      balance: { ...current.balance, canRecord: false, reasonCode: 'PAYMENT_ATTEMPT_ACTIVE' },
+    });
     render(<ManagementBillingWorkspace accountId="actor" authorize={authorize} gateway={api} />, {
       wrapper: NotificationProvider,
     });
     await load();
-    fireEvent.change(screen.getByLabelText('Mã giao dịch thanh toán'), {
-      target: { value: 'attempt' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: 'Tra cứu giao dịch' }));
-    expect(await screen.findByText(/Chưa rõ kết quả/)).toBeInTheDocument();
-    expect(api.loadAttempt).toHaveBeenCalledWith('token', 'booking', 'attempt');
-    expect(screen.queryByRole('button', { name: /Tạo lại thanh toán/ })).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Số tiền thực nhận (VND)')).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Kiểm tra khoản thu' })).toBeDisabled();
+    expect(api.recordManual).not.toHaveBeenCalled();
+    expect(api.refund).not.toHaveBeenCalled();
+    expect(api.approveRefund).not.toHaveBeenCalled();
   });
 
   it('rejects a different pagination fence before displaying its history', async () => {
     const api = gateway();
     vi.mocked(api.load)
       .mockResolvedValueOnce(view)
-      .mockResolvedValueOnce({ ...view, billingRevision: 5 });
+      .mockResolvedValueOnce({
+        ...view,
+        billingRevision: 5,
+        history: [
+          {
+            ledgerEntryId: 'foreign-page-must-not-render',
+            kind: 'PAYMENT',
+            amountVnd: 100000,
+            occurredAt: '2026-10-09T10:00:00Z',
+            sourceType: 'PAYMENT_ATTEMPT',
+            sourceRevisionId: 'attempt',
+            sourceEntryId: null,
+            paymentAttemptId: 'attempt',
+            revision: 5,
+          },
+        ],
+      });
     render(<ManagementBillingWorkspace accountId="actor" authorize={authorize} gateway={api} />, {
       wrapper: NotificationProvider,
     });
     await load();
     fireEvent.click(screen.getByRole('button', { name: 'Tải thêm lịch sử' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent('lịch sử');
+    expect(await screen.findByRole('alert')).toHaveTextContent('Lịch sử vừa thay đổi');
+    expect(api.load).toHaveBeenLastCalledWith('token', view.bookingId, {
+      cursor: 'page2',
+      throughBillingRevision: 4,
+    });
+    expect(screen.getByText('Còn phải thu').parentElement).toHaveTextContent('7.100.000');
+    expect(screen.queryByText('foreign-page-must-not-render')).not.toBeInTheDocument();
   });
 });

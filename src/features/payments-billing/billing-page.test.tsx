@@ -1,274 +1,324 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ApiClientError } from '../../lib/api/client';
-import { NotificationProvider } from '../../design-system/notifications';
-import type { BillingView, ManagementBillingGateway } from './billing-api';
-import { ManagementBillingPage, ManagementBillingWorkspace } from './billing-page';
-import { createIdentityApi, ManagementIdentitySession } from '../identity-access/session';
-import { createBillingIntents } from './billing-intents';
 import { createHash } from 'node:crypto';
+import { act, fireEvent, render, renderHook, screen, waitFor } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { NotificationProvider } from '../../design-system/notifications';
+import { selectOption } from '../../test/select-option';
+import type { BillingView, ManagementBillingGateway, RecordingContext } from './billing-api';
+import { ManagementBillingWorkspace } from './billing-page';
+import { createBillingIntents } from './billing-intents';
+import { useBillingWorkspace } from './use-billing-workspace';
 
+const bookingId = '00000000-0000-4000-8000-000000000101';
+const paymentId = '00000000-0000-4000-8000-000000000102';
+const recording: RecordingContext = {
+  bookingId,
+  billingRevision: 4,
+  bookingRevision: 3,
+  deposit: {
+    canRecord: true,
+    amountVnd: 3000000,
+    reasonCode: null,
+    timelineRevisionId: '00000000-0000-4000-8000-000000000103',
+    contractRevisionId: '00000000-0000-4000-8000-000000000104',
+    documentDigest: 'a'.repeat(64),
+  },
+  balance: { canRecord: false, maxAmountVnd: 0, reasonCode: 'BALANCE_NOT_ELIGIBLE' },
+  refundablePayments: [],
+  nextAfterRevision: null,
+};
 const view: BillingView = {
+  bookingId,
+  billingRevision: 4,
   balancePaymentEligibility: {
     billingRevision: 4,
     canPay: false,
     nextAction: 'NONE',
     reasonCode: 'BALANCE_NOT_ELIGIBLE',
   },
-  bookingId: 'booking',
-  billingRevision: 4,
   totals: {
     acceptedChargesVnd: 10000000,
-    paidVnd: 3000000,
-    refundedVnd: 100000,
-    netPaidVnd: 2900000,
-    outstandingVnd: 7100000,
+    paidVnd: 0,
+    refundedVnd: 0,
+    netPaidVnd: 0,
+    outstandingVnd: 10000000,
     creditVnd: 0,
   },
   history: [],
-  nextCursor: 'page2',
+  nextCursor: null,
 };
 const authorize = <T,>(operation: (token: string) => Promise<T>) => operation('token');
-const intents = {
-  pending: () => Promise.resolve(null),
-  run: <T,>(_scope: string, _body: object, operation: (key: string, body: object) => Promise<T>) =>
-    operation('stable-key', _body),
+const manualBody = {
+  bookingId,
+  purpose: 'DEPOSIT' as const,
+  amountVnd: 3000000,
+  settledAt: new Date('2026-10-09T10:00').toISOString(),
+  timelineRevisionId: recording.deposit.timelineRevisionId!,
+  contractRevisionId: recording.deposit.contractRevisionId!,
+  documentDigest: recording.deposit.documentDigest!,
 };
-afterEach(() => vi.restoreAllMocks());
+
+function journal() {
+  const records = new Map<string, string>();
+  const intents = createBillingIntents(
+    'actor',
+    {
+      read: (key) => Promise.resolve(records.get(key) ?? null),
+      write: (key, value) => {
+        records.set(key, value);
+        return Promise.resolve();
+      },
+      remove: (key) => {
+        records.delete(key);
+        return Promise.resolve();
+      },
+    },
+    (value) => Promise.resolve(createHash('sha256').update(value).digest('hex')),
+  );
+  return { records, intents };
+}
 function gateway(): ManagementBillingGateway {
   return {
     load: vi.fn().mockResolvedValue(view),
-    loadAttempt: vi.fn().mockResolvedValue({
-      paymentAttemptId: 'attempt',
-      status: 'UNKNOWN',
-      purpose: 'BALANCE',
-      amountVnd: 7100000,
-      applicationStatus: null,
-      expiresAt: '2026-10-09T10:00:00Z',
-    }),
+    recording: vi.fn().mockResolvedValue(recording),
+    loadAttempt: vi.fn(),
     recordManual: vi.fn(),
     refund: vi.fn(),
     approveRefund: vi.fn(),
   };
 }
+function open(api: ManagementBillingGateway, intents = journal().intents) {
+  render(
+    <ManagementBillingWorkspace
+      accountId="actor"
+      authorize={authorize}
+      gateway={api}
+      intents={intents}
+    />,
+    { wrapper: NotificationProvider },
+  );
+}
 async function load() {
-  fireEvent.change(screen.getByLabelText('Mã hồ sơ đặt tiệc'), { target: { value: 'booking' } });
+  fireEvent.change(screen.getByLabelText('Mã hồ sơ đặt tiệc'), { target: { value: bookingId } });
   fireEvent.click(screen.getByRole('button', { name: 'Xem thanh toán' }));
   await screen.findByText('Còn phải thu');
+  await waitFor(() =>
+    expect(screen.getByRole('button', { name: 'Cập nhật thông tin' })).toBeEnabled(),
+  );
 }
+function reviewManual() {
+  fireEvent.change(screen.getByLabelText('Số tiền thực nhận (VND)'), {
+    target: { value: '3000000' },
+  });
+  fireEvent.change(screen.getByLabelText('Thời điểm nhận tiền'), {
+    target: { value: '2026-10-09T10:00' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: 'Kiểm tra khoản thu' }));
+}
+
+afterEach(() => vi.restoreAllMocks());
+
 describe('management billing workspace', () => {
-  it('clears the loaded booking and monetary forms when the lookup identifier changes', async () => {
+  it('replays a retained approval command with its original body and idempotency key', async () => {
     const api = gateway();
-    render(
-      <ManagementBillingWorkspace
-        accountId="actor"
-        authorize={authorize}
-        gateway={api}
-        intents={intents}
-      />,
+    vi.mocked(api.approveRefund)
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockResolvedValueOnce({ refundApprovalId: 'approval' });
+    const { records, intents } = journal();
+    const { result } = renderHook(
+      () => useBillingWorkspace({ accountId: 'actor', authorize, gateway: api, intents }),
       { wrapper: NotificationProvider },
     );
+    await act(() => result.current.load(bookingId));
+    const body = {
+      bookingId,
+      expectedBillingRevision: 4,
+      approvedRefundableVnd: 100000,
+      basis: { kind: 'CANCELLATION' as const },
+      reason: 'Theo quyết định đã duyệt',
+      evidenceReference: 'approval-1',
+    };
+    await act(async () => {
+      expect(await result.current.mutate('approval', body)).toBe('retry');
+    });
+    expect(records.size).toBe(1);
+    await act(async () => {
+      expect(await result.current.mutate('approval', body)).toBe('succeeded');
+    });
+    expect(api.approveRefund).toHaveBeenCalledTimes(2);
+    expect(api.approveRefund).toHaveBeenCalledWith('token', body, expect.any(String));
+    expect(vi.mocked(api.approveRefund).mock.calls[1]).toEqual(
+      vi.mocked(api.approveRefund).mock.calls[0],
+    );
+    expect(records.size).toBe(0);
+    expect(api.recordManual).not.toHaveBeenCalled();
+    expect(api.refund).not.toHaveBeenCalled();
+  });
+  it('clears the loaded booking and monetary forms when the lookup identifier changes', async () => {
+    const api = gateway();
+    open(api);
     await load();
-    expect(screen.getByRole('heading', { name: 'Phê duyệt hoàn tiền' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Ghi nhận tiền đã nhận' })).toBeVisible();
     fireEvent.change(screen.getByLabelText('Mã hồ sơ đặt tiệc'), {
-      target: { value: 'booking-B' },
+      target: { value: '00000000-0000-4000-8000-000000000105' },
     });
     expect(screen.queryByText('Còn phải thu')).not.toBeInTheDocument();
     expect(
       screen.queryByRole('heading', { name: 'Ghi nhận tiền đã nhận' }),
     ).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Ghi nhận hoàn tiền' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: 'Phê duyệt hoàn tiền' })).not.toBeInTheDocument();
     expect(api.load).toHaveBeenCalledTimes(1);
     expect(api.recordManual).not.toHaveBeenCalled();
     expect(api.refund).not.toHaveBeenCalled();
     expect(api.approveRefund).not.toHaveBeenCalled();
   });
-  it('requires explicit Manager approval before submitting and replays an uncertain approval unchanged', async () => {
+
+  it('requires explicit confirmation and replays an uncertain receipt without changing its key or contract basis', async () => {
     const api = gateway();
-    vi.mocked(api.approveRefund)
+    vi.mocked(api.recordManual)
       .mockRejectedValueOnce(new Error('offline'))
-      .mockResolvedValueOnce({ refundApprovalId: 'approval' });
-    render(
-      <ManagementBillingWorkspace
-        accountId="actor"
-        authorize={authorize}
-        gateway={api}
-        intents={intents}
-      />,
-      { wrapper: NotificationProvider },
-    );
+      .mockResolvedValueOnce({ paymentId, paymentAttemptId: 'attempt' });
+    const { records, intents } = journal();
+    open(api, intents);
     await load();
-    fireEvent.change(screen.getByLabelText('Căn cứ phê duyệt'), {
-      target: { value: 'CANCELLATION' },
-    });
-    fireEvent.change(screen.getByLabelText('Hạn mức hoàn được duyệt (VND)'), {
-      target: { value: '100000' },
-    });
-    fireEvent.change(screen.getByLabelText('Mã chứng từ phê duyệt'), {
-      target: { value: 'approval-1' },
-    });
-    fireEvent.change(screen.getByLabelText('Lý do phê duyệt'), {
-      target: { value: 'Theo quyết định' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: 'Kiểm tra phê duyệt' }));
-    expect(api.approveRefund).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole('button', { name: 'Xác nhận phê duyệt hoàn tiền' }));
-    await screen.findByRole('button', { name: 'Thử lại phê duyệt này' });
-    expect(screen.getByLabelText('Số tiền thực nhận (VND)')).toBeDisabled();
-    expect(screen.getByLabelText('Số tiền hoàn (VND)')).toBeDisabled();
-    expect(api.refund).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole('button', { name: 'Thử lại phê duyệt này' }));
-    await screen.findByText(/Đã phê duyệt hoàn tiền/);
-    expect(api.approveRefund).toHaveBeenCalledWith(
-      'token',
-      {
-        bookingId: 'booking',
-        expectedBillingRevision: 4,
-        approvedRefundableVnd: 100000,
-        basis: { kind: 'CANCELLATION' },
-        reason: 'Theo quyết định',
-        evidenceReference: 'approval-1',
-      },
-      'stable-key',
-    );
-    expect(vi.mocked(api.approveRefund).mock.calls[1]).toEqual(
-      vi.mocked(api.approveRefund).mock.calls[0],
-    );
-  });
-  it('allows correcting a reentered mismatching receipt while preserving the pending key and blocking other commands', async () => {
-    const records = new Map<string, string>();
-    const journal = createBillingIntents(
-      'actor',
-      {
-        read: (key) => Promise.resolve(records.get(key) ?? null),
-        write: (key, value) => {
-          records.set(key, value);
-          return Promise.resolve();
-        },
-        remove: (key) => {
-          records.delete(key);
-          return Promise.resolve();
-        },
-      },
-      (value) => Promise.resolve(createHash('sha256').update(value).digest('hex')),
-    );
-    let originalKey = '';
-    const body = {
-      bookingId: 'booking',
-      purpose: 'DEPOSIT',
-      amountVnd: 100000,
-      settledAt: new Date('2026-10-09T10:00').toISOString(),
-      reason: 'Đã đối soát',
-      evidenceReference: 'correct',
-    };
-    await journal
-      .run('manual:booking', body, (key) => {
-        originalKey = key;
-        return Promise.reject(new Error('offline'));
-      })
-      .catch(() => undefined);
-    const api = gateway();
-    vi.mocked(api.recordManual).mockResolvedValue({
-      paymentId: 'payment',
-      paymentAttemptId: 'attempt',
-    });
-    render(
-      <ManagementBillingWorkspace
-        accountId="actor"
-        authorize={authorize}
-        gateway={api}
-        intents={journal}
-      />,
-      { wrapper: NotificationProvider },
-    );
-    await load();
-    fireEvent.change(screen.getByLabelText('Số tiền thực nhận (VND)'), {
-      target: { value: '100000' },
-    });
-    fireEvent.change(screen.getByLabelText('Thời điểm nhận tiền'), {
-      target: { value: '2026-10-09T10:00' },
-    });
-    fireEvent.change(screen.getByLabelText('Mã chứng từ'), { target: { value: 'wrong' } });
-    fireEvent.change(screen.getByLabelText('Lý do ghi nhận'), { target: { value: 'Đã đối soát' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Kiểm tra khoản thu' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Xác nhận ghi nhận' }));
-    await waitFor(() => expect(screen.getByLabelText('Mã chứng từ')).toBeEnabled());
+    reviewManual();
     expect(api.recordManual).not.toHaveBeenCalled();
-    expect(screen.getByLabelText('Số tiền hoàn (VND)')).toBeDisabled();
-    expect(screen.getByLabelText('Mã hồ sơ đặt tiệc')).toBeDisabled();
-    fireEvent.change(screen.getByLabelText('Mã hồ sơ đặt tiệc'), {
-      target: { value: 'booking-B' },
-    });
-    expect(screen.getByLabelText('Mã hồ sơ đặt tiệc')).toHaveValue('booking');
-    fireEvent.change(screen.getByLabelText('Mã chứng từ'), { target: { value: 'correct' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Kiểm tra khoản thu' }));
     fireEvent.click(screen.getByRole('button', { name: 'Xác nhận ghi nhận' }));
-    await screen.findByText(/Đã ghi nhận khoản thu/);
-    expect(api.recordManual).toHaveBeenCalledWith('token', body, originalKey);
+    const retry = await screen.findByRole('button', { name: 'Khôi phục và kiểm tra yêu cầu cũ' });
+    expect(screen.getByLabelText('Mã hồ sơ đặt tiệc')).toBeDisabled();
+    expect(screen.getByRole('tab', { name: 'Hoàn tiền' })).toBeDisabled();
+    expect(api.refund).not.toHaveBeenCalled();
+    expect(api.approveRefund).not.toHaveBeenCalled();
+    fireEvent.click(retry);
+    await screen.findByText('Đã ghi nhận khoản thu.');
+    expect(api.recordManual).toHaveBeenCalledTimes(2);
+    expect(api.recordManual).toHaveBeenCalledWith('token', manualBody, expect.any(String));
+    expect(vi.mocked(api.recordManual).mock.calls[1]).toEqual(
+      vi.mocked(api.recordManual).mock.calls[0],
+    );
     expect(records.size).toBe(0);
   });
-  it('restores the original refund revision and blocks unrelated money while recovering a saved command', async () => {
+
+  it('retains an old receipt key and blocks unrelated commands when legacy evidence cannot be reentered', async () => {
+    const { records, intents } = journal();
+    const legacyBody = {
+      ...manualBody,
+      reason: 'Đã đối soát',
+      evidenceReference: 'legacy-receipt',
+    };
+    let originalKey = '';
+    await expect(
+      intents.run('manual:' + bookingId, legacyBody, (key) => {
+        originalKey = key;
+        return Promise.reject(new Error('offline'));
+      }),
+    ).rejects.toThrow('offline');
     const api = gateway();
-    vi.mocked(api.load).mockResolvedValue({
-      ...view,
+    open(api, intents);
+    await load();
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Yêu cầu cũ không có đủ dữ liệu khôi phục tự động',
+    );
+    reviewManual();
+    fireEvent.click(screen.getByRole('button', { name: 'Xác nhận ghi nhận' }));
+    await screen.findByText(/Nội dung nhập lại khác yêu cầu trước/);
+    expect(api.recordManual).not.toHaveBeenCalled();
+    expect(api.refund).not.toHaveBeenCalled();
+    expect(api.approveRefund).not.toHaveBeenCalled();
+    expect(screen.getByLabelText('Mã hồ sơ đặt tiệc')).toBeDisabled();
+    expect(screen.getByRole('tab', { name: 'Hoàn tiền' })).toBeDisabled();
+    expect(JSON.parse([...records.values()][0]!).key).toBe(originalKey);
+  });
+
+  it('recovers the original refund revision and key when the newly loaded ledger is newer', async () => {
+    const { records, intents } = journal();
+    const refundBody = {
+      sourcePaymentId: paymentId,
+      amountVnd: 100000,
+      expectedBillingRevision: 4,
+    };
+    let originalKey = '';
+    await expect(
+      intents.run('refund:' + bookingId, refundBody, (key) => {
+        originalKey = key;
+        return Promise.reject(new Error('offline'));
+      }),
+    ).rejects.toThrow('offline');
+    const api = gateway();
+    vi.mocked(api.load).mockResolvedValue({ ...view, billingRevision: 5 });
+    vi.mocked(api.recording!).mockResolvedValue({ ...recording, billingRevision: 5 });
+    vi.mocked(api.refund).mockResolvedValue({ refundId: 'refund' });
+    open(api, intents);
+    await load();
+    expect(screen.getByLabelText('Mã hồ sơ đặt tiệc')).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Kiểm tra khoản thu' })).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Khôi phục và kiểm tra yêu cầu cũ' }));
+    await waitFor(() => expect(api.refund).toHaveBeenCalledWith('token', refundBody, originalKey));
+    expect(api.recordManual).not.toHaveBeenCalled();
+    expect(records.size).toBe(0);
+  });
+
+  it('restores legacy refund metadata instead of sending the newer recording revision', async () => {
+    const { records, intents } = journal();
+    const refundBody = {
+      sourcePaymentId: paymentId,
+      amountVnd: 100000,
+      expectedBillingRevision: 4,
+    };
+    let originalKey = '';
+    await expect(
+      intents.run('refund:' + bookingId, refundBody, (key) => {
+        originalKey = key;
+        return Promise.reject(new Error('offline'));
+      }),
+    ).rejects.toThrow('offline');
+    // Old records retained metadata and a fingerprint, before full recovery bodies existed.
+    for (const [key, value] of records) {
+      const saved = JSON.parse(value);
+      delete saved.body;
+      records.set(key, JSON.stringify(saved));
+    }
+    const api = gateway();
+    vi.mocked(api.load).mockResolvedValue({ ...view, billingRevision: 5 });
+    vi.mocked(api.recording!).mockResolvedValue({
+      ...recording,
       billingRevision: 5,
-      history: [
+      refundablePayments: [
         {
-          ledgerEntryId: 'payment',
-          kind: 'PAYMENT',
+          paymentId,
           amountVnd: 3000000,
+          refundedVnd: 0,
+          maxRefundVnd: 3000000,
           occurredAt: '2026-10-09T10:00:00Z',
-          sourceType: 'PAYMENT_ATTEMPT',
-          sourceRevisionId: 'attempt',
-          sourceEntryId: null,
-          paymentAttemptId: 'attempt',
+          provider: 'MANUAL',
+          purpose: 'DEPOSIT',
           revision: 4,
         },
       ],
     });
     vi.mocked(api.refund).mockResolvedValue({ refundId: 'refund' });
-    const journal = {
-      ...intents,
-      pending: (scope: string) =>
-        Promise.resolve(scope.startsWith('refund:') ? { expectedBillingRevision: 4 } : null),
-    };
-    render(
-      <ManagementBillingWorkspace
-        accountId="actor"
-        authorize={authorize}
-        gateway={api}
-        intents={journal}
-      />,
-      { wrapper: NotificationProvider },
-    );
+    open(api, intents);
     await load();
-    expect(screen.getByRole('alert')).toHaveTextContent('Nhập lại đúng nội dung');
-    expect(screen.getByLabelText('Số tiền thực nhận (VND)')).toBeDisabled();
-    fireEvent.change(screen.getByLabelText('Khoản thanh toán gốc'), {
-      target: { value: 'payment' },
-    });
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Yêu cầu cũ không có đủ dữ liệu khôi phục tự động',
+    );
+    await selectOption('Khoản thanh toán gốc', /Cọc · Ngoài hệ thống/);
     fireEvent.change(screen.getByLabelText('Số tiền hoàn (VND)'), { target: { value: '100000' } });
-    fireEvent.change(screen.getByLabelText('Mã chứng từ hoàn'), {
-      target: { value: 'refund-receipt' },
-    });
-    fireEvent.change(screen.getByLabelText('Lý do hoàn tiền'), {
-      target: { value: 'Theo quyết định' },
-    });
     fireEvent.click(screen.getByRole('button', { name: 'Kiểm tra khoản hoàn' }));
     fireEvent.click(screen.getByRole('button', { name: 'Xác nhận hoàn tiền' }));
-    await waitFor(() =>
-      expect(api.refund).toHaveBeenCalledWith(
-        'token',
-        {
-          sourcePaymentId: 'payment',
-          amountVnd: 100000,
-          expectedBillingRevision: 4,
-          evidenceReference: 'refund-receipt',
-          reason: 'Theo quyết định',
-        },
-        'stable-key',
-      ),
-    );
+    await waitFor(() => expect(api.refund).toHaveBeenCalledWith('token', refundBody, originalKey));
+    expect(api.recordManual).not.toHaveBeenCalled();
+  });
+
+  it('disables money commands when current recording eligibility cannot be verified', async () => {
+    const api = gateway();
+    vi.mocked(api.recording!).mockRejectedValue(new Error('offline'));
+    open(api);
+    await load();
+    expect(screen.getByRole('alert')).toBeVisible();
+    expect(screen.getByLabelText('Số tiền thực nhận (VND)')).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Kiểm tra khoản thu' })).toBeDisabled();
+    expect(api.recordManual).not.toHaveBeenCalled();
+    expect(api.refund).not.toHaveBeenCalled();
+    expect(api.approveRefund).not.toHaveBeenCalled();
   });
 });

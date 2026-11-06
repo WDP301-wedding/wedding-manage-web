@@ -1,7 +1,11 @@
 import { createHash, webcrypto } from 'node:crypto';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ApiClientError } from '../../lib/api/client';
-import { createBillingIntents, type IntentStorage } from './billing-intents';
+import {
+  BillingIntentMismatchError,
+  createBillingIntents,
+  type IntentStorage,
+} from './billing-intents';
 
 function memory(): IntentStorage {
   const records = new Map<string, string>();
@@ -37,6 +41,13 @@ describe('durable billing intent identity', () => {
       const first = createBillingIntents('actor', storage, hash);
       const keys: string[] = [];
       const body = { amountVnd: 10 };
+      const refused = new ApiClientError({
+        kind: 'api',
+        code: status === 429 ? 'RATE_LIMITED' : 'BILLING_ACCESS_DENIED',
+        status,
+        message: 'refused',
+        requestId: 'request',
+      });
       await expect(
         first.run('manual:booking', body, (key) => {
           keys.push(key);
@@ -46,17 +57,9 @@ describe('durable billing intent identity', () => {
       await expect(
         first.run('manual:booking', body, (key) => {
           keys.push(key);
-          return Promise.reject(
-            new ApiClientError({
-              kind: 'api',
-              code: status === 429 ? 'RATE_LIMITED' : 'BILLING_ACCESS_DENIED',
-              status,
-              message: 'refused',
-              requestId: 'request',
-            }),
-          );
+          return Promise.reject(refused);
         }),
-      ).rejects.toThrow('refused');
+      ).rejects.toBe(refused);
       const reauthenticated = createBillingIntents('actor', storage, hash);
       expect(await reauthenticated.pending('manual:booking')).not.toBeNull();
       await reauthenticated.run('manual:booking', body, (key) => {
@@ -80,7 +83,7 @@ describe('durable billing intent identity', () => {
         { ...body, basis: { kind: 'CREDIT', sourceEntryId: 'two' } },
         submit,
       ),
-    ).rejects.toThrow('giữ nguyên');
+    ).rejects.toBeInstanceOf(BillingIntentMismatchError);
     expect(submit).not.toHaveBeenCalled();
     await expect(
       intents.run(
@@ -175,7 +178,7 @@ describe('durable billing intent identity', () => {
     ).rejects.toBe(unknown);
     await expect(
       intents.run('refund:booking', { amount: 20 }, () => Promise.resolve()),
-    ).rejects.toThrow('giữ nguyên');
+    ).rejects.toBeInstanceOf(BillingIntentMismatchError);
   });
   it.each([409, 500, 503])(
     'retains unresolved response %i but removes definitive 422',
