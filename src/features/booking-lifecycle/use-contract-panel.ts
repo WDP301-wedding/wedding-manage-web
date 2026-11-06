@@ -24,7 +24,6 @@ export function useContractPanel({
   const [data, setData] = useState<ContractListData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
-  const [downloadingPdf, setDownloadingPdf] = useState(false);
   const activeBookingIdRef = useRef(bookingId);
   const readEpoch = useRef(0);
 
@@ -150,29 +149,6 @@ export function useContractPanel({
     }
   };
 
-  const handleDownloadPdf = async () => {
-    if (!currentRevision) return;
-    setDownloadingPdf(true);
-    setError(null);
-    try {
-      const blob = await contractService.downloadContractPdf(bookingId, currentRevision.revisionId);
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `Hop-dong-tiec-${bookingId.slice(0, 8)}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      a.remove();
-    } catch (err) {
-      const msg = err instanceof ApiServiceError ? err.message : 'Không thể tải file PDF hợp đồng.';
-      setError(msg);
-      notify.error(err, { message: msg });
-    } finally {
-      setDownloadingPdf(false);
-    }
-  };
-
   const managerApproved = currentRevision?.approvals.some((a) => a.party === 'MANAGER');
   const coupleApproved = currentRevision?.approvals.some((a) => a.party === 'COUPLE');
 
@@ -184,13 +160,11 @@ export function useContractPanel({
     data,
     error,
     actionMessage,
-    downloadingPdf,
     currentRevision,
     managerApproved,
     coupleApproved,
     handleWithdraw,
     handleApprove,
     handleSubmitDraft,
-    handleDownloadPdf,
   };
 }

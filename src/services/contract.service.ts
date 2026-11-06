@@ -99,10 +99,14 @@ export const contractService = {
     });
   },
 
-  async downloadContractPdf(bookingId: string, revisionId: string): Promise<Blob> {
+  async downloadContractPdf(
+    bookingId: string,
+    revisionId: string,
+    signal?: AbortSignal,
+  ): Promise<Blob> {
     const response = await axiosApiClient.get(
       `/bookings/${bookingId}/contracts/${revisionId}/pdf`,
-      { responseType: 'blob' },
+      { responseType: 'blob', ...(signal ? { signal } : {}) },
     );
     return response.data;
   },

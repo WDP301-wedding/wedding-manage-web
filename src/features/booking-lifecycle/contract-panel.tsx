@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronRight, Download } from 'lucide-react';
+import { ChevronRight, FileText } from 'lucide-react';
 import { formatVnd } from '../../lib/formatters';
 import { formatDate } from './booking-helpers';
 import { ApprovalStatus, ContractLinesTable } from './contract-lines-table';
@@ -13,6 +13,7 @@ import { AppendixPanel } from './appendix-panel';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Textarea } from '../../components/ui/textarea';
+import { ContractPdfDialog } from './contract-pdf-dialog';
 
 const revisionStates = {
   APPROVED: { tone: 'success', label: 'Đã duyệt 2 bên' },
@@ -45,6 +46,7 @@ export function ContractPanel({
   );
   const [isCustomerSelectionExpanded, setIsCustomerSelectionExpanded] = useState(false);
   const [showWithdrawForm, setShowWithdrawForm] = useState(false);
+  const [previewRevisionId, setPreviewRevisionId] = useState<string | null>(null);
   const {
     editing,
     setEditing,
@@ -52,16 +54,16 @@ export function ContractPanel({
     loading,
     error,
     actionMessage,
-    downloadingPdf,
     currentRevision,
     managerApproved,
     coupleApproved,
     handleApprove,
     handleSubmitDraft,
-    handleDownloadPdf,
   } = panelState;
 
   const data = rawData?.bookingId === bookingId ? rawData : null;
+  const standard = currentRevision?.document.standardTerms;
+  const isLocked = currentRevision?.state === 'APPROVED' && Boolean(standard);
 
   const showComposer = editing && Boolean(data?.capabilities?.canManageDraft);
   const commandsDisabled =
@@ -90,12 +92,14 @@ export function ContractPanel({
               type="button"
               variant="outline"
               size="sm"
-              disabled={disabled || downloadingPdf}
-              onClick={() => void handleDownloadPdf()}
-              title="Tải tệp PDF hợp đồng"
+              onClick={() => setPreviewRevisionId(currentRevision.revisionId)}
             >
-              <Download aria-hidden />
-              <span>{downloadingPdf ? 'Đang tải PDF…' : 'Tải PDF'}</span>
+              <FileText aria-hidden />
+              <span>
+                {currentRevision.state === 'APPROVED'
+                  ? 'Xem PDF đã duyệt'
+                  : 'Xem trước hợp đồng (PDF)'}
+              </span>
             </Button>
           </div>
         ) : null}
@@ -155,6 +159,14 @@ export function ContractPanel({
             Tải lại hợp đồng
           </Button>
         </p>
+      ) : null}
+      {subTab === 'contract' && data?.changeRequestReason ? (
+        <div className="rounded-lg border border-border bg-muted p-4" role="status">
+          <p className="text-sm font-semibold">Cặp đôi yêu cầu chỉnh sửa</p>
+          <p className="mt-1 break-words whitespace-pre-wrap text-sm text-muted-foreground">
+            {data.changeRequestReason}
+          </p>
+        </div>
       ) : null}
       {subTab === 'contract' && editing && data?.capabilities?.canManageDraft ? (
         <ContractDraftComposer
@@ -328,7 +340,29 @@ export function ContractPanel({
                     {formatVnd(currentRevision.document.depositAmountVnd)}
                   </dd>
                 </div>
+                {standard ? (
+                  <div className="flex flex-col gap-0.5">
+                    <dt className="text-xs text-muted-foreground">Tất toán sau tiệc (tạm tính)</dt>
+                    <dd className="text-lg font-bold tabular-nums">
+                      {formatVnd(
+                        currentRevision.document.contractTotalVnd -
+                          currentRevision.document.depositAmountVnd,
+                      )}
+                    </dd>
+                  </div>
+                ) : null}
               </dl>
+              {standard ? (
+                <p className="text-sm text-muted-foreground">
+                  Giá đã bao gồm thuế GTGT. Tối đa 02 bàn dự phòng miễn phí kèm thực đơn{' '}
+                  <strong>{standard.reserveMenu.name}</strong>.
+                </p>
+              ) : null}
+              {isLocked ? (
+                <p className="text-sm text-muted-foreground">
+                  Hai bên đã duyệt và khóa hợp đồng. Bản PDF chính thức có hai ô ký tay ở Điều 10.
+                </p>
+              ) : null}
 
               <ContractLinesTable lines={currentRevision.document.lines} />
 
@@ -354,7 +388,8 @@ export function ContractPanel({
                   >
                     <label className="flex flex-col gap-1 text-xs font-semibold">
                       <span>
-                        Lý do cần thay đổi sau khi đã duyệt <span className="text-destructive">*</span>
+                        Lý do cần thay đổi sau khi đã duyệt{' '}
+                        <span className="text-destructive">*</span>
                       </span>
                       <Textarea
                         className="font-normal"
@@ -397,15 +432,6 @@ export function ContractPanel({
                 )
               ) : null}
               <div className="flex flex-wrap justify-end gap-2 border-t border-border pt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={disabled || downloadingPdf}
-                  onClick={() => void handleDownloadPdf()}
-                >
-                  {downloadingPdf ? 'Đang tải PDF…' : 'Tải PDF hợp đồng'}
-                </Button>
-
                 {currentRevision.state === 'DRAFT' &&
                 data?.capabilities?.canManageDraft &&
                 !editing ? (
@@ -434,6 +460,16 @@ export function ContractPanel({
           )}
         </>
       )}
+      {subTab === 'contract' &&
+      currentRevision &&
+      previewRevisionId === currentRevision.revisionId ? (
+        <ContractPdfDialog
+          key={currentRevision.revisionId + ':' + currentRevision.state}
+          bookingId={bookingId}
+          revision={currentRevision}
+          onClose={() => setPreviewRevisionId(null)}
+        />
+      ) : null}
     </article>
   );
 }
