@@ -95,13 +95,14 @@ describe('createApiClient', () => {
       name: 'ApiClientError',
       kind: 'api',
       code: 'SERVICE_UNAVAILABLE',
-      message: 'The service is not ready.',
+      message: 'Dịch vụ tạm thời bận hoặc bảo trì. Vui lòng thử lại sau.',
+      backendMessage: 'The service is not ready.',
       requestId,
       status: 503,
       details: [
         {
           code: 'dependency_unavailable',
-          message: 'PostgreSQL is unavailable.',
+          message: 'Giá trị chưa hợp lệ. Hãy kiểm tra lại thông tin.',
           path: 'database',
         },
       ],

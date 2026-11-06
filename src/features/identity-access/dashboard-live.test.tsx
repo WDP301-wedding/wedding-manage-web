@@ -1,13 +1,22 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  BOOKING_ASSIGNMENTS_REGISTRY_KEY,
   claimBookingAssignment,
   getBookingAssignments,
   releaseBookingAssignment,
   saveBookingAssignments,
 } from './booking-assignments';
 import { DashboardLiveView } from './dashboard-live';
+import { axiosApiClient } from '../../lib/api/axios-client';
+import {
+  navigationService,
+  type NavigationBooking,
+} from '../../services/booking-navigation.service';
+
+vi.mock('../../lib/api/axios-client', () => ({ axiosApiClient: { get: vi.fn() } }));
+vi.mock('../../services/booking-navigation.service', () => ({
+  navigationService: { bookings: vi.fn() },
+}));
 
 vi.mock('../../services/consultation.service', () => ({
   consultationService: {
@@ -52,6 +61,18 @@ describe('Booking assignment locking and synchronization', () => {
   beforeEach(() => {
     window.localStorage.clear();
     vi.clearAllMocks();
+    vi.mocked(axiosApiClient.get).mockResolvedValue({
+      data: {
+        data: {
+          items: [],
+          page: 1,
+          pageSize: 5,
+          total: 0,
+          totalPages: 0,
+          counts: { total: 0, pending: 0 },
+        },
+      },
+    });
   });
 
   describe('claimBookingAssignment and releaseBookingAssignment logic', () => {
@@ -93,52 +114,92 @@ describe('Booking assignment locking and synchronization', () => {
     });
   });
 
-  describe('DashboardLiveView locking presentation', () => {
-    it('renders disabled lock button for bookings claimed by another manager and enables claiming unassigned ones', async () => {
-      // Seed registry: Booking 1 is claimed by Manager A
-      saveBookingAssignments({
-        '00000000-0000-4000-8000-000000000001': {
+  describe('DashboardLiveView server ownership presentation', () => {
+    it('uses server ownership instead of a stale browser assignment registry', async () => {
+      const managerA = '10000000-0000-4000-8000-000000000001';
+      const managerB = '10000000-0000-4000-8000-000000000002';
+      const rows: NavigationBooking[] = [
+        {
           bookingId: '00000000-0000-4000-8000-000000000001',
-          assignedAccountId: 'acc-manager-a',
-          assignedEmail: 'manager-a@wedding.com',
-          assignedAt: new Date().toISOString(),
+          bookingCode: 'HY-000001',
+          hallNameSnapshot: 'Sảnh Kim Cương',
+          managerAccountId: managerA,
+          managerEmail: 'manager-a@wedding.com',
+          eventDate: '2026-12-01',
+          hallId: '20000000-0000-4000-8000-000000000001',
+          shiftCode: 'LUNCH',
+          phase: 'CONFIRMED',
+          tableCount: 20,
+          createdAt: '2026-10-01T10:00:00Z',
+          cancelledAt: null,
+          customerName: 'Lan và Minh',
+          alias: null,
+          brideName: null,
+          groomName: null,
+          phone: null,
+          email: null,
+        },
+        {
+          bookingId: '00000000-0000-4000-8000-000000000002',
+          bookingCode: 'HY-000002',
+          hallNameSnapshot: 'Sảnh Ruby',
+          managerAccountId: managerB,
+          managerEmail: 'manager-b@wedding.com',
+          eventDate: '2026-12-02',
+          hallId: '20000000-0000-4000-8000-000000000002',
+          shiftCode: 'DINNER',
+          phase: 'AWAITING_DEPOSIT',
+          tableCount: 30,
+          createdAt: '2026-10-02T10:00:00Z',
+          cancelledAt: null,
+          customerName: 'An và Bình',
+          alias: null,
+          brideName: null,
+          groomName: null,
+          phone: null,
+          email: null,
+        },
+      ];
+      vi.mocked(navigationService.bookings).mockImplementation((query) =>
+        Promise.resolve({
+          items: query.scope === 'mine' ? [rows[1]!] : rows,
+          page: 1,
+          pageSize: 10,
+          total: query.scope === 'mine' ? 1 : 2,
+          totalPages: 1,
+          counts: { mine: 1, all: 2 },
+        }),
+      );
+      saveBookingAssignments({
+        [rows[0]!.bookingId]: {
+          bookingId: rows[0]!.bookingId,
+          assignedAccountId: managerB,
+          assignedEmail: 'stale-local-owner@wedding.com',
+          assignedAt: '2026-10-01T10:00:00Z',
         },
       });
-
-      // Render as Manager B
       render(
         <DashboardLiveView
-          isManager={true}
-          currentAccountId="acc-manager-b"
+          isManager
+          currentAccountId={managerB}
           currentEmail="manager-b@wedding.com"
         />,
       );
-
-      // Wait for table to load
-      await screen.findByText('Sảnh Kim Cương');
       await screen.findByText('Sảnh Ruby');
-
-      // Booking 1 (claimed by Manager A):
-      // Manager B sees lock badge with Manager A's email
+      expect(screen.queryByText('Sảnh Kim Cương')).not.toBeInTheDocument();
+      fireEvent.click(screen.getByRole('tab', { name: /Tất cả tiệc nhà hàng/ }));
+      await screen.findByText('Sảnh Kim Cương');
+      expect(navigationService.bookings).toHaveBeenLastCalledWith(
+        expect.objectContaining({ scope: 'all' }),
+      );
       expect(screen.getByText('manager-a@wedding.com')).toBeInTheDocument();
-      // Manager B sees disabled locked button
-      const lockedBtn = screen.getByRole('button', { name: 'Đã có người nhận' });
-      expect(lockedBtn).toBeDisabled();
-
-      // Booking 2 (unassigned):
-      // Manager B sees "☆ Nhận tiệc" button
-      const claimBtn = screen.getByRole('button', { name: 'Nhận tiệc' });
-      expect(claimBtn).toBeEnabled();
-
-      // Manager B clicks "☆ Nhận tiệc" on Booking 2
-      fireEvent.click(claimBtn);
-
-      // Status message is displayed
-      await screen.findByText(/Bạn đã tiếp nhận tiệc Sảnh Ruby/);
-
-      // Booking 2 now has "Của bạn" badge
+      expect(screen.queryByText('stale-local-owner@wedding.com')).not.toBeInTheDocument();
       expect(screen.getByText('Của bạn')).toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: 'Bỏ nhận' })).not.toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: 'Thao tác HY-000001' }));
+      expect(
+        await screen.findByRole('menuitem', { name: 'Đã có người phụ trách' }),
+      ).toHaveAttribute('aria-disabled', 'true');
+      expect(screen.queryByRole('menuitem', { name: 'Nhận tiệc' })).not.toBeInTheDocument();
     });
   });
 });

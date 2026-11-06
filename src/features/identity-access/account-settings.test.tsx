@@ -108,9 +108,12 @@ describe('account password OTP errors', () => {
     gateway.changePassword.mockRejectedValueOnce(apiError('OTP_INVALID_OR_EXPIRED', 422));
     fireEvent.click(screen.getByRole('button', { name: 'Xác nhận và cập nhật mật khẩu' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Mã OTP chưa đúng hoặc đã hết hạn');
+    expect(screen.getByRole('alert')).toHaveTextContent('11111111');
     gateway.changePassword.mockRejectedValueOnce(new Error('offline'));
     fireEvent.click(screen.getByRole('button', { name: 'Xác nhận và cập nhật mật khẩu' }));
-    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('kiểm tra kết nối'));
+    await waitFor(() =>
+      expect(screen.getAllByRole('alert').at(-1)).toHaveTextContent('kiểm tra kết nối'),
+    );
     expect(signedOut).not.toHaveBeenCalled();
     expect(screen.getByLabelText('Mã OTP')).toHaveValue('123456');
   });

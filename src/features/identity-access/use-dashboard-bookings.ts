@@ -52,12 +52,13 @@ export function useDashboardBookings({
   const [currentPage, setCurrentPage] = useState(1),
     [pageSize, setSize] = useState(10);
   useEffect(() => {
+    if (searchQuery.trim() === query) return;
     const timer = setTimeout(() => {
       setQuery(searchQuery.trim());
       setCurrentPage(1);
     }, 250);
     return () => clearTimeout(timer);
-  }, [searchQuery]);
+  }, [searchQuery, query]);
   const scope = JSON.stringify([
     resolvedAccountId,
     bookingTab,

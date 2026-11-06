@@ -33,3 +33,6 @@ whole-suite run observed failures in billing, staff operations, catalog,
 identity/dashboard and API tests, then stalled and was stopped. Its partial
 output is not a complete failure count. Those suites are outside the 26-case
 booking repair. The focused rerun above is the completed acceptance result.
+
+The later [full-suite repair](./management-test-suite-repair-2026-11-06.md)
+resolved the remaining failures and added the complete management suite to CI.

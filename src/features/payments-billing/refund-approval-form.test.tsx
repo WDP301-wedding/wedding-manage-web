@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { NotificationProvider } from '../../design-system/notifications';
+import { selectOption } from '../../test/select-option';
 import type { BillingView } from './billing-api';
 import { RefundApprovalForm } from './refund-approval-form';
 
@@ -36,8 +37,8 @@ const booking: BillingView = {
     },
   ],
 };
-function fill() {
-  fireEvent.change(screen.getByLabelText('Căn cứ phê duyệt'), { target: { value: 'credit' } });
+async function fill() {
+  await selectOption('Căn cứ phê duyệt', /Điều chỉnh giảm.*credit/);
   fireEvent.change(screen.getByLabelText('Hạn mức hoàn được duyệt (VND)'), {
     target: { value: '100000' },
   });
@@ -54,7 +55,7 @@ describe('Manager refund approval', () => {
     render(<RefundApprovalForm booking={booking} disabled={false} onConfirm={confirm} />, {
       wrapper: NotificationProvider,
     });
-    fill();
+    await fill();
     fireEvent.click(screen.getByRole('button', { name: 'Kiểm tra phê duyệt' }));
     expect(confirm).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: 'Quay lại chỉnh sửa' }));
@@ -80,18 +81,18 @@ describe('Manager refund approval', () => {
     render(<RefundApprovalForm booking={booking} disabled={false} onConfirm={confirm} />, {
       wrapper: NotificationProvider,
     });
-    fill();
+    await fill();
     fireEvent.change(screen.getByLabelText('Mã chứng từ phê duyệt'), { target: { value: '   ' } });
     fireEvent.click(screen.getByRole('button', { name: 'Kiểm tra phê duyệt' }));
     expect(screen.getByRole('alert')).toBeInTheDocument();
     expect(confirm).not.toHaveBeenCalled();
-    fill();
+    await fill();
     fireEvent.change(screen.getByLabelText('Hạn mức hoàn được duyệt (VND)'), {
       target: { value: '9007199254740992' },
     });
     fireEvent.submit(screen.getByRole('button', { name: 'Kiểm tra phê duyệt' }).closest('form')!);
     expect(confirm).not.toHaveBeenCalled();
-    fill();
+    await fill();
     fireEvent.click(screen.getByRole('button', { name: 'Kiểm tra phê duyệt' }));
     fireEvent.click(screen.getByRole('button', { name: 'Xác nhận phê duyệt hoàn tiền' }));
     await waitFor(() => expect(screen.getByLabelText('Mã chứng từ phê duyệt')).toBeEnabled());

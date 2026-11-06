@@ -62,7 +62,9 @@ export function AccountSettings({
       }
     }
     setError(msg);
-    notify.error(caught, { fallbackMessage: msg });
+    notify.error(msg, {
+      requestId: caught instanceof ApiClientError ? caught.requestId : undefined,
+    });
   }
   async function resend() {
     if (pending || remaining > 0 || !passwordForm.current) return;
@@ -160,7 +162,7 @@ export function AccountSettings({
         onSessionExpired?.();
         const msg = 'Phiên làm việc đã hết hạn. Hãy đăng nhập lại.';
         setError(msg);
-        notify.error(caught, { fallbackMessage: msg });
+        notify.error(msg, { requestId: caught.requestId });
       } else if (
         challenge &&
         caught instanceof ApiClientError &&
@@ -168,11 +170,11 @@ export function AccountSettings({
       ) {
         const msg = 'Mã OTP chưa đúng hoặc đã hết hạn. Kiểm tra mã mới nhất hoặc gửi lại.';
         setError(msg);
-        notify.error(caught, { fallbackMessage: msg });
+        notify.error(msg, { requestId: caught.requestId });
       } else if (challenge && caught instanceof ApiClientError && caught.status === 429) {
         const msg = 'Bạn đã thử mã quá nhiều lần. Hãy chờ trước khi thử lại.';
         setError(msg);
-        notify.error(caught, { fallbackMessage: msg });
+        notify.error(msg, { requestId: caught.requestId });
       } else if (
         challenge &&
         caught instanceof ApiClientError &&
@@ -183,11 +185,13 @@ export function AccountSettings({
         const pw = caught.details.find((d) => d.path === 'newPassword' || d.path === 'password');
         const msg = pw?.message || 'Mật khẩu mới chưa hợp lệ (phải từ 1 đến 128 ký tự).';
         setError(msg);
-        notify.error(caught, { fallbackMessage: msg });
+        notify.error(msg, { requestId: caught.requestId });
       } else if (challenge) {
         const msg = 'Chưa cập nhật được mật khẩu. Hãy kiểm tra kết nối rồi thử lại.';
         setError(msg);
-        notify.error(caught, { fallbackMessage: msg });
+        notify.error(msg, {
+          requestId: caught instanceof ApiClientError ? caught.requestId : undefined,
+        });
       } else {
         requestFailed(caught);
       }

@@ -14,7 +14,7 @@ describe('describeApiError in wedding-manage-web', () => {
     });
 
     const result = describeApiError(error);
-    expect(result.message).toBe('Số bàn hoặc số khách vượt quá sức chứa tối đa của sảnh tiệc.');
+    expect(result.message).toBe('Số bàn hoặc số khách vượt sức chứa của sảnh.');
     expect(result.code).toBe('CONTRACT_CAPACITY_EXCEEDED');
     expect(result.requestId).toBe('00000000-0000-4000-8000-000000000001');
     expect(isConflict(error)).toBe(true);
@@ -29,13 +29,13 @@ describe('describeApiError in wedding-manage-web', () => {
     });
 
     const result = describeApiError(error);
-    expect(result.message).toContain('Dữ liệu công nợ vừa thay đổi');
+    expect(result.message).toBe('Số dư vừa thay đổi. Hãy tải lại trước khi thanh toán.');
     expect(result.code).toBe('STALE_BILLING_REVISION');
     expect(result.requestId).toBe('req-123');
     expect(isConflict(error)).toBe(true);
   });
 
-  it('includes validation details for 422 errors', () => {
+  it('uses a Vietnamese field label while preserving validation paths and codes for 422 errors', () => {
     const error = new ApiClientError({
       kind: 'api',
       code: 'VALIDATION_FAILED',
@@ -46,7 +46,13 @@ describe('describeApiError in wedding-manage-web', () => {
     });
 
     const result = describeApiError(error);
-    expect(result.message).toContain('body.email');
+    expect(result.message).toContain('Kiểm tra: Email.');
+    expect(result.message).not.toContain('body.email');
+    expect(error.details).toEqual([
+      { code: 'invalid_format', message: 'Thông tin không đúng định dạng.', path: 'body.email' },
+    ]);
+    expect(error.backendMessage).toBe('Validation error');
+    expect(result.requestId).toBe('req-422');
   });
 
   it('supports custom screen overrides', () => {
