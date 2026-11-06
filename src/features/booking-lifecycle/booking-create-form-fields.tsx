@@ -79,7 +79,12 @@ export function BookingCreateFormFields({
 
       <div className={sectionClass}>
         <h3 className="text-base font-semibold">1. Địa điểm &amp; Lịch tổ chức</h3>
-        <label htmlFor="hallId-select" className={fieldLabelClass}>
+        <label
+          htmlFor="hallId-select"
+          className={fieldLabelClass}
+          onFocus={triggerCatalog}
+          onClick={triggerCatalog}
+        >
           Sảnh tiệc
           <HySelect
             id="hallId-select"
@@ -88,8 +93,6 @@ export function BookingCreateFormFields({
             name="hallId"
             required
             defaultValue={matchedHall?.id ?? ''}
-            onFocus={triggerCatalog}
-            onClick={triggerCatalog}
           >
             <option value="" disabled>
               {loadingSelections ? 'Đang tải sảnh…' : 'Chọn sảnh'}
@@ -179,7 +182,12 @@ export function BookingCreateFormFields({
 
       <div className={sectionClass}>
         <h3 className="text-base font-semibold">2. Thực đơn &amp; Quy mô bàn tiệc</h3>
-        <label htmlFor="menuPackageVersionId-select" className={fieldLabelClass}>
+        <label
+          htmlFor="menuPackageVersionId-select"
+          className={fieldLabelClass}
+          onFocus={triggerCatalog}
+          onClick={triggerCatalog}
+        >
           Thực đơn đặt tiệc
           <HySelect
             id="menuPackageVersionId-select"
@@ -188,8 +196,6 @@ export function BookingCreateFormFields({
             name="menuPackageVersionId"
             required
             defaultValue={matchedMenu?.versionId ?? ''}
-            onFocus={triggerCatalog}
-            onClick={triggerCatalog}
           >
             <option value="" disabled>
               {loadingSelections ? 'Đang tải thực đơn…' : 'Chọn thực đơn'}

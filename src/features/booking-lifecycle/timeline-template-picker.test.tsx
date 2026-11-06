@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { NotificationProvider } from '../../design-system/notifications';
 import type { CatalogTimeline } from '../venue-catalog/catalog-api';
 import { TimelineTemplatePicker } from './timeline-template-picker';
+import { selectOption } from '../../test/select-option';
 
 const shift = { startTime: '17:30', endTime: '22:00' };
 
@@ -67,12 +68,14 @@ describe('timeline template picker', () => {
     const onCopy = vi.fn();
     render(<TimelineTemplatePicker disabled={false} source={{ load, shift }} onCopy={onCopy} />);
     fireEvent.click(screen.getByRole('button', { name: 'Tải mẫu kịch bản' }));
+    const picker = await screen.findByRole('combobox', { name: 'Mẫu kịch bản đã công bố' });
+    fireEvent.mouseDown(picker, { button: 0 });
     await screen.findByRole('option', { name: 'Tiệc vườn · phiên bản 1' });
     expect(screen.getAllByRole('option')).toHaveLength(2);
     expect(screen.getByRole('button', { name: 'Dùng mẫu này' })).toBeDisabled();
-    fireEvent.change(screen.getByLabelText('Mẫu kịch bản đã công bố'), {
-      target: { value: 'published' },
-    });
+    const published = screen.getByRole('option', { name: 'Tiệc vườn · phiên bản 1' });
+    fireEvent.pointerDown(published, { pointerType: 'mouse', button: 0 });
+    fireEvent.click(published);
     fireEvent.click(screen.getByRole('button', { name: 'Dùng mẫu này' }));
     expect(onCopy).toHaveBeenCalledWith([{ order: 0, startTime: '17:45', title: 'Đón khách' }]);
     expect(current.versions[0]?.items[0]?.id).toBe('source-item');
@@ -116,9 +119,7 @@ describe('timeline template picker', () => {
     );
     fireEvent.click(screen.getByRole('button', { name: 'Tải mẫu kịch bản' }));
     await screen.findByRole('combobox');
-    fireEvent.change(screen.getByLabelText('Mẫu kịch bản đã công bố'), {
-      target: { value: 'published' },
-    });
+    await selectOption('Mẫu kịch bản đã công bố', 'Tiệc vườn · phiên bản 1');
     fireEvent.click(screen.getByRole('button', { name: 'Dùng mẫu này' }));
     expect(screen.getByRole('alert')).toHaveTextContent('ngoài ca tiệc');
     expect(onCopy).not.toHaveBeenCalled();

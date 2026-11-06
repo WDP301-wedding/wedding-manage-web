@@ -54,6 +54,9 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      - name: Verify booking lifecycle and Vietnamese typography
+        run: npm test -- src/features/booking-lifecycle src/design-system/typography.test.ts --maxWorkers=2
+
       # Main is built once, with the real production environment, in deploy.
       - name: Restore PR build cache
         if: github.ref != 'refs/heads/main' || github.event_name == 'pull_request'
