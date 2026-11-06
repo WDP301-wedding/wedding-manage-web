@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import { TimelineEditor } from './timeline-editor';
+import { selectOption } from '../../test/select-option';
 
 describe('immutable timeline editor', () => {
   it('copies published template offsets into independent editable milestones before saving', async () => {
@@ -48,10 +49,8 @@ describe('immutable timeline editor', () => {
       />,
     );
     fireEvent.click(screen.getByRole('button', { name: 'Tải mẫu kịch bản' }));
-    await screen.findByRole('option', { name: 'Tiệc vườn · phiên bản 1' });
-    fireEvent.change(screen.getByLabelText('Mẫu kịch bản đã công bố'), {
-      target: { value: 'version' },
-    });
+    await screen.findByRole('combobox', { name: 'Mẫu kịch bản đã công bố' });
+    await selectOption('Mẫu kịch bản đã công bố', 'Tiệc vườn · phiên bản 1');
     fireEvent.click(screen.getByRole('button', { name: 'Dùng mẫu này' }));
     expect(onSave).not.toHaveBeenCalled();
     expect(screen.getByLabelText('Giờ bắt đầu mốc 1')).toHaveValue('17:45');
@@ -69,7 +68,7 @@ describe('immutable timeline editor', () => {
         '',
       ),
     );
-    expect(screen.getByRole('button', { name: 'Đổi mẫu kịch bản' })).toBeEnabled();
+    expect(screen.getByRole('combobox', { name: 'Mẫu kịch bản đã công bố' })).toBeEnabled();
   });
 
   it('preserves existing IDs and content when adding and reordering a milestone', async () => {

@@ -149,9 +149,13 @@ describe('resume consultation by server state', () => {
       ),
     );
     await waitFor(() =>
-      expect(screen.getByLabelText('Sảnh tiệc')).toHaveValue(context.preferredHallId),
+      expect(screen.getByRole('combobox', { name: 'Sảnh tiệc' })).toHaveTextContent(
+        'Sảnh Ánh Dương',
+      ),
     );
-    expect(screen.getByLabelText('Thực đơn đặt tiệc')).toHaveValue(context.preferredMenuVersionId);
+    expect(screen.getByRole('combobox', { name: 'Thực đơn đặt tiệc' })).toHaveTextContent(
+      'Thực đơn Mùa Thu',
+    );
     expect(screen.getByLabelText('Số khách dự kiến')).toHaveValue(140);
     expect(screen.getByLabelText('Số bàn')).toHaveValue(null);
     // Another manager window creates the booking before this form is submitted.

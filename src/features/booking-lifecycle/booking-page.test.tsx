@@ -5,6 +5,7 @@ import { ManagementIdentitySession } from '../identity-access/session';
 
 import type { ManagementBookingGateway, ProposalView } from './booking-api';
 import { ManagementBookingPage, ManagementBookingWorkspace } from './booking-page';
+import { selectOption } from '../../test/select-option';
 
 vi.mock('./activation-status', () => ({ ActivationStatus: () => null }));
 // Thanh tra cứu tự tạo API client riêng; giữ giao diện thật, chỉ thay phần gọi mạng.
@@ -161,8 +162,9 @@ describe('Management booking lifecycle workspace', () => {
   it('keeps controls usable before catalog loading and explains the next step', () => {
     const gateway = fakeGateway();
     render(<ManagementBookingWorkspace authorize={authorize} gateway={gateway} />);
-    for (const label of ['Sảnh tiệc', 'Ca', 'Thực đơn đặt tiệc', 'Ngày tổ chức'])
-      expect(screen.getByLabelText(label)).toBeEnabled();
+    for (const label of ['Sảnh tiệc', 'Ca', 'Thực đơn đặt tiệc'])
+      expect(screen.getByRole('combobox', { name: label })).toBeEnabled();
+    expect(screen.getByRole('textbox', { name: 'Ngày tổ chức' })).toBeEnabled();
     expect(screen.getByRole('button', { name: 'Tạo booking' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Kiểm tra lịch' })).toBeEnabled();
     expect(gateway.createBooking).not.toHaveBeenCalled();
@@ -175,13 +177,10 @@ describe('Management booking lifecycle workspace', () => {
       'min',
       '2026-10-11',
     );
-    fireEvent.focus(screen.getByLabelText('Sảnh tiệc'));
-    await screen.findByRole('option', { name: 'Sảnh Ánh Dương · tối đa 320 khách' });
-    fireEvent.change(screen.getByLabelText('Sảnh tiệc'), {
-      target: { value: proposal.proposal.hall.id },
-    });
+    fireEvent.focus(screen.getByRole('combobox', { name: 'Sảnh tiệc' }));
+    await selectOption('Sảnh tiệc', 'Sảnh Ánh Dương · tối đa 320 khách');
     for (const value of ['2020-01-01', '2026-10-09', '2026-10-10']) {
-      fireEvent.change(screen.getByLabelText('Ca'), { target: { value: 'DINNER' } });
+      await selectOption('Ca', /Tối/);
       fireEvent.change(screen.getByRole('textbox', { name: 'Ngày tổ chức' }), {
         target: { value },
       });
@@ -192,7 +191,7 @@ describe('Management booking lifecycle workspace', () => {
     }
     expect(gateway.checkAvailability).not.toHaveBeenCalled();
     expect(gateway.createBooking).not.toHaveBeenCalled();
-    fireEvent.change(screen.getByLabelText('Ca'), { target: { value: 'DINNER' } });
+    await selectOption('Ca', /Tối/);
     fireEvent.change(screen.getByRole('textbox', { name: 'Ngày tổ chức' }), {
       target: { value: '2026-10-11' },
     });
@@ -204,12 +203,10 @@ describe('Management booking lifecycle workspace', () => {
       target: { value: 'lan@example.test' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Tạo hồ sơ tư vấn' }));
-    await screen.findByText('Đã tạo hồ sơ tư vấn.');
+    await screen.findByText('Đã tạo hồ sơ tư vấn thành công.');
     fireEvent.change(screen.getByLabelText('Số bàn'), { target: { value: '12' } });
     fireEvent.change(screen.getByLabelText('Số khách dự kiến'), { target: { value: '120' } });
-    fireEvent.change(screen.getByLabelText('Thực đơn đặt tiệc'), {
-      target: { value: proposal.proposal.menu.versionId },
-    });
+    await selectOption('Thực đơn đặt tiệc', /Thực đơn Mùa Thu/);
     fireEvent.click(screen.getByRole('button', { name: 'Tạo booking' }));
     await waitFor(() =>
       expect(gateway.createBooking).toHaveBeenCalledWith(
@@ -236,12 +233,9 @@ describe('Management booking lifecycle workspace', () => {
   it('keeps catalog selections and booking drafts when a consultation is created', async () => {
     const gateway = fakeGateway();
     render(<ManagementBookingWorkspace authorize={authorize} gateway={gateway} />);
-    fireEvent.focus(screen.getByLabelText('Sảnh tiệc'));
-    await screen.findByRole('option', { name: 'Sảnh Ánh Dương · tối đa 320 khách' });
-    fireEvent.change(screen.getByLabelText('Sảnh tiệc'), {
-      target: { value: proposal.proposal.hall.id },
-    });
-    fireEvent.change(screen.getByLabelText('Ca'), { target: { value: 'DINNER' } });
+    fireEvent.focus(screen.getByRole('combobox', { name: 'Sảnh tiệc' }));
+    await selectOption('Sảnh tiệc', 'Sảnh Ánh Dương · tối đa 320 khách');
+    await selectOption('Ca', /Tối/);
     fireEvent.change(screen.getByRole('textbox', { name: 'Ngày tổ chức' }), {
       target: { value: '2026-10-11' },
     });
@@ -253,9 +247,9 @@ describe('Management booking lifecycle workspace', () => {
       target: { value: 'couple@example.com' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Tạo hồ sơ tư vấn' }));
-    await screen.findByText('Đã tạo hồ sơ tư vấn.');
+    await screen.findByText('Đã tạo hồ sơ tư vấn thành công.');
     expect(screen.getByLabelText('Mã hồ sơ tư vấn')).toHaveValue(proposal.consultationId);
-    expect(screen.getByLabelText('Sảnh tiệc')).toHaveValue(proposal.proposal.hall.id);
+    expect(screen.getByRole('combobox', { name: 'Sảnh tiệc' })).toHaveTextContent('Sảnh Ánh Dương');
     expect(screen.getByRole('textbox', { name: 'Ngày tổ chức' })).toHaveValue('2026-10-11');
     expect(screen.getByLabelText('Số bàn')).toHaveValue(12);
   });
@@ -318,23 +312,19 @@ describe('Management booking lifecycle workspace', () => {
     const gateway = fakeGateway();
     vi.mocked(gateway.checkAvailability).mockResolvedValue({ available, expiresAt });
     render(<ManagementBookingWorkspace authorize={authorize} gateway={gateway} />);
-    fireEvent.focus(screen.getByLabelText('Sảnh tiệc'));
-    await screen.findByRole('option', { name: 'Sảnh Ánh Dương · tối đa 320 khách' });
+    fireEvent.focus(screen.getByRole('combobox', { name: 'Sảnh tiệc' }));
+    await waitFor(() => expect(gateway.loadSelections).toHaveBeenCalled());
     fireEvent.change(screen.getByLabelText('Mã hồ sơ tư vấn'), {
       target: { value: proposal.consultationId },
     });
-    fireEvent.change(screen.getByLabelText('Sảnh tiệc'), {
-      target: { value: proposal.proposal.hall.id },
-    });
-    fireEvent.change(screen.getByLabelText('Thực đơn đặt tiệc'), {
-      target: { value: proposal.proposal.menu.versionId },
-    });
-    fireEvent.change(screen.getByLabelText('Ca'), { target: { value: 'DINNER' } });
+    await selectOption('Sảnh tiệc', 'Sảnh Ánh Dương · tối đa 320 khách');
+    await selectOption('Thực đơn đặt tiệc', /Thực đơn Mùa Thu/);
+    await selectOption('Ca', /Tối/);
     fireEvent.change(screen.getByRole('textbox', { name: 'Ngày tổ chức' }), {
       target: { value: proposal.eventDate },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Kiểm tra lịch' }));
-    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent(message));
+    expect(await screen.findByText(message, { exact: false })).toBeInTheDocument();
     expect(gateway.checkAvailability).toHaveBeenCalledWith(
       'manager-token',
       expect.objectContaining({
@@ -352,7 +342,7 @@ describe('Management booking lifecycle workspace', () => {
       const selections = await gateway.loadSelections('manager-token');
       vi.mocked(gateway.loadSelections).mockResolvedValue({ ...selections, [missing]: [] });
       render(<ManagementBookingWorkspace authorize={authorize} gateway={gateway} />);
-      fireEvent.focus(screen.getByLabelText('Sảnh tiệc'));
+      fireEvent.focus(screen.getByRole('combobox', { name: 'Sảnh tiệc' }));
       expect(
         await screen.findByText(
           'Danh mục chưa đủ thông tin đặt tiệc. Cập nhật trong mục Danh mục rồi tải lại.',
@@ -375,7 +365,7 @@ describe('Management booking lifecycle workspace', () => {
     });
     fireEvent.change(screen.getByLabelText('Ghi chú'), { target: { value: 'Garden wedding' } });
     fireEvent.click(screen.getByRole('button', { name: 'Tạo hồ sơ tư vấn' }));
-    await screen.findByText('Đã tạo hồ sơ tư vấn.');
+    await screen.findByText('Đã tạo hồ sơ tư vấn thành công.');
     expect(gateway.createConsultation).toHaveBeenCalledWith('manager-token', {
       displayName: 'Minh & An',
       intendedEmail: 'couple@example.com',
@@ -399,19 +389,15 @@ describe('Management booking lifecycle workspace', () => {
     await waitFor(() =>
       expect(screen.getByLabelText('Mã hồ sơ tư vấn')).toHaveValue(proposal.consultationId),
     );
-    fireEvent.focus(screen.getByLabelText('Sảnh tiệc'));
-    const hall = await screen.findByRole('option', { name: 'Sảnh Ánh Dương · tối đa 320 khách' });
-    expect(hall).toHaveValue(proposal.proposal.hall.id);
+    fireEvent.focus(screen.getByRole('combobox', { name: 'Sảnh tiệc' }));
+    await selectOption('Sảnh tiệc', 'Sảnh Ánh Dương · tối đa 320 khách');
+    expect(screen.getByRole('combobox', { name: 'Sảnh tiệc' })).toHaveTextContent('Sảnh Ánh Dương');
     fireEvent.change(screen.getByLabelText('Mã hồ sơ tư vấn'), {
       target: { value: proposal.consultationId },
     });
-    fireEvent.change(screen.getByLabelText('Sảnh tiệc'), {
-      target: { value: proposal.proposal.hall.id },
-    });
-    fireEvent.change(screen.getByLabelText('Thực đơn đặt tiệc'), {
-      target: { value: proposal.proposal.menu.versionId },
-    });
-    fireEvent.change(screen.getByLabelText('Ca'), { target: { value: 'DINNER' } });
+    await selectOption('Sảnh tiệc', 'Sảnh Ánh Dương · tối đa 320 khách');
+    await selectOption('Thực đơn đặt tiệc', /Thực đơn Mùa Thu/);
+    await selectOption('Ca', /Tối/);
     fireEvent.change(screen.getByRole('textbox', { name: 'Ngày tổ chức' }), {
       target: { value: proposal.eventDate },
     });

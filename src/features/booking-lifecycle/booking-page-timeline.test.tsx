@@ -231,9 +231,9 @@ describe('Management booking timeline, cancellation and access', () => {
       }),
     );
     await waitFor(() =>
-      expect(screen.getByRole('button', { name: 'Đánh dấu hoàn thành' })).toBeEnabled(),
+      expect(screen.getByRole('button', { name: 'Đánh dấu tiệc đã tổ chức xong' })).toBeEnabled(),
     );
-    fireEvent.click(screen.getByRole('button', { name: 'Đánh dấu hoàn thành' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Đánh dấu tiệc đã tổ chức xong' }));
     await waitFor(() =>
       expect(gateway.complete).toHaveBeenCalledWith('manager-token', {
         bookingId: proposal.bookingId,
@@ -248,7 +248,7 @@ describe('Management booking timeline, cancellation and access', () => {
       const gateway = fakeGateway();
       await open(gateway, { ...proposal, phase });
       expect(
-        screen.getByRole('link', { name: /Mở thanh toán & Thu cọc tiệc này/ }),
+        screen.getByRole('link', { name: 'Mở thanh toán & quyết toán tiệc này' }),
       ).toBeInTheDocument();
     },
   );
@@ -278,9 +278,9 @@ describe('Management booking timeline, cancellation and access', () => {
     [failure('STALE_BOOKING_REVISION', 409), 'Hồ sơ đã thay đổi'],
     [failure('DEPOSIT_INTENT_ACTIVE', 409), 'Đang có giao dịch tiền cọc'],
     [failure('BOOKING_NOT_FOUND', 404), 'Không tìm thấy hồ sơ'],
-    [failure('UNKNOWN', 401), 'Yêu cầu chưa hoàn tất'],
-    [failure('UNKNOWN', 403), 'Yêu cầu chưa hoàn tất'],
-    [failure('UNKNOWN'), 'Yêu cầu chưa hoàn tất'],
+    [failure('UNKNOWN', 401), 'Phiên đăng nhập đã hết hạn'],
+    [failure('UNKNOWN', 403), 'Bạn không có quyền thực hiện thao tác này'],
+    [failure('UNKNOWN'), 'Không thể hoàn tất thao tác'],
     [new Error('offline'), 'Không thể hoàn tất yêu cầu'],
   ])('handles command failure and allows correction or retry: %s', async (error, message) => {
     const gateway = fakeGateway();

@@ -221,7 +221,9 @@ describe('Consultation navigation', () => {
         .mockResolvedValueOnce(queueResponse([newRequest]));
       render(<ConsultationRequestsPage />, { wrapper: NotificationProvider });
       fireEvent.click(await screen.findByRole('button', { name: action }));
-      expect(await screen.findByRole('alert')).toHaveTextContent('Xung đột dữ liệu (409)');
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        'Thao tác chưa đáp ứng điều kiện hiện tại',
+      );
       expect(screen.getByRole('heading', { name: newRequest.displayName })).toBeVisible();
       expect(screen.getByRole('button', { name: action })).toBeEnabled();
       fireEvent.click(screen.getByRole('button', { name: 'Tải lại' }));
@@ -262,7 +264,7 @@ describe('Consultation navigation', () => {
       .mockResolvedValueOnce(new Response(null, { status: 204 }))
       .mockResolvedValueOnce(queueResponse([]));
     render(<ConsultationRequestsPage />, { wrapper: NotificationProvider });
-    expect(await screen.findByRole('alert')).toHaveTextContent('Không tải được yêu cầu tư vấn');
+    expect(await screen.findByRole('alert')).toHaveTextContent('Dữ liệu yêu cầu tư vấn trống');
     expect(screen.queryByText('Chưa có yêu cầu tư vấn')).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Tải lại' }));
     expect(await screen.findByText('Chưa có yêu cầu tư vấn')).toBeVisible();
