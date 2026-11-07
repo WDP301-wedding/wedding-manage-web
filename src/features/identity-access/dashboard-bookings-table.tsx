@@ -28,15 +28,10 @@ export function getBookingPaymentInfo(booking: DashboardBookingItem): {
   label: string;
   variant: 'success' | 'warning' | 'error' | 'neutral' | 'info';
   amount?: string | undefined;
+  note?: string | undefined;
 } {
   if (booking.phase === 'CANCELLED') {
     return { status: 'CANCELLED', label: 'Đã hủy', variant: 'error' };
-  }
-  if (booking.phase === 'DRAFT') {
-    return { status: 'DRAFT', label: 'Chưa cọc', variant: 'neutral' };
-  }
-  if (booking.phase === 'AWAITING_DEPOSIT') {
-    return { status: 'AWAITING_DEPOSIT', label: 'Chờ cọc', variant: 'warning' };
   }
   if (
     booking.paymentStatus === 'PAID' ||
@@ -45,6 +40,12 @@ export function getBookingPaymentInfo(booking: DashboardBookingItem): {
       booking.outstandingVnd <= 0)
   ) {
     return { status: 'PAID', label: 'Đã trả hết', variant: 'success' };
+  }
+  if (booking.phase === 'DRAFT') {
+    return { status: 'DRAFT', label: 'Chưa cọc', variant: 'neutral' };
+  }
+  if (booking.phase === 'AWAITING_DEPOSIT') {
+    return { status: 'AWAITING_DEPOSIT', label: 'Chờ cọc', variant: 'warning' };
   }
   if (
     booking.paymentStatus === 'DEBT' ||
@@ -57,14 +58,21 @@ export function getBookingPaymentInfo(booking: DashboardBookingItem): {
       status: 'DEBT',
       label: isPast ? 'Đang nợ' : 'Chờ tất toán',
       variant: isPast ? 'error' : 'warning',
-      amount: booking.outstandingVnd ? formatVnd(booking.outstandingVnd) : 'Chờ quyết toán',
+      amount: booking.outstandingVnd ? formatVnd(booking.outstandingVnd) : undefined,
+      note: booking.outstandingVnd ? undefined : 'Chờ quyết toán',
     };
   }
   if (booking.phase === 'COMPLETED') {
     return { status: 'PAID', label: 'Đã trả hết', variant: 'success' };
   }
   if (booking.phase === 'CONFIRMED') {
-    return { status: 'DEBT', label: 'Đang nợ', variant: 'warning', amount: 'Chờ quyết toán' };
+    const isPast = isEventPast(booking.eventDate);
+    return {
+      status: 'DEBT',
+      label: isPast ? 'Đang nợ' : 'Chờ tất toán',
+      variant: isPast ? 'error' : 'warning',
+      note: 'Chờ quyết toán',
+    };
   }
   return { status: 'DRAFT', label: 'Chưa cọc', variant: 'neutral' };
 }
@@ -227,7 +235,7 @@ export function DashboardBookingsTable({
                     return (
                       <div className="flex flex-col gap-0.5">
                         <Badge variant={payment.variant}>{payment.label}</Badge>
-                        {payment.amount && (
+                        {payment.amount ? (
                           <span
                             className={cn(
                               'text-2xs font-semibold tabular-nums',
@@ -236,7 +244,11 @@ export function DashboardBookingsTable({
                           >
                             {payment.variant === 'error' ? 'Nợ' : 'Còn lại'}: {payment.amount}
                           </span>
-                        )}
+                        ) : payment.note ? (
+                          <span className="text-2xs font-medium text-muted-foreground">
+                            {payment.note}
+                          </span>
+                        ) : null}
                       </div>
                     );
                   })()}

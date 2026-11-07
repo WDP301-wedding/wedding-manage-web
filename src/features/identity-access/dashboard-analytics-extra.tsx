@@ -46,10 +46,12 @@ export function DashboardAnalyticsExtra({
     // Nếu analytics từ backend có hallRevenues (sẽ mở rộng ở backend)
     const backendHalls = (analytics as unknown as { hallRevenues?: HallRevenueItem[] })?.hallRevenues;
     if (backendHalls && backendHalls.length > 0) {
+      const hallCatalogNameMap = new Map(halls.map((hall) => [hall.id, hall.name]));
       const backendMap = new Map(backendHalls.map((h) => [h.hallId, h]));
       const totalRev = backendHalls.reduce((sum, h) => sum + (h.revenueVnd || 0), 0) || 1;
       const merged: HallRevenueItem[] = backendHalls.map((h) => ({
         ...h,
+        hallName: hallCatalogNameMap.get(h.hallId) || (h.hallName !== 'Sảnh tiệc' ? h.hallName : '') || 'Sảnh tiệc',
         percentage: Math.round(((h.revenueVnd || 0) / totalRev) * 100),
       }));
       for (const hall of halls) {
@@ -230,20 +232,20 @@ export function DashboardAnalyticsExtra({
               {/* Highlight Top 1 Menu */}
               <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
                 <div className="flex items-start justify-between gap-3">
-                  <div className="flex flex-col gap-1">
+                  <div className="flex min-w-0 flex-1 flex-col gap-1">
                     <div className="flex items-center gap-2">
                       <Badge variant="success" className="gap-1">
                         <Award className="size-3" />
                         Được đặt nhiều nhất
                       </Badge>
                     </div>
-                    <h4 className="text-base font-bold text-foreground">{topMenu.name}</h4>
+                    <h4 className="text-base font-bold text-foreground break-words">{topMenu.name}</h4>
                   </div>
-                  <div className="text-right">
+                  <div className="shrink-0 text-right">
                     <div className="text-xl font-bold text-primary tabular-nums">
                       {topMenu.bookingCount}
                     </div>
-                    <div className="text-2xs text-muted-foreground">lượt đặt</div>
+                    <div className="text-2xs text-muted-foreground whitespace-nowrap">lượt đặt</div>
                   </div>
                 </div>
                 <div className="mt-3 flex items-center gap-4 border-t border-primary/10 pt-3 text-xs text-muted-foreground">
@@ -265,14 +267,14 @@ export function DashboardAnalyticsExtra({
                   </span>
                   <div className="flex flex-col divide-y divide-border">
                     {popularMenus.slice(1, 5).map((m, idx) => (
-                      <div key={m.sourceId} className="flex items-center justify-between py-2 text-sm">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-muted-foreground">
+                      <div key={m.sourceId} className="flex items-center justify-between gap-2 py-2 text-sm">
+                        <div className="flex min-w-0 flex-1 items-center gap-2">
+                          <span className="shrink-0 text-xs font-bold text-muted-foreground">
                             #{idx + 2}
                           </span>
-                          <span className="font-medium text-foreground">{m.name}</span>
+                          <span className="font-medium text-foreground truncate">{m.name}</span>
                         </div>
-                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                        <div className="flex shrink-0 items-center gap-3 text-xs text-muted-foreground">
                           <span>{m.tableCount} bàn</span>
                           <span className="font-semibold text-foreground">{m.bookingCount} lượt</span>
                         </div>

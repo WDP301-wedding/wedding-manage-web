@@ -32,7 +32,13 @@ export function useCatalogLiveRefresh(
       if (form) dirtyForms.add(form);
     };
     const reset = (event: Event) => {
-      if (event.target instanceof HTMLFormElement) dirtyForms.delete(event.target);
+      const form =
+        event.target instanceof HTMLFormElement
+          ? event.target
+          : event.target instanceof Element
+            ? event.target.closest('form')
+            : null;
+      if (form) dirtyForms.delete(form);
       if (pending) schedule();
     };
     const schedule = () => {
@@ -65,6 +71,7 @@ export function useCatalogLiveRefresh(
     document.addEventListener('input', markDirty, true);
     document.addEventListener('change', markDirty, true);
     document.addEventListener('reset', reset, true);
+    document.addEventListener('submit', reset, true);
     const unsubscribe = addCatalogInvalidationListener(() => {
       pending = true;
       schedule();
@@ -73,12 +80,12 @@ export function useCatalogLiveRefresh(
       disposed = true;
       resume.current = null;
       unsubscribe();
-      observer.disconnect();
-      hasDirtyCatalogForms();
       if (timer !== null) clearTimeout(timer);
       document.removeEventListener('input', markDirty, true);
       document.removeEventListener('change', markDirty, true);
       document.removeEventListener('reset', reset, true);
+      document.removeEventListener('submit', reset, true);
+      observer.disconnect();
     };
   }, [refresh]);
 }

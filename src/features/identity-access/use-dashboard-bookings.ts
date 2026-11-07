@@ -114,7 +114,10 @@ export function useDashboardBookings({
   const rawRows: NavigationBooking[] = data?.items ?? [];
   const rows = useMemo(() => {
     if (paymentFilter === 'ALL') return rawRows;
-    return rawRows.filter((r) => getBookingPaymentInfo(r).status === paymentFilter);
+    return rawRows.filter((r) => {
+      const info = getBookingPaymentInfo(r);
+      return info.status === paymentFilter || r.paymentStatus === paymentFilter;
+    });
   }, [rawRows, paymentFilter]);
   const serverAssignments: BookingAssignmentsRegistry = Object.fromEntries(
     rows.map((b) => [

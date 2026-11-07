@@ -302,7 +302,14 @@ export function ContractDraftComposer({
                 <strong className="text-lg text-primary tabular-nums">
                   {formatVnd(priced.document.contractTotalVnd)}
                 </strong>{' '}
-                · Tiền cọc:{' '}
+                · Tiền cọc (
+                {(priced.document as any).depositRate ??
+                  (priced.document.contractTotalVnd > 0
+                    ? Math.round(
+                        (priced.document.depositAmountVnd / priced.document.contractTotalVnd) * 100,
+                      )
+                    : 30)}
+                % theo hợp đồng):{' '}
                 <strong className="tabular-nums">
                   {formatVnd(priced.document.depositAmountVnd)}
                 </strong>

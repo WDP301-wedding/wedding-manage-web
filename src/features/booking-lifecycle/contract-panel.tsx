@@ -356,8 +356,11 @@ export function ContractPanel({
                     <dt className="text-xs text-muted-foreground">Tất toán sau tiệc (tạm tính)</dt>
                     <dd className="text-lg font-bold tabular-nums">
                       {formatVnd(
-                        currentRevision.document.contractTotalVnd -
-                          currentRevision.document.depositAmountVnd,
+                        Math.max(
+                          0,
+                          currentRevision.document.contractTotalVnd -
+                            currentRevision.document.depositAmountVnd,
+                        ),
                       )}
                     </dd>
                   </div>
