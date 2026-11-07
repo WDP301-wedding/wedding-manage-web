@@ -31,7 +31,7 @@ export function RestaurantForm({
       100,
       Math.max(10, parseInt(String(data.get('depositPercentage') || '30'), 10) || 30),
     );
-    const ok = await onSubmit({
+    await onSubmit({
       displayName: field(data, 'displayName'),
       description: field(data, 'description'),
       address: field(data, 'address'),
@@ -40,15 +40,7 @@ export function RestaurantForm({
       depositPercentage: depositPct,
       expectedRevision: restaurant.revision,
     });
-    if (ok) {
-      // Chỉ lưu local khi lưu thành công trên máy chủ
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('wedding_deposit_percentage', String(depositPct));
-      }
-    }
   };
-  // TODO(BE): Đọc depositPercentage từ restaurant object khi BE bổ sung trường.
-  // Fallback: localStorage → mặc định 30%.
   const savedDepositPct = readDepositPercentage(restaurant);
 
   return (
@@ -337,18 +329,13 @@ export function catalogErrorMessage(error: unknown): string {
  * 3. Mặc định 30%
  */
 export function readDepositPercentage(restaurant?: unknown): string {
-  // Ưu tiên 1: BE trả về trường depositPercentage
+  // Đọc trực tiếp trường depositPercentage từ dữ liệu máy chủ
   const fromApi =
     restaurant && typeof restaurant === 'object' && 'depositPercentage' in restaurant
       ? (restaurant as { depositPercentage?: unknown }).depositPercentage
       : undefined;
   if (typeof fromApi === 'number' && fromApi >= 10 && fromApi <= 100) {
     return String(fromApi);
-  }
-  // Ưu tiên 2: localStorage (tạm)
-  if (typeof window !== 'undefined') {
-    const stored = localStorage.getItem('wedding_deposit_percentage');
-    if (stored) return stored;
   }
   // Mặc định
   return '30';

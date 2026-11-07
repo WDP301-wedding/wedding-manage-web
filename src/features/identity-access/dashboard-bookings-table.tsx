@@ -52,10 +52,11 @@ export function getBookingPaymentInfo(booking: DashboardBookingItem): {
       booking.outstandingVnd !== null &&
       booking.outstandingVnd > 0)
   ) {
+    const isPast = isEventPast(booking.eventDate);
     return {
       status: 'DEBT',
-      label: 'Đang nợ',
-      variant: 'error',
+      label: isPast ? 'Đang nợ' : 'Chờ tất toán',
+      variant: isPast ? 'error' : 'warning',
       amount: booking.outstandingVnd ? formatVnd(booking.outstandingVnd) : 'Chờ quyết toán',
     };
   }
