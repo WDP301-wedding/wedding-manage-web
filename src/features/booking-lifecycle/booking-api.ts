@@ -102,7 +102,12 @@ export interface ManagementBookingGateway {
   cancel(
     this: void,
     accessToken: string,
-    input: Readonly<{ bookingId: string; expectedRevision: number; reason: string }>,
+    input: Readonly<{
+      bookingId: string;
+      expectedRevision: number;
+      reason: string;
+      initiator?: 'COUPLE' | 'RESTAURANT';
+    }>,
   ): Promise<void>;
   decideCancellation(
     this: void,
@@ -331,7 +336,11 @@ export function createManagementBookingGateway(client?: ApiClient): ManagementBo
           header: { 'Idempotency-Key': intent('booking-cancellation') },
           path: { bookingId: input.bookingId },
         },
-        body: { expectedRevision: input.expectedRevision, reason: input.reason },
+        body: {
+          expectedRevision: input.expectedRevision,
+          reason: input.reason,
+          ...(input.initiator ? { initiator: input.initiator } : {}),
+        },
         headers: auth(accessToken),
       });
     },

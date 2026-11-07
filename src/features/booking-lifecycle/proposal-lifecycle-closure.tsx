@@ -5,6 +5,7 @@ import { field } from './booking-helpers';
 import type { ManagementBookingGateway, ProposalView } from './booking-api';
 import { Button } from '../../components/ui/button';
 import { Textarea } from '../../components/ui/textarea';
+import { HySelect } from '../../components/ui/select-field';
 
 export interface ProposalLifecycleClosureProps {
   proposal: ProposalView;
@@ -92,16 +93,35 @@ export function ProposalLifecycleClosure({
           className="flex flex-col gap-3 border-t border-border p-4"
           onSubmit={(event) => {
             event.preventDefault();
-            const reason = field(new FormData(event.currentTarget), 'reason');
+            const data = new FormData(event.currentTarget);
+            const reason = field(data, 'reason');
+            const initiator = field(data, 'initiator');
+            if (initiator !== 'COUPLE' && initiator !== 'RESTAURANT') return;
             void command('cancel', 'Booking đã được hủy.', (token) =>
               gateway.cancel(token, {
                 bookingId: proposal.bookingId,
                 expectedRevision: proposal.revision,
+                initiator,
                 reason,
               }),
             );
           }}
         >
+          <label className={fieldLabelClass}>
+            Bên yêu cầu hủy
+            <HySelect name="initiator" required defaultValue="">
+              <option value="" disabled>
+                Chọn bên yêu cầu hủy
+              </option>
+              <option value="COUPLE">Khách yêu cầu hủy</option>
+              <option value="RESTAURANT">Nhà hàng hủy (kể cả bất khả kháng)</option>
+            </HySelect>
+          </label>
+          <p className="text-xs text-muted-foreground">
+            Nhà hàng hủy: hệ thống hoàn tối đa 100% cọc thực nhận. Khoản bồi thường thêm xử lý bên
+            ngoài; hợp đồng đã ký giữ nguyên. Nếu khách đã gửi yêu cầu, duyệt yêu cầu ở trên để giữ
+            đúng thời điểm khách gửi.
+          </p>
           <label className={fieldLabelClass}>
             Lý do hủy
             <Textarea
