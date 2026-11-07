@@ -30,48 +30,13 @@ export interface ContractLinesTableProps {
 
 const cellClass = 'px-3 py-2 align-top';
 
-/**
- * Nhận diện hạng mục bảo đảm giá thực đơn.
- *
- * TODO(BE): Khi BE bổ sung trường `priceGuarantee: boolean` trên contract line,
- * FE chỉ cần đọc `line.priceGuarantee === true` và loại bỏ toàn bộ string matching.
- *
- * Hiện tại: fallback nhận diện qua tên/mô tả hạng mục (nhiều từ khóa tiếng Việt + tiếng Anh).
- */
-export function isPriceGuarantee(line: {
-  name: string;
-  description?: string | null;
-  priceGuarantee?: boolean | null;
-}): boolean {
-  // Ưu tiên 1: Flag chuẩn từ BE
-  if (typeof line.priceGuarantee === 'boolean') return line.priceGuarantee;
-  // Fallback: string matching
-  const text = `${line.name} ${line.description || ''}`.toLowerCase();
-  return (
-    text.includes('bảo đảm giá') ||
-    text.includes('bao dam gia') ||
-    text.includes('bảo hiểm giá') ||
-    text.includes('giữ giá') ||
-    text.includes('khóa giá') ||
-    text.includes('price guarantee') ||
-    text.includes('price lock')
-  );
-}
-
 export function ContractLinesTable({ lines, title }: Readonly<ContractLinesTableProps>) {
-  const hasPriceGuarantee = lines.some((l) => isPriceGuarantee(l));
-
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h4 className="font-semibold">
           {title ?? `Chi tiết dịch vụ trong hợp đồng (${lines.length})`}
         </h4>
-        {hasPriceGuarantee ? (
-          <Badge variant="success">Đã có phí bảo đảm giá thực đơn</Badge>
-        ) : (
-          <Badge variant="warning">Thực đơn áp dụng theo thời giá</Badge>
-        )}
       </div>
       <div
         className="overflow-x-auto rounded-lg border border-border bg-card focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
@@ -100,16 +65,6 @@ export function ContractLinesTable({ lines, title }: Readonly<ContractLinesTable
                 <td className={cellClass}>
                   <div className="flex flex-wrap items-center gap-1.5">
                     <strong className="font-semibold">{line.name}</strong>
-                    {line.category === 'MENU' &&
-                      (hasPriceGuarantee ? (
-                        <span className="inline-flex items-center rounded bg-hy-success-bg px-1.5 py-0.5 text-2xs font-semibold text-hy-success">
-                          Đã bảo đảm giá
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center rounded bg-hy-warning-bg px-1.5 py-0.5 text-2xs font-semibold text-hy-warning">
-                          Theo thời giá
-                        </span>
-                      ))}
                   </div>
                   {line.description || line.note ? (
                     <div className="text-xs text-muted-foreground">
