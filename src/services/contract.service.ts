@@ -180,4 +180,16 @@ export const contractService = {
       { headers: { 'Idempotency-Key': idempotencyKey } },
     );
   },
+  async cancelAppendix(
+    bookingId: string,
+    revisionId: string,
+    body: { expectedRevision: number; reason: string },
+    idempotencyKey = crypto.randomUUID(),
+  ): Promise<void> {
+    await axiosApiClient.post(
+      `/bookings/${bookingId}/contract-appendices/${revisionId}/cancellations`,
+      body,
+      { headers: { 'Idempotency-Key': idempotencyKey } },
+    );
+  },
 };

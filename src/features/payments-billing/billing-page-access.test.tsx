@@ -67,6 +67,7 @@ function gateway(): ManagementBillingGateway {
         contractRevisionId: null,
         documentDigest: null,
       },
+      bookingPhase: 'COMPLETED',
       balance: { canRecord: true, maxAmountVnd: 7100000, reasonCode: null },
       refundablePayments: [],
       nextAfterRevision: null,
@@ -94,6 +95,23 @@ async function load() {
 }
 
 describe('management billing access and recovery', () => {
+  it('keeps history readable but locks remaining-balance collection on direct navigation before completion', async () => {
+    const api = gateway();
+    const current = await api.recording!('token', view.bookingId);
+    vi.mocked(api.recording!).mockResolvedValue({ ...current, bookingPhase: 'CONFIRMED' });
+    render(<ManagementBillingWorkspace accountId="actor" authorize={authorize} gateway={api} />, {
+      wrapper: NotificationProvider,
+    });
+    await load();
+    expect(
+      screen.getByText(
+        'Chỉ được quyết toán và thu phần còn lại sau khi đánh dấu tiệc đã tổ chức xong.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Kiểm tra khoản thu' })).toBeDisabled();
+    expect(screen.getByText('Còn phải thu')).toBeInTheDocument();
+    expect(api.recordManual).not.toHaveBeenCalled();
+  });
   it.each(['anonymous', 'staff', 'manager'] as const)(
     'restores the %s presentation without exposing Manager controls to Staff',
     async (role) => {

@@ -35,6 +35,13 @@ const proposal: ProposalView = {
   revision: 3,
   eventDate: '2026-11-15',
   planningHeadcount: 280,
+  completion: {
+    canComplete: true,
+    pending: false,
+    appendixRevisionNumber: null,
+    managerApproved: false,
+    coupleApproved: false,
+  },
   proposal: {
     menus: [
       {
@@ -243,13 +250,16 @@ describe('Management booking timeline, cancellation and access', () => {
   });
 
   it.each(['CONFIRMED', 'CANCELLED', 'COMPLETED'] as const)(
-    'renders payment link for a %s booking',
+    'opens settlement only for a completed booking (%s)',
     async (phase) => {
       const gateway = fakeGateway();
       await open(gateway, { ...proposal, phase });
-      expect(
-        screen.getByRole('link', { name: 'Mở thanh toán & quyết toán tiệc này' }),
-      ).toBeInTheDocument();
+      const link = screen.queryByRole('link', { name: 'Mở thanh toán & quyết toán tiệc này' });
+      if (phase === 'COMPLETED') expect(link).toBeInTheDocument();
+      else {
+        expect(link).not.toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Thanh toán & quyết toán' })).toBeDisabled();
+      }
     },
   );
 
