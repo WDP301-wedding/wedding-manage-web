@@ -64,9 +64,6 @@ export function useDashboardBookings({
     }, 250);
     return () => clearTimeout(timer);
   }, [searchQuery, query]);
-  const isFiltered = paymentFilter !== 'ALL';
-  const effectivePageSize = isFiltered ? 50 : pageSize;
-  const effectivePage = isFiltered ? 1 : currentPage;
   const scope = JSON.stringify([
     resolvedAccountId,
     bookingTab,
@@ -75,8 +72,8 @@ export function useDashboardBookings({
     paymentFilter,
     sortField,
     sortOrder,
-    effectivePage,
-    effectivePageSize,
+    currentPage,
+    pageSize,
   ]);
   const [result, setResult] = useState<{
     scope: string;
@@ -96,8 +93,8 @@ export function useDashboardBookings({
           ...(paymentFilter !== 'ALL' ? { paymentStatus: paymentFilter } : {}),
           sort: sortField,
           order: sortOrder,
-          page: effectivePage,
-          pageSize: effectivePageSize,
+          page: currentPage,
+          pageSize,
         });
         if (isCurrent()) setResult({ scope, data });
       } catch (e) {
@@ -192,24 +189,11 @@ export function useDashboardBookings({
     currentTabBookings: rows,
     filteredBookings: rows,
     paginatedBookings: rows,
-    total: paymentFilter !== 'ALL' ? rows.length : (data?.total ?? 0),
-    totalPages:
-      paymentFilter !== 'ALL'
-        ? Math.max(1, Math.ceil(rows.length / pageSize))
-        : Math.max(1, data?.totalPages ?? 0),
-    safeCurrentPage: paymentFilter !== 'ALL' ? 1 : (data?.page ?? 1),
-    startIndex:
-      paymentFilter !== 'ALL'
-        ? 0
-        : data
-          ? (data.page - 1) * data.pageSize
-          : 0,
-    endIndex:
-      paymentFilter !== 'ALL'
-        ? rows.length
-        : data
-          ? Math.min(data.page * data.pageSize, data.total)
-          : 0,
+    total: data?.total ?? 0,
+    totalPages: Math.max(1, data?.totalPages ?? 0),
+    safeCurrentPage: data?.page ?? 1,
+    startIndex: data ? (data.page - 1) * data.pageSize : 0,
+    endIndex: data ? Math.min(data.page * data.pageSize, data.total) : 0,
     serverAssignments,
     loading: pending || (!data && !error) || searchQuery.trim() !== query,
     error,
