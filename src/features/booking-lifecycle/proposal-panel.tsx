@@ -4,7 +4,13 @@ import { useState } from 'react';
 import { Check, Lock, Pencil } from 'lucide-react';
 
 import { createVenueCatalogGateway } from '../venue-catalog/catalog-api';
-import { bookingPhaseLabel, bookingPhaseTone, formatDate, isEventPast, money } from './booking-helpers';
+import {
+  bookingPhaseLabel,
+  bookingPhaseTone,
+  formatDate,
+  isEventPast,
+  money,
+} from './booking-helpers';
 import { contractService } from '../../services/contract.service';
 import type { useContractPanel } from './use-contract-panel';
 import { ContractPanel } from './contract-panel';
@@ -17,7 +23,8 @@ import type {
 import { TimelineEditor } from './timeline-editor';
 import { ProposalLifecycleClosure } from './proposal-lifecycle-closure';
 import { Badge } from '../../components/ui/badge';
-import { Button, buttonVariants } from '../../components/ui/button';
+import { Button } from '../../components/ui/button';
+import { BookingCompletionActions } from './booking-completion-actions';
 import { Textarea } from '../../components/ui/textarea';
 
 const catalogGateway = createVenueCatalogGateway();
@@ -104,7 +111,9 @@ export function ProposalPanel({
           <div className="flex flex-col gap-1">
             <span className="font-semibold">Hồ sơ đã quá ngày tổ chức dự kiến</span>
             <p className="text-sm">
-              Tiệc cưới này đã quá ngày diễn ra ({formatDate(proposal.eventDate)}) nhưng chưa hoàn tất thủ tục đặt cọc và xác nhận. Quản lý có thể liên hệ với cặp đôi để thống nhất dời ngày hoặc thực hiện hủy/đóng hồ sơ này ở mục dưới.
+              Tiệc cưới này đã quá ngày diễn ra ({formatDate(proposal.eventDate)}) nhưng chưa hoàn
+              tất thủ tục đặt cọc và xác nhận. Quản lý có thể liên hệ với cặp đôi để thống nhất dời
+              ngày hoặc thực hiện hủy/đóng hồ sơ này ở mục dưới.
             </p>
           </div>
         </div>
@@ -167,31 +176,18 @@ export function ProposalPanel({
                 Đã xác nhận &amp; hoàn tất cọc
               </Badge>
             )}
-            <a
-              href={`/billing?bookingId=${proposal.bookingId}`}
-              aria-label="Mở thanh toán & quyết toán tiệc này"
-              className={buttonVariants({ variant: 'outline', size: 'sm' })}
-            >
-              <span>Thanh toán &amp; quyết toán</span>
-            </a>
-            {proposal.phase === 'CONFIRMED' ? (
-              <Button
-                size="sm"
-                disabled={disabled || proposal.phase !== 'CONFIRMED'}
-                type="button"
-                onClick={() =>
-                  void command('complete', 'Booking đã hoàn thành.', (token) =>
-                    gateway.complete(token, {
-                      bookingId: proposal.bookingId,
-                      expectedRevision: proposal.revision,
-                    }),
-                  )
-                }
-              >
-                <Check aria-hidden />
-                <span>Đánh dấu tiệc đã tổ chức xong</span>
-              </Button>
-            ) : null}
+            <BookingCompletionActions
+              proposal={proposal}
+              disabled={disabled}
+              onComplete={() =>
+                void command('complete', 'Booking đã hoàn thành.', (token) =>
+                  gateway.complete(token, {
+                    bookingId: proposal.bookingId,
+                    expectedRevision: proposal.revision,
+                  }),
+                )
+              }
+            />
           </div>
         </article>
 

@@ -107,7 +107,18 @@ export function BillingMutationsSection({
           <ManualPaymentForm
             key={`manual:${view.bookingId}:${formEpoch}`}
             bookingId={view.bookingId}
-            recording={recording}
+            recording={
+              recording && recording.bookingPhase !== 'COMPLETED'
+                ? {
+                    ...recording,
+                    balance: {
+                      ...recording.balance,
+                      canRecord: false,
+                      reasonCode: 'BALANCE_NOT_ELIGIBLE',
+                    },
+                  }
+                : recording
+            }
             onEditingChange={setManualDirty}
             disabled={pending || (uncertain !== null && uncertain !== 'manual')}
             onConfirm={(body) => onMutate('manual', body)}

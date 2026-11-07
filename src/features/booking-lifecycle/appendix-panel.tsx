@@ -3,11 +3,13 @@
 import { Button } from '../../components/ui/button';
 import { useAppendixPanel, type AppendixPanelState } from './use-appendix-panel';
 import { AppendixDetailView } from './appendix-detail-view';
+import { AppendixCancellationForm } from './appendix-cancellation-form';
 
 export interface AppendixPanelProps {
   bookingId: string;
   bookingRevision: number;
   disabled: boolean;
+  canEdit?: boolean;
   onRefresh: () => void;
   panelState?: AppendixPanelState;
 }
@@ -21,7 +23,11 @@ export const appendixStateLabels: Record<string, string> = {
 
 export function AppendixPanel(props: Readonly<AppendixPanelProps>) {
   return props.panelState ? (
-    <AppendixPanelView disabled={props.disabled} panelState={props.panelState} />
+    <AppendixPanelView
+      disabled={props.disabled}
+      canEdit={props.canEdit ?? true}
+      panelState={props.panelState}
+    />
   ) : (
     <ConnectedAppendixPanel {...props} />
   );
@@ -29,15 +35,23 @@ export function AppendixPanel(props: Readonly<AppendixPanelProps>) {
 
 function ConnectedAppendixPanel(props: Readonly<AppendixPanelProps>) {
   const panelState = useAppendixPanel(props);
-  return <AppendixPanelView disabled={props.disabled} panelState={panelState} />;
+  return (
+    <AppendixPanelView
+      disabled={props.disabled}
+      canEdit={props.canEdit ?? true}
+      panelState={panelState}
+    />
+  );
 }
 
 function AppendixPanelView({
   disabled,
   panelState,
+  canEdit,
 }: Readonly<{
   disabled: boolean;
   panelState: AppendixPanelState;
+  canEdit: boolean;
 }>) {
   const {
     loading,
@@ -53,6 +67,7 @@ function AppendixPanelView({
     handleAdjustPrint,
     error,
     actionMessage,
+    handleCancelAppendix,
   } = panelState;
 
   const revisions = data?.revisions ?? [];
@@ -127,11 +142,20 @@ function AppendixPanelView({
             </div>
           ) : null}
 
+          {activeAppendix &&
+          data?.currentRevisionId === activeAppendix.revisionId &&
+          ['DRAFT', 'AWAITING_APPROVAL'].includes(activeAppendix.state) ? (
+            <AppendixCancellationForm
+              key={activeAppendix.revisionId}
+              disabled={disabled || loading || Boolean(error)}
+              onCancel={handleCancelAppendix}
+            />
+          ) : null}
           {activeAppendix ? (
             <AppendixDetailView
               key={`${activeAppendix.revisionId}:${activeAppendix.documentDigest}`}
               activeAppendix={activeAppendix}
-              disabled={disabled}
+              disabled={disabled || !canEdit}
               loading={loading}
               managerApproved={Boolean(managerApproved)}
               coupleApproved={Boolean(coupleApproved)}

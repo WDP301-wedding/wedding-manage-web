@@ -221,6 +221,33 @@ export function useAppendixPanel({
       (r) => r.state === 'AWAITING_APPROVAL' && !r.approvals.some((a) => a.party === 'MANAGER'),
     ).length ?? 0;
 
+  const handleCancelAppendix = async (reason: string) => {
+    if (!data || !activeAppendix || data.currentRevisionId !== activeAppendix.revisionId || loading)
+      return false;
+    const targetId = bookingId;
+    setLoading(true);
+    setError(null);
+    try {
+      await contractService.cancelAppendix(bookingId, activeAppendix.revisionId, {
+        expectedRevision: data.bookingRevision,
+        reason,
+      });
+      if (activeBookingIdRef.current !== targetId) return false;
+      notify.success('Đã hủy đề xuất phụ lục. Thỏa thuận đang có hiệu lực được giữ nguyên.');
+      await loadAppendices(targetId);
+      onRefresh();
+      return true;
+    } catch (cause) {
+      if (activeBookingIdRef.current !== targetId) return false;
+      const friendly = describeApiError(cause);
+      setError(friendly.message);
+      notify.error(cause, { message: friendly.message });
+      return false;
+    } finally {
+      if (activeBookingIdRef.current === targetId) setLoading(false);
+    }
+  };
+
   return {
     loading,
     data,
@@ -236,6 +263,7 @@ export function useAppendixPanel({
     handleSubmitAppendix,
     canAdjustPrint,
     handleAdjustPrint,
+    handleCancelAppendix,
     refreshAppendices: () => void loadAppendices(),
   };
 }

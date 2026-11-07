@@ -76,7 +76,10 @@ export function ContractPanel({
       : { tone: 'neutral' as const, label: 'Bản nháp' };
 
   return (
-    <article className="flex flex-col gap-5 rounded-xl border border-border bg-card p-6 shadow-hy-1">
+    <article
+      id="booking-contract"
+      className="flex flex-col gap-5 rounded-xl border border-border bg-card p-6 shadow-hy-1"
+    >
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-col gap-0.5">
           <span className="text-xs text-muted-foreground">Pháp lý &amp; Cam kết</span>
@@ -280,6 +283,7 @@ export function ContractPanel({
           bookingId={bookingId}
           bookingRevision={bookingRevision}
           disabled={disabled}
+          canEdit={proposal.phase === 'CONFIRMED'}
           onRefresh={onRefresh}
           panelState={appendixState}
         />

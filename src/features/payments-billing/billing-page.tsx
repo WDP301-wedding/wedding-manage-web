@@ -269,6 +269,17 @@ export function ManagementBillingWorkspace({
             </div>
           </div>
 
+          {!archiveMode && billing.recording?.bookingPhase !== 'COMPLETED' ? (
+            <p role="status" className="rounded-lg bg-secondary p-3 text-sm">
+              Chỉ được quyết toán và thu phần còn lại sau khi đánh dấu tiệc đã tổ chức xong.{' '}
+              <a
+                className="font-semibold text-primary underline"
+                href={`/bookings?bookingId=${view.bookingId}`}
+              >
+                Mở hồ sơ tiệc
+              </a>
+            </p>
+          ) : null}
           {!archiveMode && (
             <IncidentalsPanel
               bookingId={view.bookingId}
@@ -278,6 +289,7 @@ export function ManagementBillingWorkspace({
                 pending ||
                 billing.refreshingAfterWrite ||
                 billing.paymentEditing ||
+                billing.recording?.bookingPhase !== 'COMPLETED' ||
                 billing.recovery !== null
               }
               onEditingChange={billing.setSettlementEditing}
