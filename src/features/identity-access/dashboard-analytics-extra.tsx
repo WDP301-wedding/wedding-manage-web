@@ -132,9 +132,10 @@ export function DashboardAnalyticsExtra({
 
   // 2. Tính toán menu nào được khách đặt nhiều nhất
   const popularMenus = useMemo<PopularMenuItem[]>(() => {
-    // Từ analytics.menuPopularity
+    // Từ analytics.menuPopularity (chỉ lấy các thực đơn thực tế đã có lượt đặt)
     if (analytics?.menuPopularity && analytics.menuPopularity.length > 0) {
       return [...analytics.menuPopularity]
+        .filter((m) => m.bookingCount > 0)
         .map((m) => ({
           sourceId: m.sourceId,
           name: m.nameSnapshot || 'Thực đơn tiêu chuẩn',
@@ -202,7 +203,7 @@ export function DashboardAnalyticsExtra({
                   <div className="h-2 w-full overflow-hidden rounded-full bg-secondary">
                     <div
                       className="h-full rounded-full bg-primary transition-all duration-300"
-                      style={{ width: `${Math.max(h.percentage, h.bookingCount > 0 ? 8 : 2)}%` }}
+                      style={{ width: `${h.percentage > 0 ? Math.max(h.percentage, 4) : 0}%` }}
                     />
                   </div>
                 </div>
@@ -221,7 +222,7 @@ export function DashboardAnalyticsExtra({
             <TrendingUp className="size-4 text-primary" />
           </div>
 
-          {topMenu ? (
+          {topMenu && topMenu.bookingCount > 0 ? (
             <div className="flex flex-col gap-4">
               {/* Highlight Top 1 Menu */}
               <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">

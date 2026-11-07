@@ -228,8 +228,13 @@ export function DashboardBookingsTable({
                       <div className="flex flex-col gap-0.5">
                         <Badge variant={payment.variant}>{payment.label}</Badge>
                         {payment.amount && (
-                          <span className="text-2xs font-semibold tabular-nums text-hy-error">
-                            Nợ: {payment.amount}
+                          <span
+                            className={cn(
+                              'text-2xs font-semibold tabular-nums',
+                              payment.variant === 'error' ? 'text-hy-error' : 'text-muted-foreground',
+                            )}
+                          >
+                            {payment.variant === 'error' ? 'Nợ' : 'Còn lại'}: {payment.amount}
                           </span>
                         )}
                       </div>
