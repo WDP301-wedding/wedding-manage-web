@@ -185,7 +185,12 @@ export function ManualPaymentForm({
                 }}
               >
                 <option value="DEPOSIT" disabled={!recording?.deposit.canRecord}>
-                  Đặt cọc{!recording?.deposit.canRecord ? ' · Chưa đủ điều kiện' : ''}
+                  Đặt cọc
+                  {recording?.deposit.isSettled
+                    ? ' · Đã thu tiền cọc'
+                    : !recording?.deposit.canRecord
+                      ? ' · Chưa đủ điều kiện'
+                      : ''}
                 </option>
                 <option value="BALANCE" disabled={!recording?.balance.canRecord}>
                   Thanh toán còn lại{!recording?.balance.canRecord ? ' · Chưa đủ điều kiện' : ''}
@@ -230,10 +235,16 @@ export function ManualPaymentForm({
             </label>
           </div>
           <p className="text-xs" role="status">
-            {eligibility?.canRecord
-              ? (purpose === 'DEPOSIT' ? 'Tiền cọc cần ghi nhận: ' : 'Có thể thu tối đa: ') +
-                money(maximum ?? 0)
-              : recordingReason(eligibility?.reasonCode)}
+            {purpose === 'DEPOSIT' && recording?.deposit.isSettled
+              ? 'Đã thu tiền cọc: ' +
+                money(recording.deposit.settledAmountVnd ?? 0) +
+                (recording.deposit.settledAt
+                  ? ' · ' + formatDateTime(recording.deposit.settledAt)
+                  : '')
+              : eligibility?.canRecord
+                ? (purpose === 'DEPOSIT' ? 'Tiền cọc cần ghi nhận: ' : 'Có thể thu tối đa: ') +
+                  money(maximum ?? 0)
+                : recordingReason(eligibility?.reasonCode)}
           </p>
           <Button type="submit" className="self-start" disabled={!eligibility?.canRecord}>
             Kiểm tra khoản thu
@@ -287,7 +298,18 @@ export function RefundForm({
   const [retry, setRetry] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [sourceId, setSourceId] = useState('');
-  const payments = recording?.refundablePayments.filter((entry) => entry.maxRefundVnd > 0) ?? [];
+  const policy = recording?.cancellationRefund;
+  const payments = (recording?.refundablePayments ?? []).filter(
+    (entry) => !policy || entry.paymentId === policy.depositPaymentId,
+  );
+  const canRecord = policy
+    ? policy.canRecord && recording?.bookingPhase === 'CANCELLED'
+    : payments.some((entry) => entry.maxRefundVnd > 0);
+  const eligible = payments.filter((entry) => canRecord && entry.maxRefundVnd > 0);
+  const autoSourceId = policy && eligible.length === 1 ? eligible[0]!.paymentId : '';
+  useEffect(() => {
+    if (!sourceId && autoSourceId) setSourceId(autoSourceId);
+  }, [sourceId, autoSourceId]);
   const selected = payments.find((entry) => entry.paymentId === sourceId);
   useEffect(() => {
     onEditingChange?.(dirty || draft !== null);
@@ -306,6 +328,7 @@ export function RefundForm({
     const amountVnd = Number(data.get('amount'));
     const sourcePaymentId = field(data, 'source');
     if (
+      !canRecord ||
       !Number.isSafeInteger(amountVnd) ||
       amountVnd <= 0 ||
       !payments.some(
@@ -342,13 +365,50 @@ export function RefundForm({
           hoàn và lưu xác nhận trong cùng thao tác.
         </p>
       </div>
+      {policy && (
+        <div className="rounded-lg bg-secondary p-3 text-sm space-y-1">
+          <p>
+            {recording?.bookingPhase !== 'CANCELLED'
+              ? 'Chỉ ghi nhận hoàn khi tiệc đã được xác nhận hủy. Các mức dưới đây để tham khảo.'
+              : policy.entitledVnd === null
+                ? 'Chưa đủ căn cứ tính tự động. Cần đối soát bên hủy, thời điểm yêu cầu và hợp đồng đã ký.'
+                : 'Chính sách áp dụng: ' +
+                  (policy.initiator === 'RESTAURANT'
+                    ? 'Nhà hàng hủy — hoàn 100% cọc thực nhận.'
+                    : 'Khách hủy — hoàn ' + policy.ratePercent + '% cọc thực nhận.')}
+          </p>
+          {policy.requestedAt && (
+            <p>
+              Nhận yêu cầu: {formatDateTime(policy.requestedAt)} · Bắt đầu tiệc:{' '}
+              {formatDateTime(policy.eventStartsAt)}
+            </p>
+          )}
+          <p>
+            Cọc thực nhận: {money(policy.depositReceivedVnd)} · Đã hoàn:{' '}
+            {money(policy.alreadyRefundedVnd)}
+          </p>
+          {policy.entitledVnd !== null && (
+            <p>
+              {recording?.bookingPhase === 'CANCELLED' ? 'Còn được hoàn: ' : 'Mức hoàn dự kiến: '}
+              <strong>{money(policy.remainingVnd)}</strong>
+            </p>
+          )}
+          {policy.ratePercent === 0 && recording?.bookingPhase === 'CANCELLED' && (
+            <p>
+              {policy.depositReceivedVnd === 0
+                ? 'Chưa thu cọc nên không phát sinh hoàn cọc.'
+                : 'Yêu cầu hủy dưới 7 ngày trước giờ bắt đầu ca: không hoàn cọc.'}
+            </p>
+          )}
+          <p>
+            Khách hủy: từ 30 ngày hoàn 100%; từ 7 đến dưới 30 ngày hoàn 50%; dưới 7 ngày không hoàn
+            cọc. Mỗi ngày tính đủ 24 giờ. Nhà hàng hủy: hoàn 100% cọc thực nhận. Khoản bồi thường
+            thêm được xử lý bên ngoài hệ thống.
+          </p>
+        </div>
+      )}
       <form ref={form} onSubmit={review} onChangeCapture={() => setDirty(true)}>
-        <fieldset
-          className={fieldsetClass}
-          disabled={
-            disabled || draft !== null || payments.length === 0 || booking.billingRevision === 0
-          }
-        >
+        <fieldset className={fieldsetClass} disabled={disabled || draft !== null}>
           <div className={rowClass}>
             <label className={labelClass}>
               Khoản thanh toán gốc
@@ -363,22 +423,63 @@ export function RefundForm({
                 className={selectClass}
               >
                 <option value="">Chọn khoản thanh toán</option>
-                {payments.map((entry) => (
-                  <option key={entry.paymentId} value={entry.paymentId}>
-                    {entry.purpose === 'DEPOSIT'
-                      ? 'Cọc'
-                      : entry.purpose === 'BALANCE'
-                        ? 'Thu số dư'
-                        : 'Khoản thu'}{' '}
-                    ·{' '}
-                    {entry.provider === 'VNPAY'
-                      ? 'VNPay'
-                      : entry.provider === 'MANUAL'
-                        ? 'Ngoài hệ thống'
-                        : 'Chưa có phương thức'}{' '}
-                    · {formatDateTime(entry.occurredAt)} · Còn hoàn {money(entry.maxRefundVnd)}
-                  </option>
-                ))}
+                {policy &&
+                  payments.length === 0 &&
+                  policy.options.map((option) => (
+                    <option key={option.percent} value={'preview:' + option.percent} disabled>
+                      Hoàn {option.percent}% cọc · {money(option.amountVnd)} · Chưa có khoản cọc khả
+                      dụng
+                    </option>
+                  ))}
+                {payments.flatMap((entry) =>
+                  policy
+                    ? policy.options.map((option) => {
+                        const applicable =
+                          option.percent === policy.ratePercent &&
+                          entry.paymentId === policy.depositPaymentId;
+                        return (
+                          <option
+                            key={entry.paymentId + ':' + option.percent}
+                            value={
+                              applicable
+                                ? entry.paymentId
+                                : entry.paymentId + ':preview:' + option.percent
+                            }
+                            disabled={!canRecord || !applicable || entry.maxRefundVnd <= 0}
+                          >
+                            Cọc · {entry.provider === 'VNPAY' ? 'VNPay' : 'Ngoài hệ thống'} ·{' '}
+                            {option.percent}% ·{' '}
+                            {money(applicable && canRecord ? entry.maxRefundVnd : option.amountVnd)}
+                            {!canRecord
+                              ? ' · Chưa thể ghi nhận'
+                              : !applicable
+                                ? ' · Không áp dụng'
+                                : ''}
+                          </option>
+                        );
+                      })
+                    : [
+                        <option
+                          key={entry.paymentId}
+                          value={entry.paymentId}
+                          disabled={!canRecord || entry.maxRefundVnd <= 0}
+                        >
+                          {entry.purpose === 'DEPOSIT'
+                            ? 'Cọc'
+                            : entry.purpose === 'BALANCE'
+                              ? 'Thu số dư'
+                              : 'Khoản thu'}{' '}
+                          ·{' '}
+                          {entry.provider === 'VNPAY'
+                            ? 'VNPay'
+                            : entry.provider === 'MANUAL'
+                              ? 'Ngoài hệ thống'
+                              : 'Chưa có phương thức'}{' '}
+                          · {formatDateTime(entry.occurredAt)} · Còn hoàn{' '}
+                          {money(entry.maxRefundVnd)}
+                        </option>,
+                      ],
+                )}
               </HySelect>
             </label>
             <label className={labelClass}>
@@ -386,7 +487,9 @@ export function RefundForm({
               <Input
                 className={inputClass}
                 name="amount"
-                disabled={!selected}
+                key={sourceId + ':' + selected?.maxRefundVnd}
+                defaultValue={selected?.maxRefundVnd ?? undefined}
+                disabled={!selected || !canRecord}
                 type="number"
                 min={1}
                 max={selected?.maxRefundVnd ?? 0}
@@ -400,7 +503,11 @@ export function RefundForm({
               ? 'Số tiền còn được hoàn cho giao dịch này: ' + money(selected.maxRefundVnd)
               : 'Chọn giao dịch gốc để xem số tiền được hoàn.'}
           </p>
-          <Button type="submit" className="self-start" disabled={!selected}>
+          <Button
+            type="submit"
+            className="self-start"
+            disabled={!selected || !canRecord || !selected.maxRefundVnd}
+          >
             Kiểm tra khoản hoàn
           </Button>
         </fieldset>

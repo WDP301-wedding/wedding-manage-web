@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { selectOption } from '../../test/select-option';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiClientError } from '../../lib/api/client';
 import { ManagementIdentitySession } from '../identity-access/session';
@@ -228,6 +229,7 @@ describe('Management booking timeline, cancellation and access', () => {
   it('uses Manager cancellation and completion commands with the displayed revision', async () => {
     const gateway = fakeGateway();
     await open(gateway, { ...proposal, phase: 'CONFIRMED' });
+    await selectOption('Bên yêu cầu hủy', 'Nhà hàng hủy (kể cả bất khả kháng)');
     fireEvent.change(screen.getByLabelText('Lý do hủy'), { target: { value: 'Change plans' } });
     fireEvent.click(screen.getByRole('button', { name: 'Hủy booking' }));
     await waitFor(() =>
@@ -235,6 +237,7 @@ describe('Management booking timeline, cancellation and access', () => {
         bookingId: proposal.bookingId,
         expectedRevision: 3,
         reason: 'Change plans',
+        initiator: 'RESTAURANT',
       }),
     );
     await waitFor(() =>

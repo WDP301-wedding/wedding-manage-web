@@ -90,7 +90,19 @@ export function createManagementBillingGateway(client?: ApiClient): ManagementBi
         cache: 'no-store',
       });
       const value = required(data);
-      return { ...value, refundablePayments: Array.from(value.refundablePayments) };
+      const { cancellationRefund, ...rest } = value;
+      return {
+        ...rest,
+        ...(cancellationRefund
+          ? {
+              cancellationRefund: {
+                ...cancellationRefund,
+                options: Array.from(cancellationRefund.options),
+              },
+            }
+          : {}),
+        refundablePayments: Array.from(value.refundablePayments),
+      };
     },
     async approveRefund(token, body, key) {
       const { data } = await api().POST('/management/billing/refund-approvals', {
