@@ -46,11 +46,24 @@ export function DashboardAnalyticsExtra({
     // Nếu analytics từ backend có hallRevenues (sẽ mở rộng ở backend)
     const backendHalls = (analytics as unknown as { hallRevenues?: HallRevenueItem[] })?.hallRevenues;
     if (backendHalls && backendHalls.length > 0) {
+      const backendMap = new Map(backendHalls.map((h) => [h.hallId, h]));
       const totalRev = backendHalls.reduce((sum, h) => sum + (h.revenueVnd || 0), 0) || 1;
-      return backendHalls.map((h) => ({
+      const merged: HallRevenueItem[] = backendHalls.map((h) => ({
         ...h,
         percentage: Math.round(((h.revenueVnd || 0) / totalRev) * 100),
       }));
+      for (const hall of halls) {
+        if (!backendMap.has(hall.id)) {
+          merged.push({
+            hallId: hall.id,
+            hallName: hall.name,
+            revenueVnd: 0,
+            bookingCount: 0,
+            percentage: 0,
+          });
+        }
+      }
+      return merged.sort((a, b) => b.revenueVnd - a.revenueVnd || b.bookingCount - a.bookingCount || a.hallName.localeCompare(b.hallName));
     }
 
     // Fallback: Tính toán từ bookings và analytics netCashRevenue
