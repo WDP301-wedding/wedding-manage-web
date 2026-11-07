@@ -29,7 +29,7 @@ export function RestaurantForm({
     const data = new FormData(event.currentTarget);
     const depositPct = Math.min(
       100,
-      Math.max(10, parseInt(String(data.get('depositPercentage') || '30'), 10) || 30),
+      Math.max(10, parseInt(String(data.get('depositPercentage') || savedDepositPct), 10) || 30),
     );
     await onSubmit({
       displayName: field(data, 'displayName'),
@@ -51,11 +51,13 @@ export function RestaurantForm({
         label="Email công khai"
         name="publicEmail"
         type="email"
+        required={false}
         defaultValue={restaurant.publicEmail ?? ''}
       />
       <Field
         label="Điện thoại công khai"
         name="publicPhone"
+        required={false}
         defaultValue={restaurant.publicPhone ?? ''}
       />
       <Field
@@ -218,6 +220,7 @@ export function Field({
   id,
   label,
   name,
+  required = true,
   ...props
 }: Readonly<
   React.InputHTMLAttributes<HTMLInputElement> & {
@@ -225,6 +228,7 @@ export function Field({
     className?: string;
     label: string;
     name: string;
+    required?: boolean;
   }
 >) {
   const fieldId = id ?? `catalog-${name}`;
@@ -235,11 +239,11 @@ export function Field({
         <textarea
           id={fieldId}
           name={name}
-          required
+          required={required}
           defaultValue={String(props.defaultValue ?? '')}
         />
       ) : (
-        <input {...props} id={fieldId} name={name} required />
+        <input {...props} id={fieldId} name={name} required={required} />
       )}
     </div>
   );

@@ -190,7 +190,10 @@ export function DashboardAnalyticsExtra({
                       <span className="mr-2 text-xs text-muted-foreground">#{idx + 1}</span>
                       Doanh thu {h.hallName}
                     </span>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2.5">
+                      <Badge variant="neutral" className="tabular-nums font-semibold text-2xs px-1.5 py-0">
+                        {h.percentage}%
+                      </Badge>
                       <span className="text-xs text-muted-foreground">
                         {h.bookingCount} tiệc
                       </span>
