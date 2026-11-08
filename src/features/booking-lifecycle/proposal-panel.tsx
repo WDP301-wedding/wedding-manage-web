@@ -1,5 +1,6 @@
 'use client';
 
+import { tableCapacityMessage } from '../../lib/table-capacity';
 import { useState } from 'react';
 import { Check, Lock, Pencil } from 'lucide-react';
 
@@ -139,10 +140,33 @@ export function ProposalPanel({
               {proposal.proposal.shift.endTime}
             </p>
           </div>
+          <p className="text-xs text-muted-foreground">
+            {proposal.commercialSource === 'APPENDIX'
+              ? 'Theo phụ lục đã được hai bên duyệt'
+              : proposal.commercialSource === 'CONTRACT'
+                ? 'Theo hợp đồng đã được hai bên duyệt'
+                : 'Theo đề xuất booking ban đầu'}{' '}
+            · tối đa 10 người/bàn.
+          </p>
+          {proposal.capacity?.issue ? (
+            <p role="alert" className="text-sm text-destructive">
+              {tableCapacityMessage(
+                proposal.planningHeadcount,
+                proposal.proposal.tableCount,
+                proposal.capacity.maximumTables,
+                proposal.proposal.hall.maxGuests,
+              )}{' '}
+              Thỏa thuận đã duyệt được giữ nguyên; cần điều chỉnh để phù hợp sơ đồ sảnh.
+            </p>
+          ) : null}
           <dl className="grid grid-cols-2 gap-2">
             <div className="flex flex-col gap-0.5 rounded-lg bg-muted p-3">
               <dt className="text-xs text-muted-foreground">Thực đơn</dt>
-              <dd className="font-semibold">{proposal.proposal.menu.name}</dd>
+              <dd className="font-semibold">
+                {proposal.proposal.menus
+                  .map((menu) => `${menu.name} (${menu.tableCount} bàn)`)
+                  .join(' · ')}
+              </dd>
             </div>
             <div className="flex flex-col gap-0.5 rounded-lg bg-muted p-3">
               <dt className="text-xs text-muted-foreground">Số bàn</dt>

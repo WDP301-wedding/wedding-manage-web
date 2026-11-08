@@ -1,5 +1,6 @@
 'use client';
 
+import { tableCapacityMessage } from '../../lib/table-capacity';
 import { cn } from 'cn';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -32,10 +33,18 @@ export function BookingCreateSummary({
   depositPercentage,
 }: Readonly<BookingCreateSummaryProps>) {
   const maxGuests = currentHall?.maxGuests ?? 0;
-  const isOverCapacity = maxGuests > 0 && currentHeadcount > maxGuests;
+  const capacityError = currentHall
+    ? tableCapacityMessage(currentHeadcount, currentTables, currentHall.maxTables, maxGuests)
+    : null;
+  const isOverCapacity = capacityError !== null;
+  const availableSeats = Math.min(
+    maxGuests,
+    currentTables * 10,
+    (currentHall?.maxTables ?? 500) * 10,
+  );
   const capacityPercent =
-    maxGuests > 0 && currentHeadcount > 0
-      ? Math.min(100, Math.round((currentHeadcount / maxGuests) * 100))
+    availableSeats > 0 && currentHeadcount > 0
+      ? Math.min(100, Math.round((currentHeadcount / availableSeats) * 100))
       : 0;
   const estimatedTotal = currentMenu ? currentMenu.priceVndPerTable * currentTables : 0;
   const estimatedDeposit =
@@ -72,9 +81,9 @@ export function BookingCreateSummary({
 
       <div className="flex flex-col gap-2">
         <div className="flex justify-between gap-3 text-xs">
-          <span className="text-muted-foreground">Sức chứa sảnh</span>
+          <span className="text-muted-foreground">Sức chứa theo số bàn</span>
           <span className="font-semibold tabular-nums">
-            {currentHall ? `${currentHeadcount || 0} / ${currentHall.maxGuests} khách` : '--'}
+            {currentHall ? `${currentHeadcount || 0} / ${availableSeats} khách` : '--'}
           </span>
         </div>
         <div aria-hidden className="h-2 overflow-hidden rounded-full bg-secondary">
@@ -84,11 +93,9 @@ export function BookingCreateSummary({
           />
         </div>
         {isOverCapacity ? (
-          <p className="text-xs font-semibold text-hy-error">
-            Vượt quá sức chứa tối đa của sảnh ({currentHall?.maxGuests} khách)
-          </p>
+          <p className="text-xs font-semibold text-hy-error">{capacityError}</p>
         ) : currentHall && currentHeadcount > 0 ? (
-          <p className="text-xs text-hy-success">Sức chứa sảnh phù hợp ({capacityPercent}%)</p>
+          <p className="text-xs text-hy-success">Số bàn đủ chỗ ({capacityPercent}%)</p>
         ) : null}
       </div>
 
@@ -130,7 +137,7 @@ export function BookingCreateSummary({
 
       <div className="flex flex-col gap-2">
         <Button
-          disabled={disabled || !hasConsultation}
+          disabled={disabled || !hasConsultation || isOverCapacity}
           type="submit"
           className="h-auto min-h-13 w-full flex-col gap-0 py-2"
           aria-label="Tạo booking"
