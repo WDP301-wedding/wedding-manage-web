@@ -20,6 +20,7 @@ import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import type { BillingView } from './billing-api';
 import { SettlementNotice } from './settlement-notice';
+import { ExpenseReviewControls } from './expense-review-controls';
 
 export function IncidentalsPanel({
   bookingId,
@@ -263,6 +264,18 @@ export function IncidentalsPanel({
         </p>
       )}
 
+      {incidentals ? (
+        <ExpenseReviewControls
+          currentInvoiceRevisionId={finalInvoices?.currentRevisionId ?? null}
+          bookingId={bookingId}
+          data={incidentals}
+          disabled={disabled || loading || finalizing || Boolean(loadError)}
+          onSaved={() => {
+            live.schedule();
+            onRefresh();
+          }}
+        />
+      ) : null}
       {/* Bố cục 2 cột: trái là quyết toán và hoá đơn cuối, phải là chi phí phát sinh nháp. */}
       <div className="flex flex-wrap items-start gap-6">
         {/* CỘT TRÁI: Nghiệp vụ tất toán sau tiệc & Hoá đơn cuối */}
@@ -294,7 +307,8 @@ export function IncidentalsPanel({
                     finalizing ||
                     Boolean(loadError) ||
                     !incidentals ||
-                    !appendices?.effectiveRevisionId
+                    !appendices?.effectiveRevisionId ||
+                    (incidentals.approvalRequired && !incidentals.canFinalize)
                   }
                   onClick={() => setShowFinalizeConfirm(true)}
                 >
@@ -378,6 +392,8 @@ export function IncidentalsPanel({
             (item) => item.invoiceRevisionId === finalInvoices.currentRevisionId,
           ) ? (
             <InvoiceAdjustmentForm
+              pricing={incidentals?.pricing ?? []}
+              approvalRequired={incidentals?.approvalRequired ?? false}
               key={finalInvoices.currentRevisionId}
               bookingId={bookingId}
               current={finalInvoices.revisions.find(
@@ -462,7 +478,11 @@ export function IncidentalsPanel({
                   showFinalizeConfirm ||
                   showAdjustment ||
                   Boolean(loadError) ||
-                  !incidentals
+                  !incidentals ||
+                  (incidentals.approvalRequired &&
+                    Boolean(
+                      incidentals.currentReview && incidentals.currentReview.state !== 'WITHDRAWN',
+                    ))
                 }
                 onClick={() => setShowAddForm(true)}
               >
@@ -474,6 +494,7 @@ export function IncidentalsPanel({
 
           {showAddForm && !hasFinalizedInvoice ? (
             <IncidentalCreateForm
+              pricing={incidentals?.approvalRequired ? incidentals.pricing : undefined}
               disabled={disabled}
               loading={loading}
               onSubmit={handleCreateIncidental}
@@ -489,7 +510,12 @@ export function IncidentalsPanel({
               finalizing ||
               showFinalizeConfirm ||
               showAdjustment ||
-              Boolean(loadError)
+              Boolean(loadError) ||
+              Boolean(
+                incidentals?.approvalRequired &&
+                incidentals.currentReview &&
+                incidentals.currentReview.state !== 'WITHDRAWN',
+              )
             }
             loading={loading}
             onDeleteLine={handleDeleteLine}
