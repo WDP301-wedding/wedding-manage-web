@@ -14,6 +14,10 @@ booking. Contracts display their own stored percentage, including historical 30%
 No client-side percentage calculation is authoritative for payment.
 
 The new report has strict local Zod DTOs, matching the backend schema byte-for-byte.
-Released OpenAPI pins are retained until an actual coordinated backend release.
+The generated OpenAPI client is pinned to the live backend release
+`56372ce9f683735d9dfea87016cd2b898f0225fd` (Render deployment
+`dep-dbo44qk9v7es73e876dg`), SHA-256
+`42f27e6c510b26b384d4b9e86b171be14a85da08110e7ef97be445d36f7fea27`.
+The deployed schema digest was verified before regenerating this client.
 See `../wedding-be/docs/tasks-8-10-api-handoff.md` and backend verification evidence.
 No production release or live financial operation is implied by local tests.
