@@ -3,7 +3,7 @@ import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { cardClass } from './staff-classes';
 import type { StaffWorkspace } from '../../services/staff-workspace.contracts';
-import { formatDate, formatDateTime } from '../booking-lifecycle/booking-helpers';
+import { formatDate } from '../booking-lifecycle/booking-helpers';
 export const eventDate = (value: string) => formatDate(value);
 export function StaffEventSelector({
   context,
@@ -27,6 +27,15 @@ export function StaffEventSelector({
               : 'Chọn tiệc trước khi tác nghiệp. Chỉ hiển thị tiệc thuộc quyền truy cập.'}
           </p>
         </div>
+        {context.workspace && (
+          <Button
+            variant="outline"
+            disabled={disabled || context.loading}
+            onClick={() => void context.refreshWorkspace()}
+          >
+            Cập nhật thông tin tiệc
+          </Button>
+        )}
       </div>
       <details
         open={!context.workspace}
@@ -104,7 +113,9 @@ export function StaffEventSelector({
             <p className="text-sm text-muted-foreground">
               {context.loadingEvents
                 ? 'Đang tải danh sách tiệc…'
-                : 'Không có tiệc phù hợp. Thử đổi trạng thái hoặc từ khóa.'}
+                : isManager
+                  ? 'Không có tiệc phù hợp. Thử đổi trạng thái hoặc từ khóa.'
+                  : 'Bạn chưa có tiệc được phân công trong bộ lọc này. Liên hệ Manager nếu cần điều chỉnh.'}
             </p>
           )}
           {context.nextEvent && (
@@ -126,66 +137,67 @@ export function StaffEventSelector({
     </section>
   );
 }
-export function StaffCheckinReadiness({
-  context,
-  disabled,
-}: Readonly<{ context: ReturnType<typeof useStaffEventContext>; disabled: boolean }>) {
-  const view = context.workspace;
-  if (!view) return null;
+export function StaffEventOverview({ view }: Readonly<{ view: StaffWorkspace }>) {
+  const info = view.operations;
   return (
-    <section className={cardClass} aria-label="Điều kiện đón khách">
+    <section className={cardClass} aria-label="Thông tin tiệc được phân công">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold">Điều kiện đón khách</h2>
+          <h2 className="text-lg font-semibold">Thông tin tiệc · {view.bookingCode}</h2>
           <p className="text-sm text-muted-foreground">
-            {view.settings.checkInMode === 'NONE'
-              ? 'Chưa bật check-in theo tên'
-              : 'Đã bật check-in theo tên'}{' '}
-            · {view.windowOpen ? 'Đang trong giờ đón khách' : 'Ngoài khung giờ check-in'}
+            {info.phase === 'COMPLETED' ? 'Đã hoàn thành' : 'Đã xác nhận'} ·{' '}
+            {eventDate(view.timeline.eventDate)} · {view.timeline.hallName}
           </p>
         </div>
-        {view.isManager && (
-          <Button
-            variant="outline"
-            disabled={
-              disabled ||
-              context.configuring ||
-              view.settings.locked ||
-              (view.settings.checkInMode === 'NONE' && view.listedGuestCount === 0)
-            }
-            onClick={() => void context.configure()}
-          >
-            {view.settings.checkInMode === 'NONE'
-              ? 'Bật check-in theo tên'
-              : 'Tắt check-in theo tên'}
-          </Button>
-        )}
+        <p className="text-sm font-semibold">
+          {view.timeline.shiftStartTime}–{view.timeline.shiftEndTime}
+        </p>
       </div>
-      <dl className="grid grid-cols-3 gap-3 text-sm">
+      <dl className="grid grid-cols-2 gap-3 text-sm lg:grid-cols-4">
         {[
-          ['Quy mô dự kiến', view.planningHeadcount],
-          ['Khách có tên', view.listedGuestCount],
-          ['Đã check-in theo danh sách', view.attendance.checkedInGuestCount ?? 'Chưa ghi nhận'],
+          ['Cô dâu', info.brideName ?? 'Chưa bổ sung'],
+          ['Chú rể', info.groomName ?? 'Chưa bổ sung'],
+          ['Số khách dự kiến', `${view.planningHeadcount} khách`],
+          ['Số bàn đã chốt', `${info.tableCount} bàn`],
         ].map(([label, value]) => (
           <div key={label} className="min-w-0 rounded-lg bg-muted p-3">
             <dt className="text-xs text-muted-foreground">{label}</dt>
-            <dd className="mt-1 font-semibold tabular-nums">{value}</dd>
+            <dd className="mt-1 font-semibold break-words">{value}</dd>
           </div>
         ))}
       </dl>
+      <div className="grid gap-4 lg:grid-cols-2">
+        {(['MENU', 'SERVICE'] as const).map((category) => (
+          <section key={category} className="rounded-lg border border-border p-4">
+            <h3 className="font-semibold">
+              {category === 'MENU' ? 'Thực đơn phục vụ' : 'Dịch vụ đã chốt'}
+            </h3>
+            {info.offerings.filter((item) => item.category === category).length === 0 ? (
+              <p className="mt-2 text-sm text-muted-foreground">Chưa có thông tin.</p>
+            ) : (
+              <ul className="mt-2 space-y-3">
+                {info.offerings
+                  .filter((item) => item.category === category)
+                  .map((item, index) => (
+                    <li key={`${category}:${index}`} className="text-sm">
+                      <strong>{item.name}</strong> · {item.quantity} {item.unit}
+                      {item.description && (
+                        <p className="mt-1 whitespace-pre-wrap text-muted-foreground">
+                          {item.description}
+                        </p>
+                      )}
+                    </li>
+                  ))}
+              </ul>
+            )}
+          </section>
+        ))}
+      </div>
       <p className="text-sm text-muted-foreground">
-        Khung giờ do máy chủ xác định: {formatDateTime(view.windowOpensAt)} đến{' '}
-        {formatDateTime(view.windowClosesAt)}. Manager luôn cần ghi lý do; chỉ Manager được thao tác
-        ngoài khung giờ. Đã có bản ghi check-in thì không thể tắt chế độ.
-      </p>
-      {view.listedGuestCount === 0 && (
-        <p role="status" className="text-sm text-primary">
-          Chưa có khách ghi tên. Couple hoặc Manager cần bổ sung danh sách trước khi bật check-in.
-        </p>
-      )}
-      <p className="text-xs text-muted-foreground">
-        Số check-in chỉ là khách có tên trong danh sách, không phải tổng khách thực tế và không dùng
-        để tính tiền.
+        Đội ngũ được phân công:{' '}
+        {view.members.length
+          ? view.members.map((member) => member.label).join(', ')
+          : 'Chưa có nhân viên được phân công.'}
       </p>
     </section>
   );

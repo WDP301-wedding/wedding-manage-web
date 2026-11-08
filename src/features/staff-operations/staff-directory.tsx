@@ -13,12 +13,14 @@ export function StaffDirectory({
   pending,
   accountId,
   onReason,
+  onChanged,
 }: Readonly<{
   selectedId: string;
   onSelect: (id: string, label: string, setup: boolean) => void;
   pending: boolean;
   accountId: string;
   onReason: StaffReasonAction;
+  onChanged: () => Promise<void>;
 }>) {
   const [input, setInput] = useState('');
   const [query, setQuery] = useState('');
@@ -63,7 +65,7 @@ export function StaffDirectory({
             items: previous.items.filter((item) => item.accountId !== person.accountId),
           },
       );
-      await load(query);
+      await Promise.all([load(query), onChanged()]);
     });
   return (
     <div className="grid gap-2">

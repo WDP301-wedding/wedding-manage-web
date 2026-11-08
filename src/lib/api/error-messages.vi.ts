@@ -10,7 +10,7 @@ export const codeMessages: Readonly<Record<string, string>> = {
   PRINT_PURCHASE_USE_APPROVAL:
     'Đơn này đã có xác nhận chi phí. Nhà hàng cần duyệt đơn và phụ lục cùng nhau.',
   PRINTABLE_SEATING_REQUIRES_REVIEW:
-    'Sơ đồ bàn chưa được xác nhận hoặc cần kiểm tra lại. Hãy hoàn tất sơ đồ ở Khách & sơ đồ.',
+    'Sơ đồ bàn chưa được xác nhận hoặc cần kiểm tra lại. Hãy hoàn tất sơ đồ ở Nhóm & sơ đồ.',
   PRINT_QUOTE_STALE: 'Nội dung hoặc giá đã thay đổi. Hãy xem lại bản in và giá trước khi xác nhận.',
   PRINT_QUOTE_EXPIRED: 'Giá in đã hết hiệu lực. Hãy lấy bản xem trước và giá mới.',
   CONTRACT_PRINT_TEMPLATE_CONFLICT:
@@ -185,7 +185,10 @@ export const codeMessages: Readonly<Record<string, string>> = {
   CHECK_IN_WINDOW_CLOSED:
     'Bàn check-in chỉ mở trong khung giờ của tiệc. Ngoài giờ, quản lý check-in và ghi lý do.',
   MANAGER_OVERRIDE_REQUIRED: 'Tài khoản quản lý cần ghi lý do cho thao tác check-in này.',
-  EVENT_ASSIGNMENT_REQUIRED: 'Bạn chưa được phân công vào tiệc này nên chưa mở được bàn check-in.',
+  FEATURE_RETIRED:
+    'Chức năng danh sách khách và check-in đã ngừng sử dụng. Hãy tải lại hoặc cập nhật ứng dụng.',
+  EVENT_ASSIGNMENT_REQUIRED:
+    'Bạn chưa được phân công hoặc phân công đã được thu hồi. Vui lòng liên hệ Manager.',
   STAFF_WORK_REVISION_STALE:
     'Nội dung tác nghiệp đã có phiên bản mới. Đóng phần sửa và mở lại dữ liệu hiện tại.',
   STAFF_WORK_ACTION_FORBIDDEN:
