@@ -9,6 +9,7 @@ export type CatalogMedia = components['schemas']['CatalogMediaView'];
 export type Authorize = <T>(operation: (accessToken: string) => Promise<T>) => Promise<T>;
 
 export type ManagerRestaurant = Readonly<{
+  depositPercentage?: number;
   id: string;
   displayName: string;
   description: string;

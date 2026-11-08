@@ -13,7 +13,7 @@ const STEPS = [
   { id: 'consultation', label: 'Tư vấn', desc: 'Tiếp nhận yêu cầu' },
   { id: 'draft', label: 'Đề xuất & Giữ sảnh', desc: 'Sảnh, ca & thực đơn' },
   { id: 'timeline', label: 'Kịch bản & Hợp đồng', desc: 'Cam kết 2 bên' },
-  { id: 'deposit', label: 'Xác nhận & Cọc', desc: 'Đặt cọc 30%' },
+  { id: 'deposit', label: 'Xác nhận & Cọc', desc: 'Cọc theo hợp đồng' },
   { id: 'completed', label: 'Hoàn thành', desc: 'Kết thúc tổ chức tiệc' },
 ];
 
