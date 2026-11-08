@@ -43,7 +43,7 @@ export function IncidentalTable({
                 <strong className="block font-semibold">{line.name}</strong>
                 <small className="text-2xs text-muted-foreground">
                   <span className="sr-only">Ghi chú: </span>
-                  {line.note || '—'}
+                  {[line.reason, line.note].filter(Boolean).join(' · ') || '—'}
                 </small>
               </td>
               <td className="px-3 py-2 tabular-nums">

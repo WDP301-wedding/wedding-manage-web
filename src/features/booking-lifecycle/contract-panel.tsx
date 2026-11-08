@@ -372,6 +372,25 @@ export function ContractPanel({
               ) : null}
 
               <ContractLinesTable lines={currentRevision.document.lines} />
+              {currentRevision.document.incidentalPricing ? (
+                <section className="flex flex-col gap-2 text-sm">
+                  <h3 className="font-semibold">Bảng đơn giá áp dụng khi phát sinh</h3>
+                  <p>
+                    Không cộng vào hợp đồng hoặc tiền cọc. Sau tiệc, hai bên duyệt bảng phát sinh
+                    trước khi tất toán; Manager có thể xác nhận không phát sinh.
+                  </p>
+                  <ul>
+                    {currentRevision.document.incidentalPricing.map((item) => (
+                      <li key={item.offeringId}>
+                        {item.name} · {formatVnd(item.unitPriceVnd)}/{item.unit}
+                        <p>
+                          {item.description} · {item.chargingRule}
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              ) : null}
 
               <ApprovalStatus
                 managerApproved={Boolean(managerApproved)}

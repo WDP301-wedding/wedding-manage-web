@@ -1,13 +1,19 @@
 'use client';
 import { useRef, useState, type FormEvent } from 'react';
-import { billingService, type FinalInvoicesResponse } from '../../services/billing.service';
+import {
+  billingService,
+  type FinalInvoicesResponse,
+  type IncidentalExpensesResponse,
+} from '../../services/billing.service';
 import { notify } from '../../design-system/notifications';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { HySelect } from '../../components/ui/select-field';
 import { formatVnd } from '../../lib/formatters';
+import { axiosApiClient } from '../../lib/api/axios-client';
 
 type Line = {
+  offeringId?: string | undefined;
   kind: 'DEBIT' | 'CREDIT';
   name: string;
   quantity: number;
@@ -22,6 +28,8 @@ export function InvoiceAdjustmentForm({
   disabled,
   onCancel,
   onSaved,
+  approvalRequired = false,
+  pricing = [],
 }: Readonly<{
   bookingId: string;
   current: FinalInvoicesResponse['revisions'][number];
@@ -29,6 +37,8 @@ export function InvoiceAdjustmentForm({
   disabled: boolean;
   onCancel: () => void;
   onSaved: () => void;
+  approvalRequired?: boolean;
+  pricing?: IncidentalExpensesResponse['pricing'];
 }>) {
   const [reason, setReason] = useState('');
   const [lines, setLines] = useState<Line[]>([emptyLine()]);
@@ -78,7 +88,16 @@ export function InvoiceAdjustmentForm({
       expectedBillingRevision: billingRevision,
       expectedInvoiceRevisionId: current.invoiceRevisionId,
       reason: reason.trim(),
-      lines: lines.map((line) => ({ ...line, name: line.name.trim(), unit: line.unit.trim() })),
+      lines: lines.map((line) => ({
+        ...line,
+        name: line.name.trim(),
+        unit: line.unit.trim(),
+        ...(approvalRequired
+          ? line.offeringId
+            ? { sourceType: 'CATALOG' as const, offeringId: line.offeringId }
+            : { sourceType: 'OTHER' as const, reason: reason.trim() }
+          : {}),
+      })),
     };
     const fingerprint = JSON.stringify([bookingId, body]);
     if (intent.current?.fingerprint !== fingerprint)
@@ -86,8 +105,18 @@ export function InvoiceAdjustmentForm({
     lock.current = true;
     setPending(true);
     try {
-      await billingService.adjustInvoice(bookingId, body, intent.current.key);
-      notify.success('Đã tạo phiên bản điều chỉnh hóa đơn. Bản cũ được giữ nguyên.');
+      if (approvalRequired)
+        await axiosApiClient.post(
+          `/management/bookings/${bookingId}/incidental-expenses/adjustment-proposals`,
+          body,
+          { headers: { 'Idempotency-Key': intent.current.key } },
+        );
+      else await billingService.adjustInvoice(bookingId, body, intent.current.key);
+      notify.success(
+        approvalRequired
+          ? 'Đã gửi đề xuất điều chỉnh để Couple duyệt.'
+          : 'Đã tạo phiên bản điều chỉnh hóa đơn. Bản cũ được giữ nguyên.',
+      );
       onSaved();
     } catch (cause) {
       notify.error(cause);
@@ -129,6 +158,30 @@ export function InvoiceAdjustmentForm({
               className="grid gap-2 rounded-lg bg-muted p-3 sm:grid-cols-2"
             >
               <legend className="text-xs">Khoản {index + 1}</legend>
+              {approvalRequired ? (
+                <label className="text-xs">
+                  Chọn hạng mục
+                  <HySelect
+                    value={line.offeringId ?? 'OTHER'}
+                    onChange={(event) => {
+                      const item = pricing.find((p) => p.offeringId === event.target.value);
+                      update(index, {
+                        offeringId: item?.offeringId,
+                        name: item?.name ?? '',
+                        unit: item?.unit ?? 'khoản',
+                        unitPriceVnd: item?.unitPriceVnd ?? 0,
+                      });
+                    }}
+                  >
+                    <option value="OTHER">Khác — mô tả và lý do điều chỉnh</option>
+                    {pricing.map((p) => (
+                      <option key={p.offeringId} value={p.offeringId}>
+                        {p.name} · {formatVnd(p.unitPriceVnd)}/{p.unit}
+                      </option>
+                    ))}
+                  </HySelect>
+                </label>
+              ) : null}
               <label className="text-xs">
                 Loại
                 <HySelect
@@ -145,6 +198,7 @@ export function InvoiceAdjustmentForm({
                 Hạng mục
                 <Input
                   value={line.name}
+                  readOnly={Boolean(line.offeringId)}
                   maxLength={120}
                   required
                   onChange={(event) => update(index, { name: event.target.value })}
@@ -167,6 +221,7 @@ export function InvoiceAdjustmentForm({
                 Đơn vị
                 <Input
                   value={line.unit}
+                  readOnly={Boolean(line.offeringId)}
                   maxLength={80}
                   required
                   onChange={(event) => update(index, { unit: event.target.value })}
@@ -177,6 +232,7 @@ export function InvoiceAdjustmentForm({
                 <Input
                   type="number"
                   value={line.unitPriceVnd}
+                  readOnly={Boolean(line.offeringId)}
                   min={0}
                   step={1}
                   required
@@ -229,7 +285,11 @@ export function InvoiceAdjustmentForm({
               disabled={pending || disabled || !valid || !withinLimit}
               onClick={() => void save()}
             >
-              {pending ? 'Đang ghi nhận…' : 'Xác nhận tạo bản điều chỉnh'}
+              {pending
+                ? 'Đang ghi nhận…'
+                : approvalRequired
+                  ? 'Duyệt và gửi Couple'
+                  : 'Xác nhận tạo bản điều chỉnh'}
             </Button>
             <Button
               type="button"

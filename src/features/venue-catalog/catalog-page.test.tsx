@@ -6,6 +6,12 @@ import { ApiClientError } from '../../lib/api/client';
 import type { CatalogGateway, VenueCatalogGateway } from './catalog-api';
 import { VenueCatalogWorkspace } from './catalog-page';
 
+vi.mock('../../lib/api/axios-client', () => ({
+  axiosApiClient: {
+    get: vi.fn().mockResolvedValue({ data: { data: { items: [], nextCursor: null } } }),
+  },
+}));
+
 const hallId = '00000000-0000-4000-8000-000000000011';
 
 function snapshot() {

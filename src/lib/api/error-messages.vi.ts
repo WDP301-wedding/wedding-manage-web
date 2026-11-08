@@ -268,6 +268,20 @@ export const codeMessages: Readonly<Record<string, string>> = {
   CONTRACT_PRINT_REPLACEMENT_REQUIRES_NEW_ORDER:
     'Việc thay thế thiệp cần được xử lý bằng một đơn in mới.',
   CORS_ORIGIN_DENIED: 'Địa chỉ trang web này chưa được máy chủ cho phép kết nối.',
+  EXPENSE_APPROVAL_REQUIRED:
+    'Chi phí phát sinh hoặc điều chỉnh cần được hai bên duyệt trước khi chốt hóa đơn và tất toán.',
+  EXPENSE_REOPEN_REQUIRED: 'Bảng phát sinh đã được gửi. Hãy mở lại với lý do trước khi chỉnh sửa.',
+  EXPENSE_REVIEW_STALE: 'Bản phát sinh đã thay đổi. Hãy tải lại và duyệt đúng phiên bản hiện hành.',
+  EXPENSE_REVIEW_NOT_EDITABLE:
+    'Không thể mở lại bản phát sinh này. Hãy tải lại trạng thái mới nhất.',
+  EXPENSE_DECLARATION_INVALID:
+    'Chỉ xác nhận không phát sinh khi bảng trống; bảng có hạng mục phải gửi Couple duyệt.',
+  INCIDENTAL_OFFERING_NOT_AGREED:
+    'Hạng mục này không nằm trong bảng giá đã thỏa thuận của booking.',
+  INCIDENTAL_OTHER_REASON_REQUIRED:
+    'Khoản khác cần mô tả cụ thể và lý do; hạng mục có trong bảng giá phải được chọn từ danh mục.',
+  EXPENSE_APPROVAL_NOT_APPLICABLE: 'Booking này giữ quy trình phát sinh theo thỏa thuận trước đây.',
+  INCIDENTAL_CATALOG_LIMIT: 'Danh mục đã đạt giới hạn 200 hạng mục.',
   EXPENSE_REVISION_STALE:
     'Chi phí phát sinh vừa thay đổi. Hãy tải lại trước khi lưu hoặc chốt hóa đơn.',
   GUEST_DELIVERY_UNAVAILABLE: 'Chức năng gửi thiệp cho khách hiện chưa sẵn sàng.',
