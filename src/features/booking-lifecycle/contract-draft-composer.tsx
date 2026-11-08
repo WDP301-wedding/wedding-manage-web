@@ -1,4 +1,5 @@
 'use client';
+import { tableCapacityMessage } from '../../lib/table-capacity';
 import { useEffect, useRef, useState } from 'react';
 import { describeApiError } from '../../lib/api/api-errors';
 import { notify } from '../../design-system/notifications';
@@ -88,7 +89,17 @@ export function ContractDraftComposer({
   const stale = lines.some((l) =>
     choices?.some((c) => keyOf(c) === keyOf(l) && c.sourceRevisionId !== l.sourceRevisionId),
   );
+  const tableCount = lines
+    .filter((line) => line.category === 'MENU')
+    .reduce((sum, line) => sum + line.quantity, 0);
+  const capacityError = tableCapacityMessage(
+    proposal.planningHeadcount,
+    tableCount,
+    proposal.capacity?.maximumTables,
+    proposal.proposal.hall.maxGuests,
+  );
   const invalid =
+    capacityError !== null ||
     bookingRevision !== proposal.revision ||
     !body ||
     lines.length === 0 ||
@@ -173,6 +184,14 @@ export function ContractDraftComposer({
         <strong className="text-foreground tabular-nums">{formatVnd(seedTotalVnd)}</strong>. Đây là
         bản nhận ban đầu; dùng “Kiểm tra giá & xem trước” sau khi chỉnh sửa.
       </p>
+      <p className="text-sm text-muted-foreground">
+        Đang chọn {tableCount} bàn · {proposal.planningHeadcount} khách · tối đa 10 người/bàn.
+      </p>
+      {capacityError ? (
+        <p role="alert" className="text-sm text-destructive">
+          {capacityError}
+        </p>
+      ) : null}
       {error ? (
         <div
           role="alert"

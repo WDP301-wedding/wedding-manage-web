@@ -1,10 +1,12 @@
+import type { CommercialCapacity } from '../../lib/table-capacity';
 import { createApiClient, type ApiClient } from '../../lib/api/client';
 import type { components } from '../../lib/api/generated/schema';
 import { installCommandRetries } from './command-retries';
 import { restaurantDepositPercentage } from '../../lib/deposit-policy';
 
 export type Authorize = <T>(operation: (accessToken: string) => Promise<T>) => Promise<T>;
-export type ProposalView = components['schemas']['BookingProposalResponse']['data'];
+export type ProposalView = components['schemas']['BookingProposalResponse']['data'] &
+  CommercialCapacity;
 export type { ConsultationWorkspace, ConsultationCustomer } from './consultation-workspace-api';
 import {
   consultationWorkspaceSchema,
@@ -17,7 +19,9 @@ import type { Client } from 'openapi-fetch';
 export type TimelineItemInput = components['schemas']['TimelineRevisionBody']['items'][number];
 export type BookingSelections = Readonly<{
   depositPercentage?: number;
-  halls: readonly Pick<components['schemas']['CatalogPublicHall'], 'id' | 'name' | 'maxGuests'>[];
+  halls: readonly (Pick<components['schemas']['CatalogPublicHall'], 'id' | 'name' | 'maxGuests'> & {
+    maxTables?: number;
+  })[];
   menus: readonly Pick<
     components['schemas']['CatalogPublicMenuPackage'],
     'versionId' | 'name' | 'versionNumber' | 'priceVndPerTable'
@@ -193,7 +197,12 @@ export function createManagementBookingGateway(client?: ApiClient): ManagementBo
             nextCursor: string | null;
           }> = required(data, 'Không nhận được danh mục sảnh.').data;
           halls.push(
-            ...Array.from(page.items, ({ id, name, maxGuests }) => ({ id, name, maxGuests })),
+            ...Array.from(page.items, ({ id, name, maxGuests, maxTables }) => ({
+              id,
+              name,
+              maxGuests,
+              ...(maxTables === undefined ? {} : { maxTables }),
+            })),
           );
           cursor = page.nextCursor;
         } while (cursor !== null);

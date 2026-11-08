@@ -1,5 +1,6 @@
 'use client';
 
+import { tableCapacityMessage } from '../../lib/table-capacity';
 import { useEffect, useRef, useState } from 'react';
 import { TriangleAlert } from 'lucide-react';
 import { Badge } from '../../components/ui/badge';
@@ -84,7 +85,21 @@ export function BookingCreatePanel({
       );
       return false;
     }
-    if (creating) return form.reportValidity();
+    if (creating) {
+      const data = new FormData(form);
+      const hall = selections.halls.find((h) => h.id === field(data, 'hallId'));
+      const capacityError = tableCapacityMessage(
+        Number(data.get('planningHeadcount')),
+        Number(data.get('tableCount')),
+        hall?.maxTables,
+        hall?.maxGuests,
+      );
+      if (capacityError) {
+        onValidationError(capacityError);
+        return false;
+      }
+      return form.reportValidity();
+    }
     return ['hallId', 'eventDate', 'shiftCode'].every((name) => {
       const control = form.elements.namedItem(name) as HTMLInputElement | HTMLSelectElement;
       return control.reportValidity();
@@ -223,6 +238,12 @@ export function BookingCreatePanel({
     selections?.menus.find((m) => m.versionId === formValues.menuPackageVersionId) ?? matchedMenu;
   const currentTables = Number(formValues.tableCount) || 0;
   const currentHeadcount = Number(formValues.planningHeadcount) || 0;
+  const capacityError = tableCapacityMessage(
+    currentHeadcount,
+    currentTables,
+    currentHall?.maxTables,
+    currentHall?.maxGuests,
+  );
   const isCatalogIncomplete =
     selections !== null &&
     (selections.halls.length === 0 ||
@@ -241,6 +262,18 @@ export function BookingCreatePanel({
         <Badge>Bước 02</Badge>
       </div>
 
+      <p className="text-sm text-muted-foreground">
+        Tối đa 10 người/bàn. Số bàn tối thiểu: {Math.ceil(currentHeadcount / 10)}
+        {currentHall?.maxTables !== undefined
+          ? ` · sơ đồ sảnh tối đa ${currentHall.maxTables} bàn`
+          : ''}
+        .
+      </p>
+      {capacityError && currentTables > 0 ? (
+        <p role="alert" className="text-sm text-destructive">
+          {capacityError}
+        </p>
+      ) : null}
       <BookingCreateCatalogBar
         loadingSelections={loadingSelections}
         selections={selections}
