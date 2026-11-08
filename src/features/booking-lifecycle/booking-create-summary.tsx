@@ -7,6 +7,7 @@ import { formatDate, money } from './booking-helpers';
 import type { BookingSelections } from './booking-api';
 
 export interface BookingCreateSummaryProps {
+  depositPercentage?: number | undefined;
   currentHall: BookingSelections['halls'][number] | undefined;
   currentMenu: BookingSelections['menus'][number] | undefined;
   eventDate: string;
@@ -28,6 +29,7 @@ export function BookingCreateSummary({
   currentHeadcount,
   disabled,
   hasConsultation,
+  depositPercentage,
 }: Readonly<BookingCreateSummaryProps>) {
   const maxGuests = currentHall?.maxGuests ?? 0;
   const isOverCapacity = maxGuests > 0 && currentHeadcount > maxGuests;
@@ -36,7 +38,8 @@ export function BookingCreateSummary({
       ? Math.min(100, Math.round((currentHeadcount / maxGuests) * 100))
       : 0;
   const estimatedTotal = currentMenu ? currentMenu.priceVndPerTable * currentTables : 0;
-  const estimatedDeposit = Math.round(estimatedTotal * 0.3);
+  const estimatedDeposit =
+    depositPercentage === undefined ? null : Math.ceil((estimatedTotal * depositPercentage) / 100);
 
   return (
     <aside className="flex min-w-0 flex-[1_1_340px] flex-col gap-5 rounded-xl border border-border bg-card p-6 shadow-hy-1 min-[1100px]:sticky min-[1100px]:top-6">
@@ -112,9 +115,17 @@ export function BookingCreateSummary({
           </strong>
         </div>
         <div className={priceRowClass}>
-          <span className="text-muted-foreground">Tiền cọc tối thiểu (30%):</span>
-          <strong className="font-semibold tabular-nums">{money(estimatedDeposit)}</strong>
+          <span className="text-muted-foreground">
+            Cọc tạm tính{depositPercentage === undefined ? '' : ` (${depositPercentage}%)`}:
+          </span>
+          <strong className="font-semibold tabular-nums">
+            {estimatedDeposit === null ? 'Chốt khi tạo tiệc' : money(estimatedDeposit)}
+          </strong>
         </div>
+        <p className="text-xs text-muted-foreground">
+          Tỷ lệ được chốt theo chính sách nhà hàng tại lúc tạo tiệc. Tiền cọc chính thức theo hợp
+          đồng đã duyệt.
+        </p>
       </div>
 
       <div className="flex flex-col gap-2">

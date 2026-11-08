@@ -9,6 +9,7 @@ import { createLayoutCatalogGateway } from './catalog-layout-gateway';
 import { createMediaCatalogGateway } from './catalog-media-gateway';
 import { createTimelineCatalogGateway } from './catalog-timeline-gateway';
 import type { CatalogGateway, CatalogHall, ManagerShift } from './catalog-types';
+import { restaurantDepositPercentage } from '../../lib/deposit-policy';
 
 export * from './catalog-types';
 export { clearCatalogCache, invalidateCatalogResource, fetchSharedCatalogResource };
@@ -69,7 +70,12 @@ export function createVenueCatalogGateway(client?: ApiClient): CatalogGateway {
         ),
       ]);
       return {
-        restaurant: required(restaurant.data, 'Restaurant read').data,
+        restaurant: {
+          ...required(restaurant.data, 'Restaurant read').data,
+          depositPercentage: restaurantDepositPercentage(
+            required(restaurant.data, 'Restaurant read').data,
+          ),
+        },
         shifts: Array.from(
           required(shifts.data, 'Shift read').data.items,
           (shift): ManagerShift => ({ ...shift }),

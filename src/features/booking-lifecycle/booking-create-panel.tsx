@@ -308,6 +308,7 @@ export function BookingCreatePanel({
         />
 
         <BookingCreateSummary
+          depositPercentage={selections?.depositPercentage}
           currentHall={currentHall}
           currentMenu={currentMenu}
           eventDate={formValues.eventDate}

@@ -125,6 +125,9 @@ describe('VC-18 venue catalog workspace', () => {
     fireEvent.change(screen.getByLabelText('Tên hiển thị'), {
       target: { value: 'Wedding Estate Riverside' },
     });
+    fireEvent.change(screen.getByLabelText('Tỷ lệ đặt cọc (%)'), {
+      target: { value: '50' },
+    });
     fireEvent.click(screen.getByRole('button', { name: 'Lưu hồ sơ nhà hàng' }));
 
     await waitFor(() =>
@@ -132,6 +135,7 @@ describe('VC-18 venue catalog workspace', () => {
         'manager-token',
         expect.objectContaining({
           displayName: 'Wedding Estate Riverside',
+          depositPercentage: 50,
           expectedRevision: 4,
         }),
       ),

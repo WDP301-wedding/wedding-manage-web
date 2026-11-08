@@ -1,6 +1,7 @@
 import { createApiClient, type ApiClient } from '../../lib/api/client';
 import type { components } from '../../lib/api/generated/schema';
 import { installCommandRetries } from './command-retries';
+import { restaurantDepositPercentage } from '../../lib/deposit-policy';
 
 export type Authorize = <T>(operation: (accessToken: string) => Promise<T>) => Promise<T>;
 export type ProposalView = components['schemas']['BookingProposalResponse']['data'];
@@ -15,6 +16,7 @@ import {
 import type { Client } from 'openapi-fetch';
 export type TimelineItemInput = components['schemas']['TimelineRevisionBody']['items'][number];
 export type BookingSelections = Readonly<{
+  depositPercentage?: number;
   halls: readonly Pick<components['schemas']['CatalogPublicHall'], 'id' | 'name' | 'maxGuests'>[];
   menus: readonly Pick<
     components['schemas']['CatalogPublicMenuPackage'],
@@ -227,6 +229,9 @@ export function createManagementBookingGateway(client?: ApiClient): ManagementBo
         halls,
         menus,
         shifts: Array.from(required(restaurant.data, 'Không nhận được khung giờ.').data.shifts),
+        depositPercentage: restaurantDepositPercentage(
+          required(restaurant.data, 'Không nhận được khung giờ.').data,
+        ),
       };
     },
     async createConsultation(accessToken, input) {

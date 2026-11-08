@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { ChevronRight, FileText } from 'lucide-react';
 import { formatVnd } from '../../lib/formatters';
+import { contractDepositRate } from '../../lib/deposit-policy';
 import { formatDate } from './booking-helpers';
 import { ApprovalStatus, ContractLinesTable } from './contract-lines-table';
 import { ContractDraftComposer } from './contract-draft-composer';
@@ -339,7 +340,9 @@ export function ContractPanel({
                   </dd>
                 </div>
                 <div className="flex flex-col gap-0.5">
-                  <dt className="text-xs text-muted-foreground">Tiền cọc cam kết (30%)</dt>
+                  <dt className="text-xs text-muted-foreground">
+                    Tiền cọc cam kết ({contractDepositRate(currentRevision.document)}%)
+                  </dt>
                   <dd className="text-lg font-bold tabular-nums">
                     {formatVnd(currentRevision.document.depositAmountVnd)}
                   </dd>

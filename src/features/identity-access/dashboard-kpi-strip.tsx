@@ -93,7 +93,7 @@ export function DashboardKpiStrip({
             detail={isLoading ? 'Đang tổng hợp sổ cái…' : 'Thực thu tiền mặt/chuyển khoản (VND)'}
           />
           <Metric
-            label="Tổng cọc đã thu"
+            label="Tiền thu vào tháng này"
             value={
               isLoading
                 ? '…'

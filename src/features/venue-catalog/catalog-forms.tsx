@@ -34,12 +34,26 @@ export function RestaurantForm({
       publicPhone: nullableField(data, 'publicPhone'),
       publicEmail: nullableField(data, 'publicEmail'),
       expectedRevision: restaurant.revision,
+      depositPercentage: Number(field(data, 'depositPercentage')),
     });
   };
   return (
     <form className={cx.formGrid} onSubmit={submit} key={restaurant.revision}>
       <Field label="Tên hiển thị" name="displayName" defaultValue={restaurant.displayName} />
       <Field label="Địa chỉ" name="address" defaultValue={restaurant.address} />
+      <Field
+        label="Tỷ lệ đặt cọc (%)"
+        name="depositPercentage"
+        type="number"
+        min={10}
+        max={100}
+        step={1}
+        defaultValue={restaurant.depositPercentage ?? 30}
+        aria-describedby="deposit-policy-help"
+      />
+      <p id="deposit-policy-help" className={cx.help}>
+        Từ 10% đến 100%. Chỉ áp dụng cho tiệc được tạo sau khi lưu. Tiệc đã có giữ nguyên tỷ lệ cọc.
+      </p>
       <Field
         label="Email công khai"
         name="publicEmail"
