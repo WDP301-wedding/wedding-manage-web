@@ -6,10 +6,6 @@ export type EventAssignmentItem =
   operations['listEventStaffAssignments']['responses'][200]['content']['application/json']['data'][number] & {
     readonly staffLabel?: string | null;
   };
-export type GuestSearchResultItem =
-  operations['searchStaffEventGuests']['responses'][200]['content']['application/json']['data']['items'][number] & {
-    readonly checkInRecordId?: string | null;
-  };
 export type ProvisionStaffAccountResponse =
   operations['provisionStaffAccount']['responses'][201]['content']['application/json']['data'];
 
@@ -95,78 +91,6 @@ export const staffService = {
     await axiosApiClient.post(
       `/management/events/${bookingId}/assignments/${assignmentId}/revocation`,
       { expectedRevision, reason },
-      { headers: { 'Idempotency-Key': idempotencyKey } },
-    );
-  },
-
-  async searchGuests(
-    bookingId: string,
-    query: string,
-    cursor?: string,
-  ): Promise<{ items: readonly GuestSearchResultItem[]; nextCursor: string | null }> {
-    const response = await axiosApiClient.get<{
-      data: { items: readonly GuestSearchResultItem[]; nextCursor: string | null };
-    }>(`/staff/events/${bookingId}/guests/search`, {
-      params: { query, cursor },
-    });
-    return response.data.data;
-  },
-
-  /** Tài khoản quản lý luôn phải kèm overrideReason (BE: MANAGER_OVERRIDE_REQUIRED). */
-  async checkInGuest(
-    bookingId: string,
-    guestId: string,
-    overrideReason?: string,
-    idempotencyKey = crypto.randomUUID(),
-  ): Promise<void> {
-    await axiosApiClient.post(
-      `/staff/events/${bookingId}/guests/${guestId}/check-ins`,
-      overrideReason ? { overrideReason } : {},
-      { headers: { 'Idempotency-Key': idempotencyKey } },
-    );
-  },
-
-  /** Hoàn tác lần check-in còn hiệu lực gần nhất (BE cần mã bản ghi, revision của khách và lý do). */
-  async undoCheckIn(
-    bookingId: string,
-    guestId: string,
-    expectedLedgerRevision: number,
-    reason: string,
-    overrideReason?: string,
-    idempotencyKey = crypto.randomUUID(),
-    checkInRecordId?: string,
-  ): Promise<void> {
-    const path = `/staff/events/${bookingId}/guests/${guestId}`;
-    let effectiveRecordId = checkInRecordId;
-    if (!effectiveRecordId) {
-      const history = await axiosApiClient.get<{
-        data: {
-          items: readonly {
-            checkInRecordId: string;
-            action: 'CHECK_IN' | 'UNDO';
-            ledgerRevision: number;
-          }[];
-        };
-      }>(`${path}/check-ins`, {
-        params: { afterRevision: Math.max(0, expectedLedgerRevision - 1), limit: 1 },
-      });
-      const active = history.data.data.items[0];
-      if (
-        !active ||
-        active.action !== 'CHECK_IN' ||
-        active.ledgerRevision !== expectedLedgerRevision
-      )
-        throw new Error('Trạng thái khách đã thay đổi. Tra cứu lại trước khi hoàn tác.');
-      effectiveRecordId = active.checkInRecordId;
-    }
-    await axiosApiClient.post(
-      `${path}/check-in-undos`,
-      {
-        checkInRecordId: effectiveRecordId,
-        expectedLedgerRevision,
-        reason,
-        ...(overrideReason ? { overrideReason } : {}),
-      },
       { headers: { 'Idempotency-Key': idempotencyKey } },
     );
   },

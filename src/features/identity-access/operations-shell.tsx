@@ -235,17 +235,17 @@ export function OperationsShell({
         </>
       ) : actor ? (
         <Link
-          id="ops-nav-staff-checkin"
+          id="ops-nav-assigned-events"
           className={navItemClass}
           href="/staff"
           prefetch={false}
           aria-current={activePage === 'staff' ? 'page' : undefined}
-          aria-label="Bàn đón khách"
-          title="Bàn đón khách"
+          aria-label="Tiệc được phân công"
+          title="Tiệc được phân công"
           onClick={() => setMobileDrawerOpen(false)}
         >
           <UsersIcon width={18} height={18} aria-hidden="true" />
-          <span>Bàn đón khách</span>
+          <span>Tiệc được phân công</span>
         </Link>
       ) : null}
     </>

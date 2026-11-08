@@ -9,14 +9,9 @@ import {
 } from '../identity-access/session';
 import { useManagementSession } from '../identity-access/use-management-session';
 import { Tabs, TabsContent, TabsIndicator, TabsList, TabsTrigger } from '../../components/ui/tabs';
-import { CheckinDeskSection } from './checkin-desk-section';
 import { StaffManagementSection } from './staff-management-section';
 import { useStaffOperations } from './use-staff-operations';
-import {
-  StaffEventSelector,
-  StaffCheckinReadiness,
-  StaffTimeline,
-} from './staff-workspace-summary';
+import { StaffEventSelector, StaffEventOverview, StaffTimeline } from './staff-workspace-summary';
 import { StaffSeatingView } from './staff-seating-view';
 import { StaffWorkBoard } from './staff-work-board';
 export function StaffOperationsPage({
@@ -39,9 +34,6 @@ export function StaffOperationsPage({
   const reasonScope = `${accountId}:${context.eventId}`;
   const requestReason = (title: string, submit: (reason: string) => Promise<void>) =>
     setReasonAction({ scope: reasonScope, title, submit });
-  const canSearch = Boolean(
-    view && view.settings.checkInMode === 'BY_GUEST_NAME' && (isManager || view.windowOpen),
-  );
   return (
     <OperationsShell
       activePage="staff"
@@ -56,9 +48,11 @@ export function StaffOperationsPage({
         className="flex min-h-screen flex-col gap-6 bg-background p-[clamp(1rem,3vw,3.25rem)]"
       >
         <header className="flex max-w-3xl flex-col gap-1">
-          <h1 className="text-2xl font-bold">Nhân sự &amp; Tác nghiệp</h1>
+          <h1 className="text-2xl font-bold">
+            {isManager ? 'Nhân sự & Tác nghiệp' : 'Tiệc được phân công'}
+          </h1>
           <p className="text-muted-foreground">
-            Chọn tiệc, đón khách và phối hợp công việc trong phạm vi được phân công.
+            Xem thông tin tiệc, phân công và phối hợp công việc, sự cố, bàn giao.
           </p>
         </header>
         {!allowed ? (
@@ -76,17 +70,12 @@ export function StaffOperationsPage({
           </p>
         ) : (
           <>
-            <StaffEventSelector
-              context={context}
-              disabled={staff.pending || context.configuring}
-              isManager={isManager}
-            />
-            <StaffCheckinReadiness context={context} disabled={staff.pending} />
+            <StaffEventSelector context={context} disabled={staff.pending} isManager={isManager} />
+            {view && <StaffEventOverview view={view} />}
             <Tabs
-              defaultValue={isManager ? 'management' : 'checkin'}
+              value={staff.activeTab}
               onValueChange={(value: unknown) => {
                 if (
-                  value === 'checkin' ||
                   value === 'management' ||
                   value === 'timeline' ||
                   value === 'seating' ||
@@ -95,69 +84,13 @@ export function StaffOperationsPage({
                   staff.openTab(value);
               }}
             >
-              <TabsList
-                variant="line"
-                aria-label="Chức năng tác nghiệp"
-                className="max-w-full flex-wrap"
-              >
-                <TabsTrigger value="checkin">Đón khách &amp; Check-in</TabsTrigger>
+              <TabsList variant="line" aria-label="Chức năng tác nghiệp" className="max-w-full">
+                {isManager && <TabsTrigger value="management">Nhân sự</TabsTrigger>}
+                <TabsTrigger value="work">Công việc &amp; Bàn giao</TabsTrigger>
                 <TabsTrigger value="timeline">Kịch bản tiệc</TabsTrigger>
                 <TabsTrigger value="seating">Sơ đồ bàn</TabsTrigger>
-                <TabsTrigger value="work">Công việc &amp; Bàn giao</TabsTrigger>
-                {isManager && <TabsTrigger value="management">Nhân sự</TabsTrigger>}
                 <TabsIndicator />
               </TabsList>
-              <TabsContent value="checkin" className="pt-4">
-                {!canSearch && (
-                  <p role="status" className="mb-4 rounded-lg bg-muted p-4 text-sm">
-                    {!view
-                      ? 'Chọn và mở tiệc để tra cứu khách.'
-                      : view.settings.checkInMode === 'NONE'
-                        ? 'Check-in chưa được bật cho tiệc này. Manager có thể bật tại phần Điều kiện đón khách.'
-                        : 'Chưa đến giờ hoặc đã hết giờ check-in. Các phần kịch bản, sơ đồ và công việc vẫn sử dụng được.'}
-                  </p>
-                )}
-                <CheckinDeskSection
-                  bookingId={staff.bookingId}
-                  setBookingId={staff.setBookingId}
-                  searchQuery={staff.searchQuery}
-                  setSearchQuery={staff.setSearchQuery}
-                  searching={staff.searching}
-                  pending={staff.pending || !canSearch}
-                  available={canSearch}
-                  seatingStatus={view?.seating.status ?? 'ABSENT'}
-                  guests={canSearch ? staff.guests : []}
-                  onSearchGuests={staff.handleSearchGuests}
-                  onCheckIn={(id) => {
-                    const guest = staff.guests.find((item) => item.guestId === id);
-                    if (!guest) return Promise.resolve();
-                    if (!isManager) return staff.handleCheckIn(id);
-                    requestReason(`Check-in cho ${guest.name}?`, (reason) =>
-                      staff.handleCheckIn(id, reason),
-                    );
-                    return Promise.resolve();
-                  }}
-                  onUndoCheckIn={(id) => {
-                    const guest = staff.guests.find((item) => item.guestId === id);
-                    if (guest)
-                      requestReason(`Hoàn tác check-in của ${guest.name}?`, (reason) =>
-                        staff.handleUndoCheckIn(id, reason),
-                      );
-                    return Promise.resolve();
-                  }}
-                  isManager={isManager}
-                />
-                {canSearch && staff.hasMoreGuests && (
-                  <button
-                    type="button"
-                    className="mt-4 rounded-lg border border-border px-4 py-2 text-sm font-semibold"
-                    disabled={staff.searching || staff.pending}
-                    onClick={() => void staff.handleMoreGuests()}
-                  >
-                    Tải thêm khách
-                  </button>
-                )}
-              </TabsContent>
               <TabsContent value="timeline" className="pt-4">
                 {view ? <StaffTimeline view={view} /> : <p>Chọn tiệc để xem kịch bản đã duyệt.</p>}
               </TabsContent>
@@ -178,6 +111,8 @@ export function StaffOperationsPage({
               {isManager && (
                 <TabsContent value="management" className="pt-4">
                   <StaffManagementSection
+                    directoryVersion={staff.directoryVersion}
+                    onDirectoryChanged={staff.refreshPersonnel}
                     bookingId={view?.bookingId ?? ''}
                     staffAccountId={staff.staffAccountId}
                     staffAccountLabel={staff.staffAccountLabel}
@@ -188,6 +123,11 @@ export function StaffOperationsPage({
                     assignmentsReady={staff.assignmentsReady}
                     assignmentError={staff.assignmentError}
                     pending={staff.pending}
+                    eventLabel={
+                      view
+                        ? `${view.bookingCode} · ${view.alias ?? view.timeline.hallName}`
+                        : undefined
+                    }
                     assignments={staff.assignments}
                     loadingAssignments={staff.loadingAssignments}
                     onLoadAssignments={staff.handleLoadAssignments}

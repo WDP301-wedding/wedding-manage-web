@@ -22,6 +22,9 @@ import {
 
 export interface StaffManagementSectionProps {
   bookingId: string;
+  eventLabel?: string | undefined;
+  directoryVersion: number;
+  onDirectoryChanged: () => Promise<void>;
   staffAccountId: string;
   staffAccountLabel?: string;
   accountId: string;
@@ -94,6 +97,9 @@ function AssignmentsTable({
 
 export function StaffManagementSection({
   bookingId,
+  eventLabel,
+  directoryVersion,
+  onDirectoryChanged,
   staffAccountId,
   staffAccountLabel = '',
   pending,
@@ -141,10 +147,12 @@ export function StaffManagementSection({
           <div className="flex flex-col gap-0.5">
             <h3 className={cardTitleClass}>Phân công nhân sự vào tiệc</h3>
             <p className={cardHintClass}>
-              Nhân viên được phân công mới mở được bàn đón khách của tiệc.
+              Nhân viên được phân công sẽ xem thông tin tiệc, nhận việc, báo sự cố và bàn giao.
             </p>
           </div>
           <StaffDirectory
+            key={directoryVersion}
+            onChanged={onDirectoryChanged}
             selectedId={staffAccountId}
             onSelect={onSelectStaff}
             pending={pending}
@@ -166,12 +174,22 @@ export function StaffManagementSection({
                 placeholder="Chọn nhân viên trong danh bạ"
               />
             </label>
+            {eventLabel && <p className="text-sm font-semibold">Tiệc đang chọn: {eventLabel}</p>}
             <input type="hidden" name="staffAccountId" value={staffAccountId} />
             <Button
               type="submit"
               variant="outline"
               className="self-start"
-              disabled={pending || !bookingId.trim() || !staffAccountId}
+              disabled={
+                pending ||
+                loadingAssignments ||
+                !assignmentsReady ||
+                !bookingId.trim() ||
+                !staffAccountId ||
+                assignments.some(
+                  (item) => item.staffAccountId === staffAccountId && item.status === 'ACTIVE',
+                )
+              }
             >
               Phân công vào tiệc hiện tại
             </Button>
@@ -185,7 +203,8 @@ export function StaffManagementSection({
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h3 className="text-base font-semibold">
-            Danh sách phân công của tiệc ({assignments.length})
+            Đang phân công ({assignments.filter((item) => item.status === 'ACTIVE').length}) · Đã
+            thu hồi ({assignments.filter((item) => item.status === 'REVOKED').length})
           </h3>
           <Button
             variant="outline"

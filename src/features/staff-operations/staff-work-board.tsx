@@ -138,7 +138,7 @@ export function StaffWorkBoard({
       expectedRevision: editing.revision,
       status,
       note: String(values.get('note') ?? '').trim(),
-      ...(view.isManager
+      ...(view.isManager && editing.kind !== 'HANDOVER'
         ? { assignedAccountId: String(values.get('assignee') ?? '') || null }
         : {}),
     };
@@ -243,7 +243,7 @@ export function StaffWorkBoard({
           ))}
         </HySelect>
       </label>
-      {view.isManager && assigneeField(editing.assignedAccountId)}
+      {view.isManager && editing.kind !== 'HANDOVER' && assigneeField(editing.assignedAccountId)}
       <label className={labelClass}>
         Ghi chú xác nhận
         <Textarea name="note" required maxLength={2000} disabled={pending} />
@@ -316,6 +316,7 @@ export function StaffWorkBoard({
         {(Object.keys(titles) as WorkItem['kind'][]).map((k) => (
           <Button
             key={k}
+            aria-pressed={kind === k}
             variant={kind === k ? 'default' : 'outline'}
             disabled={pending}
             onClick={() => {
@@ -379,7 +380,10 @@ export function StaffWorkBoard({
       <ul className="grid gap-3">
         {rows.map((item) => {
           const canChange = view.isManager
-            ? item.kind !== 'HANDOVER' || item.createdByAccountId !== accountId
+            ? item.kind !== 'HANDOVER' ||
+              (item.status !== 'DONE' &&
+                item.createdByAccountId !== accountId &&
+                (item.assignedAccountId === accountId || item.assignedAccountId === null))
             : item.assignedAccountId === accountId &&
               item.kind !== 'INCIDENT' &&
               item.status !== 'DONE' &&

@@ -3,7 +3,6 @@ import { staffWorkspaceService as api } from '../../services/staff-workspace.ser
 import type { StaffWorkspace, StaffEvent } from '../../services/staff-workspace.contracts';
 import { notify } from '../../design-system/notifications';
 import { useLiveRefresh } from '../realtime/use-live-refresh';
-import { staffCommand } from './staff-command-intents';
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export function useStaffEventContext(authenticated: boolean, accountId: string, blocked: boolean) {
   const [bookingId, setInput] = useState('');
@@ -17,7 +16,6 @@ export function useStaffEventContext(authenticated: boolean, accountId: string, 
   const [eventQuery, setEventQuery] = useState('');
   const [loadingEvents, setLoadingEvents] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [configuring, setConfiguring] = useState(false);
   const input = bookingId.trim();
   const eventId = uuid.test(input) ? input : resolved?.input === input ? resolved.id : '';
   const current = useRef({ input, eventId, phase, accountId, eventQuery });
@@ -165,48 +163,17 @@ export function useStaffEventContext(authenticated: boolean, accountId: string, 
       scope: `staff-workspace:${accountId}:${eventId}`,
       bookingId: eventId,
       enabled: authenticated && Boolean(eventId),
-      blocked: blocked || configuring,
+      blocked,
       initial: true,
       types: [
         'staff.updated',
-        'guest.updated',
         'seating.updated',
         'timeline.updated',
         'booking.updated',
+        'contract.updated',
       ],
     },
   );
-  useEffect(() => {
-    if (!workspace || !authenticated) return;
-    const now = Date.now();
-    const next = workspace.windowOpen
-      ? Date.parse(workspace.windowClosesAt) + 1
-      : Date.parse(workspace.windowOpensAt);
-    if (next <= now || next - now > 2_147_483_647) return;
-    const timer = window.setTimeout(() => void refreshWorkspace(), next - now + 250);
-    return () => window.clearTimeout(timer);
-  }, [workspace, authenticated]);
-
-  const configure = async () => {
-    if (!workspace || configuring) return;
-    setConfiguring(true);
-    const body = {
-      checkInMode:
-        workspace.settings.checkInMode === 'NONE' ? ('BY_GUEST_NAME' as const) : ('NONE' as const),
-      expectedRevision: workspace.settings.revision,
-    };
-    try {
-      await staffCommand(`${accountId}:${eventId}:settings:${body.expectedRevision}`, body, (key) =>
-        api.configure(eventId, body, key),
-      );
-      notify.success('Đã cập nhật chế độ check-in.');
-      await refreshWorkspace();
-    } catch (err) {
-      notify.error(err);
-    } finally {
-      setConfiguring(false);
-    }
-  };
   return {
     bookingId,
     setBookingId,
@@ -215,8 +182,6 @@ export function useStaffEventContext(authenticated: boolean, accountId: string, 
     workspace,
     refreshWorkspace,
     loading,
-    configuring,
-    configure,
     events: eventActor === accountId ? events : [],
     nextEvent: eventActor === accountId ? nextEvent : null,
     phase,

@@ -21,15 +21,6 @@ export const staffWorkspaceService = {
     const result = await axiosApiClient.get<{ data: unknown }>(`${eventPath(bookingId)}/workspace`);
     return staffWorkspace.parse(result.data.data);
   },
-  async configure(
-    bookingId: string,
-    body: { checkInMode: 'NONE' | 'BY_GUEST_NAME'; expectedRevision: number },
-    key: string,
-  ) {
-    await axiosApiClient.patch(`/bookings/${bookingId}/check-in-settings`, body, {
-      headers: { 'Idempotency-Key': key },
-    });
-  },
   async work(bookingId: string, kind: WorkCreate['kind'], afterId?: string) {
     const result = await axiosApiClient.get<{ data: unknown }>(
       `${eventPath(bookingId)}/work-items`,

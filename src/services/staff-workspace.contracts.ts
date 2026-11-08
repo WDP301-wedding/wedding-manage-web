@@ -48,22 +48,22 @@ export const staffWorkspace = z.object({
   bookingCode: z.string(),
   alias: z.string().nullable(),
   isManager: z.boolean(),
-  settings: z.object({
-    bookingId: uuid,
-    checkInMode: z.enum(['NONE', 'BY_GUEST_NAME']),
-    revision: z.int().positive(),
-    locked: z.boolean(),
+  operations: z.object({
+    phase: z.enum(['CONFIRMED', 'COMPLETED']),
+    brideName: z.string().nullable(),
+    groomName: z.string().nullable(),
+    tableCount: z.int().positive(),
+    offerings: z.array(
+      z.object({
+        category: z.enum(['MENU', 'SERVICE']),
+        name: z.string(),
+        description: z.string(),
+        unit: z.string(),
+        quantity: z.int().positive(),
+      }),
+    ),
   }),
-  attendance: z.object({
-    measurementStatus: z.enum(['NOT_RECORDED', 'LISTED_GUESTS_ONLY']),
-    checkedInGuestCount: z.int().nullable(),
-    ledgerRevision: z.int(),
-  }),
-  listedGuestCount: z.int(),
-  planningHeadcount: z.int(),
-  windowOpen: z.boolean(),
-  windowOpensAt: z.iso.datetime(),
-  windowClosesAt: z.iso.datetime(),
+  planningHeadcount: z.int().nonnegative(),
   timeline: z.object({
     eventDate: z.iso.date(),
     hallName: z.string(),
