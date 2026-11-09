@@ -160,13 +160,17 @@ export function ProposalPanel({
             </p>
           ) : null}
           <dl className="grid grid-cols-2 gap-2">
-            <div className="flex flex-col gap-0.5 rounded-lg bg-muted p-3">
+            <div className="col-span-2 flex flex-col gap-0.5 rounded-lg bg-muted p-3">
               <dt className="text-xs text-muted-foreground">Thực đơn</dt>
               <dd className="font-semibold">
                 {proposal.proposal.menus
                   .map((menu) => `${menu.name} (${menu.tableCount} bàn)`)
                   .join(' · ')}
               </dd>
+            </div>
+            <div className="flex flex-col gap-0.5 rounded-lg bg-muted p-3">
+              <dt className="text-xs text-muted-foreground">Số khách dự kiến</dt>
+              <dd className="font-semibold tabular-nums">{proposal.planningHeadcount} khách</dd>
             </div>
             <div className="flex flex-col gap-0.5 rounded-lg bg-muted p-3">
               <dt className="text-xs text-muted-foreground">Số bàn</dt>
