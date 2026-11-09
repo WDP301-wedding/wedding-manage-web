@@ -5,6 +5,7 @@ import { useLiveRefresh } from '../realtime/use-live-refresh';
 import { staffService, type EventAssignmentItem } from '../../services/staff.service';
 import { notify } from '../../design-system/notifications';
 import { describeApiError } from '../../lib/api/api-errors';
+import { invitationDeliveryMessage } from '../identity-access/staff-invitation-api';
 
 export type StaffTab = 'management' | 'timeline' | 'seating' | 'work';
 const minReasonLength = 10;
@@ -95,9 +96,9 @@ export function useStaffOperations({
         { email: email.trim().toLowerCase() },
         (key) => staffService.provisionStaffAccount({ email }, key),
       );
-      notify.success(
-        `Đã chuẩn bị tài khoản ${email}. ${res.credentialSetupRequired ? 'Nhân viên cần thiết lập mật khẩu qua luồng Quên mật khẩu trước khi đăng nhập.' : 'Nhân viên dùng tài khoản hiện có.'}`,
-      );
+      const message = invitationDeliveryMessage(res.invitation?.deliveryStatus);
+      if (res.invitation?.deliveryStatus === 'ACCEPTED') notify.success(message);
+      else notify.warning(message);
       setStaffAccountId(res.accountId);
       setStaffAccountLabel(email);
       setNeedsPassword(res.credentialSetupRequired);

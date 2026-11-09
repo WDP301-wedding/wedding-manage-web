@@ -1,13 +1,16 @@
 import { z } from 'zod';
 import { axiosApiClient } from '../lib/api/axios-client';
 import type { operations } from '../lib/api/generated/schema';
+import { invitationSummarySchema } from '../features/identity-access/staff-invitation-api';
 
 export type EventAssignmentItem =
   operations['listEventStaffAssignments']['responses'][200]['content']['application/json']['data'][number] & {
     readonly staffLabel?: string | null;
   };
 export type ProvisionStaffAccountResponse =
-  operations['provisionStaffAccount']['responses'][201]['content']['application/json']['data'];
+  operations['provisionStaffAccount']['responses'][201]['content']['application/json']['data'] & {
+    invitation?: z.infer<typeof invitationSummarySchema>;
+  };
 
 const directoryPage = z.strictObject({
   items: z.array(
@@ -15,6 +18,7 @@ const directoryPage = z.strictObject({
       accountId: z.uuid(),
       email: z.string(),
       credentialSetupRequired: z.boolean(),
+      invitation: invitationSummarySchema.nullable().optional(),
     }),
   ),
   nextAfterId: z.uuid().nullable(),
