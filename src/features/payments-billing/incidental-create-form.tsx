@@ -65,14 +65,14 @@ export function IncidentalCreateForm({
   return (
     <form
       onSubmit={(e) => void handleSubmit(e)}
-      className="flex flex-col gap-3 rounded-lg bg-muted p-4"
+      className="flex min-w-0 flex-col gap-3 rounded-lg bg-muted p-4"
     >
       <h4 className="font-semibold">Ghi nhận chi phí phát sinh mới</h4>
       {pricing ? (
         <label className={fieldClass}>
           Hạng mục
           <select
-            className="rounded-md border border-input bg-background p-2"
+            className="w-full min-w-0 max-w-full truncate rounded-md border border-input bg-background p-2"
             value={selection}
             onChange={(e) => {
               setSelection(e.target.value);
@@ -190,7 +190,7 @@ export function IncidentalCreateForm({
           </strong>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button type="submit" disabled={disabled || loading}>
             {loading ? 'Đang lưu…' : 'Lưu phát sinh'}
           </Button>

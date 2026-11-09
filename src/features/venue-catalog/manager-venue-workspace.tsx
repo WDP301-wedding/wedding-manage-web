@@ -20,6 +20,7 @@ import {
 } from './catalog-forms';
 import { DishMenuPanel } from './dish-menu-panel';
 import { LayoutPanel } from './layout-panel';
+import { IncidentalCatalog } from './incidental-catalog';
 import { MediaPanel } from './media-panel';
 import { TimelinePanel } from './timeline-panel';
 import { VenueHallsSection } from './venue-halls-section';
@@ -47,7 +48,12 @@ export function ManagerVenueWorkspace({
   const [activeTab, setActiveTab] = useState<CatalogTab>(() => {
     if (typeof window !== 'undefined') {
       const tabParam = new URLSearchParams(window.location.search).get('tab');
-      if (tabParam === 'food' || tabParam === 'timeline' || tabParam === 'layout') {
+      if (
+        tabParam === 'food' ||
+        tabParam === 'timeline' ||
+        tabParam === 'layout' ||
+        tabParam === 'incidentals'
+      ) {
         return tabParam;
       }
     }
@@ -71,7 +77,10 @@ export function ManagerVenueWorkspace({
     const syncFromUrl = () => {
       const tabParam = new URLSearchParams(window.location.search).get('tab');
       const validTab: CatalogTab =
-        tabParam === 'food' || tabParam === 'timeline' || tabParam === 'layout'
+        tabParam === 'food' ||
+        tabParam === 'timeline' ||
+        tabParam === 'layout' ||
+        tabParam === 'incidentals'
           ? tabParam
           : 'venue';
       setActiveTab(validTab);
@@ -329,6 +338,15 @@ export function ManagerVenueWorkspace({
             <p className={cx.empty}>Không hỗ trợ quản lý sơ đồ bàn.</p>
           )
         ) : null}
+      </div>
+      <div
+        className={cx.tabPanel}
+        role="tabpanel"
+        id="catalog-panel-incidentals"
+        aria-labelledby="catalog-tab-incidentals"
+        hidden={activeTab !== 'incidentals'}
+      >
+        {visitedTabs.has('incidentals') ? <IncidentalCatalog authorize={authorize} /> : null}
       </div>
     </main>
   );

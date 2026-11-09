@@ -10,6 +10,7 @@ export const catalogTabs = [
   { id: 'food', label: 'Món & thực đơn' },
   { id: 'timeline', label: 'Kịch bản tiệc' },
   { id: 'layout', label: 'Bố cục bàn' },
+  { id: 'incidentals', label: 'Chi phí phát sinh' },
 ] as const;
 export type CatalogTab = (typeof catalogTabs)[number]['id'];
 
