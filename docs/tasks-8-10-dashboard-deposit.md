@@ -2,8 +2,11 @@
 
 Owner approved on 2026-11-08. Branch: `codex/tasks-8-10-dashboard-deposit`.
 
-The first dashboard section reports COMPLETED events by local event date. Revenue
-is finalized invoice value; net cash and outstanding are separate. Hall usage and
+The Manager Reports page (`/reports`, Báo cáo) reports COMPLETED events by local
+event date. Since 2026-11-09, the completed-event summary, hall rankings,
+menu/service rankings and per-event debt table live here rather than on Overview.
+The navigation places Reports between Overview and Bookings on desktop and mobile.
+Revenue is finalized invoice value; net cash and outstanding are separate. Hall usage and
 revenue rankings may have different leaders. The menu/service table groups stable
 source IDs and frozen commercial values. PAID/DEBT filtering and event pagination
 are server-owned. Unknown amounts show an em dash; unfinished invoicing is provisional.
