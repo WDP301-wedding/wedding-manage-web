@@ -121,10 +121,11 @@ export function StaffManagementSection({
       <div className="flex flex-wrap items-start gap-6">
         <details className={cn(cardClass, 'order-last w-full')}>
           <summary className="cursor-pointer font-semibold">
-            Cấp hoặc khôi phục quyền nhân viên
+            Mời hoặc khôi phục quyền nhân viên
           </summary>
           <p className={cardHintClass}>
-            Dùng email để cấp tài khoản mới hoặc cấp lại quyền tác nghiệp.
+            Gửi lời mời qua email. Nhân viên mở liên kết để thiết lập mật khẩu hoặc nhận quyền bằng
+            tài khoản hiện có.
           </p>
           <form onSubmit={onProvisionStaff} className="flex flex-col gap-3">
             <label className={labelClass}>
@@ -138,7 +139,7 @@ export function StaffManagementSection({
               />
             </label>
             <Button type="submit" className="self-start" disabled={pending}>
-              Cấp tài khoản
+              Mời nhân viên
             </Button>
           </form>
         </details>
@@ -161,7 +162,8 @@ export function StaffManagementSection({
           />
           {needsPassword && staffAccountId && (
             <p role="status" className={cardHintClass}>
-              Nhân viên cần dùng chức năng Quên mật khẩu để thiết lập mật khẩu trước khi đăng nhập.
+              Nhân viên cần mở liên kết lời mời trong email để thiết lập mật khẩu. Bạn có thể phân
+              công trước khi họ nhận lời mời.
             </p>
           )}
           <form onSubmit={onAssignStaff} className="flex flex-col gap-3">

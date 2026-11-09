@@ -18,7 +18,7 @@ import { BrandMark } from '../../design-system/brand-mark';
 import { Button } from '../../components/ui/button';
 
 const browserResetToken =
-  typeof window === 'undefined'
+  typeof window === 'undefined' || window.location.hash === ''
     ? null
     : consumeResetFragment(window.location.href, (safePath) =>
         window.history.replaceState(null, '', safePath),
@@ -52,6 +52,11 @@ export function ManagementIdentityExperience({
   const [snapshot, setSnapshot] = useState<ManagementSessionSnapshot>(() => session.snapshot());
   const [view, setView] = useState<AuthView>('restoring');
   const [pending, setPending] = useState(false);
+  const [invitedEmail, setInvitedEmail] = useState('');
+  useEffect(() => {
+    const email = new URLSearchParams(window.location.search).get('email');
+    if (email && email.length <= 320) setInvitedEmail(email);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -175,7 +180,14 @@ export function ManagementIdentityExperience({
               pending={pending}
               onSubmit={handleLogin}
             >
-              <Field label="Email công việc" name="email" type="email" autoComplete="email" />
+              <Field
+                label="Email công việc"
+                name="email"
+                type="email"
+                autoComplete="email"
+                defaultValue={invitedEmail}
+                key={invitedEmail}
+              />
               <Field
                 label="Mật khẩu"
                 name="password"

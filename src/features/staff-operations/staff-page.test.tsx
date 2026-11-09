@@ -186,7 +186,7 @@ describe('assigned event personnel and Staff workspace', () => {
     ]);
     vi.mocked(staffService.assignStaff).mockResolvedValue(assignment);
     await open(true);
-    fireEvent.click(await screen.findByRole('button', { name: 'staff@example.com' }));
+    fireEvent.click(await screen.findByRole('button', { name: /^staff@example\.com/u }));
     const button = screen.getByRole('button', { name: 'Phân công vào tiệc hiện tại' });
     await waitFor(() => expect(button).toBeEnabled());
     fireEvent.click(button);
@@ -200,7 +200,7 @@ describe('assigned event personnel and Staff workspace', () => {
   it('prevents duplicate active assignment', async () => {
     vi.mocked(staffService.getEventAssignments).mockResolvedValue([assignment]);
     await open(true);
-    fireEvent.click(await screen.findByRole('button', { name: 'staff@example.com' }));
+    fireEvent.click(await screen.findByRole('button', { name: /^staff@example\.com/u }));
     await waitFor(() =>
       expect(screen.getByRole('button', { name: 'Phân công vào tiệc hiện tại' })).toBeDisabled(),
     );
@@ -232,12 +232,12 @@ describe('assigned event personnel and Staff workspace', () => {
       credentialSetupRequired: true,
     });
     await open(true);
-    fireEvent.click(screen.getByText('Cấp hoặc khôi phục quyền nhân viên'));
+    fireEvent.click(screen.getByText('Mời hoặc khôi phục quyền nhân viên'));
     fireEvent.change(screen.getByLabelText('Email nhân viên'), {
       target: { value: 'new@example.com' },
     });
     const before = vi.mocked(staffService.directory).mock.calls.length;
-    fireEvent.click(screen.getByRole('button', { name: 'Cấp tài khoản' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Mời nhân viên' }));
     await waitFor(() =>
       expect(vi.mocked(staffService.directory).mock.calls.length).toBeGreaterThan(before),
     );

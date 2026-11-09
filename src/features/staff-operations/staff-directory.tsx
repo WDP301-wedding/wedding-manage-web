@@ -6,6 +6,7 @@ import { notify } from '../../design-system/notifications';
 import { describeApiError } from '../../lib/api/api-errors';
 import { staffCommand } from './staff-command-intents';
 import type { StaffReasonAction } from './staff-reason-dialog';
+import { invitationDeliveryMessage } from '../identity-access/staff-invitation-api';
 
 export function StaffDirectory({
   selectedId,
@@ -28,6 +29,29 @@ export function StaffDirectory({
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const request = useRef(0);
+  const mutationLock = useRef(false);
+  const [sending, setSending] = useState(false);
+  const resend = async (person: DirectoryStaff) => {
+    if (pending || loading || mutationLock.current) return;
+    mutationLock.current = true;
+    setSending(true);
+    try {
+      const response = await staffCommand(
+        `${accountId}:staff-invite:${person.accountId}:${person.invitation?.invitationId ?? 'initial'}`,
+        { email: person.email },
+        (key) => staffService.provisionStaffAccount({ email: person.email }, key),
+      );
+      const message = invitationDeliveryMessage(response.invitation?.deliveryStatus);
+      if (response.invitation?.deliveryStatus === 'ACCEPTED') notify.success(message);
+      else notify.warning(message);
+      await load(query);
+    } catch (cause) {
+      notify.error(cause, { fallbackMessage: 'Chưa gửi được lời mời. Hãy đợi trước khi thử lại.' });
+    } finally {
+      mutationLock.current = false;
+      setSending(false);
+    }
+  };
   const load = async (term: string, afterId?: string) => {
     const version = ++request.current;
     setLoading(true);
@@ -107,7 +131,7 @@ export function StaffDirectory({
             <li key={person.accountId} className="flex flex-wrap items-center gap-2 p-2">
               <button
                 type="button"
-                disabled={pending || loading}
+                disabled={pending || loading || sending}
                 aria-pressed={selectedId === person.accountId}
                 className="min-w-0 flex-1 rounded px-2 py-1 text-left text-sm break-all hover:bg-muted aria-pressed:bg-accent"
                 onClick={() =>
@@ -115,17 +139,51 @@ export function StaffDirectory({
                 }
               >
                 {person.email}
-                {person.credentialSetupRequired && (
+                {person.invitation ? (
+                  <span className="block text-xs text-muted-foreground">
+                    {person.invitation.status === 'PENDING'
+                      ? 'Chờ nhận lời mời'
+                      : person.invitation.status === 'EXPIRED'
+                        ? 'Lời mời hết hạn'
+                        : person.invitation.status === 'ACCEPTED'
+                          ? 'Đã kích hoạt'
+                          : 'Lời mời đã thu hồi'}
+                    {person.invitation.status === 'PENDING' && (
+                      <>
+                        {' '}
+                        ·{' '}
+                        {person.invitation.deliveryStatus === 'ACCEPTED'
+                          ? 'Email đã được tiếp nhận'
+                          : person.invitation.deliveryStatus === 'FAILED'
+                            ? 'Gửi email thất bại'
+                            : 'Chưa xác nhận gửi email'}
+                      </>
+                    )}
+                  </span>
+                ) : person.credentialSetupRequired ? (
                   <span className="block text-xs text-muted-foreground">
                     Chưa thiết lập mật khẩu
                   </span>
+                ) : (
+                  <span className="block text-xs text-muted-foreground">Đã kích hoạt</span>
                 )}
               </button>
+              {person.invitation?.status !== 'ACCEPTED' && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={pending || loading || sending}
+                  onClick={() => void resend(person)}
+                >
+                  {person.invitation ? 'Gửi lại lời mời' : 'Gửi lời mời'}
+                </Button>
+              )}
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
-                disabled={pending || loading}
+                disabled={pending || loading || sending}
                 onClick={() => disable(person)}
               >
                 Tắt quyền
