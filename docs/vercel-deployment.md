@@ -50,7 +50,7 @@ and select `main`. Quality checks run again before deployment. Do not change the
 workflow to bypass failed checks. Inspect the deployment job's URL and verify the
 public routes below after each release.
 
-After deployment, verify `/`, `/bookings`, `/consultation-requests`, `/account`,
+After deployment, verify `/`, `/reports`, `/bookings`, `/consultation-requests`, `/account`,
 `/billing`, and `/api/v1/catalog/halls`. An unauthenticated refresh request must return 401,
 not a CORS denial. Inspect production at desktop and mobile widths.
 

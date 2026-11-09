@@ -10,7 +10,6 @@ import { DashboardVenueCard } from './dashboard-venue-card';
 import { DashboardVenueHalls } from './dashboard-venue-halls';
 import { useBookingClaims } from './use-booking-claims';
 import { useDashboardData } from './use-dashboard-data';
-import { CompletedEventsDashboard } from './completed-events-dashboard';
 
 export type { DashboardBookingItem, DashboardData, DashboardState } from './use-dashboard-data';
 
@@ -45,8 +44,6 @@ export function DashboardLiveView({
           </Button>
         </div>
       ) : null}
-
-      {isManager && <CompletedEventsDashboard />}
 
       <DashboardVenueCard restaurant={data.restaurant} isManager={isManager} />
 

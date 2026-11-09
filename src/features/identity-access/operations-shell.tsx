@@ -9,6 +9,7 @@ import { OfflineBanner } from '../../design-system/offline-banner';
 import { PageTransition } from '../../design-system/page-transition';
 import {
   CalendarIcon,
+  ChartNoAxesCombinedIcon,
   ClipboardListIcon,
   CreditCardIcon,
   LayoutDashboardIcon,
@@ -36,6 +37,7 @@ export function OperationsShell({
   activePage:
     | 'archive'
     | 'overview'
+    | 'reports'
     | 'bookings'
     | 'consultations'
     | 'catalog'
@@ -145,6 +147,19 @@ export function OperationsShell({
       </Link>
       {manager ? (
         <>
+          <Link
+            id="ops-nav-reports"
+            className={navItemClass}
+            href="/reports"
+            prefetch={false}
+            aria-current={activePage === 'reports' ? 'page' : undefined}
+            aria-label="Báo cáo"
+            title="Báo cáo"
+            onClick={() => setMobileDrawerOpen(false)}
+          >
+            <ChartNoAxesCombinedIcon width={18} height={18} aria-hidden="true" />
+            <span>Báo cáo</span>
+          </Link>
           <Link
             id="ops-nav-bookings"
             className={navItemClass}
