@@ -92,7 +92,7 @@ export function IncidentalCatalog({ authorize }: { authorize: Authorize }) {
   };
   return (
     <section
-      className="my-6 flex flex-col gap-4 rounded-xl border border-border bg-card p-5"
+      className="flex min-w-0 flex-col gap-4 rounded-xl border border-border bg-card p-4 sm:p-6"
       aria-label="Danh mục chi phí phát sinh"
     >
       <h2 className="text-xl font-semibold">Danh mục chi phí phát sinh</h2>
@@ -109,8 +109,8 @@ export function IncidentalCatalog({ authorize }: { authorize: Authorize }) {
           {error} <button onClick={() => void load()}>Thử lại</button>
         </p>
       ) : null}
-      <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm">
+      <div className="min-w-0 overflow-x-auto">
+        <table className="w-full min-w-[640px] text-left text-sm [&_th]:px-3 [&_th]:py-3 [&_td]:px-3 [&_td]:py-3">
           <thead>
             <tr>
               <th>Hạng mục</th>
@@ -123,14 +123,14 @@ export function IncidentalCatalog({ authorize }: { authorize: Authorize }) {
           <tbody>
             {items.map((item) => (
               <tr key={item.offeringId} className="border-t border-border">
-                <td className="p-2">
+                <td className="max-w-64 break-words">
                   {item.name}
                   <p className="text-xs text-muted-foreground">{item.description}</p>
                 </td>
                 <td>
                   {formatVnd(item.unitPriceVnd)}/{item.unit}
                 </td>
-                <td>{item.chargingRule}</td>
+                <td className="max-w-64 break-words">{item.chargingRule}</td>
                 <td>{item.active ? 'Đang sử dụng' : 'Đã ngừng'}</td>
                 <td>
                   <Button
@@ -156,12 +156,12 @@ export function IncidentalCatalog({ authorize }: { authorize: Authorize }) {
           </tbody>
         </table>
       </div>
-      <form onSubmit={(event) => void save(event)} className="grid gap-3 sm:grid-cols-2">
-        <h3 className="font-semibold sm:col-span-2">
+      <form onSubmit={(event) => void save(event)} className="grid min-w-0 gap-4 sm:grid-cols-2">
+        <h3 className="min-w-0 font-semibold break-words sm:col-span-2">
           {editing ? `Sửa ${editing.name}` : 'Thêm hạng mục'}
         </h3>
         {(['name', 'description', 'unit', 'chargingRule'] as const).map((key) => (
-          <label key={key} className="flex flex-col gap-1 text-sm">
+          <label key={key} className="flex min-w-0 flex-col gap-1 text-sm">
             {
               {
                 name: 'Tên hạng mục',
@@ -186,7 +186,7 @@ export function IncidentalCatalog({ authorize }: { authorize: Authorize }) {
             />
           </label>
         ))}
-        <label className="flex flex-col gap-1 text-sm">
+        <label className="flex min-w-0 flex-col gap-1 text-sm">
           Đơn giá (VND)
           <Input
             type="number"
@@ -205,7 +205,7 @@ export function IncidentalCatalog({ authorize }: { authorize: Authorize }) {
           />
           Đang sử dụng cho booking mới
         </label>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 sm:col-span-2">
           <Button disabled={pending} type="submit">
             {pending ? 'Đang lưu…' : 'Lưu hạng mục'}
           </Button>

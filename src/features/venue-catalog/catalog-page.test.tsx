@@ -82,17 +82,28 @@ const authorize = <T,>(operation: (accessToken: string) => Promise<T>) =>
   operation('manager-token');
 
 describe('VC-18 venue catalog workspace', () => {
-  it('switches four catalog tabs with keyboard support and preserves unsaved venue fields', async () => {
+  it('switches five catalog tabs with keyboard support and preserves unsaved venue fields', async () => {
     render(<VenueCatalogWorkspace role="MANAGER" gateway={gateway()} authorize={authorize} />, {
       wrapper: NotificationProvider,
     });
     await screen.findByRole('heading', { name: 'Danh mục địa điểm' });
-    expect(screen.getAllByRole('tab')).toHaveLength(4);
+    expect(screen.getAllByRole('tab')).toHaveLength(5);
     fireEvent.change(screen.getByLabelText('Tên hiển thị'), {
       target: { value: 'Chỉnh sửa chưa lưu' },
     });
     fireEvent.click(screen.getByRole('tab', { name: 'Bố cục bàn' }));
     expect(screen.getByRole('tabpanel')).toHaveAttribute('id', 'catalog-panel-layout');
+    expect(
+      screen.queryByRole('heading', { name: 'Danh mục chi phí phát sinh' }),
+    ).not.toBeInTheDocument();
+    fireEvent.keyDown(screen.getByRole('tab', { name: 'Bố cục bàn' }), { key: 'ArrowRight' });
+    const expensePanel = screen.getByRole('tabpanel');
+    expect(expensePanel).toHaveAttribute('id', 'catalog-panel-incidentals');
+    expect(
+      within(expensePanel).getByRole('heading', { name: 'Danh mục chi phí phát sinh' }),
+    ).toBeVisible();
+    fireEvent.change(screen.getByLabelText('Tên hạng mục'), { target: { value: 'Nước suối' } });
+    fireEvent.keyDown(screen.getByRole('tab', { name: 'Chi phí phát sinh' }), { key: 'ArrowLeft' });
     expect(screen.queryByRole('textbox', { name: 'Tên hiển thị' })).not.toBeInTheDocument();
     fireEvent.keyDown(screen.getByRole('tab', { name: 'Bố cục bàn' }), { key: 'Home' });
     expect(screen.getByRole('tab', { name: 'Nhà hàng & sảnh' })).toHaveAttribute(
@@ -102,6 +113,8 @@ describe('VC-18 venue catalog workspace', () => {
     expect(screen.getByLabelText('Tên hiển thị')).toHaveValue('Chỉnh sửa chưa lưu');
     fireEvent.keyDown(screen.getByRole('tab', { name: 'Nhà hàng & sảnh' }), { key: 'ArrowRight' });
     expect(screen.getByRole('tabpanel')).toHaveAttribute('id', 'catalog-panel-food');
+    fireEvent.keyDown(screen.getByRole('tab', { name: 'Món & thực đơn' }), { key: 'End' });
+    expect(screen.getByLabelText('Tên hạng mục')).toHaveValue('Nước suối');
   });
   it('removes the timeline image library while keeping timeline management available', async () => {
     const api = {

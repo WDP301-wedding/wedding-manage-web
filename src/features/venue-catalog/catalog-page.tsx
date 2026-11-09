@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { useEffect } from 'react';
-import { IncidentalCatalog } from './incidental-catalog';
 import { notify } from '../../design-system/notifications';
 
 import apiContractLock from '../../../api-contract.lock.json';
@@ -142,13 +141,10 @@ export function VenueCatalogWorkspace({
     );
   }
   return (
-    <>
-      <ManagerVenueWorkspace
-        authorize={authorize}
-        catalogContractDigest={catalogContractDigest}
-        gateway={gateway}
-      />
-      <IncidentalCatalog authorize={authorize} />
-    </>
+    <ManagerVenueWorkspace
+      authorize={authorize}
+      catalogContractDigest={catalogContractDigest}
+      gateway={gateway}
+    />
   );
 }
