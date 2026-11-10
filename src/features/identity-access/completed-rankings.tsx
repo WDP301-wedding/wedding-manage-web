@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import type { CompletedEventsData } from '../../services/completed-events.service';
-import { formatVndNullable } from '../../lib/formatters';
+import { formatUnitLabel, formatVndNullable } from '../../lib/formatters';
 import { HySelect } from '../../components/ui/select-field';
 import {
   tableWrapClass,
@@ -178,7 +178,7 @@ export function CompletedRankings({ data }: Readonly<{ data: CompletedEventsData
                 <td className={tdClass}>{o.category === 'MENU' ? 'Menu' : 'Dịch vụ'}</td>
                 <td className={tdClass}>{o.bookingCount}</td>
                 <td className={tdClass}>
-                  {o.quantity} {o.unit}
+                  {o.quantity} {formatUnitLabel(o.unit)}
                 </td>
                 <td className={tdClass}>{o.finalizedBookingCount}</td>
                 <td className={tdClass}>{formatVndNullable(o.revenueVnd)}</td>

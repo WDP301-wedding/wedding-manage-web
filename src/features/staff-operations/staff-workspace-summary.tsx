@@ -4,6 +4,7 @@ import { Input } from '../../components/ui/input';
 import { cardClass } from './staff-classes';
 import type { StaffWorkspace } from '../../services/staff-workspace.contracts';
 import { formatDate } from '../booking-lifecycle/booking-helpers';
+import { formatUnitLabel } from '../../lib/formatters';
 export const eventDate = (value: string) => formatDate(value);
 export function StaffEventSelector({
   context,
@@ -180,7 +181,7 @@ export function StaffEventOverview({ view }: Readonly<{ view: StaffWorkspace }>)
                   .filter((item) => item.category === category)
                   .map((item, index) => (
                     <li key={`${category}:${index}`} className="text-sm">
-                      <strong>{item.name}</strong> · {item.quantity} {item.unit}
+                      <strong>{item.name}</strong> · {item.quantity} {formatUnitLabel(item.unit)}
                       {item.description && (
                         <p className="mt-1 whitespace-pre-wrap text-muted-foreground">
                           {item.description}

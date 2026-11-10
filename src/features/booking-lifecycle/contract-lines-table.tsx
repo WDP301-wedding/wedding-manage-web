@@ -2,13 +2,13 @@
 
 import { Check } from 'lucide-react';
 import { cn } from 'cn';
-import { formatVnd } from '../../lib/formatters';
+import { formatUnitLabel, formatVnd } from '../../lib/formatters';
 import { Badge } from '../../components/ui/badge';
 
 export const categoryLabels = { MENU: 'Thực đơn', SERVICE: 'Dịch vụ', PRINT: 'Thiệp in' } as const;
 const categoryTones = { MENU: 'warning', SERVICE: 'info', PRINT: 'brand' } as const;
 // Đơn vị dòng hợp đồng là mã (table, copy); hiện bằng tiếng Việt.
-const unitLabels: Record<string, string> = { table: 'bàn', copy: 'bản' };
+const unitLabels: Record<string, string> = { copy: 'bản' };
 // BE ghép mã mẫu (UUID) vào cuối mô tả dòng thiệp in; không hiện mã kỹ thuật này cho người dùng.
 export const lineDescription = (text: string) =>
   text.replace(/ · [0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/iu, '');
@@ -69,7 +69,7 @@ export function ContractLinesTable({ lines, title }: Readonly<ContractLinesTable
                   ) : null}
                 </td>
                 <td className={cn(cellClass, 'tabular-nums')}>
-                  {line.quantity} {unitLabels[line.unit] ?? line.unit}
+                  {line.quantity} {formatUnitLabel(unitLabels[line.unit] ?? line.unit)}
                 </td>
                 <td className={cn(cellClass, 'tabular-nums')}>{formatVnd(line.unitPriceVnd)}</td>
                 <td className={cn(cellClass, 'text-right font-semibold tabular-nums')}>

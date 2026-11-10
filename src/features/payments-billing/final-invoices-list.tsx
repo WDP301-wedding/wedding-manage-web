@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronUp, Lock } from 'lucide-react';
 import type { FinalInvoicesResponse } from '../../services/billing.service';
-import { formatVnd } from '../../lib/formatters';
+import { formatUnitLabel, formatVnd } from '../../lib/formatters';
 import { formatDateTime } from '../booking-lifecycle/booking-helpers';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -120,7 +120,8 @@ export function FinalInvoicesList({
                     {adjustment.lines.map((line) => (
                       <p key={line.id}>
                         {line.kind === 'DEBIT' ? 'Tăng' : 'Giảm'}: {line.name} · {line.quantity}{' '}
-                        {line.unit} × {formatVnd(line.unitPriceVnd)} = {formatVnd(line.totalVnd)}
+                        {formatUnitLabel(line.unit)} × {formatVnd(line.unitPriceVnd)} ={' '}
+                        {formatVnd(line.totalVnd)}
                       </p>
                     ))}
                   </details>
@@ -165,7 +166,7 @@ export function FinalInvoicesList({
                               <tr key={line.id ?? `line-${idx}`} className="border-t border-border">
                                 <td className="px-2 py-1.5 font-medium">{line.name}</td>
                                 <td className="px-2 py-1.5 tabular-nums">{line.quantity}</td>
-                                <td className="px-2 py-1.5">{line.unit}</td>
+                                <td className="px-2 py-1.5">{formatUnitLabel(line.unit)}</td>
                                 <td className="px-2 py-1.5 text-right font-semibold tabular-nums">
                                   {formatVnd(line.totalVnd)}
                                 </td>

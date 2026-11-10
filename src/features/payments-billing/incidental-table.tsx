@@ -2,7 +2,7 @@
 
 import { Trash2 } from 'lucide-react';
 import type { IncidentalExpensesResponse } from '../../services/billing.service';
-import { formatVnd } from '../../lib/formatters';
+import { formatUnitLabel, formatVnd } from '../../lib/formatters';
 import { Button } from '../../components/ui/button';
 
 export function IncidentalTable({
@@ -47,7 +47,7 @@ export function IncidentalTable({
                 </small>
               </td>
               <td className="px-3 py-2 tabular-nums">
-                {line.quantity} {line.unit}
+                {line.quantity} {formatUnitLabel(line.unit)}
               </td>
               <td className="px-3 py-2 tabular-nums">{formatVnd(line.unitPriceVnd)}</td>
               <td className="px-3 py-2 text-right font-semibold text-primary tabular-nums">

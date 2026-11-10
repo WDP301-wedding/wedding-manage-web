@@ -3,7 +3,7 @@ import { tableCapacityMessage } from '../../lib/table-capacity';
 import { useEffect, useRef, useState } from 'react';
 import { describeApiError } from '../../lib/api/api-errors';
 import { notify } from '../../design-system/notifications';
-import { formatVnd } from '../../lib/formatters';
+import { formatUnitLabel, formatVnd } from '../../lib/formatters';
 import {
   contractService,
   type ContractPreview,
@@ -268,7 +268,7 @@ export function ContractDraftComposer({
                           </td>
                           <td className="px-3 py-2 tabular-nums">
                             <div className="flex flex-wrap items-center gap-2">
-                              {formatVnd(choice.unitPriceVnd)}/{choice.unit}
+                              {formatVnd(choice.unitPriceVnd)}/{formatUnitLabel(choice.unit)}
                               {selected && selected.sourceRevisionId !== choice.sourceRevisionId ? (
                                 <Button
                                   type="button"
