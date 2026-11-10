@@ -64,11 +64,21 @@ const fixture: CompletedEventsData = {
       category: 'MENU',
       sourceId: id(3),
       name: 'Menu Sen',
-      unit: 'bàn',
+      unit: 'table',
       bookingCount: 3,
       finalizedBookingCount: 2,
       quantity: 30,
       revenueVnd: 140000000,
+    },
+    {
+      category: 'MENU',
+      sourceId: id(30),
+      name: 'Menu Hoa',
+      unit: 'bàn',
+      bookingCount: 1,
+      finalizedBookingCount: 0,
+      quantity: 10,
+      revenueVnd: 0,
     },
     {
       category: 'SERVICE',
@@ -134,6 +144,14 @@ describe('completed event dashboard', () => {
     expect(await screen.findByText('Sử dụng nhiều nhất: Sảnh A.')).toBeInTheDocument();
     expect(screen.getByText('Doanh thu cao nhất: Sảnh B.')).toBeInTheDocument();
     expect(screen.getByText('Tạm tính — chưa chốt hóa đơn')).toBeInTheDocument();
+    const offerings = screen.getByRole('table', { name: 'Gói menu và dịch vụ' });
+    expect(within(offerings).getByRole('row', { name: /Menu Sen/u })).toHaveTextContent('30 bàn');
+    expect(within(offerings).getByRole('row', { name: /Menu Hoa/u })).toHaveTextContent('10 bàn');
+    expect(within(offerings).getByRole('row', { name: /MC tiệc cưới/u })).toHaveTextContent(
+      '2 buổi',
+    );
+    expect(offerings).not.toHaveTextContent(/\btable\b/iu);
+    expect(fixture.offerings[0]?.unit).toBe('table');
     expect(screen.getByRole('link', { name: 'HY-000001' })).toHaveAttribute(
       'href',
       `/billing?bookingId=${id(5)}`,

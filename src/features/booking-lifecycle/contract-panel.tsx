@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { ChevronRight, FileText } from 'lucide-react';
-import { formatVnd } from '../../lib/formatters';
+import { formatUnitLabel, formatVnd } from '../../lib/formatters';
 import { contractDepositRate } from '../../lib/deposit-policy';
 import { formatDate } from './booking-helpers';
 import { ApprovalStatus, ContractLinesTable } from './contract-lines-table';
@@ -382,7 +382,7 @@ export function ContractPanel({
                   <ul>
                     {currentRevision.document.incidentalPricing.map((item) => (
                       <li key={item.offeringId}>
-                        {item.name} · {formatVnd(item.unitPriceVnd)}/{item.unit}
+                        {item.name} · {formatVnd(item.unitPriceVnd)}/{formatUnitLabel(item.unit)}
                         <p>
                           {item.description} · {item.chargingRule}
                         </p>

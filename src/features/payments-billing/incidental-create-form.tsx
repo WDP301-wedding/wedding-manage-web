@@ -1,7 +1,7 @@
 'use client';
 
 import { type FormEvent, useState } from 'react';
-import { formatVnd } from '../../lib/formatters';
+import { formatUnitLabel, formatVnd } from '../../lib/formatters';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import type { IncidentalExpensesResponse } from '../../services/billing.service';
@@ -85,7 +85,7 @@ export function IncidentalCreateForm({
             <option value="OTHER">Khác — nhập mô tả và lý do</option>
             {pricing.map((p) => (
               <option key={p.offeringId} value={p.offeringId}>
-                {p.name} · {formatVnd(p.unitPriceVnd)}/{p.unit}
+                {p.name} · {formatVnd(p.unitPriceVnd)}/{formatUnitLabel(p.unit)}
               </option>
             ))}
           </select>

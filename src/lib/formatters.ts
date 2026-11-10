@@ -48,3 +48,8 @@ export function formatCurrencyVnd(value: number): string {
  * Alias for formatCurrencyVnd matching existing booking/billing helpers.
  */
 export const money = formatVnd;
+
+/** Localize the legacy table unit for display without changing stored/API facts. */
+export function formatUnitLabel(unit: string): string {
+  return unit.trim().toLowerCase() === 'table' ? 'bàn' : unit;
+}

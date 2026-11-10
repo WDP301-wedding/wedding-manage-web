@@ -1,7 +1,7 @@
 'use client';
 import type { ReactNode } from 'react';
 import { Button } from '../../components/ui/button';
-import { formatVnd } from '../../lib/formatters';
+import { formatUnitLabel, formatVnd } from '../../lib/formatters';
 import type { OfferingItem, OfferingKind } from './offering-catalog-api';
 
 function Detail({ label, children }: { label: string; children: ReactNode }) {
@@ -65,7 +65,7 @@ export function OfferingCatalogList({
                 </div>
                 <dl className="min-w-0">
                   <Detail label="Đơn giá">
-                    {formatVnd(item.unitPriceVnd)}/{item.unit}
+                    {formatVnd(item.unitPriceVnd)}/{formatUnitLabel(item.unit)}
                   </Detail>
                 </dl>
                 {kind === 'incidentals' ? (

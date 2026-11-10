@@ -9,7 +9,7 @@ import { notify } from '../../design-system/notifications';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { HySelect } from '../../components/ui/select-field';
-import { formatVnd } from '../../lib/formatters';
+import { formatUnitLabel, formatVnd } from '../../lib/formatters';
 import { axiosApiClient } from '../../lib/api/axios-client';
 
 type Line = {
@@ -176,7 +176,7 @@ export function InvoiceAdjustmentForm({
                     <option value="OTHER">Khác — mô tả và lý do điều chỉnh</option>
                     {pricing.map((p) => (
                       <option key={p.offeringId} value={p.offeringId}>
-                        {p.name} · {formatVnd(p.unitPriceVnd)}/{p.unit}
+                        {p.name} · {formatVnd(p.unitPriceVnd)}/{formatUnitLabel(p.unit)}
                       </option>
                     ))}
                   </HySelect>
@@ -270,8 +270,8 @@ export function InvoiceAdjustmentForm({
           </p>
           {lines.map((line, index) => (
             <p key={index} className="text-sm">
-              {line.kind === 'DEBIT' ? '+' : '−'} {line.name} · {line.quantity} {line.unit} ×{' '}
-              {formatVnd(line.unitPriceVnd)}
+              {line.kind === 'DEBIT' ? '+' : '−'} {line.name} · {line.quantity}{' '}
+              {formatUnitLabel(line.unit)} × {formatVnd(line.unitPriceVnd)}
             </p>
           ))}
           <p>
