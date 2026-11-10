@@ -21,6 +21,7 @@ import {
 import { DishMenuPanel } from './dish-menu-panel';
 import { LayoutPanel } from './layout-panel';
 import { IncidentalCatalog } from './incidental-catalog';
+import { OfferingCatalog } from './offering-catalog';
 import { MediaPanel } from './media-panel';
 import { TimelinePanel } from './timeline-panel';
 import { VenueHallsSection } from './venue-halls-section';
@@ -52,7 +53,8 @@ export function ManagerVenueWorkspace({
         tabParam === 'food' ||
         tabParam === 'timeline' ||
         tabParam === 'layout' ||
-        tabParam === 'incidentals'
+        tabParam === 'incidentals' ||
+        tabParam === 'services'
       ) {
         return tabParam;
       }
@@ -80,7 +82,8 @@ export function ManagerVenueWorkspace({
         tabParam === 'food' ||
         tabParam === 'timeline' ||
         tabParam === 'layout' ||
-        tabParam === 'incidentals'
+        tabParam === 'incidentals' ||
+        tabParam === 'services'
           ? tabParam
           : 'venue';
       setActiveTab(validTab);
@@ -347,6 +350,17 @@ export function ManagerVenueWorkspace({
         hidden={activeTab !== 'incidentals'}
       >
         {visitedTabs.has('incidentals') ? <IncidentalCatalog authorize={authorize} /> : null}
+      </div>
+      <div
+        className={cx.tabPanel}
+        role="tabpanel"
+        id="catalog-panel-services"
+        aria-labelledby="catalog-tab-services"
+        hidden={activeTab !== 'services'}
+      >
+        {visitedTabs.has('services') ? (
+          <OfferingCatalog kind="services" authorize={authorize} />
+        ) : null}
       </div>
     </main>
   );
