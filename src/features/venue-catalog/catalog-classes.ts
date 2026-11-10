@@ -98,7 +98,7 @@ export const cx = {
   layoutCanvasTable:
     'absolute grid min-h-9 min-w-9 place-items-center rounded-md border border-hy-wine/50 bg-accent text-2xs font-semibold text-accent-foreground',
   layoutTableList: 'flex flex-col gap-3',
-  layoutTableEditor: `grid min-w-0 items-end gap-2.5 rounded-xl border border-border p-4 sm:grid-cols-4 2xl:grid-cols-[minmax(9rem,1.4fr)_repeat(7,minmax(5.5rem,0.7fr))_auto] [&_code]:col-span-full [&_code]:text-2xs [&_code]:break-all [&_label]:flex [&_label]:flex-col [&_label]:gap-1 [&_label]:text-xs [&_label]:font-semibold [&_legend]:px-1.5 [&_legend]:text-xs [&_legend]:font-semibold ${controls}`,
+  layoutTableEditor: `grid min-w-0 grid-cols-[repeat(auto-fit,minmax(min(100%,9rem),1fr))] items-end gap-2.5 rounded-xl border border-border p-4 [&_code]:col-span-full [&_code]:min-w-0 [&_code]:text-2xs [&_code]:break-all [&_label]:flex [&_label]:min-w-0 [&_label]:flex-col [&_label]:gap-1 [&_label]:text-xs [&_label]:font-semibold [&_legend]:max-w-full [&_legend]:px-1.5 [&_legend]:text-xs [&_legend]:font-semibold [&_legend]:break-all ${controls}`,
   layoutVersionSummary:
     '[&_small]:mt-1 [&_small]:block [&_small]:text-xs [&_small]:text-muted-foreground',
   timelineEditor: 'min-w-0 overflow-hidden rounded-xl border border-border',

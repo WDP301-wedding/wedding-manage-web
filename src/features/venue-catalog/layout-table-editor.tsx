@@ -57,7 +57,7 @@ export function TableEditor({
         selected && 'border-primary ring-1 ring-primary bg-accent/10',
       )}
     >
-      <legend>{table.label}</legend>
+      <legend className="relative z-[1] bg-card">{table.label}</legend>
       <code title="Danh tính bàn ổn định">{table.tableId}</code>
       <label>
         <span>Nhãn bàn</span>
