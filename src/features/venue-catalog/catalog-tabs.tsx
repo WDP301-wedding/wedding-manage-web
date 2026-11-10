@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import type { CatalogGateway, VenueCatalogGateway } from './catalog-api';
 import { cx } from './catalog-classes';
 
@@ -11,6 +12,7 @@ export const catalogTabs = [
   { id: 'timeline', label: 'Kịch bản tiệc' },
   { id: 'layout', label: 'Bố cục bàn' },
   { id: 'incidentals', label: 'Chi phí phát sinh' },
+  { id: 'services', label: 'Dịch vụ nhà hàng' },
 ] as const;
 export type CatalogTab = (typeof catalogTabs)[number]['id'];
 
@@ -21,6 +23,12 @@ export function CatalogTabs({
   active: CatalogTab;
   onChange: (tab: CatalogTab) => void;
 }) {
+  useEffect(() => {
+    document.getElementById(`catalog-tab-${active}`)?.scrollIntoView?.({
+      block: 'nearest',
+      inline: 'nearest',
+    });
+  }, [active]);
   return (
     <div className={cx.tabs} role="tablist" aria-label="Danh mục vận hành">
       {catalogTabs.map((tab, index) => (
