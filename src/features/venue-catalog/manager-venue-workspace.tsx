@@ -324,19 +324,7 @@ export function ManagerVenueWorkspace({
       >
         {visitedTabs.has('layout') ? (
           supportsLayout(gateway) ? (
-            <>
-              <LayoutPanel gateway={gateway} authorize={authorize} />
-              {supportsMedia(gateway) ? (
-                <MediaPanel
-                  gateway={gateway}
-                  authorize={authorize}
-                  active={activeTab === 'layout'}
-                  allowedTypes={['LAYOUT_TEMPLATE_VERSION']}
-                  heading="Thư viện ảnh mẫu sơ đồ bàn"
-                  description="Quản lý ảnh chụp thực tế hoặc phối cảnh của các mẫu sơ đồ sắp xếp bàn tiệc."
-                />
-              ) : null}
-            </>
+            <LayoutPanel gateway={gateway} authorize={authorize} />
           ) : (
             <p className={cx.empty}>Không hỗ trợ quản lý sơ đồ bàn.</p>
           )

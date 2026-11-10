@@ -40,3 +40,11 @@ Validation:
 
 The checks above describe implementation verification. Production release status
 is tracked by the pull request and its main-branch Actions deployment run.
+
+## Layout image library removal, 2026-11-10
+
+At the owner's request, the Layout tab now contains only layout management and
+its existing interactive previews/editors. The separate layout image-library
+panel is removed. Hall/restaurant and food photo libraries remain available.
+Stored layout images, historical media links, backend media APIs, layout geometry
+and publishing behavior are unchanged; this is a Manager Web presentation change.
