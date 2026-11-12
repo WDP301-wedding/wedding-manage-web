@@ -6,3 +6,5 @@ test-results/
 playwright-report/
 package-lock.json
 next-env.d.ts
+# Preserve the installed third-party agent skill bundle.
+.agents/skills/

@@ -8,6 +8,8 @@ import tseslint from 'typescript-eslint';
 
 export default defineConfig(
   globalIgnores([
+    // Vendored agent skills are tools and references, not application source.
+    '.agents/skills/**',
     '.next/**',
     'coverage/**',
     'out/**',
