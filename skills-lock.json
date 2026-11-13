@@ -1,11 +1,95 @@
 {
   "version": 2,
   "skills": {
+    "brandkit": {
+      "source": "Leonxlnx/imagegen-skills",
+      "sourceType": "github",
+      "skillPath": "skills/brandkit/SKILL.md",
+      "computedHash": "f1db92e99b2c038fb9df1aa8c2307764c9d012185b8c9e19fcd026a187459d20",
+      "installMode": "copy"
+    },
     "design-taste-frontend": {
       "source": "Leonxlnx/taste-skill",
       "sourceType": "github",
       "skillPath": "skills/taste-skill/SKILL.md",
       "computedHash": "b10eab0a9684cd09cf34c31ef04a3bf530a5f4404422f9c520d42372d670c7fc",
+      "installMode": "copy"
+    },
+    "design-taste-frontend-v1": {
+      "source": "Leonxlnx/taste-skill-classics",
+      "sourceType": "github",
+      "skillPath": "skills/taste-skill-v1/SKILL.md",
+      "computedHash": "615570ecfb77222d30db9c12ad4a35cd2b687870385a6cd9dffc4f8815a4d972",
+      "installMode": "copy"
+    },
+    "design-taste-frontend-v2-experimental": {
+      "source": "Leonxlnx/taste-skill-classics",
+      "sourceType": "github",
+      "skillPath": "skills/taste-skill-v2-experimental/SKILL.md",
+      "computedHash": "00b596ddb4660f3535d7d091f696f1bca72e88cc4fe518bce00bcc854f08948c",
+      "installMode": "copy"
+    },
+    "gpt-taste": {
+      "source": "Leonxlnx/taste-skill-classics",
+      "sourceType": "github",
+      "skillPath": "skills/gpt-tasteskill/SKILL.md",
+      "computedHash": "532c767fffe91de438843b7b6c6e149be41de4a2cbb5b076956c7418f9401a42",
+      "installMode": "copy"
+    },
+    "high-end-visual-design": {
+      "source": "Leonxlnx/taste-skill-classics",
+      "sourceType": "github",
+      "skillPath": "skills/soft-skill/SKILL.md",
+      "computedHash": "35d686a6100bce47b3391e57ff69b3c5f77635728fafbd664109fbb6923f41f1",
+      "installMode": "copy"
+    },
+    "image-to-code": {
+      "source": "Leonxlnx/imagegen-skills",
+      "sourceType": "github",
+      "skillPath": "skills/image-to-code/SKILL.md",
+      "computedHash": "95eb38f750f046fafe47f4c053f2a075ed07f2ae1925774a6f435c81f503fba8",
+      "installMode": "copy"
+    },
+    "imagegen-frontend-mobile": {
+      "source": "Leonxlnx/imagegen-skills",
+      "sourceType": "github",
+      "skillPath": "skills/imagegen-frontend-mobile/SKILL.md",
+      "computedHash": "bf3296b937c3fd58c9d1531983bb339ec86d612fe6db7eb5bb48935c838b27d3",
+      "installMode": "copy"
+    },
+    "imagegen-frontend-web": {
+      "source": "Leonxlnx/imagegen-skills",
+      "sourceType": "github",
+      "skillPath": "skills/imagegen-frontend-web/SKILL.md",
+      "computedHash": "5494a06e7bd76130ffad8d1f36d26fe28cdd53f3ba27f2f9f4525e487dc1b1bd",
+      "installMode": "copy"
+    },
+    "industrial-brutalist-ui": {
+      "source": "Leonxlnx/taste-skill-classics",
+      "sourceType": "github",
+      "skillPath": "skills/brutalist-skill/SKILL.md",
+      "computedHash": "85cb5d54c8095aae761e4522536c6261ba208afa1b1aa3d8b7cfaf5e70c25106",
+      "installMode": "copy"
+    },
+    "minimalist-ui": {
+      "source": "Leonxlnx/taste-skill-classics",
+      "sourceType": "github",
+      "skillPath": "skills/minimalist-skill/SKILL.md",
+      "computedHash": "4dabefab2ba3c0d776098b072f14aa7870b53a215609cb630f60cd88d220b113",
+      "installMode": "copy"
+    },
+    "stitch-design-taste": {
+      "source": "Leonxlnx/taste-skill-classics",
+      "sourceType": "github",
+      "skillPath": "skills/stitch-skill/SKILL.md",
+      "computedHash": "7277c70129e95a081ad726df4ddf1b8f1b8cca9c7fa68741e551e99f590dee93",
+      "installMode": "copy"
+    },
+    "unlazy": {
+      "source": "Leonxlnx/unlazy",
+      "sourceType": "github",
+      "skillPath": "SKILL.md",
+      "computedHash": "f790b5de35fbc16df99558928bf022fddb1cc1207d9bb9ffda73d2e0798a3e81",
       "installMode": "copy"
     }
   }
