@@ -77,7 +77,7 @@ describe('Management Print Orders Mutations and Authorization', () => {
     );
 
     // Default order IN-2408-018 is APPROVED
-    await screen.findByRole('button', { name: /Chọn đơn in IN-2408-018/ });
+    fireEvent.click(await screen.findByRole('button', { name: /Chi tiết đơn in IN-2408-018/ }));
     const cancelBtn = screen.getByRole('button', { name: 'Hủy đơn in' });
     fireEvent.click(cancelBtn);
 
@@ -128,7 +128,7 @@ describe('Management Print Orders Mutations and Authorization', () => {
     );
 
     // IN-2408-018 has 2 lines: line_18_1 (220 qty) and line_18_2 (220 qty)
-    await screen.findByRole('button', { name: /Chọn đơn in IN-2408-018/ });
+    fireEvent.click(await screen.findByRole('button', { name: /Chi tiết đơn in IN-2408-018/ }));
     expect(screen.getAllByText(/Thiệp gập · Ivory/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Thiệp cảm ơn đi kèm/).every((item) => item.isConnected)).toBe(true);
     expect(screen.getByText('440 bản in')).toBeVisible();
@@ -150,7 +150,7 @@ describe('Management Print Orders Mutations and Authorization', () => {
     );
 
     // Select IN-2408-020 which has pending proposal
-    const row20 = await screen.findByRole('button', { name: /Chọn đơn in IN-2408-020/ });
+    const row20 = await screen.findByRole('button', { name: /Chi tiết đơn in IN-2408-020/ });
     fireEvent.click(row20);
 
     expect(screen.getByText(/Chờ Couple phản hồi · Sản xuất đang bị tạm dừng\./)).toBeVisible();
@@ -222,7 +222,7 @@ describe('Management Print Orders Mutations and Authorization', () => {
       { wrapper: NotificationProvider },
     );
 
-    await screen.findByRole('button', { name: /Chọn đơn in IN-2408-018/ });
+    fireEvent.click(await screen.findByRole('button', { name: /Chi tiết đơn in IN-2408-018/ }));
     const startBtn = screen.getByRole('button', { name: 'Bắt đầu sản xuất' });
     fireEvent.click(startBtn);
 
@@ -253,7 +253,7 @@ describe('Management Print Orders Mutations and Authorization', () => {
       { wrapper: NotificationProvider },
     );
 
-    const row15 = await screen.findByRole('button', { name: /Chọn đơn in IN-2408-015/ });
+    const row15 = await screen.findByRole('button', { name: /Chi tiết đơn in IN-2408-015/ });
     fireEvent.click(row15);
 
     fireEvent.click(await screen.findByRole('button', { name: 'Gửi báo giá mới' }));
@@ -296,7 +296,7 @@ describe('Management Print Orders Mutations and Authorization', () => {
       { wrapper: NotificationProvider },
     );
 
-    const row18 = await screen.findByRole('button', { name: /Chọn đơn in IN-2408-018/ });
+    const row18 = await screen.findByRole('button', { name: /Chi tiết đơn in IN-2408-018/ });
     fireEvent.click(row18);
 
     fireEvent.click(await screen.findByRole('button', { name: 'Hủy đơn in' }));
@@ -344,7 +344,7 @@ describe('Management Print Orders Mutations and Authorization', () => {
       { wrapper: NotificationProvider },
     );
 
-    await screen.findByRole('button', { name: /Chọn đơn in IN-2408-018/ });
+    fireEvent.click(await screen.findByRole('button', { name: /Chi tiết đơn in IN-2408-018/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Bắt đầu sản xuất' }));
 
     // Should detect revision mismatch and abort without calling startProduction

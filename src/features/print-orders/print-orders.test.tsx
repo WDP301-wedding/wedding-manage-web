@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { NotificationProvider } from '../../design-system/notifications';
 import { ApiClientError } from '../../lib/api/client';
@@ -38,11 +38,14 @@ describe('Management Print Orders Workspace (M09–M14)', () => {
     expect((await screen.findAllByText('IN-2408-015')).length).toBeGreaterThan(0);
     expect((await screen.findAllByText('IN-2408-014')).length).toBeGreaterThan(0);
 
-    // Verify detail section for default selected order (IN-2408-018)
-    expect(screen.getByRole('heading', { level: 2, name: /IN-2408-018/ })).toBeVisible();
-    expect(screen.getByText('Dòng thiết kế đã chốt')).toBeVisible();
-    expect(screen.getByText('Tóm tắt thương mại')).toBeVisible();
-    expect(screen.getByText('Dòng thời gian đơn in')).toBeVisible();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Chi tiết đơn in IN-2408-018' }));
+    const detail = within(screen.getByRole('dialog', { name: 'Chi tiết đơn in' }));
+    expect(detail.getByText('IN-2408-018')).toBeVisible();
+    expect(detail.queryByText('Dòng thiết kế đã chốt')).not.toBeInTheDocument();
+    expect(detail.getByText('Bản in theo mẫu')).toBeVisible();
+    expect(detail.getByText('Tóm tắt thương mại')).toBeVisible();
+    expect(detail.getByText('Dòng thời gian đơn in')).toBeVisible();
   });
 
   it('filters table rows by text search query', async () => {
@@ -64,17 +67,17 @@ describe('Management Print Orders Workspace (M09–M14)', () => {
 
     // Search for "Minh Anh"
     fireEvent.change(searchInput, { target: { value: 'Minh Anh' } });
-    expect(screen.getByRole('button', { name: /Chọn đơn in IN-2408-018/ })).toBeVisible();
+    expect(screen.getByRole('button', { name: /Chi tiết đơn in IN-2408-018/ })).toBeVisible();
     expect(
-      screen.queryByRole('button', { name: /Chọn đơn in IN-2408-017/ }),
+      screen.queryByRole('button', { name: /Chi tiết đơn in IN-2408-017/ }),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole('button', { name: /Chọn đơn in IN-2408-016/ }),
+      screen.queryByRole('button', { name: /Chi tiết đơn in IN-2408-016/ }),
     ).not.toBeInTheDocument();
 
     // Clear search
     fireEvent.change(searchInput, { target: { value: '' } });
-    expect(screen.getByRole('button', { name: /Chọn đơn in IN-2408-017/ })).toBeVisible();
+    expect(screen.getByRole('button', { name: /Chi tiết đơn in IN-2408-017/ })).toBeVisible();
   });
 
   it('filters table rows by status tab', async () => {
@@ -95,19 +98,19 @@ describe('Management Print Orders Workspace (M09–M14)', () => {
 
     // Click "Đang sản xuất"
     fireEvent.click(screen.getByRole('button', { name: /Đang sản xuất/ }));
-    expect(screen.getByRole('button', { name: /Chọn đơn in IN-2408-016/ })).toBeVisible();
+    expect(screen.getByRole('button', { name: /Chi tiết đơn in IN-2408-016/ })).toBeVisible();
     expect(
-      screen.queryByRole('button', { name: /Chọn đơn in IN-2408-018/ }),
+      screen.queryByRole('button', { name: /Chi tiết đơn in IN-2408-018/ }),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole('button', { name: /Chọn đơn in IN-2408-017/ }),
+      screen.queryByRole('button', { name: /Chi tiết đơn in IN-2408-017/ }),
     ).not.toBeInTheDocument();
 
     // Click "Sẵn sàng"
     fireEvent.click(screen.getByRole('button', { name: /Sẵn sàng/ }));
-    expect(screen.getByRole('button', { name: /Chọn đơn in IN-2408-014/ })).toBeVisible();
+    expect(screen.getByRole('button', { name: /Chi tiết đơn in IN-2408-014/ })).toBeVisible();
     expect(
-      screen.queryByRole('button', { name: /Chọn đơn in IN-2408-016/ }),
+      screen.queryByRole('button', { name: /Chi tiết đơn in IN-2408-016/ }),
     ).not.toBeInTheDocument();
   });
 
@@ -125,12 +128,13 @@ describe('Management Print Orders Workspace (M09–M14)', () => {
       { wrapper: NotificationProvider },
     );
 
-    const row17 = await screen.findByRole('button', { name: /Chọn đơn in IN-2408-017/ });
+    const row17 = await screen.findByRole('button', { name: /Chi tiết đơn in IN-2408-017/ });
     fireEvent.click(row17);
 
     // Check detail updates
-    expect(screen.getByRole('heading', { level: 2, name: /IN-2408-017/ })).toBeVisible();
-    expect(screen.getAllByText(/Thanh Vy & Đức Huy/).length).toBeGreaterThan(0);
+    const detail = within(screen.getByRole('dialog', { name: 'Chi tiết đơn in' }));
+    expect(detail.getByText('IN-2408-017')).toBeVisible();
+    expect(detail.getByText(/Thanh Vy & Đức Huy/)).toBeVisible();
   });
 
   it('allows Manager to transition an APPROVED order to IN_PRODUCTION with expectedRevision', async () => {
@@ -149,7 +153,7 @@ describe('Management Print Orders Workspace (M09–M14)', () => {
       { wrapper: NotificationProvider },
     );
 
-    await screen.findByRole('button', { name: /Chọn đơn in IN-2408-018/ });
+    fireEvent.click(await screen.findByRole('button', { name: /Chi tiết đơn in IN-2408-018/ }));
     const startButton = screen.getByRole('button', { name: 'Bắt đầu sản xuất' });
     fireEvent.click(startButton);
 
@@ -183,7 +187,7 @@ describe('Management Print Orders Workspace (M09–M14)', () => {
       { wrapper: NotificationProvider },
     );
 
-    const row16 = await screen.findByRole('button', { name: /Chọn đơn in IN-2408-016/ });
+    const row16 = await screen.findByRole('button', { name: /Chi tiết đơn in IN-2408-016/ });
     fireEvent.click(row16);
 
     const readyButton = await screen.findByRole('button', { name: 'Sẵn sàng bàn giao' });
@@ -217,7 +221,7 @@ describe('Management Print Orders Workspace (M09–M14)', () => {
       { wrapper: NotificationProvider },
     );
 
-    const row14 = await screen.findByRole('button', { name: /Chọn đơn in IN-2408-014/ });
+    const row14 = await screen.findByRole('button', { name: /Chi tiết đơn in IN-2408-014/ });
     fireEvent.click(row14);
 
     const handoverBtn = await screen.findByRole('button', { name: 'Bàn giao đơn in' });
@@ -263,7 +267,7 @@ describe('Management Print Orders Workspace (M09–M14)', () => {
     );
 
     // Select order IN-2408-015 which has expired quote
-    const row15 = await screen.findByRole('button', { name: /Chọn đơn in IN-2408-015/ });
+    const row15 = await screen.findByRole('button', { name: /Chi tiết đơn in IN-2408-015/ });
     fireEvent.click(row15);
 
     const quoteBtn = await screen.findByRole('button', { name: 'Gửi báo giá mới' });
@@ -310,7 +314,7 @@ describe('Management Print Orders Workspace (M09–M14)', () => {
     );
 
     // Select order IN-2408-019 which is in REQUESTED state
-    const row19 = await screen.findByRole('button', { name: /Chọn đơn in IN-2408-019/ });
+    const row19 = await screen.findByRole('button', { name: /Chi tiết đơn in IN-2408-019/ });
     fireEvent.click(row19);
 
     const quoteBtn = await screen.findByRole('button', { name: 'Lập báo giá' });
@@ -353,7 +357,7 @@ describe('Management Print Orders Workspace (M09–M14)', () => {
       { wrapper: NotificationProvider },
     );
 
-    await screen.findByRole('button', { name: /Chọn đơn in IN-2408-018/ });
+    fireEvent.click(await screen.findByRole('button', { name: /Chi tiết đơn in IN-2408-018/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Bắt đầu sản xuất' }));
 
     expect(
@@ -382,7 +386,7 @@ describe('Management Print Orders Workspace (M09–M14)', () => {
     ).toBeVisible();
   });
 
-  it('closes modals with Escape key', async () => {
+  it('closes only the active dialog when pressing Escape', async () => {
     const gateway = createFixturePrintOrdersGateway();
     render(
       <PrintOrdersWorkspace
@@ -396,12 +400,16 @@ describe('Management Print Orders Workspace (M09–M14)', () => {
       { wrapper: NotificationProvider },
     );
 
-    await screen.findByRole('heading', { level: 1, name: 'Hàng đợi đơn in' });
+    fireEvent.click(await screen.findByRole('button', { name: 'Chi tiết đơn in IN-2408-018' }));
     fireEvent.click(screen.getByRole('button', { name: 'Xem lịch sử' }));
 
-    expect(screen.getByRole('dialog', { name: /Lịch sử đơn in/ })).toBeVisible();
+    const history = screen.getByRole('dialog', { name: 'Lịch sử đơn in' });
+    expect(within(history).getByRole('heading', { name: /IN-2408-018/ })).toBeVisible();
 
-    fireEvent.keyDown(window, { key: 'Escape' });
+    fireEvent.keyDown(history, { key: 'Escape' });
     expect(screen.queryByRole('dialog', { name: /Lịch sử đơn in/ })).not.toBeInTheDocument();
+    const detail = screen.getByRole('dialog', { name: 'Chi tiết đơn in' });
+    fireEvent.keyDown(detail, { key: 'Escape' });
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 });
