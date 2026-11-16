@@ -3,8 +3,9 @@ import { describe, expect, it, vi } from 'vitest';
 import { NotificationProvider } from '../../design-system/notifications';
 import { ApiClientError } from '../../lib/api/client';
 import { StrictMode } from 'react';
+import { selectOption } from '../../test/select-option';
 
-import type { CatalogGateway } from './catalog-api';
+import type { CatalogGateway, LayoutCatalogSnapshot } from './catalog-types';
 import { LayoutPanel } from './layout-panel';
 
 const templateId = '00000000-0000-4000-8000-000000000041';
@@ -104,6 +105,113 @@ function gateway(overrides: Record<string, unknown> = {}): CatalogGateway {
 }
 
 describe('VC-21 layout template editor', () => {
+  it.each([120, 8])(
+    'creates one table and opens the new draft for a hall of %i guests',
+    async (hallMaximum) => {
+      const halls = [{ ...snapshot.halls[0]!, maxGuests: hallMaximum }];
+      let layouts: LayoutCatalogSnapshot['layouts'] = snapshot.layouts;
+      const createLayout = vi.fn<CatalogGateway['createLayout']>((_token, input) => {
+        layouts = [
+          ...layouts,
+          {
+            ...snapshot.layouts[0]!,
+            id: input.templateId,
+            displayOrder: input.displayOrder,
+            draftVersionId: input.versionId,
+            tables: input.tables.map(({ tableId }) => ({ id: tableId, retiredAt: null })),
+            versions: [
+              {
+                ...snapshot.layouts[0]!.versions[0]!,
+                id: input.versionId,
+                revision: 1,
+                name: input.name,
+                description: input.description,
+                minGuests: input.minGuests,
+                maxGuests: input.maxGuests,
+                totalSeatCapacity: input.tables[0]!.seatCapacity,
+                tables: [...input.tables],
+              },
+            ],
+          },
+        ];
+        return Promise.resolve();
+      });
+      const api = gateway({ createLayout, loadLayouts: () => Promise.resolve({ halls, layouts }) });
+      render(<LayoutPanel gateway={api} authorize={authorize} />, {
+        wrapper: NotificationProvider,
+      });
+
+      fireEvent.click(await screen.findByRole('button', { name: 'Đang hoạt động' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Thêm bố cục bàn' }));
+      const dialog = screen.getByRole('dialog', { name: 'Thêm bố cục bàn' });
+      expect(within(dialog).queryByLabelText(/Khách tối/u)).not.toBeInTheDocument();
+      await selectOption('Sảnh áp dụng', /Sảnh Hồng Ngọc/u);
+      fireEvent.change(within(dialog).getByLabelText('Tên bố trí'), {
+        target: { value: 'Bố trí mới' },
+      });
+      fireEvent.change(within(dialog).getByLabelText('Mô tả'), { target: { value: 'Bàn tròn' } });
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Tạo bản nháp' }));
+
+      const editor = await screen.findByRole('form', { name: 'Bản nháp Bố trí mới' });
+      const expectedCapacity = Math.min(10, hallMaximum);
+      expect(createLayout).toHaveBeenCalledWith(
+        'manager-token',
+        expect.objectContaining({
+          hallId,
+          name: 'Bố trí mới',
+          description: 'Bàn tròn',
+          minGuests: 1,
+          maxGuests: expectedCapacity,
+          displayOrder: 2,
+          tables: [expect.objectContaining({ seatCapacity: expectedCapacity })],
+        }),
+      );
+      expect(within(editor).getByLabelText('Khách tối đa')).toHaveValue(expectedCapacity);
+      expect(within(editor).getByTitle(/Bàn 01:/u)).toBeVisible();
+      expect(screen.queryByRole('dialog', { name: 'Thêm bố cục bàn' })).not.toBeInTheDocument();
+    },
+  );
+
+  it('filters published, unpublished and retired layouts according to their displayed status', async () => {
+    const draft = snapshot.layouts[0]!;
+    const published = {
+      ...draft,
+      id: 'published-layout',
+      currentPublishedVersionId: 'published-version',
+      versions: [
+        ...draft.versions,
+        {
+          ...draft.versions[0]!,
+          id: 'published-version',
+          name: 'Bố trí đã công bố',
+          state: 'PUBLISHED' as const,
+          versionNumber: 1,
+        },
+      ],
+    };
+    const retired = {
+      ...draft,
+      id: 'retired-layout',
+      lifecycle: 'RETIRED' as const,
+      versions: [{ ...draft.versions[0]!, name: 'Bố trí đã ngừng' }],
+    };
+    const api = gateway({
+      loadLayouts: () => Promise.resolve({ ...snapshot, layouts: [draft, published, retired] }),
+    });
+    render(<LayoutPanel gateway={api} authorize={authorize} />);
+    expect(await screen.findAllByRole('row', { name: /^Bố trí/u })).toHaveLength(3);
+    fireEvent.click(screen.getByRole('button', { name: 'Đang hoạt động' }));
+    expect(screen.getAllByRole('row', { name: /^Bố trí/u })).toEqual([
+      screen.getByRole('row', { name: 'Bố trí đã công bố' }),
+    ]);
+    fireEvent.click(screen.getByRole('button', { name: 'Chưa công bố' }));
+    expect(screen.getAllByRole('row', { name: /^Bố trí/u })).toEqual([
+      screen.getByRole('row', { name: 'Bố trí tiệc ấm cúng' }),
+    ]);
+    fireEvent.click(screen.getByRole('button', { name: 'Tất cả' }));
+    expect(screen.getAllByRole('row', { name: /^Bố trí/u })).toHaveLength(3);
+  });
+
   it.each([false, true])('shows one toast per lifecycle action (failure: %s)', async (fails) => {
     const changeLayoutLifecycle = vi.fn(() => {
       if (fails) {
@@ -207,6 +315,50 @@ describe('VC-21 layout template editor', () => {
       expect(screen.getAllByRole('alert').at(-1)).toHaveTextContent('sức chứa sảnh'),
     );
     expect(updateLayoutDraft).not.toHaveBeenCalled();
+  });
+
+  it('rejects 51 guests for five tables and accepts 50 even with legacy seat metadata', async () => {
+    const api = gateway();
+    render(<LayoutPanel gateway={api} authorize={authorize} />, { wrapper: NotificationProvider });
+    fireEvent.click(await screen.findByRole('button', { name: 'Tiếp tục bản nháp' }));
+    const editor = within(screen.getByRole('form', { name: 'Bản nháp Bố trí tiệc ấm cúng' }));
+    for (let index = 0; index < 3; index++) {
+      fireEvent.click(editor.getByRole('button', { name: 'Thêm bàn với UUID mới' }));
+    }
+    fireEvent.change(editor.getByLabelText('Số ghế Bàn 01'), { target: { value: '11' } });
+    const maximum = editor.getByLabelText('Khách tối đa');
+    fireEvent.change(maximum, { target: { value: '51' } });
+    expect(maximum).toHaveAttribute('aria-invalid', 'true');
+    expect(maximum).toHaveAccessibleDescription('Bố cục có 5 bàn, tối đa 50 khách.');
+    fireEvent.click(editor.getByRole('button', { name: 'Lưu bố trí nháp' }));
+    fireEvent.click(editor.getByRole('button', { name: 'Lưu và công bố' }));
+    expect(maximum).toHaveFocus();
+    expect(api.registerLayoutTable).not.toHaveBeenCalled();
+    expect(api.updateLayoutDraft).not.toHaveBeenCalled();
+    expect(api.publishLayout).not.toHaveBeenCalled();
+
+    fireEvent.change(maximum, { target: { value: '50' } });
+    expect(maximum).not.toHaveAttribute('aria-invalid', 'true');
+    fireEvent.click(editor.getByRole('button', { name: 'Lưu bố trí nháp' }));
+    await waitFor(() =>
+      expect(api.updateLayoutDraft).toHaveBeenCalledWith(
+        'manager-token',
+        expect.objectContaining({ maxGuests: 50 }),
+      ),
+    );
+  });
+
+  it('selects a table on the canvas without scrolling to its fields', async () => {
+    render(<LayoutPanel gateway={gateway()} authorize={authorize} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Tiếp tục bản nháp' }));
+    const scrollIntoView = vi.fn();
+    const fields = screen.getByRole('group', { name: 'Bàn 01' });
+    Object.defineProperty(fields, 'scrollIntoView', { value: scrollIntoView });
+
+    fireEvent.click(screen.getByTitle(/Bàn 01:/u));
+
+    expect(screen.getByText('Đang chọn: Bàn 01')).toBeVisible();
+    expect(scrollIntoView).not.toHaveBeenCalled();
   });
 
   it('removes geometry and permanently retires its stable table identity on save', async () => {
