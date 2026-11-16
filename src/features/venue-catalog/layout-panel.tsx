@@ -3,7 +3,7 @@ import { HySelect } from '../../components/ui/select-field';
 
 import { hasDirtyCatalogForms, useCatalogLiveRefresh } from './use-catalog-live-refresh';
 
-import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type {
   Authorize,
@@ -24,6 +24,8 @@ import {
 import { cx } from './catalog-classes';
 import { layoutErrorMessage, text } from './layout-helpers';
 import { PrintOrderDialog } from '../print-orders/print-order-dialog';
+import { TablePagination } from '../identity-access/table-controls';
+import { useCatalogPagination } from './use-catalog-pagination';
 import { TemplateRecordRow, TemplateRecordTable } from './template-record-table';
 import { useTemplateDraft } from './use-template-draft';
 import { cn } from 'cn';
@@ -110,6 +112,23 @@ export function LayoutPanel({
     }
   };
 
+  const halls = snapshot?.halls ?? [];
+  const layouts = snapshot?.layouts ?? [];
+  const visibleLayouts = useMemo(() => {
+    return layouts.filter((layout) => {
+      if (filter === 'all') return true;
+      if (layout.lifecycle !== 'ACTIVE') return false;
+      const published = layout.currentPublishedVersionId !== null;
+      return filter === 'active' ? published : !published;
+    });
+  }, [layouts, filter]);
+
+  const layoutPagination = useCatalogPagination(visibleLayouts, 10, [5, 10, 20]);
+
+  useEffect(() => {
+    layoutPagination.resetPage();
+  }, [filter, layoutPagination.resetPage]);
+
   if (loading && snapshot === null) {
     return (
       <section className={cx.section} aria-busy="true">
@@ -117,15 +136,6 @@ export function LayoutPanel({
       </section>
     );
   }
-
-  const halls = snapshot?.halls ?? [];
-  const layouts = snapshot?.layouts ?? [];
-  const visibleLayouts = layouts.filter((layout) => {
-    if (filter === 'all') return true;
-    if (layout.lifecycle !== 'ACTIVE') return false;
-    const published = layout.currentPublishedVersionId !== null;
-    return filter === 'active' ? published : !published;
-  });
   return (
     <section className={cn(cx.section, cx.layoutSection)} aria-labelledby="layout-heading">
       <div className={cx.sectionHeading}>
@@ -204,19 +214,42 @@ export function LayoutPanel({
             : 'Không có bố cục phù hợp với bộ lọc.'}
         </p>
       ) : (
-        <TemplateRecordTable label="Danh sách bố cục bàn" informationHeading="Sảnh & sức chứa">
-          {visibleLayouts.map((layout) => (
-            <LayoutAggregate
-              key={layout.id}
-              gateway={gateway}
-              hall={halls.find(({ id }) => id === layout.hallId)}
-              layout={layout}
-              pending={pending}
-              run={run}
-              setError={reportValidationError}
+        <>
+          <TemplateRecordTable label="Danh sách bố cục bàn" informationHeading="Sảnh & sức chứa">
+            {layoutPagination.paginatedItems.map((layout) => (
+              <LayoutAggregate
+                key={layout.id}
+                gateway={gateway}
+                hall={halls.find(({ id }) => id === layout.hallId)}
+                layout={layout}
+                pending={pending}
+                run={run}
+                setError={reportValidationError}
+              />
+            ))}
+          </TemplateRecordTable>
+          <div className="px-4 pb-6 sm:px-6">
+            <TablePagination
+              info={
+                <span>
+                  Hiển thị{' '}
+                  <strong>
+                    {layoutPagination.totalItems === 0 ? 0 : layoutPagination.startIndex + 1}
+                  </strong>{' '}
+                  – <strong>{layoutPagination.endIndex}</strong> /{' '}
+                  <strong>{layoutPagination.totalItems}</strong> bố cục bàn
+                </span>
+              }
+              pageSize={layoutPagination.pageSize}
+              pageSizes={layoutPagination.pageSizes}
+              onPageSize={layoutPagination.setPageSize}
+              page={layoutPagination.page}
+              totalPages={layoutPagination.totalPages}
+              onPage={layoutPagination.setPage}
+              navLabel="Phân trang bố cục bàn"
             />
-          ))}
-        </TemplateRecordTable>
+          </div>
+        </>
       )}
     </section>
   );

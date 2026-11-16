@@ -26,6 +26,8 @@ import {
 
 import { cx } from './catalog-classes';
 import { PrintOrderDialog } from '../print-orders/print-order-dialog';
+import { TablePagination } from '../identity-access/table-controls';
+import { useCatalogPagination } from './use-catalog-pagination';
 import { TemplateRecordRow, TemplateRecordTable } from './template-record-table';
 import { useTemplateDraft } from './use-template-draft';
 import type { TimelineVersion } from './timeline-draft';
@@ -48,6 +50,7 @@ export function TimelinePanel({
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const timelinePagination = useCatalogPagination(snapshot?.timelines ?? [], 10, [5, 10, 20]);
   const pendingRef = useRef(pending);
   useEffect(() => {
     pendingRef.current = pending;
@@ -146,17 +149,40 @@ export function TimelinePanel({
       {snapshot.timelines.length === 0 ? (
         <p className={cx.empty}>Chưa có kịch bản tiệc.</p>
       ) : (
-        <TemplateRecordTable label="Danh sách kịch bản tiệc" informationHeading="Nội dung">
-          {snapshot.timelines.map((timeline) => (
-            <TimelineAggregate
-              key={timeline.id}
-              gateway={gateway}
-              pending={pending}
-              run={run}
-              timeline={timeline}
+        <>
+          <TemplateRecordTable label="Danh sách kịch bản tiệc" informationHeading="Nội dung">
+            {timelinePagination.paginatedItems.map((timeline) => (
+              <TimelineAggregate
+                key={timeline.id}
+                gateway={gateway}
+                pending={pending}
+                run={run}
+                timeline={timeline}
+              />
+            ))}
+          </TemplateRecordTable>
+          <div className="px-4 pb-6 sm:px-6">
+            <TablePagination
+              info={
+                <span>
+                  Hiển thị{' '}
+                  <strong>
+                    {timelinePagination.totalItems === 0 ? 0 : timelinePagination.startIndex + 1}
+                  </strong>{' '}
+                  – <strong>{timelinePagination.endIndex}</strong> /{' '}
+                  <strong>{timelinePagination.totalItems}</strong> kịch bản
+                </span>
+              }
+              pageSize={timelinePagination.pageSize}
+              pageSizes={timelinePagination.pageSizes}
+              onPageSize={timelinePagination.setPageSize}
+              page={timelinePagination.page}
+              totalPages={timelinePagination.totalPages}
+              onPage={timelinePagination.setPage}
+              navLabel="Phân trang kịch bản tiệc"
             />
-          ))}
-        </TemplateRecordTable>
+          </div>
+        </>
       )}
     </section>
   );
