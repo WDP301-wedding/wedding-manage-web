@@ -7,15 +7,13 @@ import {
   deriveCommercialStatus,
   deriveProductionStatus,
   printOrderDisplay,
-  formatVietnameseDateTime,
   type PrintOrderView,
 } from './print-orders-types';
 
 export interface PrintOrdersTableProps {
   orders: readonly PrintOrderView[];
   filteredOrders: readonly PrintOrderView[];
-  selectedOrder: PrintOrderView | null;
-  onSelectOrder: (order: PrintOrderView) => void;
+  onOpenDetails: (order: PrintOrderView) => void;
   loading: boolean;
   loadError: string | null;
   query: string;
@@ -36,9 +34,9 @@ export interface PrintOrdersTableProps {
   isSubmitting: boolean;
 }
 
-const thClass =
-  'px-4 py-2.5 text-left text-xs font-semibold whitespace-nowrap text-muted-foreground';
-const tdClass = 'px-4 py-3 align-top';
+const thClass = 'px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground';
+const tdClass =
+  'min-w-0 [overflow-wrap:anywhere] lg:border-t lg:border-border lg:px-4 lg:py-3 lg:align-middle';
 
 function Summary({
   value,
@@ -46,7 +44,7 @@ function Summary({
   tone,
 }: Readonly<{ value: number; label: string; tone?: 'warning' | 'error' }>) {
   return (
-    <div className="flex min-w-0 flex-[1_1_10rem] flex-col gap-0.5 bg-card px-5 py-4">
+    <div className="flex min-w-0 flex-[1_1_8rem] flex-col gap-0.5 bg-card px-4 py-3 sm:flex-[1_1_10rem] sm:px-5 sm:py-4">
       <dd
         className={cn(
           'text-xl font-bold tabular-nums',
@@ -63,61 +61,52 @@ function Summary({
 
 function OrderRow({
   order,
-  selected,
-  onSelect,
-}: Readonly<{ order: PrintOrderView; selected: boolean; onSelect: () => void }>) {
-  const commercial = deriveCommercialStatus(order);
-  const production = deriveProductionStatus(order);
+  onOpenDetails,
+  disabled,
+}: Readonly<{ order: PrintOrderView; onOpenDetails: () => void; disabled: boolean }>) {
+  const status =
+    order.status === 'REQUESTED' || order.status === 'QUOTED' || order.status === 'CANCELLED'
+      ? deriveCommercialStatus(order)
+      : deriveProductionStatus(order);
   const display = printOrderDisplay(order);
   const totalCopies = order.lines.reduce((s, l) => s + l.quantity, 0);
   return (
     <tr
-      onClick={onSelect}
-      className={cn(
-        'cursor-pointer border-t border-border transition-colors hover:bg-muted/60',
-        selected && 'bg-accent/60 hover:bg-accent/60',
-      )}
+      role="row"
+      className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4 gap-y-2 border-t border-border px-4 py-3 first:border-t-0 hover:bg-muted/30 focus-within:bg-muted/40 lg:table-row lg:border-0"
     >
-      <td className={tdClass}>
-        <button
-          type="button"
-          aria-pressed={selected}
-          aria-label={`Chọn đơn in ${order.orderId}`}
-          onClick={(e) => {
-            e.stopPropagation();
-            onSelect();
-          }}
-          className="flex flex-col items-start rounded-md text-left focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-        >
-          <strong className="font-semibold whitespace-nowrap">{order.orderId}</strong>
-          <small className="text-xs text-muted-foreground">Phiên bản {order.revision}</small>
-        </button>
+      <td role="cell" className={cn(tdClass, 'col-span-2')}>
+        <strong className="font-semibold">{order.orderId}</strong>
+        <small className="block text-xs text-muted-foreground">Phiên bản {order.revision}</small>
       </td>
-      <td className={tdClass}>
+      <td role="cell" className={cn(tdClass, 'col-span-2')}>
         <strong className="font-semibold">{display.couple}</strong>
         <small className="block text-xs text-muted-foreground">
-          {display.eventDate}
+          {display.eventDate} · {display.hall}
         </small>
       </td>
-      <td className={tdClass}>{display.hall}</td>
-      <td className={cn(tdClass, 'text-right tabular-nums')}>
-        <strong className="font-semibold">{totalCopies} bản</strong>
-        <small className="block text-xs text-muted-foreground">
-          {order.lines.length} dòng thiết kế
-        </small>
+      <td role="cell" className={cn(tdClass, 'tabular-nums lg:text-right')}>
+        <strong className="font-semibold">{totalCopies.toLocaleString('vi-VN')} bản</strong>
       </td>
-      <td className={tdClass}>
-        <Badge variant={toneBadge[commercial.tone]} className="h-auto whitespace-normal">
-          {commercial.label}
+      <td role="cell" className={tdClass}>
+        <Badge variant={toneBadge[status.tone]} className="h-auto whitespace-normal">
+          {status.label}
         </Badge>
       </td>
-      <td className={tdClass}>
-        <Badge variant={toneBadge[production.tone]} className="h-auto whitespace-normal">
-          {production.label}
-        </Badge>
-      </td>
-      <td className={cn(tdClass, 'text-xs whitespace-nowrap text-muted-foreground tabular-nums')}>
-        <time dateTime={order.updatedAt}>{formatVietnameseDateTime(order.updatedAt)}</time>
+      <td role="cell" className={cn(tdClass, 'col-span-2 text-right')}>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-11 lg:h-9"
+          aria-haspopup="dialog"
+          aria-label={`Chi tiết đơn in ${order.orderId}`}
+          disabled={disabled}
+          onClick={onOpenDetails}
+        >
+          Chi tiết
+          <ChevronRight aria-hidden className="size-3.5" />
+        </Button>
       </td>
     </tr>
   );
@@ -126,7 +115,7 @@ function OrderRow({
 const filters = ['Tất cả', 'Chờ sản xuất', 'Đang sản xuất', 'Sẵn sàng'] as const;
 
 export function PrintOrdersTable(props: PrintOrdersTableProps) {
-  const { orders, filteredOrders, selectedOrder, loading, query, statusFilter } = props;
+  const { orders, filteredOrders, loading, query, statusFilter } = props;
   const counts: Record<(typeof filters)[number], number> = {
     'Tất cả': props.countAll,
     'Chờ sản xuất': props.countApproved,
@@ -160,7 +149,7 @@ export function PrintOrdersTable(props: PrintOrdersTableProps) {
         <div
           aria-label="Lọc trạng thái đơn"
           role="group"
-          className="flex max-w-full gap-1 overflow-x-auto shadow-[inset_0_-1px_0_var(--hy-outline)]"
+          className="flex flex-wrap gap-1 shadow-[inset_0_-1px_0_var(--hy-outline)]"
         >
           {filters.map((filter) => {
             const active = statusFilter === filter;
@@ -217,49 +206,53 @@ export function PrintOrdersTable(props: PrintOrdersTableProps) {
         </div>
       ) : null}
 
-      <div
-        className="overflow-x-auto rounded-xl border border-border bg-card focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-        tabIndex={0}
-        role="region"
-        aria-label="Danh sách đơn in"
-      >
-        <table className="w-full min-w-[820px] border-collapse text-sm">
+      <div className="min-w-0 rounded-xl border border-border bg-card">
+        <table
+          role="table"
+          className="block w-full border-separate border-spacing-0 text-sm lg:table"
+        >
           <caption className="sr-only">Danh sách các đơn in ấn thiệp cưới</caption>
-          <thead className="bg-muted">
-            <tr>
-              <th scope="col" className={thClass}>
+          <thead role="rowgroup" className="sr-only bg-muted lg:not-sr-only">
+            <tr role="row">
+              <th role="columnheader" scope="col" className={cn(thClass, 'rounded-tl-xl')}>
                 Mã đơn in
               </th>
-              <th scope="col" className={thClass}>
-                Cặp đôi &amp; Ngày tiệc
+              <th role="columnheader" scope="col" className={thClass}>
+                Cặp đôi và tiệc
               </th>
-              <th scope="col" className={thClass}>
-                Sảnh tiệc
+              <th role="columnheader" scope="col" className={cn(thClass, 'text-right')}>
+                Số lượng
               </th>
-              <th scope="col" className={cn(thClass, 'text-right')}>
-                Số lượng bản in
+              <th role="columnheader" scope="col" className={thClass}>
+                Trạng thái
               </th>
-              <th scope="col" className={thClass}>
-                Thương mại
-              </th>
-              <th scope="col" className={thClass}>
-                Sản xuất
-              </th>
-              <th scope="col" className={thClass}>
-                Cập nhật
+              <th
+                role="columnheader"
+                scope="col"
+                className={cn(thClass, 'rounded-tr-xl text-right')}
+              >
+                Thao tác
               </th>
             </tr>
           </thead>
-          <tbody>
+          <tbody role="rowgroup" className="block lg:table-row-group">
             {loading && orders.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="px-4 py-10 text-center text-muted-foreground">
+              <tr role="row" className="block lg:table-row">
+                <td
+                  role="cell"
+                  colSpan={5}
+                  className="block px-4 py-10 text-center text-muted-foreground lg:table-cell"
+                >
                   Đang tải danh sách đơn in từ máy chủ…
                 </td>
               </tr>
             ) : filteredOrders.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="px-4 py-10 text-center text-muted-foreground">
+              <tr role="row" className="block lg:table-row">
+                <td
+                  role="cell"
+                  colSpan={5}
+                  className="block px-4 py-10 text-center text-muted-foreground lg:table-cell"
+                >
                   {query
                     ? 'Không tìm thấy đơn in nào phù hợp từ khóa.'
                     : 'Không có đơn in nào trong trạng thái đã chọn.'}
@@ -270,8 +263,8 @@ export function PrintOrdersTable(props: PrintOrdersTableProps) {
                 <OrderRow
                   key={order.orderId}
                   order={order}
-                  selected={selectedOrder?.orderId === order.orderId}
-                  onSelect={() => props.onSelectOrder(order)}
+                  disabled={props.isSubmitting}
+                  onOpenDetails={() => props.onOpenDetails(order)}
                 />
               ))
             )}

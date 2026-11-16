@@ -1,14 +1,14 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { createElement } from 'react';
 import { render, screen } from '@testing-library/react';
-import { PrintOrderCommercialCard } from './print-order-commercial-card';
+import { PrintOrdersDetail } from './print-orders-detail';
 import { DEMO_PRINT_ORDERS } from './print-orders-fixtures';
 import { printOrderDisplay } from './print-orders-types';
 
 describe('authoritative print booking context', () => {
-  it('renders the same booking context in the commercial summary card', () => {
+  it('renders the authoritative booking context in the order details', () => {
     render(
-      createElement(PrintOrderCommercialCard, {
+      createElement(PrintOrdersDetail, {
         selectedOrder: {
           ...DEMO_PRINT_ORDERS[0]!,
           bookingSummary: {
@@ -19,11 +19,17 @@ describe('authoritative print booking context', () => {
             hallName: 'Lotus Hall',
           },
         },
+        isSubmitting: false,
+        onStartProduction: vi.fn(),
+        onMarkReady: vi.fn(),
+        onOpenHandoverModal: vi.fn(),
+        onOpenQuoteDrawer: vi.fn(),
+        onOpenCancelModal: vi.fn(),
       }),
     );
     expect(screen.getByText('cuong & cuong')).toBeVisible();
-    expect(screen.getByText('18/11/2026')).toBeVisible();
-    expect(screen.getByText('Lotus Hall')).toBeVisible();
+    expect(screen.getByText('18/11/2026 · Lotus Hall')).toBeVisible();
+    expect(screen.getByText('Mã đặt tiệc HY-000030')).toBeVisible();
   });
   it('uses explicit couple names, snapshotted hall and a timezone-independent event date', () => {
     expect(

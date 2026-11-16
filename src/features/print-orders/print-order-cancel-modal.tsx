@@ -8,7 +8,7 @@ import {
   labelClass,
   textareaClass,
 } from './print-order-classes';
-import { PrintOrderDialog } from './print-order-dialog';
+import { PrintQueueDialog } from './print-queue-dialog';
 import type { PrintOrderView } from './print-orders-types';
 
 export interface CancelOrderModalProps {
@@ -36,7 +36,7 @@ export function CancelOrderModal({
   };
 
   return (
-    <PrintOrderDialog
+    <PrintQueueDialog
       label="Xác nhận hủy đơn in"
       title={`Xác nhận hủy đơn in ${order.orderId}`}
       description={`Phiên bản xác thực: ${order.revision}`}
@@ -95,6 +95,6 @@ export function CancelOrderModal({
           </Button>
         </div>
       </form>
-    </PrintOrderDialog>
+    </PrintQueueDialog>
   );
 }

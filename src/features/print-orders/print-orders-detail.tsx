@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
+import { Clock3 } from 'lucide-react';
+import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import {
   canCancelOrder,
@@ -8,9 +10,12 @@ import {
   canProposeReplacement,
   canQuoteOrder,
   canStartProduction,
+  deriveCommercialStatus,
+  deriveProductionStatus,
+  printOrderDisplay,
   type PrintOrderView,
 } from './print-orders-types';
-import { PrintOrderSpecsCard } from './print-order-specs-card';
+import { toneBadge } from './print-order-classes';
 import { PrintOrderCommercialCard } from './print-order-commercial-card';
 import { PrintOrderTimelineCard } from './print-order-timeline-card';
 
@@ -24,6 +29,7 @@ export interface PrintOrdersDetailProps {
   onOpenHandoverModal: () => void;
   onOpenQuoteDrawer: (isReplacementProposal: boolean) => void;
   onOpenCancelModal: () => void;
+  onOpenHistory?: () => void;
 }
 
 export function PrintOrdersDetail({
@@ -36,22 +42,32 @@ export function PrintOrdersDetail({
   onOpenHandoverModal,
   onOpenQuoteDrawer,
   onOpenCancelModal,
+  onOpenHistory,
 }: PrintOrdersDetailProps) {
+  const commercial = deriveCommercialStatus(selectedOrder);
+  const production = deriveProductionStatus(selectedOrder);
+  const display = printOrderDisplay(selectedOrder);
+
   return (
-    <aside
-      id="print-order-detail"
-      aria-label="Chi tiết đơn in ấn được chọn"
-      className="flex min-w-0 flex-col gap-4 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-right-2"
-    >
-      <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-5 shadow-hy-2">
-        <div className="flex flex-col gap-0.5">
-          <h2 className="text-lg font-semibold [overflow-wrap:anywhere]">
-            Đơn in: {selectedOrder.orderId}
-          </h2>
-          <span className="text-xs break-all text-muted-foreground">
-            (Hợp đồng: {selectedOrder.bookingId})
-          </span>
+    <div className="flex min-w-0 flex-col gap-4">
+      <section aria-label="Trạng thái và thao tác" className="flex flex-col gap-3">
+        <div>
+          <p className="font-semibold [overflow-wrap:anywhere]">{display.couple}</p>
+          <p className="text-sm text-muted-foreground [overflow-wrap:anywhere]">
+            {display.eventDate} · {display.hall}
+          </p>
         </div>
+        <div className="flex flex-wrap gap-2">
+          <Badge variant={toneBadge[commercial.tone]} className="h-auto whitespace-normal">
+            {commercial.label}
+          </Badge>
+          <Badge variant={toneBadge[production.tone]} className="h-auto whitespace-normal">
+            {production.label}
+          </Badge>
+        </div>
+        <p className="text-xs text-muted-foreground [overflow-wrap:anywhere]">
+          Mã đặt tiệc {selectedOrder.bookingSummary?.bookingCode ?? selectedOrder.bookingId}
+        </p>
         {selectedOrder.appendixSource ? (
           <p className="text-sm text-muted-foreground">
             Đơn in được tạo từ phụ lục đã được cả hai bên duyệt. Chi phí chỉ được ghi nhận một lần
@@ -131,12 +147,19 @@ export function PrintOrdersDetail({
               Hủy đơn in
             </Button>
           ) : null}
+          {onOpenHistory ? (
+            <Button variant="outline" onClick={onOpenHistory} disabled={isSubmitting}>
+              <Clock3 aria-hidden className="size-4" />
+              Xem lịch sử
+            </Button>
+          ) : null}
         </div>
-      </div>
+      </section>
       {purchasePreview}
-      <PrintOrderSpecsCard selectedOrder={selectedOrder} />
-      <PrintOrderCommercialCard selectedOrder={selectedOrder} />
-      <PrintOrderTimelineCard selectedOrder={selectedOrder} />
-    </aside>
+      <div className="grid min-w-0 items-start gap-4 md:grid-cols-2">
+        <PrintOrderCommercialCard selectedOrder={selectedOrder} />
+        <PrintOrderTimelineCard selectedOrder={selectedOrder} />
+      </div>
+    </div>
   );
 }

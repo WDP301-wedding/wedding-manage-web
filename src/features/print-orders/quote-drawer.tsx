@@ -6,7 +6,7 @@ import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { DatePicker } from '../../design-system/date-picker';
 import { dialogActionsClass, errorTextClass, hintClass, labelClass } from './print-order-classes';
-import { PrintOrderDialog } from './print-order-dialog';
+import { PrintQueueDialog } from './print-queue-dialog';
 import {
   computeQuotedLineTotal,
   formatVnd,
@@ -42,7 +42,7 @@ export function QuoteDrawer({
     isCommercialRevisionExpired(order.currentCommercialRevision);
 
   return (
-    <PrintOrderDialog
+    <PrintQueueDialog
       variant="drawer"
       label={label}
       title={`${label} ${order.orderId}`}
@@ -155,6 +155,6 @@ export function QuoteDrawer({
           </Button>
         </div>
       </form>
-    </PrintOrderDialog>
+    </PrintQueueDialog>
   );
 }
