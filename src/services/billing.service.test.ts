@@ -12,13 +12,9 @@ afterEach(() => {
 
 describe('deleting a draft incidental expense', () => {
   it('sends the selected line, expected revision, and an idempotency key', async () => {
-    const adapter = vi.fn<AxiosAdapter>(async (config) => ({
-      config,
-      data: {},
-      headers: {},
-      status: 200,
-      statusText: 'OK',
-    }));
+    const adapter = vi.fn<AxiosAdapter>((config) =>
+      Promise.resolve({ config, data: {}, headers: {}, status: 200, statusText: 'OK' }),
+    );
     axiosApiClient.defaults.adapter = adapter;
 
     await billingService.deleteIncidental('booking', 'line', 3);
