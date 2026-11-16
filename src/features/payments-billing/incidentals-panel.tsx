@@ -49,6 +49,7 @@ export function IncidentalsPanel({
   const [loadError, setLoadError] = useState<string | null>(null);
   const activeBookingIdRef = useRef(bookingId);
   const loadSequence = useRef(0);
+  const deleteIntent = useRef<{ fingerprint: string; key: string } | null>(null);
   const invoiceIntent = useRef<{ fingerprint: string; key: string } | null>(null);
   const busy =
     disabled ||
@@ -118,6 +119,7 @@ export function IncidentalsPanel({
     setShowFinalizeConfirm(false);
     setShowAddForm(false);
     setShowAdjustment(false);
+    deleteIntent.current = null;
     invoiceIntent.current = null;
     loadSequence.current++;
   }, [bookingId]);
@@ -160,9 +162,15 @@ export function IncidentalsPanel({
 
   const handleDeleteLine = async (lineId: string) => {
     if (!incidentals || loadError || loading || finalizing) return;
+    const { revision } = incidentals;
     setLoading(true);
     try {
-      await billingService.deleteIncidental(bookingId, lineId, incidentals.revision);
+      const fingerprint = JSON.stringify([bookingId, lineId, revision]);
+      if (deleteIntent.current?.fingerprint !== fingerprint)
+        deleteIntent.current = { fingerprint, key: crypto.randomUUID() };
+      const intent = deleteIntent.current;
+      await billingService.deleteIncidental(bookingId, lineId, revision, intent.key);
+      if (deleteIntent.current === intent) deleteIntent.current = null;
       const msg = 'Đã xoá dòng phát sinh.';
       notify.success(msg);
       live.schedule();

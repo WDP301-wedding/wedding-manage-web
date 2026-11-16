@@ -116,9 +116,11 @@ export const billingService = {
     bookingId: string,
     lineId: string,
     expectedRevision: number,
+    idempotencyKey = crypto.randomUUID(),
   ): Promise<void> {
     await axiosApiClient.delete(`/management/bookings/${bookingId}/incidental-expenses/${lineId}`, {
       data: { expectedRevision },
+      headers: { 'Idempotency-Key': idempotencyKey },
     });
   },
 
