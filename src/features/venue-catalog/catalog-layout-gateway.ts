@@ -29,6 +29,20 @@ export function createLayoutCatalogGateway(
     return fetchShared ? fetchShared(accessToken, endpoint, params, fetcher) : fetcher();
   };
 
+  async function loadAllLayouts(accessToken: string): Promise<CatalogLayout[]> {
+    const layouts: CatalogLayout[] = [];
+    let cursor: string | undefined;
+    do {
+      const response = await read<{
+        data?: { data: { items: readonly CatalogLayout[]; nextCursor: string | null } };
+      }>(accessToken, '/management/catalog/layout-templates', { limit: 100, cursor });
+      const page = required(response.data, 'Layout read').data;
+      layouts.push(...page.items);
+      cursor = page.nextCursor ?? undefined;
+    } while (cursor !== undefined);
+    return layouts;
+  }
+
   return {
     async loadLayouts(accessToken) {
       const [halls, layouts] = await Promise.all([
@@ -37,11 +51,7 @@ export function createLayoutCatalogGateway(
           '/management/catalog/halls',
           { limit: 100 },
         ),
-        read<{ data?: { data: { items: readonly CatalogLayout[] } } }>(
-          accessToken,
-          '/management/catalog/layout-templates',
-          { limit: 100 },
-        ),
+        loadAllLayouts(accessToken),
       ]);
       return {
         halls: Array.from(
@@ -50,17 +60,14 @@ export function createLayoutCatalogGateway(
             ...hall,
           }),
         ),
-        layouts: Array.from(
-          required(layouts.data, 'Layout read').data.items,
-          (layout): CatalogLayout => ({
-            ...layout,
-            tables: Array.from(layout.tables, (table) => ({ ...table })),
-            versions: Array.from(layout.versions, (version) => ({
-              ...version,
-              tables: Array.from(version.tables, (table) => ({ ...table })),
-            })),
-          }),
-        ),
+        layouts: layouts.map((layout) => ({
+          ...layout,
+          tables: Array.from(layout.tables, (table) => ({ ...table })),
+          versions: Array.from(layout.versions, (version) => ({
+            ...version,
+            tables: Array.from(version.tables, (table) => ({ ...table })),
+          })),
+        })),
       };
     },
 

@@ -3,7 +3,40 @@ import { createApiClient } from '../../lib/api/client';
 import { createLayoutCatalogGateway } from './catalog-layout-gateway';
 import { createTimelineCatalogGateway } from './catalog-timeline-gateway';
 
-describe('template command retries', () => {
+const authorization = (token: string) => ({ Authorization: `Bearer ${token}` });
+const required = <T>(value: T | undefined): T => {
+  if (value === undefined) throw new Error('Missing response');
+  return value;
+};
+
+describe('template gateways', () => {
+  it('loads layouts from every page for the status filters and newly created drafts', async () => {
+    const cursors: (string | null)[] = [];
+    const client = createApiClient({
+      baseUrl: 'https://catalog.example/api/v1',
+      fetch: (request) => {
+        const url = new URL(request.url);
+        const cursor = url.searchParams.get('cursor');
+        const isLayout = url.pathname.endsWith('/layout-templates');
+        if (isLayout) cursors.push(cursor);
+        const items = isLayout
+          ? [{ id: cursor ? 'new-draft' : 'existing-layout', versions: [], tables: [] }]
+          : [];
+        return Promise.resolve(
+          Response.json({
+            data: { items, nextCursor: isLayout && !cursor ? 'existing-layout' : null },
+          }),
+        );
+      },
+    });
+    const gateway = createLayoutCatalogGateway(() => client, authorization, required);
+
+    const { layouts } = await gateway.loadLayouts('token');
+
+    expect(layouts.map(({ id }) => id)).toEqual(['existing-layout', 'new-draft']);
+    expect(cursors).toEqual([null, 'existing-layout']);
+  });
+
   it('reuses command keys in headers and preserves the strict HTTP bodies', async () => {
     const requests: Request[] = [];
     const client = createApiClient({
@@ -17,11 +50,6 @@ describe('template command retries', () => {
         );
       },
     });
-    const authorization = (token: string) => ({ Authorization: `Bearer ${token}` });
-    const required = <T>(value: T | undefined): T => {
-      if (value === undefined) throw new Error('Missing response');
-      return value;
-    };
     const layout = createLayoutCatalogGateway(() => client, authorization, required);
     const timeline = createTimelineCatalogGateway(() => client, authorization, required);
     for (let attempt = 0; attempt < 2; attempt++) {
