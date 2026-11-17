@@ -38,21 +38,30 @@ export function ConsultationKpiBar({
 
   return (
     <div className="grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-2 sm:gap-4">
-      {cards.map((card) => (
-        <button
-          key={card.filter}
-          type="button"
-          onClick={() => onFilterChange(card.filter)}
-          aria-pressed={statusFilter === card.filter}
-          aria-label={`Thẻ thống kê: ${card.label} (${card.value})`}
-          className="flex flex-col gap-1 rounded-xl border border-border bg-card px-3 py-2.5 text-left sm:px-5 sm:py-4 transition-colors hover:border-input focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none aria-pressed:border-primary aria-pressed:bg-accent"
-        >
-          <span className="text-xs text-muted-foreground">{card.label}</span>
-          <span className={cn('text-xl font-bold tabular-nums', card.valueClass)}>
-            {card.value}
-          </span>
-        </button>
-      ))}
+      {cards.map((card) => {
+        const isSelected = statusFilter === card.filter;
+        return (
+          <button
+            key={card.filter}
+            type="button"
+            onClick={() => {
+              if (isSelected && card.filter !== 'ALL') {
+                onFilterChange('ALL');
+              } else {
+                onFilterChange(card.filter);
+              }
+            }}
+            aria-pressed={isSelected}
+            aria-label={`Thẻ thống kê: ${card.label} (${card.value})`}
+            className="flex flex-col gap-1 rounded-xl border border-border bg-card px-3 py-2.5 text-left sm:px-5 sm:py-4 transition-colors hover:border-input focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none aria-pressed:border-primary aria-pressed:bg-accent cursor-pointer"
+          >
+            <span className="text-xs text-muted-foreground">{card.label}</span>
+            <span className={cn('text-xl font-bold tabular-nums', card.valueClass)}>
+              {card.value}
+            </span>
+          </button>
+        );
+      })}
     </div>
   );
 }

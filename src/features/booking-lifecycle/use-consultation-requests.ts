@@ -283,15 +283,23 @@ export function useConsultationRequests() {
   };
   const rawList = queue?.data ?? [];
   const stats = useMemo(() => {
+    const counts = queue?.counts;
+    const computedTotal =
+      counts &&
+      typeof counts.NEW === 'number' &&
+      typeof counts.CONVERTED === 'number' &&
+      typeof counts.CLOSED === 'number'
+        ? counts.NEW + counts.CONVERTED + counts.CLOSED
+        : (queue?.totalMatches ?? rawList.length);
     return {
-      total: queue?.totalMatches ?? rawList.length,
+      total: computedTotal,
       newCount:
-        queue?.counts?.NEW ?? rawList.filter((item) => (item.status as string) === 'NEW').length,
+        counts?.NEW ?? rawList.filter((item) => (item.status as string) === 'NEW').length,
       convertedCount:
-        queue?.counts?.CONVERTED ??
+        counts?.CONVERTED ??
         rawList.filter((item) => (item.status as string) === 'CONVERTED').length,
       closedCount:
-        queue?.counts?.CLOSED ??
+        counts?.CLOSED ??
         rawList.filter((item) => (item.status as string) === 'CLOSED').length,
     };
   }, [queue, rawList]);

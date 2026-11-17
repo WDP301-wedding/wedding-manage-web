@@ -126,16 +126,8 @@ export function ConsultationRequestsPage() {
                 Đang xử lý…
               </p>
             )}
-            {queue?.data.length === 0 && (
-              <section className="flex flex-col gap-1 rounded-xl border border-dashed border-border bg-muted px-6 py-10 text-center">
-                <h2 className="text-lg font-semibold">Chưa có yêu cầu tư vấn</h2>
-                <p className="text-muted-foreground">
-                  Yêu cầu được gửi từ trang công khai sẽ xuất hiện tại đây.
-                </p>
-              </section>
-            )}
 
-            {queue && queue.data.length > 0 && (
+            {queue && (
               <>
                 <ConsultationKpiBar
                   statusFilter={statusFilter}
@@ -151,7 +143,7 @@ export function ConsultationRequestsPage() {
                         type="button"
                         aria-pressed={statusFilter === tab.filter}
                         onClick={() => setStatusFilter(tab.filter)}
-                        className="inline-flex h-9 items-center gap-2 rounded-md px-3 text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none aria-pressed:bg-card aria-pressed:text-foreground aria-pressed:shadow-hy-1"
+                        className="inline-flex h-9 items-center gap-2 rounded-md px-3 text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none aria-pressed:bg-card aria-pressed:text-foreground aria-pressed:shadow-hy-1 cursor-pointer"
                       >
                         {tab.label}
                         <span
@@ -197,16 +189,38 @@ export function ConsultationRequestsPage() {
                     )}
                   </div>
                 </div>
+
                 {filteredItems.length === 0 ? (
-                  <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border bg-muted px-4 py-10 text-center text-muted-foreground">
-                    <p className="font-semibold">
-                      {pending
-                        ? 'Đang tải kết quả mới…'
-                        : 'Không tìm thấy yêu cầu tư vấn nào phù hợp với bộ lọc hiện tại.'}
-                    </p>
-                    <Button variant="outline" size="sm" type="button" onClick={resetFilters}>
-                      Xóa bộ lọc
-                    </Button>
+                  <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border bg-card px-4 py-12 text-center text-muted-foreground shadow-hy-1">
+                    <div className="flex flex-col gap-1">
+                      <p className="font-semibold text-foreground text-base">
+                        {pending
+                          ? 'Đang tải kết quả mới…'
+                          : stats.total === 0 && statusFilter === 'ALL' && !searchQuery.trim()
+                            ? 'Chưa có yêu cầu tư vấn'
+                            : statusFilter !== 'ALL'
+                              ? `Không có yêu cầu tư vấn nào ở trạng thái "${tabs.find((t) => t.filter === statusFilter)?.label ?? statusFilter}"`
+                              : 'Không tìm thấy yêu cầu tư vấn nào phù hợp với bộ lọc hiện tại.'}
+                      </p>
+                      <p className="text-sm text-muted-foreground max-w-md">
+                        {stats.total === 0 && statusFilter === 'ALL' && !searchQuery.trim()
+                          ? 'Yêu cầu được gửi từ trang công khai sẽ xuất hiện tại đây.'
+                          : searchQuery.trim()
+                            ? `Không có kết quả nào khớp với từ khóa "${searchQuery.trim()}". Bạn có thể đặt lại bộ lọc để xem toàn bộ danh sách.`
+                            : 'Hiện tại chưa có yêu cầu nào thuộc danh mục này. Bạn có thể chọn trạng thái khác ở thanh chỉ số phía trên hoặc bấm quay lại tất cả.'}
+                      </p>
+                    </div>
+                    {(statusFilter !== 'ALL' || searchQuery.trim()) && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        type="button"
+                        onClick={resetFilters}
+                        className="mt-1 shadow-sm cursor-pointer"
+                      >
+                        Quay lại tất cả yêu cầu
+                      </Button>
+                    )}
                   </div>
                 ) : (
                   <ConsultationRequestsList
