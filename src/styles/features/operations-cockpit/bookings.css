@@ -1,0 +1,79 @@
+/* ==========================================================================
+   VIEW 3: MASTER BOOKINGS PIPELINE (TABLE & CONTRACTS)
+   ========================================================================== */
+.master-event-card {
+  background: var(--ck-bg-surface);
+  border: 1px solid var(--ck-border-card);
+  border-radius: var(--hy-radius-md);
+  box-shadow: var(--ck-shadow-card);
+  overflow: hidden;
+  transition: box-shadow var(--ck-speed-fast), border-color var(--ck-speed-fast);
+}
+
+.event-filter-toolbar {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--ck-border-base);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.select-flat {
+  height: 36px;
+  padding: 0 12px;
+  border-radius: var(--hy-radius-sm);
+  border: 1px solid var(--ck-border-card);
+  background: #FFFFFF;
+  font-size: 12.5px;
+  color: var(--ck-text-main);
+  font-weight: 500;
+  outline: none;
+}
+
+.event-data-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.event-data-table th {
+  background: var(--ck-bg-subtle);
+  padding: 12px 18px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--ck-text-secondary);
+  border-bottom: 1px solid var(--ck-border-base);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.event-data-table td {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--ck-border-base);
+  font-size: 13px;
+  color: var(--ck-text-main);
+  vertical-align: middle;
+}
+
+.event-data-table tr:hover td {
+  background: var(--ck-bg-subtle);
+  cursor: pointer;
+}
+
+.contract-ref {
+  font-weight: 600;
+  color: var(--ck-brand-wine);
+}
+
+.couple-full-name {
+  font-weight: 600;
+  color: var(--ck-text-main);
+}
+
+.couple-phone-sub {
+  font-size: 11.5px;
+  color: var(--ck-text-muted);
+  margin-top: 1px;
+}

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { ManagementAccountPage } from '../../src/features/identity-access/account-page';
+import { ManagementAccountPage } from '@/src/features/identity-access/pages/account-page';
 
 export const metadata: Metadata = { title: 'Tài khoản' };
 

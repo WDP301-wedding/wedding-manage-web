@@ -1,10 +1,11 @@
 import { createHash } from 'node:crypto';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, readdir, unlink, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import openapiTS, { astToString } from 'openapi-typescript';
 import { format, resolveConfig } from 'prettier';
+import { splitGeneratedSchema } from './api/split-generated-schema.mjs';
 
 const projectRoot = fileURLToPath(new URL('../', import.meta.url));
 const lockPath = resolve(projectRoot, 'api-contract.lock.json');
@@ -60,10 +61,11 @@ async function renderSchema(sourceBytes, source) {
   });
   const prettierConfig = await resolveConfig(outputPath);
 
-  return format(`${renderHeader(source)}${astToString(nodes)}`, {
+  const monolithic = await format(astToString(nodes), {
     ...prettierConfig,
     filepath: outputPath,
   });
+  return splitGeneratedSchema(monolithic, renderHeader(source), prettierConfig);
 }
 
 async function main() {
@@ -85,30 +87,34 @@ async function main() {
   const generated = await renderSchema(sourceBytes, source);
 
   if (mode === 'check') {
-    let committed;
-
-    try {
-      committed = await readFile(outputPath, 'utf8');
-    } catch (error) {
-      if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
-        throw new Error('Generated API schema is missing. Run npm run api:generate.', {
-          cause: error,
-        });
+    for (const [filename, content] of generated) {
+      const committed = await readFile(resolve(dirname(outputPath), filename), 'utf8');
+      if (committed !== content) {
+        throw new Error(`Generated API schema is stale: ${filename}. Run npm run api:generate.`);
       }
-
-      throw error;
     }
-
-    if (committed !== generated) {
-      throw new Error('Generated API schema is stale. Run npm run api:generate.');
+    const existing = await readdir(resolve(dirname(outputPath), 'parts'));
+    if (existing.some((filename) => !generated.has(`parts/${filename}`))) {
+      throw new Error('Generated API schema contains stale parts. Run npm run api:generate.');
     }
 
     console.log(`API schema is current (${source.sha256}).`);
     return;
   }
 
-  await mkdir(dirname(outputPath), { recursive: true });
-  await writeFile(outputPath, generated, 'utf8');
+  const partsDirectory = resolve(dirname(outputPath), 'parts');
+  await mkdir(partsDirectory, { recursive: true });
+  for (const [filename, content] of generated) {
+    await writeFile(resolve(dirname(outputPath), filename), content, 'utf8');
+  }
+  // Only remove obsolete files produced by this generator inside its own directory.
+  for (const filename of await readdir(partsDirectory)) {
+    if (
+      /^(SchemaShape\d+(Part\d+)?|[a-z]+Members(Part\d+)?)\.d\.ts$/u.test(filename) &&
+      !generated.has(`parts/${filename}`)
+    )
+      await unlink(resolve(partsDirectory, filename));
+  }
   console.log(`Generated API schema from ${source.sha256}.`);
 }
 

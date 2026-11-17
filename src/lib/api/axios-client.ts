@@ -8,7 +8,7 @@ import axios, {
   type InternalAxiosRequestConfig,
 } from 'axios';
 
-import { readPublicEnv } from '../env';
+import { readPublicEnv } from '@/src/lib/env';
 
 export interface ApiErrorDetail {
   readonly path: string;

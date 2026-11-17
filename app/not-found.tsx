@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { buttonVariants } from '../src/components/ui/button';
-import { StatusPage } from '../src/design-system/status-page';
+import { buttonVariants } from '@/src/components/ui/button';
+import { StatusPage } from '@/src/design-system/feedback/status-page';
 
 export const metadata: Metadata = { title: 'Không tìm thấy trang' };
 

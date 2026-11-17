@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { Button, buttonVariants } from '../src/components/ui/button';
-import { StatusPage } from '../src/design-system/status-page';
+import { Button, buttonVariants } from '@/src/components/ui/button';
+import { StatusPage } from '@/src/design-system/feedback/status-page';
 
 export default function PageError({
   error,

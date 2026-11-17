@@ -3,9 +3,9 @@
 
 @layer theme, base, components, utilities;
 
-@import './styles/globals/tokens.css';
-@import './ui-v3.css';
-@import './cockpit-luxury.css';
+@import '../src/styles/tokens.css';
+@import '../src/styles/theme.css';
+@import '../src/styles/features/operations-cockpit.css';
 
 :root {
   --font-display: 'Google Sans Flex', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;

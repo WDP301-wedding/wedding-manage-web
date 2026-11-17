@@ -1,0 +1,253 @@
+'use client';
+import { HySelect } from '@/src/components/ui/select-field';
+
+import Link from 'next/link';
+import { cn } from 'cn';
+import { OperationsShell } from '@/src/components/layout/operations-shell';
+import { Button } from '@/src/components/ui/button';
+import { Input } from '@/src/components/ui/input';
+import {
+  useConsultationRequests,
+  type SortOption,
+  type StatusFilter,
+} from '@/src/features/booking-lifecycle/hooks/use-consultation-requests';
+import { ConsultationKpiBar, ConsultationKpiBarSkeleton } from '@/src/features/booking-lifecycle/components/consultations/consultation-kpi-bar';
+import { ConsultationRequestsList, ConsultationListSkeleton } from '@/src/features/booking-lifecycle/components/consultations/consultation-requests-list';
+import { Skeleton } from '@/src/components/ui/skeleton';
+
+function ConsultationFilterBarSkeleton() {
+  return (
+    <div className="flex flex-wrap items-center gap-3" aria-busy="true">
+      <Skeleton className="h-11 w-80 rounded-lg" />
+      <Skeleton className="h-11 min-w-0 flex-[1_1_220px] rounded-lg" />
+      <Skeleton className="h-11 w-44 rounded-lg" />
+    </div>
+  );
+}
+
+export function ConsultationRequestsPage() {
+  const {
+    snapshot,
+    access,
+    queue,
+    pending,
+    error,
+    statusFilter,
+    setStatusFilter,
+    searchQuery,
+    setSearchQuery,
+    sortBy,
+    setSortBy,
+    load,
+    act,
+    logout,
+    stats,
+    filteredItems,
+  } = useConsultationRequests();
+
+  const resetFilters = () => {
+    setStatusFilter('ALL');
+    setSearchQuery('');
+  };
+
+  const tabs: readonly {
+    filter: StatusFilter;
+    label: string;
+    count: number;
+    countClass: string;
+  }[] = [
+    { filter: 'ALL', label: 'Tất cả', count: stats.total, countClass: 'bg-secondary' },
+    {
+      filter: 'NEW',
+      label: 'Chờ tiếp nhận',
+      count: stats.newCount,
+      countClass: 'bg-accent text-accent-foreground',
+    },
+    {
+      filter: 'CONVERTED',
+      label: 'Đã mở tư vấn',
+      count: stats.convertedCount,
+      countClass: 'bg-hy-success-bg text-hy-success',
+    },
+    {
+      filter: 'CLOSED',
+      label: 'Đã kết thúc',
+      count: stats.closedCount,
+      countClass: 'bg-card text-muted-foreground',
+    },
+  ];
+
+  return (
+    <OperationsShell
+      activePage="consultations"
+      contentId="consultation-main"
+      snapshot={snapshot}
+      onLogout={logout}
+      pending={pending}
+    >
+      <main
+        data-ui-v3=""
+        className="consultation-view-enterprise flex flex-1 flex-col gap-6 px-4 pt-8 pb-14 sm:px-10"
+        id="consultation-main"
+      >
+        <header className="flex flex-wrap items-end justify-between gap-4">
+          <div className="flex max-w-[640px] flex-col gap-1">
+            <h1 className="text-2xl font-bold">Yêu cầu tư vấn</h1>
+            <p className="text-muted-foreground">
+              Tiếp nhận lời nhắn và mở hồ sơ để cùng khách hàng chuẩn bị buổi tiệc.
+            </p>
+          </div>
+          {access === 'manager' && (
+            <Button
+              variant="outline"
+              size="sm"
+              type="button"
+              disabled={pending}
+              onClick={() => void load()}
+            >
+              Tải lại
+            </Button>
+          )}
+        </header>
+
+        {error && !queue && access === 'manager' && (
+          <div className="rounded-xl bg-hy-error-bg px-5 py-4">
+            <p className="font-semibold text-hy-error">{error}</p>
+          </div>
+        )}
+
+        {access === 'loading' && (
+          <div className="flex flex-col gap-6" aria-busy="true">
+            <ConsultationKpiBarSkeleton />
+            <ConsultationFilterBarSkeleton />
+            <ConsultationListSkeleton />
+          </div>
+        )}
+        {access === 'denied' && (
+          <section className="flex flex-col gap-2 rounded-xl border border-border bg-card p-6">
+            <h2 className="text-lg font-semibold">Cần tài khoản Quản lý</h2>
+            <Link className="font-semibold text-primary hover:underline" href="/">
+              Đăng nhập để tiếp tục
+            </Link>
+          </section>
+        )}
+
+        {access === 'manager' && (
+          <>
+            {!queue ? (
+              <div className="flex flex-col gap-6" aria-busy="true">
+                <ConsultationKpiBarSkeleton />
+                <ConsultationFilterBarSkeleton />
+                <ConsultationListSkeleton />
+              </div>
+            ) : (
+              <>
+                <ConsultationKpiBar
+                  statusFilter={statusFilter}
+                  onFilterChange={setStatusFilter}
+                  stats={stats}
+                />
+
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex flex-wrap gap-1 rounded-lg bg-secondary p-1">
+                    {tabs.map((tab) => (
+                      <button
+                        key={tab.filter}
+                        type="button"
+                        aria-pressed={statusFilter === tab.filter}
+                        onClick={() => setStatusFilter(tab.filter)}
+                        className="inline-flex h-9 items-center gap-2 rounded-md px-3 text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none aria-pressed:bg-card aria-pressed:text-foreground aria-pressed:shadow-hy-1 cursor-pointer"
+                      >
+                        {tab.label}
+                        <span
+                          className={cn(
+                            'min-w-5 rounded-full px-1.5 text-2xs leading-5 tabular-nums',
+                            tab.countClass,
+                          )}
+                        >
+                          {tab.count}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="flex min-w-0 flex-[1_1_260px] flex-wrap items-center gap-2">
+                    <Input
+                      className="min-w-0 flex-[1_1_220px]"
+                      type="search"
+                      maxLength={120}
+                      aria-label="Tìm yêu cầu trong toàn bộ danh sách"
+                      placeholder="Tìm theo tên, email, sđt…"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+
+                    <HySelect
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value as SortOption)}
+                      aria-label="Sắp xếp danh sách"
+                    >
+                      <option value="newest">Mới nhận nhất</option>
+                      <option value="oldest">Cũ nhất</option>
+                      <option value="date-asc">Ngày tiệc gần nhất</option>
+                      <option value="guests-desc">Số khách nhiều nhất</option>
+                      <option value="name-asc">Tên khách (A-Z)</option>
+                    </HySelect>
+
+                    {(statusFilter !== 'ALL' || searchQuery.trim()) && (
+                      <Button variant="link" size="sm" type="button" onClick={resetFilters}>
+                        Đặt lại
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                {pending ? (
+                  <ConsultationListSkeleton />
+                ) : filteredItems.length === 0 ? (
+                  <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border bg-card px-4 py-12 text-center text-muted-foreground shadow-hy-1">
+                    <div className="flex flex-col gap-1">
+                      <p className="font-semibold text-foreground text-base">
+                        {stats.total === 0 && statusFilter === 'ALL' && !searchQuery.trim()
+                          ? 'Chưa có yêu cầu tư vấn'
+                          : statusFilter !== 'ALL'
+                            ? `Không có yêu cầu tư vấn nào ở trạng thái "${tabs.find((t) => t.filter === statusFilter)?.label ?? statusFilter}"`
+                            : 'Không tìm thấy yêu cầu tư vấn nào phù hợp với bộ lọc hiện tại.'}
+                      </p>
+                      <p className="text-sm text-muted-foreground max-w-md">
+                        {stats.total === 0 && statusFilter === 'ALL' && !searchQuery.trim()
+                          ? 'Yêu cầu được gửi từ trang công khai sẽ xuất hiện tại đây.'
+                          : searchQuery.trim()
+                            ? `Không có kết quả nào khớp với từ khóa "${searchQuery.trim()}". Bạn có thể đặt lại bộ lọc để xem toàn bộ danh sách.`
+                            : 'Hiện tại chưa có yêu cầu nào thuộc danh mục này. Bạn có thể chọn trạng thái khác ở thanh chỉ số phía trên hoặc bấm quay lại tất cả.'}
+                      </p>
+                    </div>
+                    {(statusFilter !== 'ALL' || searchQuery.trim()) && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        type="button"
+                        onClick={resetFilters}
+                        className="mt-1 shadow-sm cursor-pointer"
+                      >
+                        Quay lại tất cả yêu cầu
+                      </Button>
+                    )}
+                  </div>
+                ) : (
+                  <ConsultationRequestsList
+                    items={filteredItems}
+                    pending={pending}
+                    onAction={act}
+                    nextCursor={queue.nextCursor}
+                    onLoadMore={load}
+                  />
+                )}
+              </>
+            )}
+          </>
+        )}
+      </main>
+    </OperationsShell>
+  );
+}

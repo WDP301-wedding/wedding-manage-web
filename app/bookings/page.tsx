@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { ManagementBookingPage } from '../../src/features/booking-lifecycle/booking-page';
+import { ManagementBookingPage } from '@/src/features/booking-lifecycle/pages/booking-page';
 
 export const metadata: Metadata = { title: 'Điều phối đặt tiệc' };
 

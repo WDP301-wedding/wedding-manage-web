@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { ConsultationRequestsPage } from '../../src/features/booking-lifecycle/intake-page';
+import { ConsultationRequestsPage } from '@/src/features/booking-lifecycle/pages/intake-page';
 
 export const metadata: Metadata = { title: 'Yêu cầu tư vấn' };
 export default function Page() {

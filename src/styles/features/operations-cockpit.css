@@ -1,0 +1,9 @@
+@import './operations-cockpit/foundations.css';
+@import './operations-cockpit/rail.css';
+@import './operations-cockpit/banquet-overview.css';
+@import './operations-cockpit/floorplan.css';
+@import './operations-cockpit/rundown.css';
+@import './operations-cockpit/bookings.css';
+@import './operations-cockpit/settlement.css';
+@import './operations-cockpit/menu.css';
+@import './operations-cockpit/consultations.css';

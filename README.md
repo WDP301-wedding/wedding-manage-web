@@ -2,6 +2,9 @@
 
 Next.js application for Manager and Staff administration experiences. It consumes the backend contract and never owns database access, privileged credentials, or authoritative business rules.
 
+See [Source structure](docs/source-structure.md) for feature folders, shared components,
+styles and import conventions.
+
 For the complete four-repository setup and contract workflow, see the backend-owned [cross-repository development guide](https://github.com/WDP301-wedding/wedding-be/blob/main/docs/cross-repo-development.md).
 
 ## Quick start

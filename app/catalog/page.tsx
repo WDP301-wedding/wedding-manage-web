@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { VenueCatalogPage } from '../../src/features/venue-catalog/catalog-page';
+import { VenueCatalogPage } from '@/src/features/venue-catalog/pages/catalog-page';
 
 export const metadata: Metadata = { title: 'Danh mục' };
 

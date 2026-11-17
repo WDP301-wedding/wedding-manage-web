@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { ManagementIdentityPage } from '../../src/features/identity-access/identity-page';
+import { ManagementIdentityPage } from '@/src/features/identity-access/pages/identity-page';
 
 export const metadata: Metadata = { title: 'Đặt lại mật khẩu' };
 export default function Page() {

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { StaffInvitationPage } from '../../src/features/identity-access/staff-invitation-page';
+import { StaffInvitationPage } from '@/src/features/identity-access/pages/staff-invitation-page';
 
 export const metadata: Metadata = {
   title: 'Thiết lập tài khoản nhân viên',

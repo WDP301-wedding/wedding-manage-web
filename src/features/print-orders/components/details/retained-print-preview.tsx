@@ -1,0 +1,142 @@
+'use client';
+
+import { useEffect, useRef, useState } from 'react';
+import { cn } from 'cn';
+import { Button } from '@/src/components/ui/button';
+import { axiosApiClient } from '@/src/lib/api/axios-client';
+import { readPublicEnv } from '@/src/lib/env';
+import { ApiClientError } from '@/src/lib/api/client';
+
+type Authorize = <T>(work: (token: string) => Promise<T>) => Promise<T>;
+
+export function RetainedPrintPreview({
+  bookingId,
+  printableRevisionId,
+  title,
+  summary,
+  authorize,
+}: Readonly<{
+  bookingId: string;
+  printableRevisionId: string;
+  title: string;
+  summary?: string;
+  authorize?: Authorize;
+}>) {
+  const [url, setUrl] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const controller = useRef<AbortController | null>(null);
+  useEffect(() => () => controller.current?.abort(), []);
+  useEffect(
+    () => () => {
+      if (url) URL.revokeObjectURL(url);
+    },
+    [url],
+  );
+
+  async function load() {
+    if (controller.current) return;
+    const operation = new AbortController();
+    controller.current = operation;
+    setBusy(true);
+    setError(null);
+    const path = `/bookings/${encodeURIComponent(bookingId)}/printable-revisions/${encodeURIComponent(printableRevisionId)}/file`;
+    try {
+      const blob = authorize
+        ? await authorize(async (token) => {
+            const response = await fetch(
+              readPublicEnv().NEXT_PUBLIC_API_BASE_URL.replace(/\/$/, '') + path,
+              {
+                headers: { Authorization: `Bearer ${token}` },
+                cache: 'no-store',
+                signal: AbortSignal.any([operation.signal, AbortSignal.timeout(30000)]),
+              },
+            );
+            if (!response.ok) {
+              throw new ApiClientError({
+                kind: 'api',
+                status: response.status,
+                code:
+                  response.status === 401 ? 'AUTHENTICATION_REQUIRED' : 'PRINT_FILE_UNAVAILABLE',
+                requestId: response.headers.get('x-request-id') ?? crypto.randomUUID(),
+                message:
+                  response.status === 502 || response.status === 503
+                    ? 'Máy chủ đang tạm gián đoạn. Vui lòng thử tải bản in lại.'
+                    : 'Không thể tải bản in đã chốt. Vui lòng thử lại.',
+              });
+            }
+            if (!response.headers.get('content-type')?.includes('application/pdf'))
+              throw new Error('Bản in trả về không đúng định dạng PDF.');
+            return response.blob();
+          })
+        : (
+            await axiosApiClient.get<Blob>(path, {
+              responseType: 'blob',
+              signal: operation.signal,
+              timeout: 30000,
+            })
+          ).data;
+      if (!blob.type.includes('application/pdf'))
+        throw new Error('Bản in trả về không đúng định dạng PDF.');
+      if (!operation.signal.aborted) setUrl(URL.createObjectURL(blob));
+    } catch (cause) {
+      if (!operation.signal.aborted)
+        setError(cause instanceof Error ? cause.message : 'Không thể tải bản in.');
+    } finally {
+      if (!operation.signal.aborted) {
+        controller.current = null;
+        setBusy(false);
+      }
+    }
+  }
+
+  return (
+    <div className="flex min-w-0 flex-col gap-3 rounded-lg border border-border bg-card p-4">
+      <div
+        className={cn(
+          'flex min-w-0 flex-col gap-3',
+          summary && 'sm:flex-row sm:items-center sm:justify-between',
+        )}
+      >
+        <div className="flex min-w-0 flex-col gap-1 [overflow-wrap:anywhere]">
+          <strong className="text-sm font-semibold">{title}</strong>
+          {summary ? <p className="text-xs text-muted-foreground">{summary}</p> : null}
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          className={summary ? 'self-start sm:self-auto' : 'h-auto min-h-11 whitespace-normal'}
+          aria-label={busy ? undefined : `Xem bản in: ${title}`}
+          onClick={() => void load()}
+          disabled={busy}
+        >
+          {busy ? 'Đang tải bản in…' : summary ? 'Xem bản in' : `Xem bản in: ${title}`}
+        </Button>
+      </div>
+      {error ? (
+        <p role="alert" className="text-sm text-destructive">
+          {error}
+        </p>
+      ) : null}
+      {url ? (
+        <>
+          <iframe
+            title={`Bản in: ${title}`}
+            src={`${url}#view=FitH`}
+            className="h-[28rem] w-full rounded-lg border border-border"
+          />
+          <a href={url} target="_blank" rel="noreferrer" className="text-sm text-primary underline">
+            Mở bản in: {title}
+          </a>
+          <a
+            href={url}
+            download={`ban-in-${printableRevisionId}.pdf`}
+            className="text-sm text-primary underline"
+          >
+            Tải PDF: {title}
+          </a>
+        </>
+      ) : null}
+    </div>
+  );
+}

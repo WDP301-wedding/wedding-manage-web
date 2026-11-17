@@ -13,9 +13,16 @@ import {
 import { Select } from '@base-ui/react/select';
 
 type Option = { value: string; label: string; disabled: boolean; group: string };
+export interface HySelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
+  fieldSize?: 'default' | 'sm';
+}
+
 /** The native select remains the form/validation/event authority; Base UI owns its visible picker. */
-export const HySelect = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSelectElement>>(
-  function HySelect({ children, className, style, onInvalid, autoFocus, ...props }, forwardedRef) {
+export const HySelect = forwardRef<HTMLSelectElement, HySelectProps>(
+  function HySelect(
+    { children, className, style, onInvalid, autoFocus, fieldSize = 'default', ...props },
+    forwardedRef,
+  ) {
     const labelPrefix = useId();
     const [labelledBy, setLabelledBy] = useState('');
     const native = useRef<HTMLSelectElement>(null);
@@ -140,7 +147,7 @@ export const HySelect = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLS
             ref={trigger}
             id={props.id ? `${props.id}-trigger` : undefined}
             autoFocus={autoFocus}
-            className={`hy-select-trigger ${className ?? ''}`}
+            className={`hy-select-trigger${fieldSize === 'sm' ? ' hy-select-trigger-sm' : ''} ${className ?? ''}`}
             style={style}
             aria-label={props['aria-label']}
             aria-labelledby={

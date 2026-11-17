@@ -1,5 +1,5 @@
 import type { NotificationItem, NotificationOptions, NotificationType } from './notification-types';
-import { presentError, vietnameseMessage } from '../../lib/api/error-presentation';
+import { presentError, vietnameseMessage } from '@/src/lib/api/error-presentation';
 type NotificationListener = (notification: NotificationItem) => void;
 type DismissListener = (id: string) => void;
 type ClearListener = () => void;

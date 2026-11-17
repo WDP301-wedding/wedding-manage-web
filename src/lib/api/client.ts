@@ -3,8 +3,8 @@ import { enforceActiveBooking, ArchivedBookingError } from './booking-navigation
 import createClient, { type Client } from 'openapi-fetch';
 import { z } from 'zod';
 
-import { readPublicEnv } from '../env';
-import type { components, paths } from './generated/schema';
+import { readPublicEnv } from '@/src/lib/env';
+import type { components, paths } from '@/src/lib/api/generated/schema';
 
 const defaultTimeoutMs = 10_000;
 const jsonMediaTypePattern = /^application\/(?:[\w.+-]+\+)?json$/i;

@@ -1,0 +1,112 @@
+.group {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(min(100%, var(--stat-card-min-width, 140px)), 1fr)
+  );
+  gap: 8px;
+  min-width: 0;
+}
+.group[data-layout='wide'] {
+  --stat-card-min-width: 220px;
+}
+.card {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  overflow: hidden;
+  padding: 10px 12px;
+  border: 1px solid rgb(0 0 0 / 8%);
+  border-radius: var(--hy-radius-md);
+  background: var(--hy-surface);
+  color: var(--hy-ink);
+  text-align: left;
+  box-shadow:
+    0 1px 3px rgb(0 0 0 / 4%),
+    0 6px 16px -2px rgb(0 0 0 / 4%);
+}
+.label,
+.description {
+  max-width: 100%;
+  color: var(--hy-ink-muted);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 20px;
+  overflow-wrap: anywhere;
+}
+.value {
+  max-width: 100%;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 32px;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.value[data-tone='brand'] {
+  color: var(--hy-wine);
+}
+.value[data-tone='success'] {
+  color: var(--hy-success);
+}
+.value[data-tone='warning'] {
+  color: var(--hy-warning);
+}
+.value[data-tone='error'] {
+  color: var(--hy-error);
+}
+.card[data-selected='true'] {
+  border-color: var(--hy-wine);
+  box-shadow:
+    0 0 0 1.5px var(--hy-wine),
+    0 8px 24px -4px rgb(99 19 33 / 12%);
+}
+.card[data-selected='true']::before {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3.5px;
+  background: var(--hy-wine);
+  content: '';
+}
+.interactive {
+  cursor: pointer;
+  transition:
+    transform 180ms var(--hy-ease-decelerate),
+    border-color 180ms,
+    box-shadow 180ms;
+}
+.interactive:not(:disabled):hover {
+  transform: translateY(-1.5px);
+}
+.interactive:not(:disabled):not([data-selected='true']):hover {
+  border-color: rgb(0 0 0 / 16%);
+  box-shadow:
+    0 3px 8px rgb(0 0 0 / 4%),
+    0 10px 24px -4px rgb(0 0 0 / 8%);
+}
+.interactive:focus-visible {
+  outline: 2px solid var(--hy-focus);
+  outline-offset: 4px;
+}
+.interactive:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+@media (min-width: 640px) {
+  .group {
+    gap: 16px;
+  }
+  .card {
+    padding: 16px 20px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .interactive {
+    transition: none;
+  }
+  .interactive:not(:disabled):hover {
+    transform: none;
+  }
+}

@@ -1,0 +1,55 @@
+/* ==========================================================================
+   VIEW 5: BANQUET MENU & CATALOG
+   ========================================================================== */
+.menu-catalog-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+}
+
+.menu-course-card {
+  background: var(--ck-bg-surface);
+  border: 1px solid var(--ck-border-card);
+  border-radius: var(--hy-radius-md);
+  padding: 20px;
+  box-shadow: var(--ck-shadow-card);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  transition: box-shadow var(--ck-speed-fast), border-color var(--ck-speed-fast);
+}
+
+.course-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--ck-border-base);
+  padding-bottom: 10px;
+}
+
+.course-dishes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dish-card-item {
+  background: var(--ck-bg-subtle);
+  border: 1px solid var(--ck-border-base);
+  border-radius: var(--hy-radius-sm);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* ==========================================================================
+   SIDEBAR NO SCROLLBAR (Cross-Browser Hidden Scrollbar with Native Scroll)
+   ========================================================================== */
+.sidebar-no-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+.sidebar-no-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}

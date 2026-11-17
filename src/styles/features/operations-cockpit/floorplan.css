@@ -1,0 +1,265 @@
+/* ==========================================================================
+   VIEW 1: ARCHITECTURAL FLOORPLAN STUDIO
+   ========================================================================== */
+.floorplan-cockpit-grid {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 1100px) {
+  .floorplan-cockpit-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.floorplan-map-box {
+  background: var(--ck-bg-surface);
+  border: 1px solid var(--ck-border-card);
+  border-radius: var(--hy-radius-md);
+  box-shadow: var(--ck-shadow-card);
+  overflow: hidden;
+  transition: box-shadow var(--ck-speed-fast), border-color var(--ck-speed-fast);
+}
+
+.floorplan-controls-bar {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--ck-border-base);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.zone-filter-buttons {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.filter-chip {
+  padding: 5px 11px;
+  border: 1px solid var(--ck-border-base);
+  border-radius: var(--hy-radius-xs);
+  background: var(--ck-bg-surface);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ck-text-secondary);
+  cursor: pointer;
+  transition: all var(--ck-speed-fast);
+}
+
+.filter-chip:hover {
+  background: var(--ck-bg-subtle);
+  color: var(--ck-text-main);
+}
+
+.filter-chip.active {
+  background: var(--ck-brand-wine-subtle);
+  border-color: var(--ck-brand-wine-border);
+  color: var(--ck-brand-wine);
+  font-weight: 600;
+}
+
+.floorplan-render-canvas {
+  background: #FAFAF9;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow-x: auto;
+}
+
+.table-marker {
+  cursor: pointer;
+  outline: none;
+  transition: opacity var(--ck-speed-fast), filter var(--ck-speed-fast);
+}
+
+.table-marker circle.ring {
+  transition: stroke-width var(--ck-speed-fast), stroke var(--ck-speed-fast), fill var(--ck-speed-fast), filter var(--ck-speed-fast);
+}
+
+.table-marker:hover circle.ring {
+  stroke-width: 2.75px !important;
+  stroke: var(--ck-brand-wine) !important;
+  filter: drop-shadow(0 2px 6px rgba(99, 19, 33, 0.28));
+}
+
+.table-marker:hover text {
+  font-weight: 800 !important;
+}
+
+.table-marker.is-selected circle.ring {
+  stroke: var(--ck-brand-wine) !important;
+  stroke-width: 3px !important;
+  filter: drop-shadow(0 2px 8px rgba(99, 19, 33, 0.35));
+}
+
+/* ==========================================================================
+   MINIMALIST UNDERLINE COCKPIT TABS (Option 2 — Stripe / GitHub Enterprise)
+   ========================================================================== */
+.cockpit-horizontal-tabs {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  padding: 0 4px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--ck-border-base, #E4E4E7);
+  margin-top: 20px;
+  margin-bottom: 24px;
+  overflow-x: auto;
+  white-space: nowrap;
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+.cockpit-horizontal-tabs::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+.cockpit-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 2px 14px 2px;
+  background: transparent;
+  border: none;
+  border-bottom: 2.5px solid transparent;
+  margin-bottom: -1px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--ck-text-muted, #71717A);
+  cursor: pointer;
+  transition: color 150ms ease, border-color 150ms ease;
+  user-select: none;
+  position: relative;
+  text-decoration: none;
+}
+
+.cockpit-tab-btn:hover {
+  color: var(--ck-text-main, #18181B);
+  border-bottom-color: #D4D4D8;
+}
+
+.cockpit-tab-btn.active {
+  color: var(--ck-brand-wine, #631321);
+  font-weight: 600;
+  border-bottom-color: var(--ck-brand-wine, #631321);
+}
+
+.cockpit-tab-btn .tab-pill-badge {
+  font-size: 11px;
+  padding: 1.5px 7px;
+  border-radius: var(--hy-radius-full);
+  background: var(--ck-bg-subtle, #F4F4F5);
+  color: var(--ck-text-muted, #71717A);
+  border: 1px solid var(--ck-border-base, #E4E4E7);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  margin-left: 2px;
+  transition: all 150ms ease;
+}
+
+.cockpit-tab-btn.active .tab-pill-badge {
+  background: var(--ck-brand-wine-subtle, #F9ECEE);
+  color: var(--ck-brand-wine, #631321);
+  border-color: var(--ck-brand-wine-border, #E8C9CE);
+}
+
+.floorplan-inspector-card {
+  background: var(--ck-bg-surface);
+  border: 1px solid var(--ck-border-card);
+  border-radius: var(--hy-radius-md);
+  padding: 22px;
+  box-shadow: var(--ck-shadow-card);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  transition: box-shadow var(--ck-speed-fast), border-color var(--ck-speed-fast);
+}
+
+.inspector-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--ck-border-base);
+}
+
+.inspector-table-name {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--ck-text-main);
+  margin-top: 2px;
+}
+
+.solid-tag {
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: var(--hy-radius-xs);
+  display: inline-block;
+}
+
+.solid-tag-success {
+  background: var(--ck-status-live-bg);
+  border: 1px solid var(--ck-status-live-border);
+  color: var(--ck-status-live);
+}
+
+.solid-tag-warn {
+  background: var(--ck-status-warn-bg);
+  border: 1px solid var(--ck-status-warn-border);
+  color: var(--ck-status-warn);
+}
+
+.spec-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+
+.spec-line {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  font-size: 12.5px;
+}
+
+.spec-label {
+  color: var(--ck-text-muted);
+}
+
+.spec-val {
+  color: var(--ck-text-main);
+  font-weight: 600;
+  text-align: right;
+}
+
+.dietary-notes-card {
+  background: var(--ck-bg-subtle);
+  border: 1px solid var(--ck-border-base);
+  border-radius: var(--hy-radius-sm);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dietary-notes-title {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--ck-text-main);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.dietary-bullet {
+  font-size: 12px;
+  color: var(--ck-text-secondary);
+  line-height: 1.4;
+}

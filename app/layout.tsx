@@ -1,11 +1,11 @@
-import { ActiveBookingBoundary } from '../src/features/booking-archive/active-booking-boundary';
+import { ActiveBookingBoundary } from '@/src/features/booking-archive/boundaries/active-booking-boundary';
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 
 import './globals.css';
-import './styles/select-field.css';
-import { SessionRevocationBoundary } from '../src/features/identity-access/session-revocation-boundary';
-import { NotificationProvider } from '../src/design-system/notifications';
+import '@/src/styles/components/select-field.css';
+import { SessionRevocationBoundary } from '@/src/features/identity-access/session/session-revocation-boundary';
+import { NotificationProvider } from '@/src/design-system/notifications/index';
 
 export const metadata: Metadata = {
   title: { default: 'Tổng quan vận hành | Hỷ Yến Quản trị', template: '%s | Hỷ Yến Quản trị' },

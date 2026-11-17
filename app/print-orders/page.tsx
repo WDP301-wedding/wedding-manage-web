@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { ManagementPrintOrdersPage } from '../../src/features/print-orders/print-orders-page';
+import { ManagementPrintOrdersPage } from '@/src/features/print-orders/pages/print-orders-page';
 
 export const metadata: Metadata = { title: 'Thiệp và in ấn' };
 

@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
-import { ManagementBillingPage } from '../../src/features/payments-billing/billing-page';
+import { ManagementFinancePage } from '@/src/features/finance/pages/finance-page';
 
 export const metadata: Metadata = { title: 'Quản lý thanh toán' };
 
 export default function BillingPage() {
-  return <ManagementBillingPage />;
+  return <ManagementFinancePage initialTab="payments" />;
 }

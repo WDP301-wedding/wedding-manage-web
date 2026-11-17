@@ -1,0 +1,218 @@
+/* ==========================================================================
+   CONSULTATION REQUESTS — ENTERPRISE SURFACE & ELEVATION
+   (Scoped exclusively to .consultation-view-enterprise)
+   ========================================================================== */
+
+/* Page Header */
+.consultation-view-enterprise header h1 {
+  color: #18181B;
+  letter-spacing: -0.02em;
+}
+
+.consultation-view-enterprise header p {
+  color: #64748B;
+  font-size: 14px;
+}
+
+/* KPI cards use the shared StatCard component. */
+
+/* 2. Filter & Toolbar Bar */
+.consultation-view-enterprise .bg-secondary {
+  background: #E5E8EB !important;
+  border-radius: var(--hy-radius-sm) !important;
+  padding: 3px !important;
+}
+
+.consultation-view-enterprise .bg-secondary button {
+  border-radius: var(--hy-radius-sm) !important;
+  font-weight: 600 !important;
+  transition: all 140ms ease !important;
+}
+
+.consultation-view-enterprise .bg-secondary button[aria-pressed="true"] {
+  background: #FFFFFF !important;
+  color: #18181B !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+.consultation-view-enterprise input[type="search"],
+.consultation-view-enterprise select,
+.consultation-view-enterprise .hy-select-trigger {
+  background: #FFFFFF !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+  border-radius: var(--hy-radius-sm) !important;
+  color: #18181B !important;
+}
+
+.consultation-view-enterprise input[type="search"]:focus,
+.consultation-view-enterprise select:focus {
+  border-color: #631321 !important;
+  box-shadow: 0 0 0 3px rgba(99, 19, 33, 0.1) !important;
+}
+
+/* 3. Consultation Request Articles (Surface & Layered Elevation) */
+.consultation-view-enterprise article {
+  background: #FFFFFF !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  border-radius: var(--hy-radius-md) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03), 0 8px 24px -4px rgba(0, 0, 0, 0.05) !important;
+  padding: 22px 24px !important;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.consultation-view-enterprise article:hover {
+  border-color: rgba(0, 0, 0, 0.15) !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04), 0 12px 28px -4px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Card Header Demarcation */
+.consultation-view-enterprise article > div:first-child {
+  border-bottom: 1px solid #EEF1F4;
+  padding-bottom: 16px;
+  margin-bottom: 2px;
+}
+
+/* Customer Name */
+.consultation-view-enterprise article h2 {
+  color: #0F172A;
+  font-size: 17.5px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+
+/* Detail Metrics Specification Matrix (<dl>) */
+.consultation-view-enterprise article dl {
+  background: #F8FAFC !important;
+  border: 1px solid #EAEFF4 !important;
+  border-radius: var(--hy-radius-sm) !important;
+  padding: 16px 18px !important;
+}
+
+.consultation-view-enterprise article dl dt {
+  color: #64748B !important;
+  font-size: 11.5px !important;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-weight: 600;
+}
+
+.consultation-view-enterprise article dl dd {
+  color: #0F172A !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+}
+
+/* Customer Message Callout */
+.consultation-view-enterprise article div:has(> .whitespace-pre-line) {
+  background: #FCFBF9 !important;
+  border: 1px solid #F1ECE1 !important;
+  border-left: 3.5px solid #8C6822 !important;
+  border-radius: var(--hy-radius-sm) !important;
+  padding: 12px 16px !important;
+}
+
+.consultation-view-enterprise article div:has(> .whitespace-pre-line) > span {
+  color: #8C6822 !important;
+  font-weight: 700;
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.consultation-view-enterprise article div:has(> .whitespace-pre-line) > p {
+  color: #334155 !important;
+  font-size: 13.5px;
+  line-height: 1.55;
+  margin-top: 4px;
+}
+
+/* Primary Action Button (Wine Red Enterprise) */
+.consultation-view-enterprise article button[aria-label="Mở hồ sơ tư vấn"],
+.consultation-view-enterprise article a.bg-primary {
+  background: #631321 !important;
+  color: #FFFFFF !important;
+  border: 1px solid #4F0E1A !important;
+  font-weight: 600 !important;
+  box-shadow: 0 1px 2px rgba(99, 19, 33, 0.2) !important;
+}
+
+.consultation-view-enterprise article button[aria-label="Mở hồ sơ tư vấn"]:hover,
+.consultation-view-enterprise article a.bg-primary:hover {
+  background: #4F0E1A !important;
+}
+
+/* ==========================================================================
+   ENTERPRISE SYSTEM-WIDE SURFACE & ELEVATION (ALL PAGES)
+   Applies tailored dual-layer shadow & crisp hairline borders across:
+   - Bookings (/bookings)
+   - Print Orders (/print-orders)
+   - Billing & Payments (/billing)
+   - Reports & Analytics (/reports)
+   - Venue Catalog (/catalog)
+   - Staff Operations (/staff)
+   - Account Settings (/account)
+   - Cancelled Bookings Archive (/cancelled-bookings)
+   ========================================================================== */
+
+/* 1. Universal Card & Panel Elevators */
+.rounded-xl.border.bg-card,
+.rounded-2xl.border.bg-card,
+.rounded-xl.border.bg-popover,
+article.rounded-xl.border,
+section.rounded-xl.border,
+.shadow-hy-1 {
+  border-color: rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 8px 24px -4px rgba(0, 0, 0, 0.06) !important;
+  transition: box-shadow 180ms ease, border-color 180ms ease;
+}
+
+/* 2. Tactile Hover Lift on Interactive Cards */
+article.rounded-xl.border:hover,
+.rounded-xl.border.bg-card:hover:has(button:hover, a:hover) {
+  border-color: rgba(0, 0, 0, 0.14) !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05), 0 12px 28px -4px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* 3. Internal Surface Contrast for Nested Sections */
+.rounded-xl.border.bg-card .bg-muted,
+.rounded-xl.border.bg-card dl.bg-muted,
+.rounded-xl.border.bg-card ul.divide-border {
+  background: #F8FAFC !important;
+  border-color: #EAEFF4 !important;
+}
+
+/* 4. Crisp Table Headers inside System Cards */
+.rounded-xl.border.bg-card table thead,
+.rounded-xl.border.bg-card table thead tr {
+  background: #F8FAFC !important;
+}
+
+.rounded-xl.border.bg-card table th {
+  color: #64748B !important;
+  font-weight: 600 !important;
+  border-bottom: 1px solid #EEF1F4 !important;
+}
+
+.rounded-xl.border.bg-card table td {
+  border-top: 1px solid #F1F4F7 !important;
+}
+
+/* 5. Exclude Inline Form Controls & Gap-px Sub-elements from Card Shadow */
+input.rounded-xl,
+input.rounded-lg,
+select.rounded-xl,
+select.rounded-lg,
+.gap-px > div,
+.gap-px > dl,
+.gap-px > dd {
+  box-shadow: none !important;
+}
+
+/* 6. High-elevation Dialogs & Drawers */
+dialog,
+[role="dialog"],
+.shadow-hy-2 {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08), 0 24px 48px -8px rgba(0, 0, 0, 0.16) !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+}

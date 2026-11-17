@@ -10,6 +10,8 @@ export default defineConfig(
   globalIgnores([
     // Vendored agent skills are tools and references, not application source.
     '.agents/skills/**',
+    // Generated API declarations are checked by TypeScript, api:check and check:files.
+    'src/lib/api/generated/**',
     '.next/**',
     'coverage/**',
     'out/**',
