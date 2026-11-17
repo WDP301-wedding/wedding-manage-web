@@ -2,6 +2,7 @@ import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { cn } from 'cn';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
+import { Skeleton } from '../../components/ui/skeleton';
 import { toneBadge } from './print-order-classes';
 import {
   deriveCommercialStatus,
@@ -237,15 +238,31 @@ export function PrintOrdersTable(props: PrintOrdersTableProps) {
           </thead>
           <tbody role="rowgroup" className="block lg:table-row-group">
             {loading && orders.length === 0 ? (
-              <tr role="row" className="block lg:table-row">
-                <td
-                  role="cell"
-                  colSpan={5}
-                  className="block px-4 py-10 text-center text-muted-foreground lg:table-cell"
+              [1, 2, 3, 4, 5].map((i) => (
+                <tr
+                  key={i}
+                  role="row"
+                  className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4 gap-y-2 border-t border-border px-4 py-3 first:border-t-0 lg:table-row lg:border-0"
                 >
-                  Đang tải danh sách đơn in từ máy chủ…
-                </td>
-              </tr>
+                  <td role="cell" className={cn(tdClass, 'col-span-2')}>
+                    <Skeleton className="h-4 w-28 mb-1" />
+                    <Skeleton className="h-3 w-16" />
+                  </td>
+                  <td role="cell" className={cn(tdClass, 'col-span-2')}>
+                    <Skeleton className="h-4 w-36 mb-1" />
+                    <Skeleton className="h-3 w-24" />
+                  </td>
+                  <td role="cell" className={cn(tdClass, 'lg:text-right')}>
+                    <Skeleton className="h-4 w-16 lg:ml-auto" />
+                  </td>
+                  <td role="cell" className={tdClass}>
+                    <Skeleton className="h-6 w-24 rounded-md" />
+                  </td>
+                  <td role="cell" className={cn(tdClass, 'col-span-2 text-right')}>
+                    <Skeleton className="h-8 w-24 rounded-lg ml-auto" />
+                  </td>
+                </tr>
+              ))
             ) : filteredOrders.length === 0 ? (
               <tr role="row" className="block lg:table-row">
                 <td

@@ -1,6 +1,7 @@
 'use client';
 
 import { cn } from 'cn';
+import { Skeleton } from '../../components/ui/skeleton';
 import type { StatusFilter } from './use-consultation-requests';
 
 export interface ConsultationKpiBarProps {
@@ -12,6 +13,26 @@ export interface ConsultationKpiBarProps {
     convertedCount: number;
     closedCount: number;
   };
+}
+
+export function ConsultationKpiBarSkeleton() {
+  return (
+    <div
+      aria-busy="true"
+      aria-label="Đang tải số liệu yêu cầu tư vấn"
+      className="grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-2 sm:gap-4"
+    >
+      {[1, 2, 3, 4].map((i) => (
+        <div
+          key={i}
+          className="flex flex-col gap-2 rounded-xl border border-border bg-card px-3 py-2.5 sm:px-5 sm:py-4 shadow-hy-1"
+        >
+          <Skeleton className="h-3.5 w-20" />
+          <Skeleton className="h-7 w-12" />
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export function ConsultationKpiBar({

@@ -1,6 +1,7 @@
 import type { useStaffEventContext } from './use-staff-event-context';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
+import { Skeleton } from '../../components/ui/skeleton';
 import { cardClass } from './staff-classes';
 import type { StaffWorkspace } from '../../services/staff-workspace.contracts';
 import { formatDate } from '../booking-lifecycle/booking-helpers';
@@ -110,13 +111,16 @@ export function StaffEventSelector({
                 </li>
               ))}
             </ul>
+          ) : context.loadingEvents ? (
+            <div className="flex flex-col gap-2 py-2" aria-busy="true">
+              <Skeleton className="h-10 w-full rounded-md" />
+              <Skeleton className="h-10 w-full rounded-md" />
+            </div>
           ) : (
             <p className="text-sm text-muted-foreground">
-              {context.loadingEvents
-                ? 'Đang tải danh sách tiệc…'
-                : isManager
-                  ? 'Không có tiệc phù hợp. Thử đổi trạng thái hoặc từ khóa.'
-                  : 'Bạn chưa có tiệc được phân công trong bộ lọc này. Liên hệ Manager nếu cần điều chỉnh.'}
+              {isManager
+                ? 'Không có tiệc phù hợp. Thử đổi trạng thái hoặc từ khóa.'
+                : 'Bạn chưa có tiệc được phân công trong bộ lọc này. Liên hệ Manager nếu cần điều chỉnh.'}
             </p>
           )}
           {context.nextEvent && (
@@ -131,9 +135,10 @@ export function StaffEventSelector({
         </div>
       </details>
       {context.loading && (
-        <p role="status" className="text-sm text-muted-foreground">
-          Đang tải thông tin tác nghiệp…
-        </p>
+        <div className="flex flex-col gap-2 py-2" aria-busy="true">
+          <Skeleton className="h-5 w-48" />
+          <Skeleton className="h-16 w-full rounded-lg" />
+        </div>
       )}
     </section>
   );

@@ -9,10 +9,17 @@ import { DashboardBookingsTable } from './dashboard-bookings-table';
 import { DashboardBookingsToolbar } from './dashboard-bookings-toolbar';
 import {
   emptyClass,
+  rowClass,
   sectionClass,
   sectionHeaderClass,
   sectionTitleClass,
+  tableClass,
+  tableWrapClass,
+  tdClass,
+  thClass,
+  theadClass,
 } from './dashboard-classes';
+import { Skeleton } from '../../components/ui/skeleton';
 import { StaffCheckinBanner } from './staff-checkin-banner';
 import { TablePagination } from './table-controls';
 import type { NavigationBooking } from '../../services/booking-navigation.service';
@@ -111,9 +118,45 @@ export function DashboardBookingsSection({
           </Button>
         </div>
       ) : view.loading ? (
-        <p role="status" className={emptyClass}>
-          Đang tải trang tiệc…
-        </p>
+        <div className={tableWrapClass} aria-busy="true" aria-label="Đang tải danh sách tiệc">
+          <table className={tableClass}>
+            <thead className={theadClass}>
+              <tr>
+                <th className={thClass}>Mã tiệc &amp; Khách hàng</th>
+                <th className={thClass}>Ngày tiệc</th>
+                <th className={thClass}>Sảnh &amp; Ca</th>
+                <th className={thClass}>Số bàn</th>
+                <th className={thClass}>Trạng thái</th>
+                <th className={thClass}>Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[1, 2, 3, 4, 5].map((i) => (
+                <tr key={i} className={rowClass}>
+                  <td className={tdClass}>
+                    <Skeleton className="h-4 w-32 mb-1.5" />
+                    <Skeleton className="h-3 w-20" />
+                  </td>
+                  <td className={tdClass}>
+                    <Skeleton className="h-4 w-24" />
+                  </td>
+                  <td className={tdClass}>
+                    <Skeleton className="h-4 w-28" />
+                  </td>
+                  <td className={tdClass}>
+                    <Skeleton className="h-4 w-12" />
+                  </td>
+                  <td className={tdClass}>
+                    <Skeleton className="h-6 w-20 rounded-md" />
+                  </td>
+                  <td className={tdClass}>
+                    <Skeleton className="h-8 w-16 rounded-md" />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       ) : view.total === 0 ? (
         <p className={emptyClass}>Không có tiệc phù hợp. Tiệc đã hủy được lưu tại khu vực riêng.</p>
       ) : (

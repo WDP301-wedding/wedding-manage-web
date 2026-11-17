@@ -13,6 +13,7 @@ import { useAppendixPanel } from './use-appendix-panel';
 import { AppendixPanel } from './appendix-panel';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
+import { Skeleton } from '../../components/ui/skeleton';
 import { Textarea } from '../../components/ui/textarea';
 import { ContractPdfDialog } from './contract-pdf-dialog';
 
@@ -310,7 +311,16 @@ export function ContractPanel({
           ) : null}
 
           {loading && !currentRevision ? (
-            <p className="text-muted-foreground">Đang tải hợp đồng…</p>
+            <div className="flex flex-col gap-4" aria-busy="true" aria-label="Đang tải hợp đồng">
+              <div className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-x-6 gap-y-3 rounded-lg border border-border p-4">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="flex flex-col gap-1.5">
+                    <Skeleton className="h-3 w-20" />
+                    <Skeleton className="h-5 w-36" />
+                  </div>
+                ))}
+              </div>
+            </div>
           ) : !currentRevision ? (
             <p className="rounded-lg border border-dashed border-input p-4 text-muted-foreground">
               Chưa có hợp đồng. Quản lý lập hợp đồng từ đề xuất, kiểm tra các khoản phí rồi gửi

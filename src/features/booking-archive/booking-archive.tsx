@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { archiveRead, archivePageSchema, archiveDetailSchema, billingSchema } from './archive-api';
 import { useLiveRefresh } from '../realtime/use-live-refresh';
 import { formatDate } from '../booking-lifecycle/booking-helpers';
+import { Skeleton } from '../../components/ui/skeleton';
 import { z } from 'zod';
 const date = (value: string) => formatDate(value);
 const money = (value: number) =>
@@ -106,7 +107,15 @@ export function BookingArchive({ finance }: Readonly<{ finance?: ReactNode }>) {
         </p>
       )}
       {!data ? (
-        <p role="status">Đang tải danh sách…</p>
+        <ul className="grid gap-3 lg:grid-cols-2" aria-busy="true" aria-label="Đang tải danh sách tiệc đã hủy">
+          {[1, 2, 3, 4].map((i) => (
+            <li key={i} className="flex flex-col gap-2 rounded-xl border border-border bg-card p-4">
+              <Skeleton className="h-5 w-48" />
+              <Skeleton className="h-4 w-36" />
+              <Skeleton className="h-4 w-28" />
+            </li>
+          ))}
+        </ul>
       ) : (
         <>
           <ul className="grid gap-3 lg:grid-cols-2">

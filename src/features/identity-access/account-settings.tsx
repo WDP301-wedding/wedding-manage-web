@@ -7,6 +7,7 @@ import type { ManagementIdentitySession } from './session';
 import { notify } from '../../design-system/notifications';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
+import { Skeleton } from '../../components/ui/skeleton';
 
 const formCardClass = 'flex flex-col gap-4 rounded-xl border border-border bg-card p-6 shadow-hy-1';
 const fieldLabelClass = 'flex flex-col gap-1 text-xs font-semibold';
@@ -217,9 +218,24 @@ export function AccountSettings({
         </Button>
       </div>
       {!profile && !error ? (
-        <p className="text-muted-foreground" role="status">
-          Đang tải hồ sơ…
-        </p>
+        <div className="grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] items-start gap-6" aria-busy="true" aria-label="Đang tải hồ sơ">
+          <div className={formCardClass}>
+            <Skeleton className="h-6 w-32 mb-2" />
+            <div className="flex flex-col gap-3">
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-10 w-full rounded-md" />
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-10 w-full rounded-md" />
+            </div>
+          </div>
+          <div className={formCardClass}>
+            <Skeleton className="h-6 w-32 mb-2" />
+            <div className="flex flex-col gap-3">
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-10 w-full rounded-md" />
+            </div>
+          </div>
+        </div>
       ) : null}
       {profile ? (
         <div className="grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] items-start gap-6">

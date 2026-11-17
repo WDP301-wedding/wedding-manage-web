@@ -11,8 +11,19 @@ import {
   type SortOption,
   type StatusFilter,
 } from './use-consultation-requests';
-import { ConsultationKpiBar } from './consultation-kpi-bar';
-import { ConsultationRequestsList } from './consultation-requests-list';
+import { ConsultationKpiBar, ConsultationKpiBarSkeleton } from './consultation-kpi-bar';
+import { ConsultationRequestsList, ConsultationListSkeleton } from './consultation-requests-list';
+import { Skeleton } from '../../components/ui/skeleton';
+
+function ConsultationFilterBarSkeleton() {
+  return (
+    <div className="flex flex-wrap items-center gap-3" aria-busy="true">
+      <Skeleton className="h-11 w-80 rounded-lg" />
+      <Skeleton className="h-11 min-w-0 flex-[1_1_220px] rounded-lg" />
+      <Skeleton className="h-11 w-44 rounded-lg" />
+    </div>
+  );
+}
 
 export function ConsultationRequestsPage() {
   const {
@@ -106,9 +117,11 @@ export function ConsultationRequestsPage() {
         )}
 
         {access === 'loading' && (
-          <p className="text-muted-foreground" role="status">
-            Đang xác minh quyền quản lý…
-          </p>
+          <div className="flex flex-col gap-6" aria-busy="true">
+            <ConsultationKpiBarSkeleton />
+            <ConsultationFilterBarSkeleton />
+            <ConsultationListSkeleton />
+          </div>
         )}
         {access === 'denied' && (
           <section className="flex flex-col gap-2 rounded-xl border border-border bg-card p-6">
@@ -121,13 +134,13 @@ export function ConsultationRequestsPage() {
 
         {access === 'manager' && (
           <>
-            {pending && (
-              <p className="text-xs text-muted-foreground" role="status">
-                Đang xử lý…
-              </p>
-            )}
-
-            {queue && (
+            {!queue ? (
+              <div className="flex flex-col gap-6" aria-busy="true">
+                <ConsultationKpiBarSkeleton />
+                <ConsultationFilterBarSkeleton />
+                <ConsultationListSkeleton />
+              </div>
+            ) : (
               <>
                 <ConsultationKpiBar
                   statusFilter={statusFilter}
@@ -190,17 +203,17 @@ export function ConsultationRequestsPage() {
                   </div>
                 </div>
 
-                {filteredItems.length === 0 ? (
+                {pending ? (
+                  <ConsultationListSkeleton />
+                ) : filteredItems.length === 0 ? (
                   <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border bg-card px-4 py-12 text-center text-muted-foreground shadow-hy-1">
                     <div className="flex flex-col gap-1">
                       <p className="font-semibold text-foreground text-base">
-                        {pending
-                          ? 'Đang tải kết quả mới…'
-                          : stats.total === 0 && statusFilter === 'ALL' && !searchQuery.trim()
-                            ? 'Chưa có yêu cầu tư vấn'
-                            : statusFilter !== 'ALL'
-                              ? `Không có yêu cầu tư vấn nào ở trạng thái "${tabs.find((t) => t.filter === statusFilter)?.label ?? statusFilter}"`
-                              : 'Không tìm thấy yêu cầu tư vấn nào phù hợp với bộ lọc hiện tại.'}
+                        {stats.total === 0 && statusFilter === 'ALL' && !searchQuery.trim()
+                          ? 'Chưa có yêu cầu tư vấn'
+                          : statusFilter !== 'ALL'
+                            ? `Không có yêu cầu tư vấn nào ở trạng thái "${tabs.find((t) => t.filter === statusFilter)?.label ?? statusFilter}"`
+                            : 'Không tìm thấy yêu cầu tư vấn nào phù hợp với bộ lọc hiện tại.'}
                       </p>
                       <p className="text-sm text-muted-foreground max-w-md">
                         {stats.total === 0 && statusFilter === 'ALL' && !searchQuery.trim()

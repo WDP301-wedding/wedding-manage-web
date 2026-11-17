@@ -115,13 +115,9 @@ export function ManagementBookingWorkspace({
           </p>
         ) : null}
         {/* Vùng thông báo ẩn cho trợ năng (screen reader); toàn bộ thông báo giao diện hiển thị qua Toast */}
-        <div className="flex flex-col gap-2 empty:sr-only" aria-live="polite">
+        <div className="empty:sr-only" aria-live="polite">
           {pending === null ? null : (
-            <span
-              role="status"
-              className="flex items-center gap-2 rounded-lg bg-secondary px-4 py-3 text-muted-foreground"
-            >
-              <LoaderCircle aria-hidden className="size-4 motion-safe:animate-spin" />
+            <span role="status" className="sr-only">
               Đang xử lý yêu cầu…
             </span>
           )}

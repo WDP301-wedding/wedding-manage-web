@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Button } from '../../components/ui/button';
+import { Skeleton } from '../../components/ui/skeleton';
 import type { Authorize } from './catalog-tabs';
 import {
   emptyOffering,
@@ -140,9 +141,15 @@ export function OfferingCatalog({ kind, authorize }: { kind: OfferingKind; autho
       ) : null}
       {!catalog.loaded ? (
         !catalog.error ? (
-          <p role="status" className="py-4 text-muted-foreground">
-            Đang tải danh mục…
-          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 py-4" aria-busy="true" aria-label="Đang tải danh mục">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="flex flex-col gap-2 rounded-xl border border-border bg-card p-4">
+                <Skeleton className="h-5 w-3/4" />
+                <Skeleton className="h-4 w-1/2" />
+                <Skeleton className="h-8 w-24 rounded-lg mt-2" />
+              </div>
+            ))}
+          </div>
         ) : null
       ) : (
         <OfferingCatalogList

@@ -23,6 +23,7 @@ import { formatDate } from '../booking-lifecycle/booking-helpers';
 import { formatVnd } from '../../lib/formatters';
 import { describeApiError } from '../../lib/api/api-errors';
 import { notify } from '../../design-system/notifications';
+import { Skeleton } from '../../components/ui/skeleton';
 import { Badge } from '../../components/ui/badge';
 
 export interface DashboardContractDrawerProps {
@@ -195,8 +196,24 @@ export function DashboardContractDrawer({
 
           {/* Real Contract State */}
           {loading ? (
-            <div className="flex min-h-[200px] items-center justify-center text-xs text-muted-foreground">
-              Đang tải thông tin hợp đồng từ máy chủ…
+            <div className="flex flex-col gap-5" aria-busy="true" aria-label="Đang tải thông tin hợp đồng">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-2 rounded-lg border border-border bg-card p-4">
+                  <Skeleton className="h-3 w-28" />
+                  <Skeleton className="h-6 w-36" />
+                  <Skeleton className="h-2.5 w-24" />
+                </div>
+                <div className="flex flex-col gap-2 rounded-lg border border-border bg-card p-4">
+                  <Skeleton className="h-3 w-28" />
+                  <Skeleton className="h-6 w-36" />
+                  <Skeleton className="h-2.5 w-24" />
+                </div>
+              </div>
+              <div className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4">
+                <Skeleton className="h-4 w-40" />
+                <Skeleton className="h-4 w-60" />
+                <Skeleton className="h-4 w-52" />
+              </div>
             </div>
           ) : error ? (
             <div className="flex flex-col items-center justify-center gap-2 rounded-xl bg-hy-error-bg p-6 text-hy-error">

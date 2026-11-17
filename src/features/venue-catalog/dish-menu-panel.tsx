@@ -1,5 +1,6 @@
 'use client';
 import { HySelect } from '../../components/ui/select-field';
+import { Skeleton } from '../../components/ui/skeleton';
 
 import { hasDirtyCatalogForms, useCatalogLiveRefresh } from './use-catalog-live-refresh';
 
@@ -184,9 +185,15 @@ export function DishMenuPanel({
           <h2 id="food-title">Món ăn &amp; thực đơn</h2>
         </div>
         {error === null ? (
-          <p className={cx.empty} role="status">
-            Đang tải món ăn và thực đơn…
-          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4" aria-busy="true" aria-label="Đang tải món ăn và thực đơn">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="flex flex-col gap-2 rounded-xl border border-border bg-card p-4">
+                <Skeleton className="h-32 w-full rounded-lg" />
+                <Skeleton className="h-5 w-3/4" />
+                <Skeleton className="h-4 w-1/2" />
+              </div>
+            ))}
+          </div>
         ) : (
           <div className={cx.retryState}>
             <p>{error}</p>

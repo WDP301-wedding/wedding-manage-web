@@ -1,6 +1,7 @@
 'use client';
 
 import { Button } from '../../components/ui/button';
+import { Skeleton } from '../../components/ui/skeleton';
 import { useAppendixPanel, type AppendixPanelState } from './use-appendix-panel';
 import { AppendixDetailView } from './appendix-detail-view';
 import { AppendixCancellationForm } from './appendix-cancellation-form';
@@ -101,7 +102,10 @@ function AppendixPanelView({
       ) : null}
 
       {loading && revisions.length === 0 ? (
-        <p className="text-muted-foreground">Đang tải danh sách phụ lục…</p>
+        <div className="flex flex-col gap-3 rounded-lg border border-border p-4" aria-busy="true" aria-label="Đang tải danh sách phụ lục">
+          <Skeleton className="h-5 w-48" />
+          <Skeleton className="h-4 w-72" />
+        </div>
       ) : revisions.length === 0 ? (
         <p className="rounded-lg border border-dashed border-input p-4 text-xs text-muted-foreground">
           Chưa có phụ lục hợp đồng nào được tạo cho tiệc này. Phụ lục được lập khi cần điều chỉnh

@@ -1,5 +1,6 @@
 'use client';
 import { HySelect } from '../../components/ui/select-field';
+import { Skeleton } from '../../components/ui/skeleton';
 
 import { hasDirtyCatalogForms, useCatalogLiveRefresh } from './use-catalog-live-refresh';
 
@@ -131,8 +132,14 @@ export function LayoutPanel({
 
   if (loading && snapshot === null) {
     return (
-      <section className={cx.section} aria-busy="true">
-        <p className={cx.empty}>Đang tải mẫu bố trí…</p>
+      <section className={cx.section} aria-busy="true" aria-label="Đang tải mẫu bố trí">
+        <div className="flex flex-col gap-4 p-6">
+          <Skeleton className="h-6 w-48" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Skeleton className="h-40 rounded-xl" />
+            <Skeleton className="h-40 rounded-xl" />
+          </div>
+        </div>
       </section>
     );
   }

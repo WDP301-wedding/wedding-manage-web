@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
+import { Skeleton } from '../../components/ui/skeleton';
 import { staffService, type DirectoryStaff } from '../../services/staff.service';
 import { notify } from '../../design-system/notifications';
 import { describeApiError } from '../../lib/api/api-errors';
@@ -113,9 +114,17 @@ export function StaffDirectory({
         </Button>
       </form>
       {loading && (
-        <p role="status" className="text-sm">
-          Đang tải danh bạ…
-        </p>
+        <div className="divide-y divide-border rounded-lg border border-border" aria-busy="true">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="flex items-center gap-3 p-3">
+              <Skeleton className="size-8 rounded-full" />
+              <div className="flex-1 flex flex-col gap-1.5">
+                <Skeleton className="h-4 w-40" />
+                <Skeleton className="h-3 w-28" />
+              </div>
+            </div>
+          ))}
+        </div>
       )}
       {error && (
         <p role="alert" className="text-sm text-destructive">

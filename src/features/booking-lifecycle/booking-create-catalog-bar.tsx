@@ -2,6 +2,7 @@
 
 import { cn } from 'cn';
 import { Button } from '../../components/ui/button';
+import { Skeleton } from '../../components/ui/skeleton';
 import type { BookingSelections } from './booking-api';
 
 export interface BookingCreateCatalogBarProps {
@@ -37,7 +38,7 @@ export function BookingCreateCatalogBar({
       )}
     >
       {loadingSelections ? (
-        <p role="status">Đang tải danh mục sảnh, khung giờ và thực đơn đang phục vụ…</p>
+        <Skeleton className="h-4 w-72 bg-current/20" aria-busy="true" />
       ) : selections === null ? (
         <p>Tải danh mục để chọn sảnh, khung giờ và thực đơn đang phục vụ.</p>
       ) : incomplete ? (

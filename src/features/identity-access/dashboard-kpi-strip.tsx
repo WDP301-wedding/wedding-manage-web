@@ -1,4 +1,5 @@
 import { cn } from 'cn';
+import { Skeleton } from '../../components/ui/skeleton';
 import type { AnalyticsOverviewData } from '../../services/analytics.service';
 import type { PublicHall, PublicRestaurant } from '../../services/catalog.service';
 import type { ConsultationRequestItem } from '../../services/consultation.service';
@@ -9,7 +10,14 @@ function Metric({
   value,
   detail,
   attention = false,
-}: Readonly<{ label: string; value: string; detail: string; attention?: boolean }>) {
+  loading = false,
+}: Readonly<{
+  label: string;
+  value: React.ReactNode;
+  detail: string;
+  attention?: boolean;
+  loading?: boolean;
+}>) {
   return (
     <div className="flex min-w-0 flex-[1_1_13rem] flex-col gap-1.5 bg-card px-6 py-5 transition-colors hover:bg-muted/20">
       <dt className="text-2xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -21,10 +29,10 @@ function Metric({
           attention && 'text-primary',
         )}
       >
-        {value}
+        {loading ? <Skeleton className="h-7 w-20" /> : value}
       </dd>
       <dd className={cn('text-xs text-muted-foreground', attention && 'font-medium text-primary')}>
-        {detail}
+        {loading ? <Skeleton className="h-3.5 w-32 mt-0.5" /> : detail}
       </dd>
     </div>
   );
@@ -62,63 +70,46 @@ export function DashboardKpiStrip({
     >
       <Metric
         label="Không gian sẵn sàng"
-        value={isLoading ? '…' : String(halls.length).padStart(2, '0')}
-        detail={isLoading ? syncing : `${halls.length} sảnh tiệc trong danh mục`}
+        value={String(halls.length).padStart(2, '0')}
+        detail={`${halls.length} sảnh tiệc trong danh mục`}
+        loading={isLoading}
       />
       <Metric
         label="Yêu cầu tư vấn"
-        value={
-          isLoading
-            ? '…'
-            : consultationTotal === null
-              ? '…'
-              : String(consultationTotal).padStart(2, '0')
-        }
+        value={consultationTotal === null ? '00' : String(consultationTotal).padStart(2, '0')}
         detail={
-          isLoading || consultationTotal === null
-            ? syncing
-            : pending > 0
-              ? `${pending} yêu cầu chờ xử lý`
-              : 'Đã hoàn tất xử lý'
+          pending > 0
+            ? `${pending} yêu cầu chờ xử lý`
+            : 'Đã hoàn tất xử lý'
         }
         attention={pending > 0}
+        loading={isLoading || consultationTotal === null}
       />
       {isManager ? (
         <>
           <Metric
             label="Tiền thực nhận tháng này"
-            value={
-              isLoading
-                ? '…'
-                : !analytics
-                  ? 'Chưa có'
-                  : formatVndNullable(analytics.netCashRevenueVnd)
-            }
-            detail={isLoading ? 'Đang tổng hợp sổ cái…' : 'Thực thu tiền mặt & chuyển khoản (VND)'}
+            value={!analytics ? 'Chưa có' : formatVndNullable(analytics.netCashRevenueVnd)}
+            detail="Thực thu tiền mặt & chuyển khoản (VND)"
+            loading={isLoading}
           />
           <Metric
             label="Tiền thu vào tháng này"
-            value={
-              isLoading
-                ? '…'
-                : !analytics
-                  ? 'Chưa có'
-                  : formatVndNullable(analytics.grossCashReceivedVnd)
-            }
+            value={!analytics ? 'Chưa có' : formatVndNullable(analytics.grossCashReceivedVnd)}
             detail={
-              isLoading
-                ? 'Đang tính toán…'
-                : analytics?.meta.refreshedAt
-                  ? `Cập nhật lúc ${new Date(analytics.meta.refreshedAt).toLocaleTimeString('vi-VN')}`
-                  : 'Sổ cái đã chốt'
+              analytics?.meta.refreshedAt
+                ? `Cập nhật lúc ${new Date(analytics.meta.refreshedAt).toLocaleTimeString('vi-VN')}`
+                : 'Sổ cái đã chốt'
             }
+            loading={isLoading}
           />
         </>
       ) : (
         <Metric
           label="Ca phục vụ"
-          value={isLoading ? '…' : String(restaurant?.shifts?.length || 2).padStart(2, '0')}
+          value={String(restaurant?.shifts?.length || 2).padStart(2, '0')}
           detail="Ca trưa và ca tối cố định"
+          loading={isLoading}
         />
       )}
     </dl>

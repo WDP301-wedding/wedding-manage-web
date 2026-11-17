@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect } from 'react';
 import { ArrowLeft, LoaderCircle } from 'lucide-react';
 import { Button, buttonVariants } from '../../components/ui/button';
+import { Skeleton } from '../../components/ui/skeleton';
 import {
   type ManagementIdentitySession,
   sharedManagementSession,
@@ -176,15 +177,26 @@ export function ManagementBillingWorkspace({
       {/* empty:sr-only giữ vùng thông báo trong cây trợ năng nhưng không chiếm chỗ khi trống. */}
       <div className="empty:sr-only" aria-live="polite">
         {pending && (
-          <p
-            role="status"
-            className="flex items-center gap-2 rounded-lg bg-secondary px-4 py-3 text-muted-foreground"
-          >
-            <LoaderCircle aria-hidden className="size-4 motion-safe:animate-spin" />
+          <p role="status" className="sr-only">
             Đang xử lý yêu cầu…
           </p>
         )}
       </div>
+
+      {view === null && !billing.lookupError && (
+        <div className="flex flex-col gap-6" aria-busy="true">
+          <Skeleton className="h-12 w-full rounded-lg" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Skeleton className="h-28 rounded-xl" />
+            <Skeleton className="h-28 rounded-xl" />
+            <Skeleton className="h-28 rounded-xl" />
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Skeleton className="h-80 rounded-xl" />
+            <Skeleton className="h-80 rounded-xl" />
+          </div>
+        </div>
+      )}
 
       {view !== null && (
         <>

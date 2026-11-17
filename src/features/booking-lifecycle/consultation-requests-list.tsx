@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Badge } from '../../components/ui/badge';
 import { Button, buttonVariants } from '../../components/ui/button';
+import { Skeleton } from '../../components/ui/skeleton';
 import { bookingPhaseLabel, bookingPhaseTone, formatDate, type BadgeTone } from './booking-helpers';
 import type { Item } from './use-consultation-requests';
 
@@ -12,6 +13,45 @@ export interface ConsultationRequestsListProps {
   onAction: (item: Item, action: 'conversion' | 'closure') => void;
   nextCursor?: string | null;
   onLoadMore: (cursor: string) => void;
+}
+
+export function ConsultationListSkeleton() {
+  return (
+    <div
+      className="flex flex-col gap-4"
+      aria-busy="true"
+      aria-label="Đang tải danh sách yêu cầu tư vấn"
+    >
+      {[1, 2, 3].map((key) => (
+        <article
+          key={key}
+          className="flex flex-col gap-4 rounded-xl border border-border bg-card px-6 py-5 shadow-hy-1"
+        >
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="flex min-w-0 flex-1 flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-5 w-20 rounded-md" />
+              </div>
+              <Skeleton className="h-6 w-48" />
+              <div className="flex gap-2">
+                <Skeleton className="h-3.5 w-36" />
+                <Skeleton className="h-3.5 w-28" />
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-9 w-28 rounded-lg" />
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-4 pt-1 border-t border-border/50">
+            <Skeleton className="h-4 w-40" />
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-4 w-24" />
+          </div>
+        </article>
+      ))}
+    </div>
+  );
 }
 
 function getDateRemainingText(dateStr: string): string | null {
