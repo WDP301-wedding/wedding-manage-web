@@ -77,9 +77,15 @@ export default defineConfig(
     },
   },
   {
-    files: ['**/*.test.{ts,tsx}'],
+    files: ['**/*.test.{js,mjs,cjs,ts,tsx}', '**/*.spec.{js,mjs,cjs,ts,tsx}'],
     rules: {
-      '@typescript-eslint/unbound-method': 'off',
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'Program',
+          message: '❌ NGHIEM CAM VIET FILE TEST (*.test.*, *.spec.*) TRONG DU AN NAY!',
+        },
+      ],
     },
   },
   {

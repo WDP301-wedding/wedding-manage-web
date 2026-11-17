@@ -54,6 +54,15 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      - name: Verify zero test files
+        run: |
+          TEST_FILES=$(git ls-files | grep -E '\.(test|spec)\.' || true)
+          if [ -n "$TEST_FILES" ]; then
+            echo "❌ Forbidden test files found in repository:"
+            echo "$TEST_FILES"
+            exit 1
+          fi
+
       # Main is built once, with the real production environment, in deploy.
       - name: Restore PR build cache
         if: github.ref != 'refs/heads/main' || github.event_name == 'pull_request'
