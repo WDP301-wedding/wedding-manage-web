@@ -4,7 +4,7 @@ import { type FormEvent, useRef, useState } from 'react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { dialogActionsClass, labelClass } from './print-order-classes';
-import { PrintOrderDialog } from './print-order-dialog';
+import { PrintQueueDialog } from './print-queue-dialog';
 import type { PrintOrderView } from './print-orders-types';
 
 export interface HandoverModalProps {
@@ -25,7 +25,7 @@ export function HandoverModal({ order, isSubmitting, onClose, onConfirm }: Hando
   };
 
   return (
-    <PrintOrderDialog
+    <PrintQueueDialog
       label="Xác nhận bàn giao"
       title={`Bàn giao đơn in ${order.orderId}`}
       onClose={onClose}
@@ -58,6 +58,6 @@ export function HandoverModal({ order, isSubmitting, onClose, onConfirm }: Hando
           </Button>
         </div>
       </form>
-    </PrintOrderDialog>
+    </PrintQueueDialog>
   );
 }

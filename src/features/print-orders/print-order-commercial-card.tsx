@@ -5,7 +5,6 @@ import {
   formatVnd,
   isCommercialRevisionExpired,
   isOrderApprovedOrBeyond,
-  printOrderDisplay,
   type PrintOrderView,
 } from './print-orders-types';
 
@@ -34,7 +33,6 @@ export function PrintOrderCommercialCard({
 }: Readonly<PrintOrderCommercialCardProps>) {
   const revision = selectedOrder.currentCommercialRevision;
   const proposal = selectedOrder.pendingReplacementProposal;
-  const display = printOrderDisplay(selectedOrder);
   return (
     <section className={cardClass}>
       <h3 className={cardTitleClass}>Tóm tắt thương mại</h3>
@@ -113,10 +111,6 @@ export function PrintOrderCommercialCard({
             </dd>
           </div>
         ) : null}
-
-        <Row term="Cặp đôi">{display.couple}</Row>
-        <Row term="Ngày tiệc">{display.eventDate}</Row>
-        <Row term="Sảnh tiệc">{display.hall}</Row>
       </dl>
     </section>
   );

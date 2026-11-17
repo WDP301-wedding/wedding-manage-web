@@ -188,6 +188,9 @@ export function deriveProductionStatus(order: PrintOrderView): StatusBadgeDescri
     case 'QUOTED':
       return { label: 'Chưa mở', tone: 'neutral' };
     case 'APPROVED':
+      if (order.appendixSource?.pendingAppendixRevisionId) {
+        return { label: 'Chờ duyệt phụ lục điều chỉnh', tone: 'amber' };
+      }
       if (order.pendingReplacementProposal !== null) {
         return { label: 'Chờ duyệt đề xuất (Chặn sản xuất)', tone: 'amber' };
       }

@@ -1,11 +1,11 @@
-import { PrintPurchasePreview } from './print-purchase-preview';
 import { useCallback, useRef, useState } from 'react';
-import { Clock3, RefreshCw } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import { cn } from 'cn';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { OperationsShell } from '../identity-access/operations-shell';
 import type { ManagementSessionSnapshot } from '../identity-access/session';
+import { PrintQueueDialog } from './print-queue-dialog';
 import { CancelOrderModal, HandoverModal, HistoryModal } from './print-order-modals';
 import type { ManagementPrintOrdersGateway } from './print-orders-api';
 import { PrintOrdersDetail } from './print-orders-detail';
@@ -13,6 +13,8 @@ import { DEMO_MANAGER_SNAPSHOT } from './print-orders-fixtures';
 import { usePrintOrderLifecycleMutations } from './print-orders-lifecycle-mutations';
 import { usePrintOrderQuoteMutations } from './print-orders-quote-mutations';
 import { PrintOrdersTable } from './print-orders-table';
+import { formatVietnameseDateTime } from './print-orders-types';
+import { PrintPurchasePreview } from './print-purchase-preview';
 import { usePrintOrdersData } from './use-print-orders-data';
 import { QuoteDrawer } from './quote-drawer';
 import { notify } from '../../design-system/notifications';
@@ -27,16 +29,7 @@ export interface WorkspaceProps {
   onLogout: () => void;
 }
 
-// Dưới 1536px chi tiết đơn nằm dưới bảng: cuộn tới đó để người dùng thấy đơn vừa chọn.
-function revealDetailBelowTable() {
-  if (window.matchMedia?.('(min-width: 1536px)').matches) return;
-  const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-  requestAnimationFrame(() =>
-    document
-      .getElementById('print-order-detail')
-      ?.scrollIntoView?.({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }),
-  );
-}
+type OrderAction = 'quote' | 'replacement' | 'handover' | 'cancel' | 'history';
 
 export function PrintOrdersWorkspace({
   snapshot,
@@ -67,12 +60,12 @@ export function PrintOrdersWorkspace({
   const isSubmittingRef = useRef(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Modals & Drawers
-  const [quoteDrawerOpen, setQuoteDrawerOpen] = useState(false);
-  const [isReplacementProposal, setIsReplacementProposal] = useState(false);
-  const [handoverModalOpen, setHandoverModalOpen] = useState(false);
-  const [cancelModalOpen, setCancelModalOpen] = useState(false);
-  const [historyModalOpen, setHistoryModalOpen] = useState(false);
+  const [orderAction, setOrderAction] = useState<OrderAction | null>(null);
+  const dismissOrderAction = useCallback(() => setOrderAction(null), []);
+  const closeOrderAction = useCallback(() => {
+    if (!isSubmittingRef.current) setOrderAction(null);
+  }, []);
+  const isReplacementProposal = orderAction === 'replacement';
 
   // Notifications
   const showToast = useCallback((msg: string) => {
@@ -145,8 +138,8 @@ export function PrintOrdersWorkspace({
     showError,
     currentCursor,
     fetchOrders,
-    setHandoverModalOpen,
-    setCancelModalOpen,
+    setHandoverModalOpen: dismissOrderAction,
+    setCancelModalOpen: dismissOrderAction,
   });
 
   const { handleSubmitQuote } = usePrintOrderQuoteMutations({
@@ -162,7 +155,7 @@ export function PrintOrdersWorkspace({
     showError,
     currentCursor,
     fetchOrders,
-    setQuoteDrawerOpen,
+    setQuoteDrawerOpen: dismissOrderAction,
     isReplacementProposal,
   });
 
@@ -206,136 +199,126 @@ export function PrintOrdersWorkspace({
               </Button>
             </div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" onClick={() => setHistoryModalOpen(true)}>
-              <Clock3 aria-hidden className="size-4" />
-              Xem lịch sử
-            </Button>
-          </div>
         </header>
 
-        <div
-          className={cn(
-            'grid items-start gap-6',
-            selectedOrder && '2xl:grid-cols-[minmax(0,1fr)_minmax(360px,420px)]',
-          )}
-        >
-          <PrintOrdersTable
-            orders={orders}
-            filteredOrders={filteredOrders}
-            selectedOrder={selectedOrder}
-            onSelectOrder={(order) => {
-              if (isSubmittingRef.current) return;
-              setSelectedOrder(order);
-              revealDetailBelowTable();
-            }}
-            loading={loading}
-            loadError={loadError}
-            query={query}
-            onQueryChange={setQuery}
-            statusFilter={statusFilter}
-            onFilterChange={handleFilterChange}
-            onManualRefresh={() => {
-              void handleManualRefresh();
-            }}
-            countAll={countAll}
-            countApproved={countApproved}
-            countInProduction={countInProduction}
-            countReady={countReady}
-            countBlockedProposal={countBlockedProposal}
-            countExpired={countExpired}
-            cursorHistory={cursorHistory}
-            nextCursor={nextCursor}
-            onPrevPage={() => {
-              void handlePrevPage();
-            }}
-            onNextPage={() => {
-              void handleNextPage();
-            }}
-            isSubmitting={isSubmitting}
-          />
-
-          {selectedOrder ? (
-            <PrintOrdersDetail
-              selectedOrder={selectedOrder}
-              purchasePreview={
-                selectedOrder.lines.some((line) => line.printableRevisionId) ? (
-                  <PrintPurchasePreview
-                    key={selectedOrder.orderId}
-                    order={selectedOrder}
-                    authorize={authorize}
-                  />
-                ) : undefined
-              }
-              isSubmitting={isSubmitting}
-              onApprovePurchase={() => void handleApprovePurchase()}
-              onStartProduction={() => {
-                void handleStartProduction();
-              }}
-              onMarkReady={() => {
-                void handleMarkReady();
-              }}
-              onOpenHandoverModal={() => setHandoverModalOpen(true)}
-              onOpenQuoteDrawer={(replacement) => {
-                setIsReplacementProposal(replacement);
-                setQuoteDrawerOpen(true);
-              }}
-              onOpenCancelModal={() => setCancelModalOpen(true)}
-            />
-          ) : null}
-        </div>
+        <PrintOrdersTable
+          orders={orders}
+          filteredOrders={filteredOrders}
+          onOpenDetails={(order) => {
+            if (isSubmittingRef.current) return;
+            setOrderAction(null);
+            setSelectedOrder(order);
+          }}
+          loading={loading}
+          loadError={loadError}
+          query={query}
+          onQueryChange={setQuery}
+          statusFilter={statusFilter}
+          onFilterChange={handleFilterChange}
+          onManualRefresh={() => {
+            void handleManualRefresh();
+          }}
+          countAll={countAll}
+          countApproved={countApproved}
+          countInProduction={countInProduction}
+          countReady={countReady}
+          countBlockedProposal={countBlockedProposal}
+          countExpired={countExpired}
+          cursorHistory={cursorHistory}
+          nextCursor={nextCursor}
+          onPrevPage={() => {
+            void handlePrevPage();
+          }}
+          onNextPage={() => {
+            void handleNextPage();
+          }}
+          isSubmitting={isSubmitting}
+        />
       </main>
 
-      {/* Quote Drawer Keyed on orderId and revision */}
-      {quoteDrawerOpen && selectedOrder ? (
-        <QuoteDrawer
-          key={`${selectedOrder.orderId}-rev${selectedOrder.revision}`}
-          order={selectedOrder}
-          isReplacementProposal={isReplacementProposal}
-          isSubmitting={isSubmitting}
+      {selectedOrder ? (
+        <PrintQueueDialog
+          label="Chi tiết đơn in"
+          title="Chi tiết đơn in"
+          description={
+            <>
+              <p className="[overflow-wrap:anywhere]">{selectedOrder.orderId}</p>
+              <p>
+                Phiên bản {selectedOrder.revision} · Cập nhật{' '}
+                {formatVietnameseDateTime(selectedOrder.updatedAt)}
+              </p>
+            </>
+          }
+          closeLabel="Đóng chi tiết đơn in"
+          size="wide"
           onClose={() => {
-            if (isSubmittingRef.current) return;
-            setQuoteDrawerOpen(false);
+            if (!isSubmittingRef.current) setSelectedOrder(null);
           }}
-          onSubmit={(body) => {
-            void handleSubmitQuote(body);
-          }}
-        />
-      ) : null}
+        >
+          <PrintOrdersDetail
+            selectedOrder={selectedOrder}
+            purchasePreview={
+              <PrintPurchasePreview
+                key={selectedOrder.orderId}
+                order={selectedOrder}
+                authorize={authorize}
+              />
+            }
+            isSubmitting={isSubmitting}
+            onApprovePurchase={() => void handleApprovePurchase()}
+            onStartProduction={() => {
+              void handleStartProduction();
+            }}
+            onMarkReady={() => {
+              void handleMarkReady();
+            }}
+            onOpenHandoverModal={() => setOrderAction('handover')}
+            onOpenQuoteDrawer={(replacement) =>
+              setOrderAction(replacement ? 'replacement' : 'quote')
+            }
+            onOpenCancelModal={() => setOrderAction('cancel')}
+            onOpenHistory={() => setOrderAction('history')}
+          />
 
-      {/* Handover Modal */}
-      {handoverModalOpen && selectedOrder ? (
-        <HandoverModal
-          order={selectedOrder}
-          isSubmitting={isSubmitting}
-          onClose={() => {
-            if (isSubmittingRef.current) return;
-            setHandoverModalOpen(false);
-          }}
-          onConfirm={(evidence) => {
-            void handleConfirmHandover(evidence);
-          }}
-        />
-      ) : null}
+          {orderAction === 'quote' || isReplacementProposal ? (
+            <QuoteDrawer
+              key={`${selectedOrder.orderId}-rev${selectedOrder.revision}`}
+              order={selectedOrder}
+              isReplacementProposal={isReplacementProposal}
+              isSubmitting={isSubmitting}
+              onClose={closeOrderAction}
+              onSubmit={(body) => {
+                void handleSubmitQuote(body);
+              }}
+            />
+          ) : null}
 
-      {/* Cancellation Modal */}
-      {cancelModalOpen && selectedOrder ? (
-        <CancelOrderModal
-          order={selectedOrder}
-          isSubmitting={isSubmitting}
-          onClose={() => {
-            if (isSubmittingRef.current) return;
-            setCancelModalOpen(false);
-          }}
-          onConfirm={(reason) => {
-            void handleConfirmCancel(reason);
-          }}
-        />
-      ) : null}
+          {orderAction === 'handover' ? (
+            <HandoverModal
+              order={selectedOrder}
+              isSubmitting={isSubmitting}
+              onClose={closeOrderAction}
+              onConfirm={(evidence) => {
+                void handleConfirmHandover(evidence);
+              }}
+            />
+          ) : null}
 
-      {/* History Modal */}
-      {historyModalOpen ? (
-        <HistoryModal order={selectedOrder} onClose={() => setHistoryModalOpen(false)} />
+          {orderAction === 'cancel' ? (
+            <CancelOrderModal
+              order={selectedOrder}
+              isSubmitting={isSubmitting}
+              onClose={closeOrderAction}
+              onConfirm={(reason) => {
+                void handleConfirmCancel(reason);
+              }}
+            />
+          ) : null}
+
+          {orderAction === 'history' ? (
+            <HistoryModal order={selectedOrder} onClose={closeOrderAction} />
+          ) : null}
+        </PrintQueueDialog>
       ) : null}
     </OperationsShell>
   );

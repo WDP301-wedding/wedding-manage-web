@@ -30,6 +30,8 @@ import {
   OrderedVersionList,
 } from './menu-aggregate-list';
 
+import { TablePagination } from '../identity-access/table-controls';
+import { useCatalogPagination } from './use-catalog-pagination';
 import { cx } from './catalog-classes';
 import { cn } from 'cn';
 import { Plus } from 'lucide-react';
@@ -126,6 +128,17 @@ export function DishMenuPanel({
       return true;
     });
   }, [snapshot, menuLifecycle, menuSearch]);
+
+  const dishPagination = useCatalogPagination(filteredDishes, 10, [5, 10, 20]);
+  const menuPagination = useCatalogPagination(filteredMenus, 10, [5, 10, 20]);
+
+  useEffect(() => {
+    dishPagination.resetPage();
+  }, [dishCategory, dishLifecycle, dishSearch, dishPagination.resetPage]);
+
+  useEffect(() => {
+    menuPagination.resetPage();
+  }, [menuLifecycle, menuSearch, menuPagination.resetPage]);
 
   const load = useCallback(
     async (background = false) => {
@@ -306,17 +319,40 @@ export function DishMenuPanel({
           {filteredDishes.length === 0 ? (
             <p className={cx.empty}>Không có món ăn phù hợp. Thêm món mới hoặc thay đổi bộ lọc.</p>
           ) : (
-            <FoodTable label="Danh sách món ăn">
-              {filteredDishes.map((dish) => (
-                <DishAggregate
-                  key={dish.id}
-                  dish={dish}
-                  pending={pending}
-                  run={run}
-                  gateway={gateway}
+            <>
+              <FoodTable label="Danh sách món ăn">
+                {dishPagination.paginatedItems.map((dish) => (
+                  <DishAggregate
+                    key={dish.id}
+                    dish={dish}
+                    pending={pending}
+                    run={run}
+                    gateway={gateway}
+                  />
+                ))}
+              </FoodTable>
+              <div className="mt-3">
+                <TablePagination
+                  info={
+                    <span>
+                      Hiển thị{' '}
+                      <strong>
+                        {dishPagination.totalItems === 0 ? 0 : dishPagination.startIndex + 1}
+                      </strong>{' '}
+                      – <strong>{dishPagination.endIndex}</strong> /{' '}
+                      <strong>{dishPagination.totalItems}</strong> món ăn
+                    </span>
+                  }
+                  pageSize={dishPagination.pageSize}
+                  pageSizes={dishPagination.pageSizes}
+                  onPageSize={dishPagination.setPageSize}
+                  page={dishPagination.page}
+                  totalPages={dishPagination.totalPages}
+                  onPage={dishPagination.setPage}
+                  navLabel="Phân trang món ăn"
                 />
-              ))}
-            </FoodTable>
+              </div>
+            </>
           )}
         </div>
         <div>
@@ -346,18 +382,41 @@ export function DishMenuPanel({
               Không có gói thực đơn phù hợp. Thêm gói mới hoặc thay đổi bộ lọc.
             </p>
           ) : (
-            <FoodTable label="Danh sách gói thực đơn">
-              {filteredMenus.map((menu) => (
-                <MenuAggregate
-                  key={menu.id}
-                  dishOptions={currentDishOptions(snapshot.dishes)}
-                  menu={menu}
-                  pending={pending}
-                  run={run}
-                  gateway={gateway}
+            <>
+              <FoodTable label="Danh sách gói thực đơn">
+                {menuPagination.paginatedItems.map((menu) => (
+                  <MenuAggregate
+                    key={menu.id}
+                    dishOptions={currentDishOptions(snapshot.dishes)}
+                    menu={menu}
+                    pending={pending}
+                    run={run}
+                    gateway={gateway}
+                  />
+                ))}
+              </FoodTable>
+              <div className="mt-3">
+                <TablePagination
+                  info={
+                    <span>
+                      Hiển thị{' '}
+                      <strong>
+                        {menuPagination.totalItems === 0 ? 0 : menuPagination.startIndex + 1}
+                      </strong>{' '}
+                      – <strong>{menuPagination.endIndex}</strong> /{' '}
+                      <strong>{menuPagination.totalItems}</strong> gói thực đơn
+                    </span>
+                  }
+                  pageSize={menuPagination.pageSize}
+                  pageSizes={menuPagination.pageSizes}
+                  onPageSize={menuPagination.setPageSize}
+                  page={menuPagination.page}
+                  totalPages={menuPagination.totalPages}
+                  onPage={menuPagination.setPage}
+                  navLabel="Phân trang gói thực đơn"
                 />
-              ))}
-            </FoodTable>
+              </div>
+            </>
           )}
         </div>
       </div>

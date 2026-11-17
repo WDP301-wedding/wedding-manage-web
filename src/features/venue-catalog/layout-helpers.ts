@@ -5,10 +5,6 @@ export function text(data: FormData, name: string): string {
   return typeof value === 'string' ? value.trim() : '';
 }
 
-export function integer(data: FormData, name: string): number {
-  return Number.parseInt(text(data, name), 10);
-}
-
 export function layoutErrorMessage(error: unknown): string {
   if (error instanceof ApiClientError) {
     if (error.status === 409) return 'Bố trí đã thay đổi. Hãy tải lại lịch sử trước khi thử lại.';

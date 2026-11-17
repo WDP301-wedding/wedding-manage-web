@@ -56,14 +56,9 @@ export function usePrintOrdersData({
         setOrders(res.items);
         setNextCursor(res.nextCursor);
         setLastRefreshed(formatVietnameseDateTime(new Date().toISOString()));
-        if (res.items.length > 0) {
-          setSelectedOrder((prev) => {
-            if (!prev) return res.items[0] ?? null;
-            return res.items.find((item) => item.orderId === prev.orderId) ?? res.items[0] ?? null;
-          });
-        } else {
-          setSelectedOrder(null);
-        }
+        setSelectedOrder((prev) =>
+          prev ? (res.items.find((item) => item.orderId === prev.orderId) ?? null) : null,
+        );
         return true;
       } catch (err) {
         if (epoch !== requestEpochRef.current) return false;

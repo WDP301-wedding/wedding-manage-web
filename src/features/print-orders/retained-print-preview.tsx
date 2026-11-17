@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { cn } from 'cn';
 import { Button } from '../../components/ui/button';
 import { axiosApiClient } from '../../lib/api/axios-client';
 import { readPublicEnv } from '../../lib/env';
@@ -12,11 +13,13 @@ export function RetainedPrintPreview({
   bookingId,
   printableRevisionId,
   title,
+  summary,
   authorize,
 }: Readonly<{
   bookingId: string;
   printableRevisionId: string;
   title: string;
+  summary?: string;
   authorize?: Authorize;
 }>) {
   const [url, setUrl] = useState<string | null>(null);
@@ -89,10 +92,27 @@ export function RetainedPrintPreview({
 
   return (
     <div className="flex min-w-0 flex-col gap-3 rounded-lg border border-border bg-card p-4">
-      <strong className="break-words text-sm font-semibold">{title}</strong>
-      <Button type="button" variant="outline" onClick={() => void load()} disabled={busy}>
-        {busy ? 'Đang tải bản in…' : `Xem bản in: ${title}`}
-      </Button>
+      <div
+        className={cn(
+          'flex min-w-0 flex-col gap-3',
+          summary && 'sm:flex-row sm:items-center sm:justify-between',
+        )}
+      >
+        <div className="flex min-w-0 flex-col gap-1 [overflow-wrap:anywhere]">
+          <strong className="text-sm font-semibold">{title}</strong>
+          {summary ? <p className="text-xs text-muted-foreground">{summary}</p> : null}
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          className={summary ? 'self-start sm:self-auto' : 'h-auto min-h-11 whitespace-normal'}
+          aria-label={busy ? undefined : `Xem bản in: ${title}`}
+          onClick={() => void load()}
+          disabled={busy}
+        >
+          {busy ? 'Đang tải bản in…' : summary ? 'Xem bản in' : `Xem bản in: ${title}`}
+        </Button>
+      </div>
       {error ? (
         <p role="alert" className="text-sm text-destructive">
           {error}

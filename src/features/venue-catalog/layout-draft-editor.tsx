@@ -10,13 +10,14 @@ import { cn } from 'cn';
 export { CANVAS_SIZE, TableEditor, TableNumber };
 
 export type LayoutVersion = CatalogLayout['versions'][number];
+const MAX_GUESTS_PER_TABLE = 10;
 
 export function defaultTable(tableId: string, order = 1): LayoutTableWrite {
   return {
     tableId,
     label: `Bàn ${String(order).padStart(2, '0')}`,
     shape: 'ROUND',
-    seatCapacity: 10,
+    seatCapacity: MAX_GUESTS_PER_TABLE,
     x: 500 + ((order - 1) % 5) * 1500,
     y: 500 + Math.floor((order - 1) / 5) * 1500,
     width: 1000,
@@ -26,7 +27,7 @@ export function defaultTable(tableId: string, order = 1): LayoutTableWrite {
   };
 }
 
-export function validateLayout(
+function validateLayout(
   tables: readonly LayoutTableWrite[],
   hallMaximum: number,
   range: Readonly<{ minGuests: number; maxGuests: number }>,
@@ -47,8 +48,8 @@ export function validateLayout(
   }
   const seats = tables.reduce((total, table) => total + table.seatCapacity, 0);
   if (seats > hallMaximum) return 'Tổng số ghế vượt sức chứa sảnh.';
-  if (range.minGuests < 1 || range.maxGuests < range.minGuests || range.maxGuests > seats) {
-    return 'Khoảng khách phải tăng dần và không vượt tổng số ghế.';
+  if (range.minGuests < 1 || range.maxGuests < range.minGuests) {
+    return 'Khách tối đa phải lớn hơn hoặc bằng khách tối thiểu.';
   }
   return null;
 }
@@ -190,25 +191,33 @@ export function LayoutDraftEditor({
     version.tables.map((table) => ({ ...table })),
   );
   const [retirements, setRetirements] = useState<string[]>([]);
+  const [maxGuests, setMaxGuests] = useState(String(version.maxGuests));
+  const maxGuestsInput = useRef<HTMLInputElement>(null);
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
   const [showBatchTools, setShowBatchTools] = useState(false);
   const [batchCount, setBatchCount] = useState(5);
-  const [batchSeats, setBatchSeats] = useState(10);
+  const [batchSeats, setBatchSeats] = useState(MAX_GUESTS_PER_TABLE);
   const [batchShape, setBatchShape] = useState<'ROUND' | 'RECTANGLE'>('ROUND');
 
   const totalSeats = useMemo(
     () => tables.reduce((total, table) => total + table.seatCapacity, 0),
     [tables],
   );
+  const guestLimit = Math.min(
+    hallMaximum,
+    tables.reduce(
+      (total, { seatCapacity }) => total + Math.min(seatCapacity, MAX_GUESTS_PER_TABLE),
+      0,
+    ),
+  );
+  const maxGuestsError =
+    Number(maxGuests) > guestLimit
+      ? `Bố cục có ${tables.length} bàn, tối đa ${guestLimit.toLocaleString('vi-VN')} khách.`
+      : null;
+  const maxGuestsErrorId = `layout-max-guests-error-${version.id}`;
 
   const handleMoveTable = (id: string, x: number, y: number) => {
     setTables((current) => current.map((tbl) => (tbl.tableId === id ? { ...tbl, x, y } : tbl)));
-  };
-
-  const handleSelectTable = (id: string) => {
-    setSelectedTableId(id);
-    const element = document.getElementById(`table-editor-${id}`);
-    element?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   };
 
   const addBatchTables = () => {
@@ -239,13 +248,17 @@ export function LayoutDraftEditor({
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (maxGuestsError) {
+      maxGuestsInput.current?.focus();
+      return;
+    }
     const data = new FormData(event.currentTarget);
     const normalized = tables.map((table, index) => ({ ...table, displayOrder: index + 1 }));
     const nameVal = typeof data.get('name') === 'string' ? (data.get('name') as string).trim() : '';
     const descVal =
       typeof data.get('description') === 'string' ? (data.get('description') as string).trim() : '';
     const minVal = Number.parseInt(String(data.get('minGuests') || ''), 10);
-    const maxVal = Number.parseInt(String(data.get('maxGuests') || ''), 10);
+    const maxVal = Number(maxGuests);
 
     const validation = validateLayout(normalized, hallMaximum, {
       minGuests: minVal,
@@ -327,17 +340,30 @@ export function LayoutDraftEditor({
             required
           />
         </label>
-        <label className={cx.field}>
-          <span>Khách tối đa</span>
-          <input
-            name="maxGuests"
-            type="number"
-            min={1}
-            step={1}
-            defaultValue={version.maxGuests}
-            required
-          />
-        </label>
+        <div className="flex flex-col gap-1">
+          <label className={cx.field}>
+            <span>Khách tối đa</span>
+            <input
+              ref={maxGuestsInput}
+              name="maxGuests"
+              type="number"
+              min={1}
+              step={1}
+              value={maxGuests}
+              onChange={(event) => setMaxGuests(event.currentTarget.value)}
+              aria-invalid={maxGuestsError ? true : undefined}
+              aria-describedby={maxGuestsError ? maxGuestsErrorId : undefined}
+              required
+            />
+          </label>
+          <div aria-live="polite">
+            {maxGuestsError && (
+              <p id={maxGuestsErrorId} className="text-xs text-destructive">
+                {maxGuestsError}
+              </p>
+            )}
+          </div>
+        </div>
       </div>
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
         <span>
@@ -352,7 +378,7 @@ export function LayoutDraftEditor({
       <LayoutCanvas
         tables={tables}
         selectedTableId={selectedTableId}
-        onSelectTable={handleSelectTable}
+        onSelectTable={setSelectedTableId}
         onMoveTable={handleMoveTable}
       />
       <div className={cx.layoutTableList}>
@@ -414,7 +440,9 @@ export function LayoutDraftEditor({
                 max={50}
                 className="h-9 w-20 rounded-md border border-input bg-card px-2 text-xs"
                 value={batchSeats}
-                onChange={(e) => setBatchSeats(Number(e.currentTarget.value) || 10)}
+                onChange={(e) =>
+                  setBatchSeats(Number(e.currentTarget.value) || MAX_GUESTS_PER_TABLE)
+                }
               />
             </label>
             <label className="flex flex-col gap-1 text-xs font-semibold">

@@ -3,7 +3,7 @@
 import { useRef } from 'react';
 import { Button } from '../../components/ui/button';
 import { dialogActionsClass } from './print-order-classes';
-import { PrintOrderDialog } from './print-order-dialog';
+import { PrintQueueDialog } from './print-queue-dialog';
 import { formatVietnameseDateTime, formatVnd, type PrintOrderView } from './print-orders-types';
 
 export { HandoverModal, type HandoverModalProps } from './print-order-handover-modal';
@@ -14,7 +14,7 @@ const listClass = 'flex list-disc flex-col gap-2 pl-5';
 export function CreateOrderNoticeModal({ onClose }: { onClose: () => void }) {
   const okBtnRef = useRef<HTMLButtonElement | null>(null);
   return (
-    <PrintOrderDialog
+    <PrintQueueDialog
       label="Quy trình khởi tạo đơn in"
       title="Quy tắc khởi tạo đơn in ấn thiệp cưới"
       onClose={onClose}
@@ -40,7 +40,7 @@ export function CreateOrderNoticeModal({ onClose }: { onClose: () => void }) {
           Đã hiểu
         </Button>
       </div>
-    </PrintOrderDialog>
+    </PrintQueueDialog>
   );
 }
 
@@ -52,7 +52,7 @@ export function HistoryModal({
   onClose: () => void;
 }) {
   return (
-    <PrintOrderDialog
+    <PrintQueueDialog
       label="Lịch sử đơn in"
       title={order ? `Lịch sử đơn in ${order.orderId}` : 'Lịch sử đơn in'}
       onClose={onClose}
@@ -94,6 +94,6 @@ export function HistoryModal({
           Đóng
         </Button>
       </div>
-    </PrintOrderDialog>
+    </PrintQueueDialog>
   );
 }
