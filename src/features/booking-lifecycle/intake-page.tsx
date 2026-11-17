@@ -76,7 +76,7 @@ export function ConsultationRequestsPage() {
     >
       <main
         data-ui-v3=""
-        className="flex flex-col gap-6 px-4 pt-8 pb-14 sm:px-10"
+        className="consultation-view-enterprise flex flex-1 flex-col gap-6 px-4 pt-8 pb-14 sm:px-10"
         id="consultation-main"
       >
         <header className="flex flex-wrap items-end justify-between gap-4">
