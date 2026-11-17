@@ -138,6 +138,112 @@ export function ManagementBookingWorkspace({
           ) : null}
         </div>
 
+        {/* 6-Stage Lifecycle Progress Stepper */}
+        <section
+          aria-label="Tiến trình điều phối vòng đời tiệc cưới"
+          className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border bg-card p-4 shadow-hy-1"
+        >
+          <div className="flex items-center gap-2">
+            <span
+              className={`flex size-6 items-center justify-center rounded-full text-2xs font-bold ${
+                activeTab === 'consultation'
+                  ? 'bg-primary text-primary-foreground'
+                  : consultation
+                    ? 'bg-hy-success text-white'
+                    : 'bg-muted text-muted-foreground'
+              }`}
+            >
+              1
+            </span>
+            <span
+              className={`text-xs font-semibold ${
+                activeTab === 'consultation' ? 'text-primary' : 'text-foreground'
+              }`}
+            >
+              Tư Vấn &amp; Nhu Cầu
+            </span>
+          </div>
+
+          <span className="text-muted-foreground/40 hidden sm:inline">→</span>
+
+          <div className="flex items-center gap-2">
+            <span
+              className={`flex size-6 items-center justify-center rounded-full text-2xs font-bold ${
+                activeTab === 'booking'
+                  ? 'bg-primary text-primary-foreground'
+                  : proposal
+                    ? 'bg-hy-success text-white'
+                    : 'bg-muted text-muted-foreground'
+              }`}
+            >
+              2
+            </span>
+            <span
+              className={`text-xs font-semibold ${
+                activeTab === 'booking' ? 'text-primary' : 'text-foreground'
+              }`}
+            >
+              Khảo Sát Sảnh &amp; Giữ Chỗ
+            </span>
+          </div>
+
+          <span className="text-muted-foreground/40 hidden sm:inline">→</span>
+
+          <div className="flex items-center gap-2">
+            <span
+              className={`flex size-6 items-center justify-center rounded-full text-2xs font-bold ${
+                activeTab === 'manage'
+                  ? 'bg-primary text-primary-foreground'
+                  : proposal?.phase === 'CONFIRMED'
+                    ? 'bg-hy-success text-white'
+                    : 'bg-muted text-muted-foreground'
+              }`}
+            >
+              3
+            </span>
+            <span
+              className={`text-xs font-semibold ${
+                activeTab === 'manage' ? 'text-primary' : 'text-foreground'
+              }`}
+            >
+              Hợp Đồng &amp; Đặt Cọc
+            </span>
+          </div>
+
+          <span className="text-muted-foreground/40 hidden md:inline">→</span>
+
+          <div className="flex items-center gap-2">
+            <span className="flex size-6 items-center justify-center rounded-full bg-muted text-2xs font-bold text-muted-foreground">
+              4
+            </span>
+            <span className="text-xs font-semibold text-muted-foreground">
+              Thực Đơn &amp; Dịch Vụ
+            </span>
+          </div>
+
+          <span className="text-muted-foreground/40 hidden lg:inline">→</span>
+
+          <div className="flex items-center gap-2">
+            <span className="flex size-6 items-center justify-center rounded-full bg-muted text-2xs font-bold text-muted-foreground">
+              5
+            </span>
+            <span className="text-xs font-semibold text-muted-foreground">
+              Sơ Đồ Bàn &amp; Kịch Bản
+            </span>
+          </div>
+
+          <span className="text-muted-foreground/40 hidden xl:inline">→</span>
+
+          <div className="flex items-center gap-2">
+            <span className="flex size-6 items-center justify-center rounded-full bg-muted text-2xs font-bold text-muted-foreground">
+              6
+            </span>
+            <span className="text-xs font-semibold text-muted-foreground">
+              Quyết Toán Sau Tiệc
+            </span>
+          </div>
+        </section>
+
         <div
           role="tablist"
           aria-label="Phân hệ điều phối tiệc"

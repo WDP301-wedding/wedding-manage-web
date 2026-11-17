@@ -66,8 +66,12 @@ export class ManagementIdentitySession {
   private authGeneration = 0;
   private restoreOperation: Promise<ManagementSessionSnapshot> | null = null;
   private state: ManagementSessionSnapshot = anonymousSnapshot;
+  private proactiveTimer: ReturnType<typeof setTimeout> | null = null;
+  private listeners = new Set<(snapshot: ManagementSessionSnapshot) => void>();
 
   constructor(private readonly api: IdentityApi) {
+    this.hydrateFromStorageSync();
+
     sharedManagementRealtime.setTokenRefreshHandler(() => this.renewAccessToken());
     sharedManagementRealtime.setSessionRevokedHandler(() => {
       this.clear();
@@ -75,6 +79,85 @@ export class ManagementIdentitySession {
         window.dispatchEvent(new Event(managementSessionRevokedEvent));
       }
     });
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('storage', (event) => {
+        if (event.key !== STORAGE_KEY) return;
+        if (!event.newValue) {
+          if (this.state.status === 'authenticated') {
+            this.clear(false);
+          }
+        } else {
+          try {
+            const data = JSON.parse(event.newValue) as PersistedSessionData;
+            if (data.accessToken && data.actor) {
+              const expiresAt = new Date(data.accessExpiresAt).getTime();
+              if (expiresAt > Date.now() + 15_000) {
+                this.accessToken = data.accessToken;
+                this.state = {
+                  status: 'authenticated',
+                  actor: data.actor,
+                  denial: null,
+                  presentation: data.presentation,
+                };
+                this.scheduleProactiveRefresh(data.accessExpiresAt);
+                this.notify();
+              }
+            }
+          } catch {}
+        }
+      });
+    }
+  }
+
+  private hydrateFromStorageSync(): void {
+    const persisted = this.readPersisted();
+    if (persisted && persisted.accessToken) {
+      const expiresAt = new Date(persisted.accessExpiresAt).getTime();
+      if (expiresAt > Date.now() + 15_000) {
+        this.accessToken = persisted.accessToken;
+        this.state = {
+          status: 'authenticated',
+          actor: persisted.actor,
+          denial: null,
+          presentation: persisted.presentation,
+        };
+        sharedManagementRealtime.connect(persisted.accessToken);
+        this.scheduleProactiveRefresh(persisted.accessExpiresAt);
+      }
+    }
+  }
+
+  subscribe(listener: (snapshot: ManagementSessionSnapshot) => void): () => void {
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
+
+  private notify(): void {
+    for (const listener of this.listeners) {
+      try {
+        listener(this.state);
+      } catch {}
+    }
+  }
+
+  private scheduleProactiveRefresh(accessExpiresAt: string): void {
+    if (this.proactiveTimer) {
+      clearTimeout(this.proactiveTimer);
+      this.proactiveTimer = null;
+    }
+    const expiryTime = new Date(accessExpiresAt).getTime();
+    // Proactively refresh 4 minutes before expiry
+    const delay = Math.max(10_000, expiryTime - Date.now() - 4 * 60 * 1000);
+    if (delay < 24 * 60 * 60 * 1000) {
+      this.proactiveTimer = setTimeout(() => {
+        if (this.state.status === 'authenticated') {
+          void this.renewAccessToken();
+        }
+      }, delay);
+    }
   }
 
   snapshot(): ManagementSessionSnapshot {
@@ -254,8 +337,11 @@ export class ManagementIdentitySession {
       const credential = await this.api.refreshSession();
       if (generation !== this.authGeneration) return this.state;
       return await this.finishSignIn(credential);
-    } catch {
-      if (generation === this.authGeneration) this.clear();
+    } catch (error) {
+      // Enterprise resilience: ONLY clear session if server officially rejected with 401 Unauthorized
+      if (error instanceof ApiClientError && error.status === 401) {
+        if (generation === this.authGeneration) this.clear();
+      }
       return this.state;
     }
   }
@@ -280,6 +366,8 @@ export class ManagementIdentitySession {
         actor,
         presentation,
       });
+      this.scheduleProactiveRefresh(credential.accessExpiresAt);
+      this.notify();
       return this.state;
     } catch (error) {
       if (generation === this.authGeneration) this.clear();
@@ -287,13 +375,20 @@ export class ManagementIdentitySession {
     }
   }
 
-  private clear(): void {
+  private clear(removeFromStorage = true): void {
+    if (this.proactiveTimer) {
+      clearTimeout(this.proactiveTimer);
+      this.proactiveTimer = null;
+    }
     this.authGeneration++;
     this.accessToken = null;
     this.state = anonymousSnapshot;
-    this.removePersisted();
+    if (removeFromStorage) {
+      this.removePersisted();
+    }
     clearCatalogCache();
     sharedManagementRealtime.disconnect();
+    this.notify();
   }
 }
 

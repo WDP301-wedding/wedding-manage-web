@@ -11,17 +11,21 @@ function Metric({
   attention = false,
 }: Readonly<{ label: string; value: string; detail: string; attention?: boolean }>) {
   return (
-    <div className="flex min-w-0 flex-[1_1_13rem] flex-col gap-0.5 bg-card px-6 py-5">
-      <dt className="text-xs text-muted-foreground">{label}</dt>
+    <div className="flex min-w-0 flex-[1_1_13rem] flex-col gap-1.5 bg-card px-6 py-5 transition-colors hover:bg-muted/20">
+      <dt className="text-2xs font-semibold uppercase tracking-wider text-muted-foreground">
+        {label}
+      </dt>
       <dd
         className={cn(
-          'text-xl font-bold tabular-nums [overflow-wrap:anywhere]',
+          'text-2xl font-bold tracking-tight text-foreground tabular-nums [overflow-wrap:anywhere]',
           attention && 'text-primary',
         )}
       >
         {value}
       </dd>
-      <dd className={cn('text-xs text-muted-foreground', attention && 'text-primary')}>{detail}</dd>
+      <dd className={cn('text-xs text-muted-foreground', attention && 'font-medium text-primary')}>
+        {detail}
+      </dd>
     </div>
   );
 }
@@ -90,7 +94,7 @@ export function DashboardKpiStrip({
                   ? 'Chưa có'
                   : formatVndNullable(analytics.netCashRevenueVnd)
             }
-            detail={isLoading ? 'Đang tổng hợp sổ cái…' : 'Thực thu tiền mặt/chuyển khoản (VND)'}
+            detail={isLoading ? 'Đang tổng hợp sổ cái…' : 'Thực thu tiền mặt & chuyển khoản (VND)'}
           />
           <Metric
             label="Tiền thu vào tháng này"

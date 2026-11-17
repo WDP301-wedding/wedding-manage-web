@@ -22,15 +22,25 @@ export function AuthForm({
 }>) {
   return (
     <form className="flex flex-col gap-6" onSubmit={onSubmit}>
-      <h2 className="text-xl font-semibold">{title}</h2>
+      <div className="flex flex-col gap-1">
+        <h2 className="text-xl font-bold text-foreground">{title}</h2>
+        <p className="text-xs text-muted-foreground">
+          Nhập thông tin xác thực để vào hệ thống vận hành Hỷ Yến.
+        </p>
+      </div>
       <div className="flex flex-col gap-4">{children}</div>
-      <div className="flex flex-col gap-2">
-        <Button type="submit" disabled={pending}>
-          {pending ? 'Đang xử lý…' : submitLabel}
+      <div className="flex flex-col gap-2 pt-2">
+        <Button
+          type="submit"
+          disabled={pending}
+          className="h-11 w-full rounded-md bg-primary font-semibold text-primary-foreground transition-colors hover:bg-hy-wine-pressed"
+        >
+          {pending ? 'Đang xác thực thông tin…' : submitLabel}
         </Button>
-        <small className="text-xs text-muted-foreground">
-          Dùng máy chung? Nhớ đăng xuất khi xong việc.
-        </small>
+        <div className="flex items-center justify-between text-2xs text-muted-foreground">
+          <span>Khu vực bảo mật ca trực</span>
+          <span>Bảo mật 256-bit</span>
+        </div>
       </div>
     </form>
   );
@@ -49,20 +59,26 @@ export function Field({
   const password = input.type === 'password';
   const id = `operations-${name}`;
   return (
-    <div className="flex flex-col gap-1">
-      <Label htmlFor={id}>{label}</Label>
+    <div className="flex flex-col gap-1.5">
+      <Label htmlFor={id} className="text-xs font-semibold text-foreground">
+        {label}
+      </Label>
       <div className="relative">
         <Input
           {...input}
           type={password && visible ? 'text' : input.type}
           id={id}
           name={name}
-          className={cn(className, password && 'pr-12') || undefined}
+          className={cn(
+            'h-11 rounded-md border-border bg-card px-3 text-sm text-foreground transition-colors focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary',
+            password && 'pr-11',
+            className,
+          )}
           required
         />
         {password ? (
           <button
-            className="absolute top-0.5 right-0.5 flex size-10 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+            className="absolute top-1/2 right-1.5 flex size-8 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
             type="button"
             aria-label={visible ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
             title={visible ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
@@ -71,9 +87,9 @@ export function Field({
             onClick={() => setVisible((value) => !value)}
           >
             {visible ? (
-              <EyeOff aria-hidden className="size-5" />
+              <EyeOff aria-hidden className="size-4" />
             ) : (
-              <Eye aria-hidden className="size-5" />
+              <Eye aria-hidden className="size-4" />
             )}
           </button>
         ) : null}

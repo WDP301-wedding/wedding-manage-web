@@ -22,7 +22,7 @@ export interface DashboardBookingsToolbarProps {
 }
 
 const segmentClass =
-  'inline-flex h-9 items-center gap-2 rounded-md px-3 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none aria-selected:bg-card aria-selected:font-semibold aria-selected:text-foreground aria-selected:shadow-hy-1';
+  'inline-flex h-8.5 items-center gap-2 rounded-md px-3 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none aria-selected:bg-card aria-selected:font-semibold aria-selected:text-foreground aria-selected:shadow-hy-1';
 
 export function DashboardBookingsToolbar({
   bookingTab,
@@ -43,7 +43,7 @@ export function DashboardBookingsToolbar({
       <div
         role="tablist"
         aria-label="Phân loại lịch tiệc"
-        className="inline-flex rounded-lg bg-secondary p-1"
+        className="inline-flex rounded-md border border-border bg-muted/60 p-0.5"
       >
         <button
           type="button"
@@ -54,7 +54,9 @@ export function DashboardBookingsToolbar({
           className={segmentClass}
         >
           <span>Tiệc của tôi</span>
-          <span className="tabular-nums">{myBookingsCount}</span>
+          <span className="rounded bg-muted px-1.5 py-0.2 text-2xs font-semibold tabular-nums">
+            {myBookingsCount}
+          </span>
         </button>
         <button
           type="button"
@@ -64,8 +66,10 @@ export function DashboardBookingsToolbar({
           onClick={() => setBookingTab('all')}
           className={segmentClass}
         >
-          <span>Tất cả tiệc nhà hàng</span>
-          <span className="tabular-nums">{isLoading ? '…' : totalBookingsCount}</span>
+          <span>Toàn bộ nhà hàng</span>
+          <span className="rounded bg-muted px-1.5 py-0.2 text-2xs font-semibold tabular-nums">
+            {isLoading ? '…' : totalBookingsCount}
+          </span>
         </button>
       </div>
 

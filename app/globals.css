@@ -1,13 +1,15 @@
 /* Phải đứng đầu file: trình duyệt bỏ qua @import url() đặt sau rule khác. */
-@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap&subset=vietnamese');
+@import url('https://fonts.googleapis.com/css2?family=Google+Sans+Flex:wght@300;400;500;600;700;800&display=swap');
 
 @layer theme, base, components, utilities;
 
 @import './styles/globals/tokens.css';
 @import './ui-v3.css';
+@import './cockpit-luxury.css';
 
 :root {
-  --font-display: 'Be Vietnam Pro', 'Segoe UI', Arial, sans-serif;
-  --font-body: 'Be Vietnam Pro', 'Segoe UI', Arial, sans-serif;
-  --font-script: 'Be Vietnam Pro', 'Segoe UI', Arial, sans-serif;
+  --font-display: 'Google Sans Flex', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-body: 'Google Sans Flex', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-script: 'Google Sans Flex', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-wordmark: 'Google Sans Flex', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }

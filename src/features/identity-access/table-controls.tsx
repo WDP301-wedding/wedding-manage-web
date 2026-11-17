@@ -64,22 +64,22 @@ export function SearchField({
   onChange: (value: string) => void;
 }>) {
   return (
-    <label className="flex h-11 min-w-0 flex-[1_1_260px] items-center gap-2 rounded-lg border border-input bg-card px-3 text-muted-foreground focus-within:ring-2 focus-within:ring-ring">
-      <Search aria-hidden className="size-4 shrink-0" />
+    <label className="flex h-10 min-w-0 flex-[1_1_260px] items-center gap-2 rounded-md border border-border bg-card px-3 text-muted-foreground transition-colors hover:border-hy-outline-strong focus-within:border-primary focus-within:ring-1 focus-within:ring-primary">
+      <Search aria-hidden className="size-4 shrink-0 text-muted-foreground" />
       <input
         type="search"
         aria-label={label}
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="h-full min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+        className="h-full min-w-0 flex-1 bg-transparent text-xs text-foreground outline-none placeholder:text-muted-foreground"
       />
     </label>
   );
 }
 
 const navButtonClass =
-  'inline-flex size-9 items-center justify-center rounded-lg border border-input bg-card text-foreground transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:pointer-events-none disabled:opacity-40';
+  'inline-flex size-8.5 items-center justify-center rounded-md border border-border bg-card text-foreground transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:pointer-events-none disabled:opacity-40';
 
 function pageNumbers(page: number, totalPages: number): (number | 'gap')[] {
   if (totalPages <= 7) return Array.from({ length: totalPages }, (_, i) => i + 1);

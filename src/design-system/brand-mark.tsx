@@ -1,32 +1,46 @@
 import Image from 'next/image';
 import { cn } from 'cn';
 
-/**
- * Logo Hỷ Yến: ảnh logo (monogram "Hy" + hoa) + tên thương hiệu và định vị.
- *
- * Ảnh chỉ là trang trí (alt rỗng) vì tên "Hỷ Yến" đã có ngay bên cạnh dưới dạng chữ.
- * Logo luôn đặt trên nền sáng (Design System Hỷ Yến v3).
- */
+
 export function BrandMark({
   tagline = 'Quản trị nhà hàng',
   compact = false,
+  iconOnly = false,
 }: Readonly<{
-  tagline?: string;
+  tagline?: string | undefined;
   compact?: boolean;
+  iconOnly?: boolean;
 }>) {
   return (
-    <span className="flex items-center gap-3 text-foreground">
+    <span className="flex items-center gap-3 text-foreground overflow-hidden">
       <Image
         src="/images/hy-yen-logo.png"
         alt=""
         width={394}
         height={414}
-        className={cn('object-contain', compact ? 'h-8 w-auto' : 'h-11 w-auto')}
+        className={cn(
+          'object-contain shrink-0 transition-all duration-300 ease-[cubic-bezier(0.2,0,0,1)]',
+          compact ? 'h-8 w-auto' : 'h-10 w-auto',
+        )}
       />
-      <span className="flex flex-col">
-        <strong className={cn('font-bold', compact ? 'text-sm' : 'text-base')}>Hỷ Yến</strong>
+      <span
+        className={cn(
+          'flex flex-col whitespace-nowrap overflow-hidden transition-all duration-300 ease-[cubic-bezier(0.2,0,0,1)]',
+          iconOnly
+            ? 'max-w-0 opacity-0 -translate-x-2 pointer-events-none'
+            : 'max-w-[200px] opacity-100 translate-x-0',
+        )}
+      >
+        <strong className={cn('font-bold leading-tight', compact ? 'text-sm' : 'text-base')}>
+          Hỷ Yến
+        </strong>
         {tagline ? (
-          <small className={cn('text-muted-foreground', compact ? 'text-2xs' : 'text-xs')}>
+          <small
+            className={cn(
+              'text-muted-foreground leading-normal',
+              compact ? 'text-2xs' : 'text-xs',
+            )}
+          >
             {tagline}
           </small>
         ) : null}

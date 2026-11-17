@@ -48,15 +48,38 @@ export function BillingFinancialOverview({
           Xem hồ sơ tiệc
         </Link>
       </div>
-      <dl className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-        {values.map(([label, value]) => (
-          <div key={label} className="min-w-0 rounded-lg bg-muted p-3 sm:p-4">
-            <dt className="text-xs text-muted-foreground">{label}</dt>
-            <dd className="mt-1 break-words font-bold tabular-nums sm:text-lg">
-              {value === null ? 'Chưa xác định' : money(value)}
-            </dd>
-          </div>
-        ))}
+      <dl className="grid grid-cols-2 gap-3.5 xl:grid-cols-4">
+        {values.map(([label, value], idx) => {
+          const isOutstanding = idx === 3;
+          const isReceived = idx === 2;
+          return (
+            <div
+              key={label}
+              className={`min-w-0 rounded-lg border p-4 transition-colors ${
+                isOutstanding
+                  ? 'border-primary/20 bg-hy-wine-soft/60'
+                  : isReceived
+                    ? 'border-hy-success/20 bg-hy-success-bg/40'
+                    : 'border-border/80 bg-muted/40'
+              }`}
+            >
+              <dt className="text-2xs font-semibold uppercase tracking-wider text-muted-foreground">
+                {label}
+              </dt>
+              <dd
+                className={`mt-1.5 break-words text-lg font-bold tabular-nums sm:text-xl ${
+                  isOutstanding
+                    ? 'text-primary'
+                    : isReceived
+                      ? 'text-hy-success'
+                      : 'text-foreground'
+                }`}
+              >
+                {value === null ? 'Chưa xác định' : money(value)}
+              </dd>
+            </div>
+          );
+        })}
       </dl>
       <p className="text-sm text-muted-foreground">
         Tổng hợp đồng gồm các phụ lục đã được hai bên phê duyệt. Tổng thu là số tiền đã nhận trừ

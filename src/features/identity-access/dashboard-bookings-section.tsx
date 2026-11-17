@@ -15,6 +15,7 @@ import {
 } from './dashboard-classes';
 import { StaffCheckinBanner } from './staff-checkin-banner';
 import { TablePagination } from './table-controls';
+import type { NavigationBooking } from '../../services/booking-navigation.service';
 import type { LockNotice } from './use-booking-claims';
 import { useDashboardBookings, type DashboardBookingItem } from './use-dashboard-bookings';
 import type { DashboardState } from './use-dashboard-data';
@@ -28,6 +29,7 @@ export interface DashboardBookingsSectionProps {
   onClaim: (bookingId: string, hallName?: string) => void;
   lockNotice: LockNotice;
   onDismissLockNotice: () => void;
+  onSelectBooking?: ((booking: NavigationBooking) => void) | undefined;
 }
 
 const noticeTone = {
@@ -44,6 +46,7 @@ export function DashboardBookingsSection({
   onClaim,
   lockNotice,
   onDismissLockNotice,
+  onSelectBooking,
 }: Readonly<DashboardBookingsSectionProps>) {
   const view = useDashboardBookings({
     bookings,
@@ -122,6 +125,7 @@ export function DashboardBookingsSection({
           sortField={view.sortField}
           sortOrder={view.sortOrder}
           onSortChange={view.handleSortChange}
+          onSelectBooking={onSelectBooking}
         />
       )}
       <TablePagination
