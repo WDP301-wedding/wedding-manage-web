@@ -36,10 +36,7 @@ const pageSchema = z.object({
   items: z.array(row),
   counts: z.object({ total: z.int(), pending: z.int() }),
 });
-export function useDashboardConsultations(
-  _consultations: readonly ConsultationRequestItem[],
-  enabled = true,
-) {
+export function useDashboardConsultations(enabled = true) {
   const [searchQuery, setSearchQuery] = useState(''),
     [query, setQuery] = useState('');
   const [statusFilter, setStatus] = useState('ALL');

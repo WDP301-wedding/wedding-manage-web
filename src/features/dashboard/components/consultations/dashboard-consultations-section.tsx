@@ -1,11 +1,8 @@
 'use client';
 
-import { useEffect } from 'react';
-
 import { HySelect } from '@/src/components/ui/select-field';
 
 import Link from 'next/link';
-import type { ConsultationRequestItem } from '@/src/services/bookings/consultation.service';
 import { DashboardConsultationsTable } from './dashboard-consultations-table';
 import {
   emptyClass,
@@ -16,25 +13,16 @@ import {
   toolbarClass,
 } from '@/src/features/dashboard/styles/dashboard-classes';
 import { SearchField, TablePagination } from '@/src/components/data-display/table-controls';
-import type { DashboardState } from '@/src/features/dashboard/hooks/use-dashboard-data';
 import { useDashboardConsultations } from '@/src/features/dashboard/hooks/use-dashboard-consultations';
 
 export interface DashboardConsultationsSectionProps {
   isManager: boolean;
-  state: DashboardState;
-  consultations: readonly ConsultationRequestItem[];
-  onTotalsChange?: (counts: { total: number; pending: number }) => void;
 }
 
 export function DashboardConsultationsSection({
   isManager,
-  consultations,
-  onTotalsChange,
 }: Readonly<DashboardConsultationsSectionProps>) {
-  const view = useDashboardConsultations(consultations, isManager);
-  useEffect(() => {
-    if (view.counts) onTotalsChange?.(view.counts);
-  }, [onTotalsChange, view.counts]);
+  const view = useDashboardConsultations(isManager);
 
   return (
     <section className={sectionClass} id="upcoming-events">

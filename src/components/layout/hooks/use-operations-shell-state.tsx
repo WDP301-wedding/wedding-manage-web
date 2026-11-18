@@ -12,7 +12,6 @@ import {
   Settings2Icon,
   UsersIcon,
 } from 'lucide-react';
-import { type CockpitViewKey } from '@/src/components/layout/operations-shell-config';
 
 export type OperationsShellProps = Readonly<{
   children: ReactNode;
@@ -32,16 +31,7 @@ export type OperationsShellProps = Readonly<{
   snapshot: ManagementSessionSnapshot | null;
   onLogout: () => void;
   pending?: boolean;
-  activeView?: CockpitViewKey;
-  onSelectView?: (view: CockpitViewKey) => void;
   activeHallName?: string;
-  activeShiftLabel?: string;
-  activeFloorLabel?: string;
-  tableBadge?: string;
-  dishBadge?: string;
-  bookingsBadge?: string;
-  settlementBadge?: string;
-  onOpenContract?: () => void;
 }>;
 export function useOperationsShellState({
   children,
@@ -50,16 +40,7 @@ export function useOperationsShellState({
   snapshot,
   onLogout,
   pending = false,
-  activeView = 'floorplan',
-  onSelectView,
   activeHallName,
-  activeShiftLabel,
-  activeFloorLabel,
-  tableBadge,
-  dishBadge,
-  bookingsBadge,
-  settlementBadge,
-  onOpenContract,
 }: OperationsShellProps) {
   const drawerRef = useRef<HTMLElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
@@ -319,7 +300,6 @@ export function useOperationsShellState({
     onLogout,
     pending,
     activeHallName,
-    onOpenContract,
     drawerRef,
     triggerRef,
     closeButtonRef,

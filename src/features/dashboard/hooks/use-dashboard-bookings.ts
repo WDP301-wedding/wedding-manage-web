@@ -34,8 +34,6 @@ export function getBookingRecency(item: {
 }
 
 export interface UseDashboardBookingsOptions {
-  bookings: readonly DashboardBookingItem[];
-  assignments: BookingAssignmentsRegistry;
   resolvedAccountId: string;
   enabled?: boolean;
 }

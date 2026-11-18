@@ -4,7 +4,7 @@ import { cn } from 'cn';
 import { BrandMark } from '@/src/design-system/branding/brand-mark';
 import { OfflineBanner } from '@/src/design-system/feedback/offline-banner';
 import { PageTransition } from '@/src/design-system/motion/page-transition';
-import { MenuIcon, XIcon, FileText } from 'lucide-react';
+import { MenuIcon, XIcon } from 'lucide-react';
 import { SpotlightSearch } from '@/src/components/navigation/spotlight-search';
 import { iconButtonClass } from './operations-shell-config';
 import { TopRightAccountMenu } from './top-right-account-menu';
@@ -12,8 +12,6 @@ import {
   useOperationsShellState,
   type OperationsShellProps,
 } from '@/src/components/layout/hooks/use-operations-shell-state';
-export { COCKPIT_VIEW_TITLES } from './operations-shell-config';
-export type { CockpitViewKey } from './operations-shell-config';
 export function OperationsShell(props: OperationsShellProps) {
   const model = useOperationsShellState(props);
   const {
@@ -23,7 +21,6 @@ export function OperationsShell(props: OperationsShellProps) {
     onLogout,
     pending,
     activeHallName,
-    onOpenContract,
     drawerRef,
     triggerRef,
     closeButtonRef,
@@ -188,26 +185,18 @@ export function OperationsShell(props: OperationsShellProps) {
           </div>
 
           <div className="flex items-center gap-3">
-            <SpotlightSearch />
-            {onOpenContract ? (
-              <button
-                type="button"
-                className="btn-action btn-action-secondary"
-                onClick={onOpenContract}
-              >
-                <FileText className="size-3.5 text-primary" />
-                Hồ Sơ Hợp Đồng
-              </button>
-            ) : null}
             {manager ? (
-              <Link
-                href="/bookings"
-                className="flex h-8.5 items-center gap-1.5 rounded-md bg-primary px-3 text-xs font-semibold text-primary-foreground transition-colors hover:bg-hy-wine-pressed"
-              >
-                + Tạo đặt tiệc
-              </Link>
+              <>
+                <SpotlightSearch />
+                <Link
+                  href="/bookings"
+                  className="flex h-8.5 items-center gap-1.5 rounded-md bg-primary px-3 text-xs font-semibold text-primary-foreground transition-colors hover:bg-hy-wine-pressed"
+                >
+                  + Tạo đặt tiệc
+                </Link>
+                <span className="h-5 w-px bg-border" aria-hidden="true" />
+              </>
             ) : null}
-            <span className="h-5 w-px bg-border" aria-hidden="true" />
             <TopRightAccountMenu
               actor={actor}
               manager={manager}

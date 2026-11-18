@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { Plus, X } from 'lucide-react';
 import { cn } from 'cn';
 import { Button, buttonVariants } from '@/src/components/ui/button';
-import type { BookingAssignmentsRegistry } from '@/src/features/dashboard/api/booking-assignments';
 import { DashboardBookingsTable } from './dashboard-bookings-table';
 import { DashboardBookingsToolbar } from './dashboard-bookings-toolbar';
 import {
@@ -24,14 +23,10 @@ import { StaffCheckinBanner } from '@/src/features/dashboard/components/cockpit/
 import { TablePagination } from '@/src/components/data-display/table-controls';
 import type { NavigationBooking } from '@/src/services/bookings/booking-navigation.service';
 import type { LockNotice } from '@/src/features/dashboard/hooks/use-booking-claims';
-import { useDashboardBookings, type DashboardBookingItem } from '@/src/features/dashboard/hooks/use-dashboard-bookings';
-import type { DashboardState } from '@/src/features/dashboard/hooks/use-dashboard-data';
+import { useDashboardBookings } from '@/src/features/dashboard/hooks/use-dashboard-bookings';
 
 export interface DashboardBookingsSectionProps {
   isManager: boolean;
-  state: DashboardState;
-  bookings: readonly DashboardBookingItem[];
-  assignments: BookingAssignmentsRegistry;
   resolvedAccountId: string;
   onClaim: (bookingId: string, hallName?: string) => void;
   lockNotice: LockNotice;
@@ -47,8 +42,6 @@ const noticeTone = {
 
 export function DashboardBookingsSection({
   isManager,
-  bookings,
-  assignments,
   resolvedAccountId,
   onClaim,
   lockNotice,
@@ -56,8 +49,6 @@ export function DashboardBookingsSection({
   onSelectBooking,
 }: Readonly<DashboardBookingsSectionProps>) {
   const view = useDashboardBookings({
-    bookings,
-    assignments,
     resolvedAccountId,
     enabled: isManager,
   });

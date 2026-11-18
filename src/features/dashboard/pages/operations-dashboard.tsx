@@ -5,16 +5,16 @@ import { LayoutGrid, Clock, BookOpen, CreditCard, Utensils } from 'lucide-react'
 import { cn } from 'cn';
 import { notify } from '@/src/design-system/notifications/index';
 import { DashboardLiveView } from '@/src/features/dashboard/components/dashboard-live';
-import { OperationsShell, type CockpitViewKey } from '@/src/components/layout/operations-shell';
+import { OperationsShell } from '@/src/components/layout/operations-shell';
 import type { ManagementSessionSnapshot } from '@/src/features/identity-access/session/session';
 import { DashboardBanquetStrip } from '@/src/features/dashboard/components/dashboard-banquet-strip';
 import { DashboardContractDrawer } from '@/src/features/dashboard/components/contracts/dashboard-contract-drawer';
-import {
-  RealFloorplanView,
-  RealRundownView,
-  RealSettlementView,
-  RealMenuView,
-} from '@/src/features/dashboard/components/cockpit/dashboard-operations-cockpit';
+import type { CockpitViewKey } from '@/src/features/dashboard/components/cockpit/cockpit-types';
+import { RealFloorplanView } from '@/src/features/dashboard/components/cockpit/floorplan-view';
+import { RealRundownView } from '@/src/features/dashboard/components/cockpit/rundown-view';
+import { RealSettlementView } from '@/src/features/dashboard/components/cockpit/settlement-view';
+import { RealMenuView } from '@/src/features/dashboard/components/cockpit/menu-view';
+import { StaffCheckinBanner } from '@/src/features/dashboard/components/cockpit/staff-checkin-banner';
 import {
   navigationService,
   type NavigationBooking,
@@ -34,7 +34,7 @@ export function OperationsDashboard({
   const manager = snapshot.presentation === 'manager';
   const [activeView, setActiveView] = useState<CockpitViewKey>('floorplan');
   const [activeBookings, setActiveBookings] = useState<readonly NavigationBooking[]>([]);
-  const [loadingBookings, setLoadingBookings] = useState(true);
+  const [loadingBookings, setLoadingBookings] = useState(manager);
   const [selectedBooking, setSelectedBooking] = useState<NavigationBooking | null>(null);
   const [workspace, setWorkspace] = useState<StaffWorkspace | null>(null);
   const [loadingWorkspace, setLoadingWorkspace] = useState(false);
@@ -46,8 +46,15 @@ export function OperationsDashboard({
     }
   }, [snapshot.denial]);
 
-  // Load real active bookings from backend
+  // Load real active bookings from backend (Manager only — /management/booking-page requires MANAGER)
   useEffect(() => {
+    if (!manager) {
+      setActiveBookings([]);
+      setSelectedBooking(null);
+      setLoadingBookings(false);
+      return;
+    }
+
     let active = true;
     setLoadingBookings(true);
     void navigationService
@@ -80,11 +87,11 @@ export function OperationsDashboard({
     return () => {
       active = false;
     };
-  }, []);
+  }, [manager]);
 
   // Load real workspace (seating, timeline, offerings, members) for selected booking
   useEffect(() => {
-    if (!selectedBooking) {
+    if (!manager || !selectedBooking) {
       setWorkspace(null);
       setLoadingWorkspace(false);
       return;
@@ -113,14 +120,10 @@ export function OperationsDashboard({
     return () => {
       active = false;
     };
-  }, [selectedBooking?.bookingId, selectedBooking?.phase]);
+  }, [manager, selectedBooking?.bookingId, selectedBooking?.phase]);
 
   const activeHallName =
     workspace?.timeline.hallName || selectedBooking?.hallNameSnapshot || undefined;
-  const shiftText = selectedBooking?.shiftCode === 'LUNCH' ? 'Ca Trưa' : 'Ca Tối';
-  const activeShiftLabel = selectedBooking
-    ? `${shiftText} · ${workspace?.operations.tableCount ?? selectedBooking.tableCount} bàn`
-    : undefined;
 
   // 100% Real Tab Badges (zero hardcoded placeholders)
   const seatingCount = workspace?.seating.renderSnapshot.length ?? 0;
@@ -156,26 +159,23 @@ export function OperationsDashboard({
       snapshot={snapshot}
       onLogout={onLogout}
       pending={pending}
-      activeView={activeView}
-      onSelectView={setActiveView}
-      {...(activeHallName ? { activeHallName } : {})}
-      {...(activeShiftLabel ? { activeShiftLabel } : {})}
-      {...(tableBadge ? { tableBadge } : {})}
-      {...(timelineBadge ? { dishBadge: timelineBadge } : {})}
-      bookingsBadge={bookingsBadge}
-      {...(selectedBooking ? { onOpenContract: () => handleOpenContract() } : {})}
+      {...(manager && activeHallName ? { activeHallName } : {})}
     >
       <main data-ui-v3 id="dashboard-content" className="workspace-scroll-area p-6 sm:p-8">
-        {/* Persistent Banquet Executive Overview Strip (100% Real Data) */}
-        <DashboardBanquetStrip
-          booking={selectedBooking}
-          workspace={workspace}
-          allBookings={activeBookings}
-          onSelectBooking={handleSelectBookingFromBanquetStrip}
-          onOpenContract={handleOpenContract}
-          isManager={manager}
-          loading={loadingBookings}
-        />
+        {!manager ? (
+          <StaffCheckinBanner />
+        ) : (
+          <>
+            {/* Persistent Banquet Executive Overview Strip (100% Real Data) */}
+            <DashboardBanquetStrip
+              booking={selectedBooking}
+              workspace={workspace}
+              allBookings={activeBookings}
+              onSelectBooking={handleSelectBookingFromBanquetStrip}
+              onOpenContract={handleOpenContract}
+              isManager={manager}
+              loading={loadingBookings}
+            />
 
         {selectedBooking ? (
           <>
@@ -261,8 +261,6 @@ export function OperationsDashboard({
                   isManager={manager}
                   currentAccountId={snapshot.actor.accountId}
                   currentEmail={snapshot.actor.displayEmail}
-                  activeView="bookings"
-                  onOpenContract={handleOpenContract}
                   onSelectBooking={handleSelectBookingFromBanquetStrip}
                 />
               </div>
@@ -294,6 +292,8 @@ export function OperationsDashboard({
             />
           </>
         ) : null}
+          </>
+        )}
       </main>
     </OperationsShell>
   );

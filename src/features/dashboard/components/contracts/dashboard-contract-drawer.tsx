@@ -279,14 +279,11 @@ export function DashboardContractDrawer({
 
               {/* PDF Actions */}
               <div className="flex flex-col gap-2 rounded-xl border border-border bg-muted/40 p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <FileCheck className="size-4 text-primary" />
-                    <span className="text-xs font-bold text-foreground">
-                      Văn Bản PDF Chính Thức
-                    </span>
-                  </div>
-                  <span className="text-2xs text-muted-foreground">Lưu trữ điện tử 256-bit</span>
+                <div className="flex items-center gap-2">
+                  <FileCheck className="size-4 text-primary" />
+                  <span className="text-xs font-bold text-foreground">
+                    Văn Bản PDF Chính Thức
+                  </span>
                 </div>
                 <p className="text-2xs text-muted-foreground">
                   Bản in hoàn chỉnh có điều khoản chi tiết, bảng kê thực đơn và vị trí ký tay song
