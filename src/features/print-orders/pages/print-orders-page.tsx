@@ -30,6 +30,7 @@ export interface ManagementPrintOrdersPageProps {
   gateway?: ManagementPrintOrdersGateway;
   initialOrders?: readonly PrintOrderView[];
   useFixtures?: boolean;
+  initialTab?: 'orders' | 'templates';
 }
 
 function AccessNotice({ children }: Readonly<{ children: ReactNode }>) {
@@ -47,6 +48,7 @@ export function ManagementPrintOrdersPage({
   gateway = defaultGateway,
   initialOrders,
   useFixtures = false,
+  initialTab = 'orders',
 }: ManagementPrintOrdersPageProps) {
   const [snapshot, setSnapshot] = useState<ManagementSessionSnapshot | null>(
     useFixtures ? DEMO_MANAGER_SNAPSHOT : null,
@@ -139,12 +141,13 @@ export function ManagementPrintOrdersPage({
   }
 
   return (
-    <PrintOrdersWorkspace
-      snapshot={snapshot}
-      gateway={resolvedGateway}
-      authorize={handleAuthorize}
-      isFixtureMode={useFixtures || initialOrders !== undefined}
-      onLogout={() => void handleLogout()}
-    />
-  );
+  <PrintOrdersWorkspace
+    snapshot={snapshot}
+    gateway={resolvedGateway}
+    authorize={handleAuthorize}
+    isFixtureMode={useFixtures || initialOrders !== undefined}
+    onLogout={() => void handleLogout()}
+    initialTab={initialTab}
+  />
+);
 }
