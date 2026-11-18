@@ -4,11 +4,16 @@ import { Check, X } from 'lucide-react';
 import { cn } from 'cn';
 import { Badge } from '@/src/components/ui/badge';
 import type { ProposalView } from '@/src/features/booking-lifecycle/api/booking-api';
+import {
+  settlementLabels,
+  type SettlementStatus,
+} from '@/src/features/payments-billing/utils/settlement-status';
 
 export interface BookingLifecycleStepperProps {
   phase: ProposalView['phase'] | undefined;
   hasConsultation: boolean;
   agreementsApproved: boolean;
+  settlement: SettlementStatus;
 }
 
 const STEPS = [
@@ -16,7 +21,8 @@ const STEPS = [
   { id: 'draft', label: 'Đề xuất & Giữ sảnh', desc: 'Sảnh, ca & thực đơn' },
   { id: 'timeline', label: 'Kịch bản & Hợp đồng', desc: 'Cam kết 2 bên' },
   { id: 'deposit', label: 'Xác nhận & Cọc', desc: 'Cọc theo hợp đồng' },
-  { id: 'completed', label: 'Hoàn thành', desc: 'Kết thúc tổ chức tiệc' },
+  { id: 'event', label: 'Tổ chức tiệc', desc: 'Xác nhận tiệc đã tổ chức' },
+  { id: 'settlement', label: 'Tất toán sau tiệc', desc: 'Chốt hóa đơn và công nợ' },
 ] as const;
 
 const markClass = {
@@ -36,14 +42,20 @@ export function BookingLifecycleStepper({
   phase,
   hasConsultation,
   agreementsApproved,
+  settlement,
 }: Readonly<BookingLifecycleStepperProps>) {
   const isCancelled = phase === 'CANCELLED';
+  const eventFinished = phase === 'COMPLETED';
+  const isSettled = eventFinished && settlement === 'settled';
+  const settlementLabel = settlement === 'unknown' ? 'Đang tất toán' : settlementLabels[settlement];
   const activeStep = phase
-    ? phase === 'CONFIRMED'
-      ? 'completed'
-      : agreementsApproved
-        ? 'deposit'
-        : 'timeline'
+    ? eventFinished
+      ? 'settlement'
+      : phase === 'CONFIRMED'
+        ? 'event'
+        : agreementsApproved
+          ? 'deposit'
+          : 'timeline'
     : hasConsultation
       ? 'draft'
       : 'consultation';
@@ -51,7 +63,7 @@ export function BookingLifecycleStepper({
 
   const getStepStatus = (index: number): 'done' | 'active' | 'pending' | 'cancelled' => {
     if (isCancelled) return index === 0 ? 'done' : 'cancelled';
-    if (phase === 'COMPLETED' || index < activeIndex) return 'done';
+    if (isSettled || index < activeIndex) return 'done';
     if (index === activeIndex) return 'active';
     return 'pending';
   };
@@ -67,7 +79,7 @@ export function BookingLifecycleStepper({
           variant={
             isCancelled
               ? 'error'
-              : phase === 'CONFIRMED' || phase === 'COMPLETED'
+              : phase === 'CONFIRMED' || isSettled
                 ? 'success'
                 : 'warning'
           }
@@ -76,15 +88,15 @@ export function BookingLifecycleStepper({
             ? 'Đã hủy tiệc'
             : phase === 'CONFIRMED'
               ? 'Đã xác nhận & Cọc'
-              : phase === 'COMPLETED'
-                ? 'Hoàn thành tiệc'
+              : eventFinished
+                ? settlementLabel
                 : agreementsApproved
                   ? 'Chờ cọc giữ chỗ'
                   : STEPS[activeIndex]?.label}
         </Badge>
       </div>
 
-      <ol className="grid gap-3 sm:grid-cols-5 sm:gap-2">
+      <ol className="grid gap-3 md:grid-cols-6 md:gap-2">
         {STEPS.map((step, idx) => {
           const status = getStepStatus(idx);
           const last = idx === STEPS.length - 1;
@@ -92,7 +104,7 @@ export function BookingLifecycleStepper({
             <li
               key={step.id}
               aria-current={status === 'active' ? 'step' : undefined}
-              className="flex items-center gap-3 sm:flex-col sm:items-stretch sm:gap-2"
+              className="flex items-center gap-3 md:flex-col md:items-stretch md:gap-2"
             >
               <div className="flex items-center gap-2">
                 <span
@@ -113,7 +125,7 @@ export function BookingLifecycleStepper({
                   <span
                     aria-hidden
                     className={cn(
-                      'hidden h-0.5 flex-1 rounded-full sm:block',
+                      'hidden h-0.5 flex-1 rounded-full md:block',
                       status === 'done' ? 'bg-hy-success' : 'bg-border',
                     )}
                   />
