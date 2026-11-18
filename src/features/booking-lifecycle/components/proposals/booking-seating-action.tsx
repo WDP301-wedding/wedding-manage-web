@@ -6,6 +6,7 @@ import { SeatingPlanView } from '@/src/components/data-display/seating-plan-view
 import { Badge } from '@/src/components/ui/badge';
 import { Button } from '@/src/components/ui/button';
 import type { Authorize } from '@/src/features/booking-lifecycle/api/booking-api';
+import { useLiveRefresh } from '@/src/features/realtime/hooks/use-live-refresh';
 import {
   type BookingSeatingPlan,
   readBookingSeatingPlan,
@@ -26,6 +27,7 @@ const warningLabels: Record<string, string> = {
 };
 
 type SeatingResult = { plan: BookingSeatingPlan | null } | { error: true };
+const seatingRefreshIntervalMs = 20_000;
 
 export function BookingSeatingAction({
   authorize,
@@ -39,23 +41,53 @@ export function BookingSeatingAction({
   hallName: string;
 }>) {
   const dialog = useRef<HTMLDialogElement>(null);
+  const activeRead = useRef<AbortController | null>(null);
   const titleId = useId();
   const hintId = useId();
   const [result, setResult] = useState<SeatingResult | null>(null);
-  const [attempt, setAttempt] = useState(0);
+
+  const { schedule } = useLiveRefresh(
+    async (isCurrent) => {
+      const controller = new AbortController();
+      activeRead.current = controller;
+      try {
+        const plan = await authorize((token) =>
+          readBookingSeatingPlan(token, bookingId, controller.signal),
+        );
+        if (!controller.signal.aborted && isCurrent()) setResult({ plan });
+      } catch {
+        if (!controller.signal.aborted && isCurrent()) {
+          setResult((previous) =>
+            previous && 'plan' in previous && previous.plan ? previous : { error: true },
+          );
+        }
+      } finally {
+        if (activeRead.current === controller) activeRead.current = null;
+      }
+    },
+    {
+      scope: `booking-seating:${bookingId}`,
+      bookingId,
+      enabled: canRead,
+      initial: true,
+      types: ['seating.updated'],
+    },
+  );
 
   useEffect(() => {
     if (!canRead) return;
-    const controller = new AbortController();
-    void authorize((token) => readBookingSeatingPlan(token, bookingId, controller.signal))
-      .then((plan) => {
-        if (!controller.signal.aborted) setResult({ plan });
-      })
-      .catch(() => {
-        if (!controller.signal.aborted) setResult({ error: true });
-      });
-    return () => controller.abort();
-  }, [authorize, bookingId, canRead, attempt]);
+    const refreshIfVisible = () => {
+      if (document.visibilityState === 'visible') schedule();
+    };
+    // Draft saves do not emit seating.updated.
+    const timer = window.setInterval(refreshIfVisible, seatingRefreshIntervalMs);
+    document.addEventListener('visibilitychange', refreshIfVisible);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', refreshIfVisible);
+      activeRead.current?.abort();
+    };
+  }, [canRead, schedule]);
 
   const plan = result && 'plan' in result ? result.plan : null;
   const hasError = result !== null && 'error' in result;
@@ -92,7 +124,7 @@ export function BookingSeatingAction({
               size="xs"
               onClick={() => {
                 setResult(null);
-                setAttempt((value) => value + 1);
+                schedule();
               }}
             >
               Thử lại
