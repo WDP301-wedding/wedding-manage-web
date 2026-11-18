@@ -2,10 +2,21 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { Badge } from '@/src/components/ui/badge';
 import { HySelect } from '@/src/components/ui/select-field';
 import type { NavigationBooking } from '@/src/services/bookings/booking-navigation.service';
-import { formatVnd } from '@/src/lib/formatting/formatters';
 import { formatDate } from '@/src/features/booking-lifecycle/utils/booking-helpers';
+
+const phaseMeta: Record<
+  string,
+  { label: string; variant: 'neutral' | 'warning' | 'success' | 'info' | 'error' }
+> = {
+  DRAFT: { label: 'Bản nháp', variant: 'neutral' },
+  AWAITING_DEPOSIT: { label: 'Chờ đặt cọc', variant: 'warning' },
+  CONFIRMED: { label: 'Đã xác nhận', variant: 'success' },
+  COMPLETED: { label: 'Đã hoàn tất', variant: 'info' },
+  CANCELLED: { label: 'Đã hủy', variant: 'error' },
+};
 
 export function RealBookingsView({
   bookings,
@@ -32,7 +43,7 @@ export function RealBookingsView({
       <div className="event-filter-toolbar">
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <span className="panel-box-title">Sổ Hợp Đồng &amp; Đặt Tiệc</span>
-          <span className="solid-tag solid-tag-success">{bookings.length} Tiệc Tuần Này</span>
+          <Badge variant="success">{bookings.length} tiệc</Badge>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
@@ -43,9 +54,10 @@ export function RealBookingsView({
             onChange={(e) => setPhaseFilter(e.target.value)}
           >
             <option value="ALL">Tất cả giai đoạn ({bookings.length})</option>
-            <option value="CONFIRMED">Đã xác nhận</option>
+            <option value="DRAFT">Bản nháp</option>
             <option value="AWAITING_DEPOSIT">Chờ đặt cọc</option>
-            <option value="COMPLETED">Đã quyết toán hoàn tất</option>
+            <option value="CONFIRMED">Đã xác nhận</option>
+            <option value="COMPLETED">Đã hoàn tất</option>
           </HySelect>
 
           <HySelect
@@ -62,8 +74,8 @@ export function RealBookingsView({
             ))}
           </HySelect>
 
-          <Link href="/bookings" className="btn-action btn-action-primary">
-            + Lập Hợp Đồng Tiệc Mới
+          <Link href="/bookings" className="btn-action btn-action-primary no-underline">
+            + Lập Hồ Sơ Tiệc Mới
           </Link>
         </div>
       </div>
@@ -72,14 +84,12 @@ export function RealBookingsView({
         <table className="event-data-table">
           <thead>
             <tr>
-              <th>Mã Hợp Đồng</th>
+              <th>Mã Hồ Sơ</th>
               <th>Cô Dâu &amp; Chú Rể</th>
-              <th>Thời Gian &amp; Ca</th>
+              <th>Ngày Tổ Chức &amp; Ca</th>
               <th>Sảnh Tiệc</th>
-              <th>Quy Mô</th>
-              <th>Tổng Giá Trị HĐ</th>
-              <th>Đã Đặt Cọc</th>
-              <th>Trạng Thái Vận Hành</th>
+              <th>Số Bàn</th>
+              <th>Trạng Thái</th>
               <th>Thao Tác</th>
             </tr>
           </thead>
@@ -90,8 +100,7 @@ export function RealBookingsView({
                 b.customerName ||
                 'Hồ sơ tiệc';
               const shift = b.shiftCode === 'LUNCH' ? 'Ca Trưa' : 'Ca Tối';
-              const estTotal = (b.tableCount || 30) * 6800000;
-              const estDeposit = Math.round(estTotal * 0.7);
+              const meta = phaseMeta[b.phase] ?? { label: b.phase, variant: 'neutral' as const };
 
               return (
                 <tr key={b.bookingId} onClick={() => onSelectBooking(b)}>
@@ -102,27 +111,20 @@ export function RealBookingsView({
                   </td>
                   <td>
                     <div className="couple-full-name">{couple}</div>
-                    <div className="couple-phone-sub">Đại diện: {b.phone || 'Chưa cập nhật'}</div>
+                    <div className="couple-phone-sub">
+                      {b.customerName ? `Đại diện: ${b.customerName}` : ''}
+                      {b.phone ? ` · ${b.phone}` : ''}
+                    </div>
                   </td>
-                  <td>
+                  <td className="tabular-nums">
                     <strong>{formatDate(b.eventDate)}</strong> · {shift}
                   </td>
                   <td>{b.hallNameSnapshot || 'Chưa gán sảnh'}</td>
-                  <td>
-                    <strong>{b.tableCount || 0}</strong> bàn ({(b.tableCount || 0) * 10} khách)
-                  </td>
-                  <td style={{ fontWeight: 700 }}>{formatVnd(estTotal)}</td>
-                  <td style={{ color: 'var(--ck-status-live)', fontWeight: 600 }}>
-                    {formatVnd(estDeposit)} (70%)
+                  <td className="tabular-nums">
+                    <strong>{b.tableCount}</strong> bàn
                   </td>
                   <td>
-                    <span className="solid-tag solid-tag-success">
-                      {b.phase === 'CONFIRMED'
-                        ? 'Đang Diễn Ra'
-                        : b.phase === 'COMPLETED'
-                          ? 'Đã Hoàn Tất'
-                          : 'Chờ Cọc'}
-                    </span>
+                    <Badge variant={meta.variant}>{meta.label}</Badge>
                   </td>
                   <td>
                     <button
@@ -134,12 +136,19 @@ export function RealBookingsView({
                         onOpenContract(b);
                       }}
                     >
-                      Xem Hồ Sơ
+                      Xem Hợp Đồng
                     </button>
                   </td>
                 </tr>
               );
             })}
+            {filtered.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="py-8 text-center text-xs text-muted-foreground">
+                  Không có tiệc nào phù hợp bộ lọc hiện tại.
+                </td>
+              </tr>
+            ) : null}
           </tbody>
         </table>
       </div>

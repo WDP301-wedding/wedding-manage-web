@@ -21,6 +21,7 @@ import {
   type ContractRevisionItem,
 } from '@/src/services/bookings/contract.service';
 import { formatDate } from '@/src/features/booking-lifecycle/utils/booking-helpers';
+import { contractDepositRate } from '@/src/lib/domain/deposit-policy';
 import { formatVnd } from '@/src/lib/formatting/formatters';
 import { describeApiError } from '@/src/lib/api/api-errors';
 import { notify } from '@/src/design-system/notifications/index';
@@ -224,10 +225,10 @@ export function DashboardContractDrawer({
                 <StatCard
                   label="Tổng giá trị hợp đồng"
                   value={formatVnd(latestRevision.document.contractTotalVnd)}
-                  description="Đã bao gồm VAT & Phí"
+                  description="Theo các hạng mục trong hợp đồng"
                 />
                 <StatCard
-                  label="Tiền cọc theo quy định (30%)"
+                  label={`Tiền cọc theo quy định (${contractDepositRate(latestRevision.document)}%)`}
                   value={formatVnd(latestRevision.document.depositAmountVnd)}
                   description="Mức cọc tối thiểu giữ sảnh"
                   tone="brand"

@@ -1,278 +1,170 @@
 'use client';
 
-import { cn } from 'cn';
+import Link from 'next/link';
+import { ArrowUpRight, Users } from 'lucide-react';
+import { Badge } from '@/src/components/ui/badge';
+import { Skeleton } from '@/src/components/ui/skeleton';
 import type { NavigationBooking } from '@/src/services/bookings/booking-navigation.service';
 import type { StaffWorkspace } from '@/src/services/staff/staff-workspace.contracts';
-import { notify } from '@/src/design-system/notifications/index';
+import { formatDate } from '@/src/features/booking-lifecycle/utils/booking-helpers';
+import { SEATING_STATUS_META } from '@/src/features/dashboard/hooks/use-floorplan-view-state';
 
 export function RealRundownView({
   workspace,
   booking,
+  loading = false,
 }: Readonly<{
   workspace: StaffWorkspace | null;
   booking: NavigationBooking;
+  loading?: boolean;
 }>) {
-  const timelineItems = workspace?.timeline.items ?? [];
-  const menuOfferings = workspace?.operations.offerings.filter((o) => o.category === 'MENU') ?? [];
+  const timeline = workspace?.timeline ?? null;
+  const timelineItems = timeline?.items ?? [];
+  const members = workspace?.members ?? [];
+  const isUnconfirmed = booking.phase !== 'CONFIRMED' && booking.phase !== 'COMPLETED';
+  const seatingMeta = workspace ? SEATING_STATUS_META[workspace.seating.status] : null;
 
   return (
     <div className="rundown-two-col">
-      {/* Event Timeline Rundown */}
+      {/* Real Event Timeline Rundown */}
       <div className="rundown-panel-box">
         <div className="panel-box-header">
           <div>
             <h2 className="panel-box-title">
-              Kịch Bản Lễ Cưới {booking.shiftCode === 'LUNCH' ? 'Ca Trưa' : 'Ca Tối'} (Rundown)
+              Kịch Bản Lễ Cưới ({booking.shiftCode === 'LUNCH' ? 'Ca Trưa' : 'Ca Tối'})
             </h2>
-            <p style={{ fontSize: '12.5px', color: 'var(--ck-text-secondary)', marginTop: '2px' }}>
-              Khớp mốc thời gian giữa MC, Âm Thanh Ánh Sáng và Bếp Trưởng
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {timeline
+                ? `${timeline.hallName} · ${formatDate(timeline.eventDate)} · ${timeline.shiftStartTime} – ${timeline.shiftEndTime} · Phiên bản #${timeline.revisionNumber}`
+                : `${booking.hallNameSnapshot || 'Chưa gán sảnh'} · ${formatDate(booking.eventDate)}`}
             </p>
           </div>
-          <button
-            type="button"
-            className="btn-action btn-action-secondary"
+          <Link
+            href={`/bookings?bookingId=${booking.bookingId}`}
+            className="btn-action btn-action-secondary no-underline"
             style={{ padding: '5px 11px', fontSize: '12px' }}
-            onClick={() => notify.success('Đã đồng bộ lại giờ kịch bản lễ cưới theo máy chủ')}
           >
-            Đồng Bộ Giờ Chuẩn
-          </button>
+            Chỉnh sửa kịch bản
+            <ArrowUpRight className="size-3.5" />
+          </Link>
         </div>
 
-        <div className="timeline-chain">
-          {timelineItems.length > 0 ? (
-            timelineItems.map((step, idx) => (
-              <div
-                key={step.itemId}
-                className={cn('chain-node', idx === 0 ? 'done' : idx === 1 ? 'active' : '')}
-              >
+        {loading ? (
+          <div className="flex flex-col gap-3 py-4" aria-busy="true">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="flex flex-col gap-1.5 rounded-lg border border-border p-3">
+                <Skeleton className="h-4 w-48" />
+                <Skeleton className="h-3.5 w-72" />
+              </div>
+            ))}
+          </div>
+        ) : timelineItems.length > 0 ? (
+          <div className="timeline-chain">
+            {timelineItems.map((step) => (
+              <div key={step.itemId} className="chain-node">
                 <div className="chain-dot" />
                 <div className="chain-time-title">
-                  <span className="chain-time-text">{step.startTime}</span>
+                  <span className="chain-time-text tabular-nums">{step.startTime}</span>
                   <span className="chain-step-name">{step.title}</span>
                 </div>
                 {step.description ? <p className="chain-step-desc">{step.description}</p> : null}
               </div>
-            ))
-          ) : (
-            <>
-              <div className="chain-node done">
-                <div className="chain-dot" />
-                <div className="chain-time-title">
-                  <span className="chain-time-text">10:30 – 11:30</span>
-                  <span className="chain-step-name">Đón Khách &amp; Chụp Ảnh Tại Photo Booth</span>
-                </div>
-                <p className="chain-step-desc">
-                  Phục vụ Welcome Drink tại sảnh chờ, ban nhạc acoustic hòa tấu đón khách.
-                </p>
-              </div>
-
-              <div className="chain-node done">
-                <div className="chain-dot" />
-                <div className="chain-time-title">
-                  <span className="chain-time-text">11:30 – 11:45</span>
-                  <span className="chain-step-name">
-                    MC Ổn Định Chỗ Ngồi &amp; Chiếu Clip Phóng Sự Cưới
-                  </span>
-                </div>
-                <p className="chain-step-desc">
-                  Chuyển ánh sáng sang chế độ Romantic Amber, đóng cửa chính chuẩn bị nghi thức.
-                </p>
-              </div>
-
-              <div className="chain-node active">
-                <div className="chain-dot" />
-                <div className="chain-time-title">
-                  <span className="chain-time-text">11:45 – 12:05 (Đang diễn ra)</span>
-                  <span className="chain-step-name" style={{ color: 'var(--ck-brand-wine)' }}>
-                    Nghi Lễ Mở Màn: Rước Dâu Chú Rể, Cắt Bánh &amp; Rót Rượu
-                  </span>
-                </div>
-                <p className="chain-step-desc">
-                  Pháo sáng lạnh &amp; khói mây, đôi uyên ương tiến lên sân khấu chúc rượu cha mẹ
-                  hai bên.
-                </p>
-              </div>
-
-              <div className="chain-node">
-                <div className="chain-dot" />
-                <div className="chain-time-title">
-                  <span className="chain-time-text">12:05</span>
-                  <span className="chain-step-name">
-                    Khai Tiệc &amp; Xuất Món Khai Vị Đồng Loạt
-                  </span>
-                </div>
-                <p className="chain-step-desc">
-                  Bếp xuất {booking.tableCount || 48} phần Soup Bào Ngư Vi Cá, nhân viên bê mâm theo
-                  đội hình chuẩn.
-                </p>
-              </div>
-
-              <div className="chain-node">
-                <div className="chain-dot" />
-                <div className="chain-time-title">
-                  <span className="chain-time-text">12:35 – 13:15</span>
-                  <span className="chain-step-name">Lên Món Chính &amp; Chúc Rượu Từng Bàn</span>
-                </div>
-                <p className="chain-step-desc">
-                  Ban nhạc tứ tấu biểu diễn trên sân khấu. Quản lý sảnh dẫn đoàn cô dâu chú rể chúc
-                  rượu.
-                </p>
-              </div>
-
-              <div className="chain-node">
-                <div className="chain-dot" />
-                <div className="chain-time-title">
-                  <span className="chain-time-text">13:45</span>
-                  <span className="chain-step-name">Món Tráng Miệng &amp; Tiễn Khách</span>
-                </div>
-                <p className="chain-step-desc">
-                  Trao quà cảm ơn tại cửa sảnh, mời đại diện gia đình vào phòng VIP quyết toán sau
-                  tiệc.
-                </p>
-              </div>
-            </>
-          )}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border bg-muted/30 px-6 py-10 text-center">
+            <p className="text-sm font-semibold text-foreground">
+              {isUnconfirmed
+                ? 'Kịch bản vận hành chỉ hiển thị sau khi tiệc được xác nhận'
+                : 'Chưa có mốc kịch bản nào được duyệt cho tiệc này'}
+            </p>
+            <p className="max-w-md text-xs text-muted-foreground">
+              Quản lý hoặc cặp đôi có thể soạn và phê duyệt các mốc thời gian kịch bản trong trang
+              Hồ sơ đặt tiệc.
+            </p>
+            <Link
+              href={`/bookings?bookingId=${booking.bookingId}`}
+              className="btn-action btn-action-secondary mt-2 no-underline"
+            >
+              Mở hồ sơ tiệc để thiết lập kịch bản
+            </Link>
+          </div>
+        )}
       </div>
 
-      {/* Kitchen Dispatch Stack */}
+      {/* Real Operational Context & Assigned Staff */}
       <div className="rundown-panel-box">
         <div className="panel-box-header">
           <div>
-            <h2 className="panel-box-title">Tiến Độ Ra Món Của Bếp Trung Tâm</h2>
-            <p style={{ fontSize: '12.5px', color: 'var(--ck-text-secondary)', marginTop: '2px' }}>
-              Set: Hoàng Kim Yến Tiệc V4 · Tổng {booking.tableCount || 48} bàn
+            <h2 className="panel-box-title">Thông Tin Điều Phối &amp; Nhân Sự</h2>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Dữ liệu vận hành đồng bộ từ hồ sơ tiệc và bảng phân công
             </p>
           </div>
-          <span className="solid-tag solid-tag-success">Nhiệt Độ Bếp Chuẩn</span>
+          {seatingMeta ? <Badge variant={seatingMeta.tone}>{seatingMeta.label}</Badge> : null}
         </div>
 
-        <div className="kitchen-dispatch-stack">
-          {menuOfferings.length > 0 ? (
-            menuOfferings.map((dish, i) => {
-              const progressPct = i === 0 ? 100 : i === 1 ? 90 : i === 2 ? 50 : 10;
-              const statusText =
-                i === 0
-                  ? `${booking.tableCount || 48}/${booking.tableCount || 48} ĐÃ RA BÀN`
-                  : i === 1
-                    ? 'ĐANG PHÂN ĐĨA (90%)'
-                    : i === 2
-                      ? 'ĐANG ÁP CHẢO (50%)'
-                      : 'CHỜ LỆNH BẾP TRƯỞNG';
+        <div className="spec-items-list">
+          <div className="spec-line">
+            <span className="spec-label">Sảnh tổ chức:</span>
+            <span className="spec-val">{timeline?.hallName || booking.hallNameSnapshot || '—'}</span>
+          </div>
+          <div className="spec-line">
+            <span className="spec-label">Khung giờ ca:</span>
+            <span className="spec-val tabular-nums">
+              {timeline
+                ? `${timeline.shiftStartTime} – ${timeline.shiftEndTime}`
+                : booking.shiftCode === 'LUNCH'
+                  ? 'Ca Trưa'
+                  : 'Ca Tối'}
+            </span>
+          </div>
+          <div className="spec-line">
+            <span className="spec-label">Quy mô tiệc:</span>
+            <span className="spec-val tabular-nums">
+              {workspace
+                ? `${workspace.operations.tableCount} bàn · ${workspace.planningHeadcount} khách dự kiến`
+                : `${booking.tableCount} bàn`}
+            </span>
+          </div>
+          <div className="spec-line">
+            <span className="spec-label">Số mốc kịch bản:</span>
+            <span className="spec-val tabular-nums">{timelineItems.length} mốc</span>
+          </div>
+        </div>
 
-              return (
-                <div key={`${dish.name}-${i}`} className="dish-ticket-row">
-                  <div className="ticket-top">
-                    <span className="ticket-label">
-                      MÓN {i + 1}/{menuOfferings.length} · ẨM THỰC
-                    </span>
-                    <span
-                      style={{
-                        fontSize: '12px',
-                        fontWeight: 600,
-                        color: i === 0 ? 'var(--ck-status-live)' : 'var(--ck-brand-wine)',
-                      }}
-                    >
-                      {statusText}
-                    </span>
-                  </div>
-                  <span className="ticket-dish-name">{dish.name}</span>
-                  <div className="ticket-track">
-                    <div className="ticket-bar" style={{ width: `${progressPct}%` }} />
-                  </div>
-                </div>
-              );
-            })
+        <div className="mt-4 flex flex-col gap-2.5 border-t border-border pt-4">
+          <div className="flex items-center justify-between">
+            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-foreground">
+              <Users className="size-3.5 text-primary" aria-hidden="true" />
+              Nhân sự được phân công ({members.length})
+            </span>
+            <Link
+              href={`/staff?bookingId=${booking.bookingId}`}
+              className="text-xs font-semibold text-primary hover:underline"
+            >
+              Quản lý phân công →
+            </Link>
+          </div>
+
+          {members.length > 0 ? (
+            <ul className="flex flex-col gap-1.5">
+              {members.map((member) => (
+                <li
+                  key={member.accountId}
+                  className="flex items-center justify-between rounded-lg border border-border bg-background px-3 py-2 text-xs"
+                >
+                  <span className="font-medium text-foreground">{member.label}</span>
+                  <Badge variant="neutral">Đang phụ trách</Badge>
+                </li>
+              ))}
+            </ul>
           ) : (
-            <>
-              <div className="dish-ticket-row">
-                <div className="ticket-top">
-                  <span className="ticket-label">MÓN 1/6 · KHAI VỊ</span>
-                  <span
-                    style={{ fontSize: '12px', fontWeight: 600, color: 'var(--ck-status-live)' }}
-                  >
-                    48/48 ĐÃ RA BÀN
-                  </span>
-                </div>
-                <span className="ticket-dish-name">Soup Bào Ngư Vi Cá Thượng Hạng</span>
-                <div className="ticket-track">
-                  <div className="ticket-bar" style={{ width: '100%' }} />
-                </div>
-              </div>
-
-              <div className="dish-ticket-row">
-                <div className="ticket-top">
-                  <span className="ticket-label">MÓN 2/6 · HẢI SẢN</span>
-                  <span
-                    style={{ fontSize: '12px', fontWeight: 600, color: 'var(--ck-brand-wine)' }}
-                  >
-                    ĐANG PHÂN ĐĨA (90%)
-                  </span>
-                </div>
-                <span className="ticket-dish-name">Tôm Hùm Đút Lò Phô Mai Pháp</span>
-                <div className="ticket-track">
-                  <div className="ticket-bar" style={{ width: '90%' }} />
-                </div>
-              </div>
-
-              <div className="dish-ticket-row">
-                <div className="ticket-top">
-                  <span className="ticket-label">MÓN 3/6 · THỊT CAO CẤP</span>
-                  <span
-                    style={{ fontSize: '12px', fontWeight: 600, color: 'var(--ck-brand-gold)' }}
-                  >
-                    ĐANG ÁP CHẢO (50%)
-                  </span>
-                </div>
-                <span className="ticket-dish-name">Bò Úc Sốt Rượu Vang Đỏ &amp; Măng Tây</span>
-                <div className="ticket-track">
-                  <div className="ticket-bar" style={{ width: '50%' }} />
-                </div>
-              </div>
-
-              <div className="dish-ticket-row">
-                <div className="ticket-top">
-                  <span className="ticket-label">MÓN 4/6 · TINH BỘT</span>
-                  <span
-                    style={{ fontSize: '12px', fontWeight: 600, color: 'var(--ck-text-muted)' }}
-                  >
-                    CHỜ LỆNH BẾP TRƯỞNG
-                  </span>
-                </div>
-                <span className="ticket-dish-name">Cơm Chiên Cua Hoàng Đế Ngũ Vị</span>
-                <div className="ticket-track">
-                  <div className="ticket-bar" style={{ width: '10%' }} />
-                </div>
-              </div>
-
-              <div className="dish-ticket-row">
-                <div className="ticket-top">
-                  <span className="ticket-label">MÓN 5/6 · TRÁNG MIỆNG</span>
-                  <span
-                    style={{ fontSize: '12px', fontWeight: 600, color: 'var(--ck-text-muted)' }}
-                  >
-                    SẴN SÀNG KHO LẠNH
-                  </span>
-                </div>
-                <span className="ticket-dish-name">Chè Hạt Sen Long Nhãn Cung Đình</span>
-                <div className="ticket-track">
-                  <div className="ticket-bar" style={{ width: '0%' }} />
-                </div>
-              </div>
-            </>
+            <p className="rounded-lg border border-dashed border-border px-3 py-4 text-center text-xs text-muted-foreground">
+              Chưa có nhân sự nào được phân công cho tiệc này.
+            </p>
           )}
         </div>
-
-        <button
-          type="button"
-          className="btn-action btn-action-primary"
-          style={{ width: '100%', marginTop: '16px', justifyContent: 'center' }}
-          onClick={() =>
-            notify.success('Đã phát lệnh chuẩn bị xuất món tiếp theo cho toàn thể đội ngũ phục vụ')
-          }
-        >
-          Phát Lệnh Xuất Món Tiếp Theo
-        </button>
       </div>
     </div>
   );
