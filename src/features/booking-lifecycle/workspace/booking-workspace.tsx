@@ -7,6 +7,7 @@ import { BookingLookupBar } from './booking-lookup-bar';
 import { bookingPhaseLabel, bookingPhaseTone, formatDate } from '@/src/features/booking-lifecycle/utils/booking-helpers';
 import type { Authorize, ManagementBookingGateway } from '@/src/features/booking-lifecycle/api/booking-api';
 import { useBookingWorkspaceState } from '@/src/features/booking-lifecycle/hooks/use-booking-workspace-state';
+import { useBookingSettlementStatus } from '@/src/features/booking-lifecycle/hooks/use-booking-settlement-status';
 import { useContractPanel } from '@/src/features/booking-lifecycle/hooks/use-contract-panel';
 import { BookingWorkspaceTabConsultation } from './booking-workspace-tab-consultation';
 import { BookingWorkspaceTabBooking } from './booking-workspace-tab-booking';
@@ -68,6 +69,7 @@ export function ManagementBookingWorkspace({
   });
 
   const isPendingOrLoading = pending !== null || contextStatus !== 'ready';
+  const settlement = useBookingSettlementStatus(proposal);
   const contractState = useContractPanel({
     bookingId: proposal?.bookingId ?? '',
     bookingRevision: proposal?.revision ?? 0,
@@ -155,6 +157,7 @@ export function ManagementBookingWorkspace({
             phase={proposal?.phase}
             hasConsultation={consultation !== null}
             agreementsApproved={agreementsApproved}
+            settlement={settlement}
           />
         ) : null}
 
