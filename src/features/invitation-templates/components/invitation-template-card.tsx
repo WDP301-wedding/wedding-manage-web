@@ -1,8 +1,10 @@
 'use client';
 
 import { Archive, CheckCircle2, Edit2, Layout, Palette, Sparkles, XCircle } from 'lucide-react';
+import { cn } from 'cn';
 import { Badge } from '@/src/components/ui/badge';
 import { Button } from '@/src/components/ui/button';
+import { MOTIF_PATHS } from './invitation-motifs';
 import {
   FINISH_OPTIONS,
   FRAME_OPTIONS,
@@ -33,6 +35,17 @@ export function InvitationTemplateCard({
   const coverMotifConfig = MOTIF_OPTIONS.find(
     (m) => m.id === presentation?.decoration?.coverMotif,
   );
+
+  const frameClass =
+    frameConfig?.id === 'arch'
+      ? 'rounded-t-2xl border-2'
+      : frameConfig?.id === 'double-line'
+        ? 'border-2 border-double'
+        : frameConfig?.id === 'scalloped'
+          ? 'border-2 border-dashed'
+          : frameConfig?.id === 'corners'
+            ? 'border-2 ring-1'
+            : 'border';
 
   return (
     <article
@@ -67,11 +80,49 @@ export function InvitationTemplateCard({
               Rev.{template.revisionNumber}
             </span>
           </div>
-          {template.includesSeating ? (
-            <Badge variant="neutral" className="text-2xs">
-              Kèm sơ đồ bàn
-            </Badge>
+          {themeConfig ? (
+            <span className="text-3xs font-semibold uppercase tracking-wider text-primary">
+              {finishConfig?.label.split('(')[0]?.trim() ?? 'Tiêu chuẩn'}
+            </span>
           ) : null}
+        </div>
+
+        {/* Mini Card Visual Banner (Giống bên giao diện người dùng wedding-web) */}
+        <div
+          aria-hidden="true"
+          className={cn(
+            'relative isolate flex h-24 w-full items-center justify-center overflow-hidden rounded-lg border text-xs shadow-2xs transition-transform group-hover:scale-[1.01]',
+            themeConfig ? '' : 'bg-muted/40 border-border/80 text-muted-foreground',
+          )}
+          style={
+            themeConfig
+              ? {
+                  backgroundColor: themeConfig.palette[2],
+                  borderColor: themeConfig.palette[1],
+                  color: themeConfig.palette[3] ?? themeConfig.palette[0],
+                }
+              : undefined
+          }
+        >
+          {coverMotifConfig && (
+            <div
+              className={cn(
+                'absolute inset-2 flex items-center justify-between px-3 pointer-events-none opacity-40',
+                frameClass,
+              )}
+              style={{ borderColor: themeConfig?.palette[1] ?? 'currentColor' }}
+            >
+              <svg viewBox="0 0 100 100" className="size-8 fill-current">
+                <path d={MOTIF_PATHS[coverMotifConfig.id]} />
+              </svg>
+              <svg viewBox="0 0 100 100" className="size-8 fill-current rotate-180">
+                <path d={MOTIF_PATHS[coverMotifConfig.id]} />
+              </svg>
+            </div>
+          )}
+          <span className="relative z-10 rounded-md bg-card/95 px-3 py-1 text-xs font-semibold shadow-xs border border-border/60 text-foreground">
+            Thiệp cưới
+          </span>
         </div>
 
         {/* Title */}
@@ -79,21 +130,38 @@ export function InvitationTemplateCard({
           {template.title}
         </h3>
 
+        {/* Palette Dots Row */}
+        {themeConfig ? (
+          <div className="flex items-center gap-1.5">
+            {themeConfig.palette.map((color, idx) => (
+              <span
+                key={idx}
+                className="size-3.5 rounded-full border border-black/10 shadow-2xs"
+                style={{ backgroundColor: color }}
+                title={color}
+              />
+            ))}
+            <span className="ml-auto text-xs font-medium text-foreground/80">
+              {themeConfig.label}
+            </span>
+          </div>
+        ) : null}
+
         {/* Presentation Metadata */}
         <div className="flex flex-col gap-1.5 rounded-lg bg-muted/50 p-2.5 text-xs">
           <div className="flex items-center gap-2 text-foreground/80">
             <Palette className="size-3.5 shrink-0 text-primary" />
-            <span className="font-medium">{themeConfig?.label ?? 'Mặc định'}</span>
+            <span className="font-medium">{themeConfig?.label ?? 'Chưa cấu hình chủ đề'}</span>
           </div>
           <div className="flex items-center gap-2 text-muted-foreground">
             <Layout className="size-3.5 shrink-0" />
-            <span>Kiểu: {layoutConfig?.label.split('(')[0]?.trim() ?? presentation?.layout}</span>
+            <span>Kiểu: {layoutConfig?.label.split('(')[0]?.trim() ?? 'Cánh bướm đôi (Mặc định)'}</span>
           </div>
           {finishConfig || coverMotifConfig ? (
             <div className="flex items-center gap-2 text-muted-foreground">
               <Sparkles className="size-3.5 shrink-0" />
               <span>
-                {coverMotifConfig?.label ?? ''}
+                {coverMotifConfig?.label ?? 'Họa tiết cơ bản'}
                 {finishConfig ? ` · ${finishConfig.label.split('(')[0]?.trim()}` : ''}
                 {frameConfig ? ` · ${frameConfig.label.split('(')[0]?.trim()}` : ''}
               </span>

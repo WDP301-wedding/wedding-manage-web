@@ -65,7 +65,7 @@ export function InvitationTemplateDialog({
         greeting: initialTemplate.textFields.greeting ?? '',
         message: initialTemplate.textFields.message ?? '',
         footer: initialTemplate.textFields.footer ?? '',
-        includesSeating: initialTemplate.includesSeating,
+        includesSeating: false,
         active: initialTemplate.active ?? true,
       });
     } else {
@@ -336,16 +336,6 @@ export function InvitationTemplateDialog({
               <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-foreground">
                 <input
                   type="checkbox"
-                  checked={form.includesSeating}
-                  onChange={(e) => setForm({ ...form, includesSeating: e.target.checked })}
-                  className="size-3.5 rounded border-border text-primary focus:ring-primary"
-                />
-                Tự động kèm sơ đồ chỗ ngồi
-              </label>
-
-              <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-foreground">
-                <input
-                  type="checkbox"
                   checked={form.active}
                   onChange={(e) => setForm({ ...form, active: e.target.checked })}
                   className="size-3.5 rounded border-border text-primary focus:ring-primary"
@@ -382,7 +372,7 @@ export function InvitationTemplateDialog({
               greeting={form.greeting}
               message={form.message}
               footer={form.footer}
-              includesSeating={form.includesSeating}
+              includesSeating={false}
             />
           </aside>
         </div>
