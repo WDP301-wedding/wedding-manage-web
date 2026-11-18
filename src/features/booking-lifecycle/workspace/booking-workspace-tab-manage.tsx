@@ -1,7 +1,7 @@
 'use client';
 
-import { useContractPanel } from '@/src/features/booking-lifecycle/hooks/use-contract-panel';
-import { BookingLifecycleStepper } from './booking-lifecycle-stepper';
+import type { ReactNode } from 'react';
+import type { useContractPanel } from '@/src/features/booking-lifecycle/hooks/use-contract-panel';
 import { BookingUnauthorizedHint } from './booking-unauthorized-hint';
 import { ProposalPanel } from '@/src/features/booking-lifecycle/components/proposals/proposal-panel';
 import { stepHiddenClass } from '@/src/features/booking-lifecycle/styles/booking-classes';
@@ -16,6 +16,8 @@ export interface BookingWorkspaceTabManageProps {
   bookingId: string;
   error: string | null;
   proposal: ProposalView | null;
+  contractState: ReturnType<typeof useContractPanel>;
+  lifecycleProgress: ReactNode;
   consultation: { id: string; revision: number } | null;
   prefill: BookingPrefill;
   inviteLogs: readonly InviteLogEntry[];
@@ -34,6 +36,8 @@ export function BookingWorkspaceTabManage({
   bookingId,
   error,
   proposal,
+  contractState,
+  lifecycleProgress,
   consultation,
   prefill,
   inviteLogs,
@@ -45,27 +49,6 @@ export function BookingWorkspaceTabManage({
   gateway,
   refresh,
 }: Readonly<BookingWorkspaceTabManageProps>) {
-  const contractState = useContractPanel({
-    bookingId: proposal?.bookingId ?? '',
-    bookingRevision: proposal?.revision ?? 0,
-    onRefresh: () => {
-      void refresh();
-    },
-  });
-  const timelineApproved = Boolean(
-    proposal?.timeline?.managerApprovedAt && proposal.timeline.coupleApprovedAt,
-  );
-  const contracts =
-    contractState.data?.bookingId === proposal?.bookingId ? contractState.data : null;
-  const agreementsApproved =
-    timelineApproved &&
-    Boolean(
-      contracts &&
-      contracts.bookingRevision === proposal?.revision &&
-      contractState.currentRevision?.state === 'APPROVED' &&
-      contractState.currentRevision.document.timelineRevisionId === proposal?.timeline?.revisionId,
-    );
-
   return (
     <section
       aria-labelledby="proposal-heading"
@@ -98,7 +81,7 @@ export function BookingWorkspaceTabManage({
         </div>
       ) : (
         <>
-          <BookingLifecycleStepper phase={proposal.phase} agreementsApproved={agreementsApproved} />
+          {active ? lifecycleProgress : null}
           <ProposalPanel
             contractState={contractState}
             disabled={disabled}
