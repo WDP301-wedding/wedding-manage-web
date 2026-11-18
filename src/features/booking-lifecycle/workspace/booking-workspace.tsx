@@ -1,12 +1,13 @@
 'use client';
 
-import { LoaderCircle } from 'lucide-react';
 import { Badge } from '@/src/components/ui/badge';
 import { Button } from '@/src/components/ui/button';
+import { BookingLifecycleStepper } from './booking-lifecycle-stepper';
 import { BookingLookupBar } from './booking-lookup-bar';
 import { bookingPhaseLabel, bookingPhaseTone, formatDate } from '@/src/features/booking-lifecycle/utils/booking-helpers';
 import type { Authorize, ManagementBookingGateway } from '@/src/features/booking-lifecycle/api/booking-api';
 import { useBookingWorkspaceState } from '@/src/features/booking-lifecycle/hooks/use-booking-workspace-state';
+import { useContractPanel } from '@/src/features/booking-lifecycle/hooks/use-contract-panel';
 import { BookingWorkspaceTabConsultation } from './booking-workspace-tab-consultation';
 import { BookingWorkspaceTabBooking } from './booking-workspace-tab-booking';
 import { BookingWorkspaceTabManage } from './booking-workspace-tab-manage';
@@ -67,6 +68,29 @@ export function ManagementBookingWorkspace({
   });
 
   const isPendingOrLoading = pending !== null || contextStatus !== 'ready';
+  const contractState = useContractPanel({
+    bookingId: proposal?.bookingId ?? '',
+    bookingRevision: proposal?.revision ?? 0,
+    onRefresh: () => {
+      void refresh();
+    },
+  });
+  const agreementsApproved = Boolean(
+    proposal?.timeline?.managerApprovedAt &&
+    proposal.timeline.coupleApprovedAt &&
+    contractState.data?.bookingId === proposal.bookingId &&
+    contractState.data.bookingRevision === proposal.revision &&
+    contractState.currentRevision?.state === 'APPROVED' &&
+    contractState.currentRevision.document.timelineRevisionId === proposal.timeline.revisionId,
+  );
+  const lifecycleProgress =
+    proposal || consultation || contextStatus === 'ready' ? (
+      <BookingLifecycleStepper
+        phase={proposal?.phase}
+        hasConsultation={consultation !== null}
+        agreementsApproved={agreementsApproved}
+      />
+    ) : null;
 
   return (
     <main
@@ -134,111 +158,7 @@ export function ManagementBookingWorkspace({
           ) : null}
         </div>
 
-        {/* 6-Stage Lifecycle Progress Stepper */}
-        <section
-          aria-label="Tiến trình điều phối vòng đời tiệc cưới"
-          className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border bg-card p-4 shadow-hy-1"
-        >
-          <div className="flex items-center gap-2">
-            <span
-              className={`flex size-6 items-center justify-center rounded-full text-2xs font-bold ${
-                activeTab === 'consultation'
-                  ? 'bg-primary text-primary-foreground'
-                  : consultation
-                    ? 'bg-hy-success text-white'
-                    : 'bg-muted text-muted-foreground'
-              }`}
-            >
-              1
-            </span>
-            <span
-              className={`text-xs font-semibold ${
-                activeTab === 'consultation' ? 'text-primary' : 'text-foreground'
-              }`}
-            >
-              Tư Vấn &amp; Nhu Cầu
-            </span>
-          </div>
-
-          <span className="text-muted-foreground/40 hidden sm:inline">→</span>
-
-          <div className="flex items-center gap-2">
-            <span
-              className={`flex size-6 items-center justify-center rounded-full text-2xs font-bold ${
-                activeTab === 'booking'
-                  ? 'bg-primary text-primary-foreground'
-                  : proposal
-                    ? 'bg-hy-success text-white'
-                    : 'bg-muted text-muted-foreground'
-              }`}
-            >
-              2
-            </span>
-            <span
-              className={`text-xs font-semibold ${
-                activeTab === 'booking' ? 'text-primary' : 'text-foreground'
-              }`}
-            >
-              Khảo Sát Sảnh &amp; Giữ Chỗ
-            </span>
-          </div>
-
-          <span className="text-muted-foreground/40 hidden sm:inline">→</span>
-
-          <div className="flex items-center gap-2">
-            <span
-              className={`flex size-6 items-center justify-center rounded-full text-2xs font-bold ${
-                activeTab === 'manage'
-                  ? 'bg-primary text-primary-foreground'
-                  : proposal?.phase === 'CONFIRMED'
-                    ? 'bg-hy-success text-white'
-                    : 'bg-muted text-muted-foreground'
-              }`}
-            >
-              3
-            </span>
-            <span
-              className={`text-xs font-semibold ${
-                activeTab === 'manage' ? 'text-primary' : 'text-foreground'
-              }`}
-            >
-              Hợp Đồng &amp; Đặt Cọc
-            </span>
-          </div>
-
-          <span className="text-muted-foreground/40 hidden md:inline">→</span>
-
-          <div className="flex items-center gap-2">
-            <span className="flex size-6 items-center justify-center rounded-full bg-muted text-2xs font-bold text-muted-foreground">
-              4
-            </span>
-            <span className="text-xs font-semibold text-muted-foreground">
-              Thực Đơn &amp; Dịch Vụ
-            </span>
-          </div>
-
-          <span className="text-muted-foreground/40 hidden lg:inline">→</span>
-
-          <div className="flex items-center gap-2">
-            <span className="flex size-6 items-center justify-center rounded-full bg-muted text-2xs font-bold text-muted-foreground">
-              5
-            </span>
-            <span className="text-xs font-semibold text-muted-foreground">
-              Sơ Đồ Bàn &amp; Kịch Bản
-            </span>
-          </div>
-
-          <span className="text-muted-foreground/40 hidden xl:inline">→</span>
-
-          <div className="flex items-center gap-2">
-            <span className="flex size-6 items-center justify-center rounded-full bg-muted text-2xs font-bold text-muted-foreground">
-              6
-            </span>
-            <span className="text-xs font-semibold text-muted-foreground">
-              Quyết Toán Sau Tiệc
-            </span>
-          </div>
-        </section>
+        {lifecycleProgress}
 
         <div
           role="tablist"
@@ -335,6 +255,8 @@ export function ManagementBookingWorkspace({
         bookingId={bookingId}
         error={error}
         proposal={proposal}
+        contractState={contractState}
+        lifecycleProgress={lifecycleProgress}
         consultation={consultation}
         prefill={prefill}
         inviteLogs={inviteLogs}

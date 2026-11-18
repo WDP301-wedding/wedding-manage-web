@@ -3,9 +3,11 @@
 import { Check, X } from 'lucide-react';
 import { cn } from 'cn';
 import { Badge } from '@/src/components/ui/badge';
+import type { ProposalView } from '@/src/features/booking-lifecycle/api/booking-api';
 
 export interface BookingLifecycleStepperProps {
-  phase: string;
+  phase: ProposalView['phase'] | undefined;
+  hasConsultation: boolean;
   agreementsApproved: boolean;
 }
 
@@ -15,7 +17,7 @@ const STEPS = [
   { id: 'timeline', label: 'Kịch bản & Hợp đồng', desc: 'Cam kết 2 bên' },
   { id: 'deposit', label: 'Xác nhận & Cọc', desc: 'Cọc theo hợp đồng' },
   { id: 'completed', label: 'Hoàn thành', desc: 'Kết thúc tổ chức tiệc' },
-];
+] as const;
 
 const markClass = {
   done: 'bg-hy-success text-white',
@@ -32,34 +34,30 @@ const labelClass = {
 
 export function BookingLifecycleStepper({
   phase,
+  hasConsultation,
   agreementsApproved,
 }: Readonly<BookingLifecycleStepperProps>) {
   const isCancelled = phase === 'CANCELLED';
+  const activeStep = phase
+    ? phase === 'CONFIRMED'
+      ? 'completed'
+      : agreementsApproved
+        ? 'deposit'
+        : 'timeline'
+    : hasConsultation
+      ? 'draft'
+      : 'consultation';
+  const activeIndex = STEPS.findIndex((step) => step.id === activeStep);
 
   const getStepStatus = (index: number): 'done' | 'active' | 'pending' | 'cancelled' => {
-    if (isCancelled) {
-      if (index === 0) return 'done';
-      return 'cancelled';
-    }
-    if (phase === 'COMPLETED') return 'done';
-    if (phase === 'CONFIRMED') {
-      if (index <= 3) return 'done';
-      if (index === 4) return 'active';
-      return 'pending';
-    }
-    // This indicator is mounted only after a booking proposal exists.
-    if (index <= 1) return 'done';
-    if (agreementsApproved) {
-      if (index <= 2) return 'done';
-      if (index === 3) return 'active';
-      return 'pending';
-    }
-    if (index === 2) return 'active';
+    if (isCancelled) return index === 0 ? 'done' : 'cancelled';
+    if (phase === 'COMPLETED' || index < activeIndex) return 'done';
+    if (index === activeIndex) return 'active';
     return 'pending';
   };
 
   return (
-    <div
+    <section
       className="flex flex-col gap-4 rounded-xl border border-border bg-card p-5 shadow-hy-1"
       aria-label="Tiến trình vòng đời tiệc cưới"
     >
@@ -82,7 +80,7 @@ export function BookingLifecycleStepper({
                 ? 'Hoàn thành tiệc'
                 : agreementsApproved
                   ? 'Chờ cọc giữ chỗ'
-                  : 'Kịch bản & Hợp đồng'}
+                  : STEPS[activeIndex]?.label}
         </Badge>
       </div>
 
@@ -129,6 +127,6 @@ export function BookingLifecycleStepper({
           );
         })}
       </ol>
-    </div>
+    </section>
   );
 }
