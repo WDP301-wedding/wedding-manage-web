@@ -1,189 +1,197 @@
 'use client';
-import { RealFloorplanViewContent } from './floorplan-view-content';
 
-import { Search } from 'lucide-react';
+import Link from 'next/link';
+import { ArrowUpRight, Search } from 'lucide-react';
 import { cn } from 'cn';
+import { Badge } from '@/src/components/ui/badge';
 import { Input } from '@/src/components/ui/input';
-import { notify } from '@/src/design-system/notifications/index';
-import { type TableItem } from './cockpit-types';
 import {
+  SEATING_STATUS_META,
   useFloorplanViewState,
   type RealFloorplanViewProps,
 } from '@/src/features/dashboard/hooks/use-floorplan-view-state';
+import { RealFloorplanViewContent } from './floorplan-view-content';
 
 export function RealFloorplanView(props: RealFloorplanViewProps) {
   const model = useFloorplanViewState(props);
   const {
     booking,
+    workspace,
     tables,
+    seatingStatus,
     groupFilter,
     setGroupFilter,
     searchTableQuery,
     setSearchTableQuery,
     distinctGroups,
+    unassignedCount,
     selectedTable,
     hallTitle,
-    isSelectedVip,
-    isSelectedReserve,
     selectedDisplayLabel,
-    staffLead,
-    menuPackageName,
+    assignedMembers,
+    menuOfferings,
   } = model;
+
+  const statusMeta = seatingStatus ? SEATING_STATUS_META[seatingStatus] : null;
+
   return (
     <div className="floorplan-cockpit-grid">
       {/* Floorplan Main Canvas Box */}
       <div className="floorplan-map-box">
         <div className="floorplan-controls-bar">
-          <span style={{ fontSize: '14.5px', fontWeight: 600, color: 'var(--ck-text-main)' }}>
-            Sơ Đồ {hallTitle}
-          </span>
-          <div className="zone-filter-buttons">
-            <button
-              type="button"
-              className={cn('filter-chip', groupFilter === 'ALL' && 'active')}
-              onClick={() => setGroupFilter('ALL')}
-            >
-              Tất cả ({tables.length || booking.tableCount} Bàn)
-            </button>
-            {distinctGroups.length > 0 ? (
-              distinctGroups.map((group) => {
-                const count = tables.filter((t: TableItem) => t.guestGroupName === group).length;
-                return (
-                  <button
-                    key={group}
-                    type="button"
-                    className={cn('filter-chip', groupFilter === group && 'active')}
-                    onClick={() => setGroupFilter(group)}
-                  >
-                    {group} ({count})
-                  </button>
-                );
-              })
-            ) : (
-              <>
-                <button
-                  type="button"
-                  className={cn('filter-chip', groupFilter === 'groom' && 'active')}
-                  onClick={() => setGroupFilter('groom')}
-                >
-                  Khu A - Nhà Trai (20)
-                </button>
-                <button
-                  type="button"
-                  className={cn('filter-chip', groupFilter === 'bride' && 'active')}
-                  onClick={() => setGroupFilter('bride')}
-                >
-                  Khu B - Nhà Gái (20)
-                </button>
-                <button
-                  type="button"
-                  className={cn('filter-chip', groupFilter === 'vip' && 'active')}
-                  onClick={() => setGroupFilter('vip')}
-                >
-                  Bàn Danh Dự VIP (4)
-                </button>
-                <button
-                  type="button"
-                  className={cn('filter-chip', groupFilter === 'reserve' && 'active')}
-                  onClick={() => setGroupFilter('reserve')}
-                >
-                  Bàn Dự Phòng (4)
-                </button>
-              </>
-            )}
+          <div className="flex flex-wrap items-center gap-2">
+            <span style={{ fontSize: '14.5px', fontWeight: 600, color: 'var(--ck-text-main)' }}>
+              Sơ Đồ {hallTitle}
+            </span>
+            {statusMeta ? <Badge variant={statusMeta.tone}>{statusMeta.label}</Badge> : null}
           </div>
 
-          {/* Quick Table Search */}
-          <div className="relative">
-            <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              fieldSize="sm"
-              type="text"
-              value={searchTableQuery}
-              onChange={(e) => setSearchTableQuery(e.target.value)}
-              placeholder="Tìm số bàn…"
-              className="w-36 pl-8"
-            />
-          </div>
+          {tables.length > 0 ? (
+            <>
+              <div className="zone-filter-buttons">
+                <button
+                  type="button"
+                  className={cn('filter-chip', groupFilter === 'ALL' && 'active')}
+                  onClick={() => setGroupFilter('ALL')}
+                >
+                  Tất cả ({tables.length} bàn)
+                </button>
+                {distinctGroups.map((group) => (
+                  <button
+                    key={group.name}
+                    type="button"
+                    className={cn('filter-chip inline-flex items-center gap-1.5', groupFilter === group.name && 'active')}
+                    onClick={() => setGroupFilter(group.name)}
+                  >
+                    {group.color ? (
+                      <span
+                        className="size-2.5 shrink-0 rounded-full border border-black/15"
+                        style={{ backgroundColor: group.color }}
+                        aria-hidden="true"
+                      />
+                    ) : null}
+                    <span>
+                      {group.name} ({group.count})
+                    </span>
+                  </button>
+                ))}
+                {unassignedCount > 0 ? (
+                  <button
+                    type="button"
+                    className={cn('filter-chip', groupFilter === '__UNASSIGNED__' && 'active')}
+                    onClick={() => setGroupFilter('__UNASSIGNED__')}
+                  >
+                    Chưa gán nhóm ({unassignedCount})
+                  </button>
+                ) : null}
+              </div>
+
+              {/* Quick Table Search */}
+              <div className="relative">
+                <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  fieldSize="sm"
+                  type="text"
+                  value={searchTableQuery}
+                  onChange={(e) => setSearchTableQuery(e.target.value)}
+                  placeholder="Tìm bàn, nhóm…"
+                  className="w-40 pl-8"
+                />
+              </div>
+            </>
+          ) : null}
         </div>
 
         <RealFloorplanViewContent model={model} />
       </div>
 
-      {/* Right Table Inspector Card */}
+      {/* Right Table Inspector Card (100% Real Workspace Data) */}
       <div className="floorplan-inspector-card">
         <div className="inspector-header">
           <div>
             <span className="strip-sub-code">Chi Tiết Bàn Tiệc</span>
-            <h3 className="inspector-table-name">{selectedDisplayLabel}</h3>
-            {isSelectedReserve ? (
-              <span
-                className="solid-tag"
-                style={{ background: '#FEF7EE', color: '#925410', border: '1px solid #F5E0C2' }}
-              >
-                Bàn Dự Phòng
-              </span>
-            ) : isSelectedVip ? (
-              <span
-                className="solid-tag"
-                style={{ background: '#F9ECEE', color: '#631321', border: '1px solid #E8C9CE' }}
-              >
-                Bàn Danh Dự VIP
-              </span>
-            ) : (
-              <span className="solid-tag solid-tag-success">Đang Dùng Món</span>
-            )}
+            <h3 className="inspector-table-name">
+              {selectedDisplayLabel ?? 'Chưa chọn bàn'}
+            </h3>
+            {selectedTable ? (
+              <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                {selectedTable.guestGroupName ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-secondary px-2.5 py-0.5 text-2xs font-semibold text-foreground">
+                    {selectedTable.color ? (
+                      <span
+                        className="size-2 rounded-full border border-black/15"
+                        style={{ backgroundColor: selectedTable.color }}
+                        aria-hidden="true"
+                      />
+                    ) : null}
+                    {selectedTable.guestGroupName}
+                  </span>
+                ) : (
+                  <Badge variant="neutral">Chưa gán nhóm khách</Badge>
+                )}
+              </div>
+            ) : null}
           </div>
-          <button
-            type="button"
-            className="btn-action btn-action-secondary"
-            style={{ padding: '4px 8px', fontSize: '11.5px' }}
-            onClick={() => notify.info(`Đã gửi lệnh in thẻ định vị cho ${selectedDisplayLabel}`)}
-          >
-            In Thẻ Bàn
-          </button>
         </div>
 
         <div className="spec-items-list">
           <div className="spec-line">
-            <span className="spec-label">Khu vực:</span>
-            <span className="spec-val">{selectedTable?.guestGroupName || 'Khu Vực Chung'}</span>
+            <span className="spec-label">Nhóm khách (từ khách):</span>
+            <span className="spec-val">
+              {selectedTable?.guestGroupName ?? 'Chưa gán nhóm'}
+            </span>
           </div>
           <div className="spec-line">
-            <span className="spec-label">Sức chứa:</span>
-            <span className="spec-val">10 / 10 khách có mặt</span>
+            <span className="spec-label">Kiểu bàn:</span>
+            <span className="spec-val">
+              {selectedTable
+                ? selectedTable.shape === 'ROUND'
+                  ? 'Bàn tròn'
+                  : 'Bàn chữ nhật'
+                : '—'}
+            </span>
           </div>
           <div className="spec-line">
-            <span className="spec-label">Phục vụ chính:</span>
-            <span className="spec-val">{staffLead}</span>
+            <span className="spec-label">Quy mô toàn tiệc:</span>
+            <span className="spec-val">
+              {workspace
+                ? `${workspace.operations.tableCount} bàn · ${workspace.planningHeadcount} khách dự kiến`
+                : `${booking.tableCount} bàn`}
+            </span>
           </div>
           <div className="spec-line">
-            <span className="spec-label">Thực đơn bàn:</span>
-            <span className="spec-val">{menuPackageName}</span>
+            <span className="spec-label">Nhân sự phụ trách:</span>
+            <span className="spec-val">
+              {assignedMembers.length > 0
+                ? assignedMembers.map((m) => m.label).join(', ')
+                : 'Chưa phân công'}
+            </span>
+          </div>
+          <div className="spec-line">
+            <span className="spec-label">Thực đơn của tiệc:</span>
+            <span className="spec-val">
+              {menuOfferings.length > 0
+                ? menuOfferings.map((o) => o.name).join(', ')
+                : 'Chưa có thực đơn'}
+            </span>
           </div>
         </div>
 
-        <div className="dietary-notes-card">
-          <span className="dietary-notes-title">Ghi chú phục vụ &amp; Khẩu vị:</span>
-          <p className="dietary-bullet">
-            {isSelectedVip
-              ? 'Bàn danh dự: Chuẩn bị sẵn khăn lụa ướt & trà lài nóng cao cấp, kiểm tra rượu vang trước giờ khai tiệc.'
-              : isSelectedReserve
-                ? 'Bàn dự phòng: Giữ mâm sẵn sàng trong bếp, chỉ kích hoạt lên món khi có lệnh từ Quản lý sảnh.'
-                : 'Phục vụ món ăn theo đúng nhịp kịch bản bếp, đảm bảo độ nóng sốt và tiếp thêm đồ uống chu đáo.'}
-          </p>
+        <div className="mt-2 flex flex-col gap-2">
+          <Link
+            href={`/bookings?bookingId=${booking.bookingId}`}
+            className="btn-action btn-action-primary w-full justify-center no-underline"
+          >
+            Mở Hồ Sơ Tiệc
+            <ArrowUpRight className="size-3.5" />
+          </Link>
+          <Link
+            href={`/staff?bookingId=${booking.bookingId}`}
+            className="btn-action btn-action-secondary w-full justify-center no-underline"
+          >
+            Xem Bảng Tác Nghiệp Nhân Sự
+          </Link>
         </div>
-
-        <button
-          type="button"
-          className="btn-action btn-action-primary"
-          style={{ width: '100%', justifyContent: 'center' }}
-          onClick={() =>
-            notify.success(`Đã phát lệnh yêu cầu kiểm tra đồ uống cho ${selectedDisplayLabel}`)
-          }
-        >
-          Lệnh Tiếp Thêm Đồ Uống
-        </button>
       </div>
     </div>
   );

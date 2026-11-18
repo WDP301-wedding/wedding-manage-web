@@ -2,10 +2,10 @@ export type CockpitViewKey = 'floorplan' | 'rundown' | 'bookings' | 'settlement'
 
 export const COCKPIT_VIEW_TITLES: Record<CockpitViewKey, string> = {
   floorplan: 'Sơ Đồ Bàn',
-  rundown: 'Kịch Bản Lễ & Ra Món',
+  rundown: 'Kịch Bản Lễ',
   bookings: 'Sổ Đặt Tiệc',
-  settlement: 'Quyết Toán & QR',
-  menu: 'Thực Đơn',
+  settlement: 'Tài Chính & Quyết Toán',
+  menu: 'Thực Đơn & Dịch Vụ',
 };
 
 export const iconButtonClass =

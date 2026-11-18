@@ -26,6 +26,7 @@ export function DashboardLiveView({
   currentAccountEmail = currentEmail,
   activeView,
   onOpenContract: externalOpenContract,
+  onSelectBooking: externalSelectBooking,
 }: Readonly<{
   isManager?: boolean;
   currentAccountId?: string;
@@ -33,6 +34,7 @@ export function DashboardLiveView({
   currentAccountEmail?: string;
   activeView?: 'floorplan' | 'rundown' | 'bookings' | 'settlement' | 'menu';
   onOpenContract?: (booking: NavigationBooking) => void;
+  onSelectBooking?: (booking: NavigationBooking) => void;
 }>) {
   const { data, state, errorMessage, retry } = useDashboardData(isManager);
   const [consultationTotals, setConsultationTotals] = useState<{
@@ -82,8 +84,13 @@ export function DashboardLiveView({
   };
 
   const handleSelectBookingFromTable = (booking: NavigationBooking) => {
-    setSelectedBooking(booking);
+    if (externalSelectBooking) {
+      externalSelectBooking(booking);
+    } else {
+      setSelectedBooking(booking);
+    }
     if (typeof window !== 'undefined') {
+      document.getElementById('dashboard-content')?.scrollTo({ top: 0, behavior: 'smooth' });
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };

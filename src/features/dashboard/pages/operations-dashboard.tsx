@@ -1,13 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import {
-  LayoutGrid,
-  Clock,
-  BookOpen,
-  CreditCard,
-  Utensils,
-} from 'lucide-react';
+import { LayoutGrid, Clock, BookOpen, CreditCard, Utensils } from 'lucide-react';
 import { cn } from 'cn';
 import { notify } from '@/src/design-system/notifications/index';
 import { DashboardLiveView } from '@/src/features/dashboard/components/dashboard-live';
@@ -40,8 +34,10 @@ export function OperationsDashboard({
   const manager = snapshot.presentation === 'manager';
   const [activeView, setActiveView] = useState<CockpitViewKey>('floorplan');
   const [activeBookings, setActiveBookings] = useState<readonly NavigationBooking[]>([]);
+  const [loadingBookings, setLoadingBookings] = useState(true);
   const [selectedBooking, setSelectedBooking] = useState<NavigationBooking | null>(null);
   const [workspace, setWorkspace] = useState<StaffWorkspace | null>(null);
+  const [loadingWorkspace, setLoadingWorkspace] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   useEffect(() => {
@@ -50,9 +46,10 @@ export function OperationsDashboard({
     }
   }, [snapshot.denial]);
 
-  // Load real active bookings
+  // Load real active bookings from backend
   useEffect(() => {
     let active = true;
+    setLoadingBookings(true);
     void navigationService
       .bookings({ scope: 'all', page: 1, pageSize: 25, sort: 'eventDate', order: 'asc' })
       .then((res) => {
@@ -63,28 +60,43 @@ export function OperationsDashboard({
         if (items.length > 0) {
           const todayIso = new Date().toISOString().slice(0, 10);
           const todayBooking = items.find((b) => b.eventDate === todayIso);
-          setSelectedBooking((prev) => prev ?? todayBooking ?? items[0] ?? null);
+          const confirmedBooking = items.find(
+            (b) => b.phase === 'CONFIRMED' || b.phase === 'COMPLETED',
+          );
+          setSelectedBooking(
+            (prev) => prev ?? todayBooking ?? confirmedBooking ?? items[0] ?? null,
+          );
+        } else {
+          setSelectedBooking(null);
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        if (active) setActiveBookings([]);
+      })
+      .finally(() => {
+        if (active) setLoadingBookings(false);
+      });
 
     return () => {
       active = false;
     };
   }, []);
 
-  // Load workspace for selected booking
+  // Load real workspace (seating, timeline, offerings, members) for selected booking
   useEffect(() => {
     if (!selectedBooking) {
       setWorkspace(null);
+      setLoadingWorkspace(false);
       return;
     }
     if (selectedBooking.phase !== 'CONFIRMED' && selectedBooking.phase !== 'COMPLETED') {
       setWorkspace(null);
+      setLoadingWorkspace(false);
       return;
     }
 
     let active = true;
+    setLoadingWorkspace(true);
     void staffWorkspaceService
       .read(selectedBooking.bookingId)
       .then((data) => {
@@ -93,6 +105,9 @@ export function OperationsDashboard({
       })
       .catch(() => {
         if (active) setWorkspace(null);
+      })
+      .finally(() => {
+        if (active) setLoadingWorkspace(false);
       });
 
     return () => {
@@ -100,16 +115,27 @@ export function OperationsDashboard({
     };
   }, [selectedBooking?.bookingId, selectedBooking?.phase]);
 
-  const activeHallName = selectedBooking?.hallNameSnapshot || 'Sảnh Grand Diamond';
-  const tableCount = selectedBooking?.tableCount || 48;
+  const activeHallName =
+    workspace?.timeline.hallName || selectedBooking?.hallNameSnapshot || undefined;
   const shiftText = selectedBooking?.shiftCode === 'LUNCH' ? 'Ca Trưa' : 'Ca Tối';
-  const activeShiftLabel = `${shiftText} • ${tableCount} Bàn`;
+  const activeShiftLabel = selectedBooking
+    ? `${shiftText} · ${workspace?.operations.tableCount ?? selectedBooking.tableCount} bàn`
+    : undefined;
 
-  // Badges
-  const tableBadge = `${tableCount}/50`;
-  const dishBadge = 'Món 3/6';
-  const bookingsBadge = `${activeBookings.length || 18} Tiệc`;
-  const settlementBadge = '1 Chờ Ký';
+  // 100% Real Tab Badges (zero hardcoded placeholders)
+  const seatingCount = workspace?.seating.renderSnapshot.length ?? 0;
+  const tableBadge = selectedBooking
+    ? seatingCount > 0
+      ? `${seatingCount} bàn`
+      : `${selectedBooking.tableCount} bàn`
+    : undefined;
+  const timelineBadge =
+    workspace !== null ? `${workspace.timeline.items.length} mốc` : undefined;
+  const bookingsBadge = `${activeBookings.length} tiệc`;
+  const offeringsBadge =
+    workspace && workspace.operations.offerings.length > 0
+      ? `${workspace.operations.offerings.length}`
+      : undefined;
 
   const handleOpenContract = (b?: NavigationBooking) => {
     if (b) setSelectedBooking(b);
@@ -118,28 +144,9 @@ export function OperationsDashboard({
 
   const handleSelectBookingFromBanquetStrip = (b: NavigationBooking) => {
     setSelectedBooking(b);
-  };
-
-  // Fallback booking object if none exists yet
-  const effectiveBooking: NavigationBooking = selectedBooking || {
-    bookingId: 'BK202611042',
-    bookingCode: 'HĐ-202611-042',
-    customerName: 'Hoàng Nam & Phương Linh',
-    brideName: 'Phương Linh',
-    groomName: 'Hoàng Nam',
-    phone: '0918.234.567',
-    email: 'hoangnam@gmail.com',
-    eventDate: new Date().toISOString().slice(0, 10),
-    shiftCode: 'LUNCH',
-    hallId: 'hall-diamond',
-    hallNameSnapshot: 'Sảnh Grand Diamond',
-    tableCount: 48,
-    phase: 'CONFIRMED',
-    managerAccountId: snapshot.actor.accountId,
-    managerEmail: snapshot.actor.displayEmail,
-    createdAt: new Date().toISOString(),
-    cancelledAt: null,
-    alias: null,
+    setActiveBookings((prev) =>
+      prev.some((item) => item.bookingId === b.bookingId) ? prev : [b, ...prev],
+    );
   };
 
   return (
@@ -151,139 +158,142 @@ export function OperationsDashboard({
       pending={pending}
       activeView={activeView}
       onSelectView={setActiveView}
-      activeHallName={activeHallName}
-      activeShiftLabel={activeShiftLabel}
-      activeFloorLabel="TẦNG 3"
-      tableBadge={tableBadge}
-      dishBadge={dishBadge}
+      {...(activeHallName ? { activeHallName } : {})}
+      {...(activeShiftLabel ? { activeShiftLabel } : {})}
+      {...(tableBadge ? { tableBadge } : {})}
+      {...(timelineBadge ? { dishBadge: timelineBadge } : {})}
       bookingsBadge={bookingsBadge}
-      settlementBadge={settlementBadge}
-      onOpenContract={() => handleOpenContract()}
+      {...(selectedBooking ? { onOpenContract: () => handleOpenContract() } : {})}
     >
-      <main
-        data-ui-v3
-        id="dashboard-content"
-        className="workspace-scroll-area p-6 sm:p-8"
-      >
-        {/* Persistent Banquet Executive Overview Strip */}
+      <main data-ui-v3 id="dashboard-content" className="workspace-scroll-area p-6 sm:p-8">
+        {/* Persistent Banquet Executive Overview Strip (100% Real Data) */}
         <DashboardBanquetStrip
-          booking={selectedBooking || effectiveBooking}
+          booking={selectedBooking}
+          workspace={workspace}
           allBookings={activeBookings}
           onSelectBooking={handleSelectBookingFromBanquetStrip}
           onOpenContract={handleOpenContract}
           isManager={manager}
+          loading={loadingBookings}
         />
 
-        {/* Minimalist Underline Cockpit Tabs (Stripe / GitHub Enterprise Style) */}
-        <nav className="cockpit-horizontal-tabs" aria-label="Phân hệ điều phối ca trực">
-          <button
-            type="button"
-            className={cn('cockpit-tab-btn', activeView === 'floorplan' && 'active')}
-            onClick={() => setActiveView('floorplan')}
-          >
-            <LayoutGrid className="size-4 shrink-0" />
-            <span>Sơ đồ bàn</span>
-            <span className="tab-pill-badge">{tableBadge}</span>
-          </button>
+        {selectedBooking ? (
+          <>
+            {/* Minimalist Underline Cockpit Tabs */}
+            <nav className="cockpit-horizontal-tabs" aria-label="Phân hệ điều phối ca trực">
+              <button
+                type="button"
+                className={cn('cockpit-tab-btn', activeView === 'floorplan' && 'active')}
+                onClick={() => setActiveView('floorplan')}
+              >
+                <LayoutGrid className="size-4 shrink-0" />
+                <span>Sơ đồ bàn</span>
+                {tableBadge ? <span className="tab-pill-badge">{tableBadge}</span> : null}
+              </button>
 
-          <button
-            type="button"
-            className={cn('cockpit-tab-btn', activeView === 'rundown' && 'active')}
-            onClick={() => setActiveView('rundown')}
-          >
-            <Clock className="size-4 shrink-0" />
-            <span>Kịch bản lễ</span>
-            <span className="tab-pill-badge">{dishBadge}</span>
-          </button>
+              <button
+                type="button"
+                className={cn('cockpit-tab-btn', activeView === 'rundown' && 'active')}
+                onClick={() => setActiveView('rundown')}
+              >
+                <Clock className="size-4 shrink-0" />
+                <span>Kịch bản lễ</span>
+                {timelineBadge ? <span className="tab-pill-badge">{timelineBadge}</span> : null}
+              </button>
 
-          <button
-            type="button"
-            className={cn('cockpit-tab-btn', activeView === 'bookings' && 'active')}
-            onClick={() => setActiveView('bookings')}
-          >
-            <BookOpen className="size-4 shrink-0" />
-            <span>Sổ đặt tiệc</span>
-            <span className="tab-pill-badge">{bookingsBadge}</span>
-          </button>
+              <button
+                type="button"
+                className={cn('cockpit-tab-btn', activeView === 'bookings' && 'active')}
+                onClick={() => setActiveView('bookings')}
+              >
+                <BookOpen className="size-4 shrink-0" />
+                <span>Sổ đặt tiệc</span>
+                <span className="tab-pill-badge">{bookingsBadge}</span>
+              </button>
 
-          <button
-            type="button"
-            className={cn('cockpit-tab-btn', activeView === 'settlement' && 'active')}
-            onClick={() => setActiveView('settlement')}
-          >
-            <CreditCard className="size-4 shrink-0" />
-            <span>Quyết toán &amp; QR</span>
-            <span className="tab-pill-badge">{settlementBadge}</span>
-          </button>
+              <button
+                type="button"
+                className={cn('cockpit-tab-btn', activeView === 'settlement' && 'active')}
+                onClick={() => setActiveView('settlement')}
+              >
+                <CreditCard className="size-4 shrink-0" />
+                <span>Tài chính &amp; Quyết toán</span>
+              </button>
 
-          <button
-            type="button"
-            className={cn('cockpit-tab-btn', activeView === 'menu' && 'active')}
-            onClick={() => setActiveView('menu')}
-          >
-            <Utensils className="size-4 shrink-0" />
-            <span>Thực đơn</span>
-          </button>
-        </nav>
+              <button
+                type="button"
+                className={cn('cockpit-tab-btn', activeView === 'menu' && 'active')}
+                onClick={() => setActiveView('menu')}
+              >
+                <Utensils className="size-4 shrink-0" />
+                <span>Thực đơn &amp; Dịch vụ</span>
+                {offeringsBadge ? <span className="tab-pill-badge">{offeringsBadge}</span> : null}
+              </button>
+            </nav>
 
-        {/* View 1: Sơ Đồ Sảnh & Bố Trí Bàn (Floorplan Studio) */}
-        {activeView === 'floorplan' && (
-          <div id="view-floorplan" className="view-container active-view">
-            <RealFloorplanView
-              workspace={workspace}
-              booking={selectedBooking || effectiveBooking}
+            {/* View 1: Sơ Đồ Sảnh & Bố Trí Bàn (100% Real Customer Seating Data) */}
+            {activeView === 'floorplan' && (
+              <div id="view-floorplan" className="view-container active-view">
+                <RealFloorplanView
+                  key={selectedBooking.bookingId}
+                  workspace={workspace}
+                  booking={selectedBooking}
+                  loading={loadingWorkspace}
+                />
+              </div>
+            )}
+
+            {/* View 2: Kịch Bản Lễ & Phân Công Nhân Sự (100% Real Timeline & Staff) */}
+            {activeView === 'rundown' && (
+              <div id="view-rundown" className="view-container active-view">
+                <RealRundownView
+                  workspace={workspace}
+                  booking={selectedBooking}
+                  loading={loadingWorkspace}
+                />
+              </div>
+            )}
+
+            {/* View 3: Sổ Tiệc & Hợp Đồng */}
+            {activeView === 'bookings' && (
+              <div id="view-bookings" className="view-container active-view">
+                <DashboardLiveView
+                  isManager={manager}
+                  currentAccountId={snapshot.actor.accountId}
+                  currentEmail={snapshot.actor.displayEmail}
+                  activeView="bookings"
+                  onOpenContract={handleOpenContract}
+                  onSelectBooking={handleSelectBookingFromBanquetStrip}
+                />
+              </div>
+            )}
+
+            {/* View 4: Tài Chính & Quyết Toán (100% Real Contract Lines & Ledger) */}
+            {activeView === 'settlement' && (
+              <div id="view-settlement" className="view-container active-view">
+                <RealSettlementView booking={selectedBooking} />
+              </div>
+            )}
+
+            {/* View 5: Thực Đơn & Dịch Vụ (100% Real Offerings & Contract Lines) */}
+            {activeView === 'menu' && (
+              <div id="view-menu" className="view-container active-view">
+                <RealMenuView
+                  workspace={workspace}
+                  booking={selectedBooking}
+                  loading={loadingWorkspace}
+                />
+              </div>
+            )}
+
+            {/* Slide-over Contract & Folio Drawer */}
+            <DashboardContractDrawer
+              isOpen={drawerOpen}
+              onClose={() => setDrawerOpen(false)}
+              booking={selectedBooking}
             />
-          </div>
-        )}
-
-        {/* View 2: Kịch Bản Lễ & Bếp Ra Món (Rundown & Dispatch) */}
-        {activeView === 'rundown' && (
-          <div id="view-rundown" className="view-container active-view">
-            <RealRundownView
-              workspace={workspace}
-              booking={selectedBooking || effectiveBooking}
-            />
-          </div>
-        )}
-
-        {/* View 3: Sổ Tiệc & Hợp Đồng (Master Bookings Pipeline) */}
-        {activeView === 'bookings' && (
-          <div id="view-bookings" className="view-container active-view">
-            <DashboardLiveView
-              isManager={manager}
-              currentAccountId={snapshot.actor.accountId}
-              currentEmail={snapshot.actor.displayEmail}
-              activeView="bookings"
-              onOpenContract={handleOpenContract}
-            />
-          </div>
-        )}
-
-        {/* View 4: Bảng Kê Quyết Toán & VietQR (Settlement Folio Sheet) */}
-        {activeView === 'settlement' && (
-          <div id="view-settlement" className="view-container active-view">
-            <RealSettlementView
-              booking={selectedBooking || effectiveBooking}
-            />
-          </div>
-        )}
-
-        {/* View 5: Thực Đơn & Đồ Uống (Banquet Menu & Catalog) */}
-        {activeView === 'menu' && (
-          <div id="view-menu" className="view-container active-view">
-            <RealMenuView
-              workspace={workspace}
-              booking={selectedBooking || effectiveBooking}
-            />
-          </div>
-        )}
-
-        {/* Slide-over Contract & Folio Drawer */}
-        <DashboardContractDrawer
-          isOpen={drawerOpen}
-          onClose={() => setDrawerOpen(false)}
-          booking={selectedBooking || effectiveBooking}
-        />
+          </>
+        ) : null}
       </main>
     </OperationsShell>
   );
