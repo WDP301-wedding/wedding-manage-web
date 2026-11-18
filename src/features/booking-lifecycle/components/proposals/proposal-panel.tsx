@@ -205,6 +205,7 @@ export function ProposalPanel({
               </Badge>
             )}
             <BookingCompletionActions
+              authorize={authorize}
               proposal={proposal}
               disabled={disabled}
               onComplete={() =>
