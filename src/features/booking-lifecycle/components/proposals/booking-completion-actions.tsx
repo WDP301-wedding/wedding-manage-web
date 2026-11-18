@@ -1,13 +1,16 @@
 import { Check } from 'lucide-react';
 import { Button, buttonVariants } from '@/src/components/ui/button';
-import type { ProposalView } from '@/src/features/booking-lifecycle/api/booking-api';
+import type { Authorize, ProposalView } from '@/src/features/booking-lifecycle/api/booking-api';
+import { BookingSeatingAction } from './booking-seating-action';
 
 export function BookingCompletionActions({
+  authorize,
   proposal,
   disabled,
   onComplete,
 }: Readonly<{
-  proposal: Pick<ProposalView, 'bookingId' | 'phase' | 'completion'>;
+  authorize: Authorize;
+  proposal: Pick<ProposalView, 'bookingId' | 'phase' | 'completion' | 'proposal'>;
   disabled: boolean;
   onComplete: () => void;
 }>) {
@@ -44,6 +47,13 @@ export function BookingCompletionActions({
           ) : null}
         </>
       ) : null}
+      <BookingSeatingAction
+        key={`${proposal.bookingId}:${proposal.phase}`}
+        authorize={authorize}
+        bookingId={proposal.bookingId}
+        canRead={proposal.phase === 'CONFIRMED' || proposal.phase === 'COMPLETED'}
+        hallName={proposal.proposal.hall.name}
+      />
       {proposal.phase === 'COMPLETED' ? (
         <a
           href={`/billing?bookingId=${proposal.bookingId}`}
