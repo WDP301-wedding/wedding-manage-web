@@ -100,7 +100,25 @@ export function createManagementInvitationTemplatesGateway(
         | { data: { items: readonly InvitationTemplateItem[]; nextCursor: string | null } }
         | undefined;
       if (!data) throw new Error('Không thể tải danh sách mẫu thiệp.');
-      return data.data;
+
+      const items = data.data.items.map((item) => {
+        let active = item.active;
+        if (active === undefined && typeof window !== 'undefined') {
+          const cached = window.localStorage.getItem(`tpl_active_${item.templateId}`);
+          if (cached !== null) {
+            active = cached === 'true';
+          }
+        }
+        return {
+          ...item,
+          active: active ?? false,
+        };
+      });
+
+      return {
+        items,
+        nextCursor: data.data.nextCursor,
+      };
     },
 
     async get(token, templateId, versionId) {
@@ -139,6 +157,9 @@ export function createManagementInvitationTemplatesGateway(
       }
       const data = result.data as { data: InvitationTemplateItem } | undefined;
       if (!data) throw new Error('Không thể tạo mẫu thiệp.');
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(`tpl_active_${data.data.templateId}`, String(form.active));
+      }
       return data.data;
     },
 
@@ -164,6 +185,9 @@ export function createManagementInvitationTemplatesGateway(
       }
       const data = result.data as { data: InvitationTemplateItem } | undefined;
       if (!data) throw new Error('Không thể cập nhật mẫu thiệp.');
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(`tpl_active_${templateId}`, String(form.active));
+      }
       return data.data;
     },
 
@@ -173,6 +197,22 @@ export function createManagementInvitationTemplatesGateway(
         'Idempotency-Key': idempotencyKey,
       };
       const nextActive = !template.active;
+      const defaultPresentation = {
+        version: 1 as const,
+        theme: 'royal-burgundy' as const,
+        layout: 'gatefold' as const,
+        decoration: {
+          coverMotif: 'phoenix' as const,
+          insideMotif: 'song-hy' as const,
+          finish: 'gold-foil' as const,
+          frame: 'inset' as const,
+          coverComposition: 'medallion' as const,
+          insideComposition: 'border' as const,
+          coverDensity: 'subtle' as const,
+          insideDensity: 'subtle' as const,
+        },
+      };
+
       const result = await api().PATCH('/management/invitation-templates/{templateId}', {
         headers,
         params: {
@@ -184,11 +224,19 @@ export function createManagementInvitationTemplatesGateway(
           expectedRevision: template.revisionNumber,
           content: {
             title: template.title,
-            derivedAssetIds: [],
+            derivedAssetIds: template.derivedAssetIds ?? [],
             includesSeating: template.includesSeating,
-            sections: template.sections,
+            sections: template.sections?.length
+              ? template.sections
+              : [
+                  { kind: 'HERO' as const, textKey: null, derivedAssetId: null },
+                  { kind: 'MESSAGE' as const, textKey: 'message' as const, derivedAssetId: null },
+                  { kind: 'EVENT' as const, textKey: null, derivedAssetId: null },
+                  { kind: 'TIMELINE' as const, textKey: null, derivedAssetId: null },
+                  { kind: 'FOOTER' as const, textKey: 'footer' as const, derivedAssetId: null },
+                ],
             textFields: template.textFields,
-            ...(template.presentation ? { presentation: template.presentation } : {}),
+            presentation: template.presentation ?? defaultPresentation,
           },
         },
       } as never);
@@ -199,6 +247,9 @@ export function createManagementInvitationTemplatesGateway(
       }
       const data = result.data as { data: InvitationTemplateItem } | undefined;
       if (!data) throw new Error('Không thể thay đổi trạng thái mẫu thiệp.');
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(`tpl_active_${template.templateId}`, String(nextActive));
+      }
       return data.data;
     },
   };
