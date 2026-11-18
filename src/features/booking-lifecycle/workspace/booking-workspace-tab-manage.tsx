@@ -1,6 +1,5 @@
 'use client';
 
-import type { ReactNode } from 'react';
 import type { useContractPanel } from '@/src/features/booking-lifecycle/hooks/use-contract-panel';
 import { BookingUnauthorizedHint } from './booking-unauthorized-hint';
 import { ProposalPanel } from '@/src/features/booking-lifecycle/components/proposals/proposal-panel';
@@ -17,7 +16,6 @@ export interface BookingWorkspaceTabManageProps {
   error: string | null;
   proposal: ProposalView | null;
   contractState: ReturnType<typeof useContractPanel>;
-  lifecycleProgress: ReactNode;
   consultation: { id: string; revision: number } | null;
   prefill: BookingPrefill;
   inviteLogs: readonly InviteLogEntry[];
@@ -37,7 +35,6 @@ export function BookingWorkspaceTabManage({
   error,
   proposal,
   contractState,
-  lifecycleProgress,
   consultation,
   prefill,
   inviteLogs,
@@ -80,18 +77,15 @@ export function BookingWorkspaceTabManage({
           {error && bookingId ? <BookingUnauthorizedHint bookingId={bookingId} /> : null}
         </div>
       ) : (
-        <>
-          {active ? lifecycleProgress : null}
-          <ProposalPanel
-            contractState={contractState}
-            disabled={disabled}
-            proposal={proposal}
-            run={run}
-            authorize={authorize}
-            gateway={gateway}
-            refresh={refresh}
-          />
-        </>
+        <ProposalPanel
+          contractState={contractState}
+          disabled={disabled}
+          proposal={proposal}
+          run={run}
+          authorize={authorize}
+          gateway={gateway}
+          refresh={refresh}
+        />
       )}
     </section>
   );

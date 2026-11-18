@@ -83,14 +83,6 @@ export function ManagementBookingWorkspace({
     contractState.currentRevision?.state === 'APPROVED' &&
     contractState.currentRevision.document.timelineRevisionId === proposal.timeline.revisionId,
   );
-  const lifecycleProgress =
-    proposal || consultation || contextStatus === 'ready' ? (
-      <BookingLifecycleStepper
-        phase={proposal?.phase}
-        hasConsultation={consultation !== null}
-        agreementsApproved={agreementsApproved}
-      />
-    ) : null;
 
   return (
     <main
@@ -158,7 +150,13 @@ export function ManagementBookingWorkspace({
           ) : null}
         </div>
 
-        {lifecycleProgress}
+        {proposal || consultation || contextStatus === 'ready' ? (
+          <BookingLifecycleStepper
+            phase={proposal?.phase}
+            hasConsultation={consultation !== null}
+            agreementsApproved={agreementsApproved}
+          />
+        ) : null}
 
         <div
           role="tablist"
@@ -256,7 +254,6 @@ export function ManagementBookingWorkspace({
         error={error}
         proposal={proposal}
         contractState={contractState}
-        lifecycleProgress={lifecycleProgress}
         consultation={consultation}
         prefill={prefill}
         inviteLogs={inviteLogs}
